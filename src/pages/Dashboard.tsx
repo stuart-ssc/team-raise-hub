@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 const Dashboard = () => {
-  // Mock data for campaigns
+  // Dashboard component with reusable header
   const campaigns = [{
     name: "VIP Dance 2",
     schoolGroup: "Tates Creek High School - Lacrosse",
