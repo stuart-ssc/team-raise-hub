@@ -6,11 +6,49 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from "@/hooks/useAuth";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const DashboardHeader = () => {
   const { signOut } = useAuth();
   const { schoolUser } = useSchoolUser();
   const navigate = useNavigate();
+  const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
+
+  // Fetch groups based on user role
+  useEffect(() => {
+    const fetchGroups = async () => {
+      if (!schoolUser) return;
+
+      const userRole = schoolUser.user_type.name;
+      
+      if (userRole === "Principal") {
+        // Principal sees all groups for their school
+        const { data } = await supabase
+          .from("groups")
+          .select("id, group_name")
+          .eq("school_id", schoolUser.school_id);
+        
+        setGroups(data || []);
+      } else if (userRole === "Athletic Director") {
+        // Athletic Director sees all sports teams
+        const { data } = await supabase
+          .from("groups")
+          .select("id, group_name, group_type!inner(name)")
+          .eq("school_id", schoolUser.school_id)
+          .eq("group_type.name", "Sports Team");
+        
+        setGroups(data || []);
+      } else if (["Coach", "Club Sponsor", "Booster Leader", "Team Player", "Club Participant", "Family Member"].includes(userRole)) {
+        // These roles only see groups they're connected to
+        if (schoolUser.groups) {
+          setGroups([schoolUser.groups]);
+        }
+      }
+    };
+
+    fetchGroups();
+  }, [schoolUser]);
 
   const handleLogout = async () => {
     await signOut();
@@ -24,8 +62,9 @@ const DashboardHeader = () => {
         <div className="flex items-center gap-4 mb-3">
           <span className="text-muted-foreground">Teams/Groups:</span>
           <Badge variant="default">All</Badge>
-          <Badge variant="secondary">Football</Badge>
-          <Badge variant="secondary">Softball (Fastpitch)</Badge>
+          {groups.map((group) => (
+            <Badge key={group.id} variant="secondary">{group.group_name}</Badge>
+          ))}
         </div>
       </div>
       
