@@ -29,6 +29,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const schoolUserSchema = z.object({
   schoolId: z.string().min(1, "School is required"),
@@ -79,6 +80,7 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
   const [schoolSearch, setSchoolSearch] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { signOut } = useAuth();
 
   const form = useForm<SchoolUserFormData>({
     resolver: zodResolver(schoolUserSchema),
@@ -387,13 +389,24 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
 
             {/* Submit Button */}
             {selectedSchoolId && selectedUserType && (
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isSubmitting || (shouldShowGroupFields() && !form.watch("groupId") && !canCreateGroup())}
-              >
-                {isSubmitting ? "Setting up..." : "Complete Setup"}
-              </Button>
+              <div className="space-y-2">
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isSubmitting || (shouldShowGroupFields() && !form.watch("groupId") && !canCreateGroup())}
+                >
+                  {isSubmitting ? "Setting up..." : "Complete Setup"}
+                </Button>
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => signOut()}
+                    className="text-sm text-muted-foreground hover:text-foreground underline"
+                  >
+                    Exit Setup
+                  </button>
+                </div>
+              </div>
             )}
           </form>
         </Form>
