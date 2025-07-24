@@ -104,6 +104,7 @@ export type Database = {
         Row: {
           Charter: boolean | null
           city: string
+          county_id: string | null
           county_name: string | null
           created_at: string
           directly_certified: number | null
@@ -133,6 +134,7 @@ export type Database = {
         Insert: {
           Charter?: boolean | null
           city: string
+          county_id?: string | null
           county_name?: string | null
           created_at?: string
           directly_certified?: number | null
@@ -162,6 +164,7 @@ export type Database = {
         Update: {
           Charter?: boolean | null
           city?: string
+          county_id?: string | null
           county_name?: string | null
           created_at?: string
           directly_certified?: number | null
@@ -189,6 +192,13 @@ export type Database = {
           zip_4_digit?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "schools_county_id_fkey"
+            columns: ["county_id"]
+            isOneToOne: false
+            referencedRelation: "counties"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "schools_locale_id_fkey"
             columns: ["locale_id"]
