@@ -100,6 +100,27 @@ export type Database = {
           },
         ]
       }
+      school_type: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       schools: {
         Row: {
           Charter: boolean | null
@@ -120,6 +141,7 @@ export type Database = {
           reduced_lunch: number | null
           school_district_id: string | null
           school_name: string
+          school_type_id: string | null
           state_id: number | null
           state_school_ID: string | null
           status: string | null
@@ -150,6 +172,7 @@ export type Database = {
           reduced_lunch?: number | null
           school_district_id?: string | null
           school_name: string
+          school_type_id?: string | null
           state_id?: number | null
           state_school_ID?: string | null
           status?: string | null
@@ -180,6 +203,7 @@ export type Database = {
           reduced_lunch?: number | null
           school_district_id?: string | null
           school_name?: string
+          school_type_id?: string | null
           state_id?: number | null
           state_school_ID?: string | null
           status?: string | null
@@ -211,6 +235,13 @@ export type Database = {
             columns: ["school_district_id"]
             isOneToOne: false
             referencedRelation: "school_districts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schools_school_type_id_fkey"
+            columns: ["school_type_id"]
+            isOneToOne: false
+            referencedRelation: "school_type"
             referencedColumns: ["id"]
           },
           {
