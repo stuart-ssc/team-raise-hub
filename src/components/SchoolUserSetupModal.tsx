@@ -387,7 +387,11 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
 
             {/* Submit Button */}
             {selectedSchoolId && selectedUserType && (
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isSubmitting || (shouldShowGroupFields() && !form.watch("groupId") && !canCreateGroup())}
+              >
                 {isSubmitting ? "Setting up..." : "Complete Setup"}
               </Button>
             )}
