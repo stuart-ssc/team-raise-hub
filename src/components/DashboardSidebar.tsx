@@ -27,7 +27,7 @@ const DashboardSidebar = () => {
   return (
     <div className={`bg-sidebar text-sidebar-foreground transition-all duration-300 ${
       isCollapsed ? 'w-16' : 'w-64'
-    } flex flex-col h-screen`}>
+    } flex flex-col h-full`}>
       {/* Header */}
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center justify-between">
