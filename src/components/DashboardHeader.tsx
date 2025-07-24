@@ -23,6 +23,7 @@ const DashboardHeader = () => {
         <h1 id="school-name-title" className="text-3xl font-bold text-foreground">{schoolUser?.schools?.school_name || "School"}</h1>
         <div className="flex items-center gap-4 mb-3">
           <span className="text-muted-foreground">Teams/Groups:</span>
+          <Badge variant="default">All</Badge>
           <Badge variant="secondary">Football</Badge>
           <Badge variant="secondary">Softball (Fastpitch)</Badge>
         </div>
