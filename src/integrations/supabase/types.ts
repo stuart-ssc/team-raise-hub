@@ -86,6 +86,54 @@ export type Database = {
         }
         Relationships: []
       }
+      groups: {
+        Row: {
+          created_at: string
+          group_name: string
+          group_type_id: string | null
+          id: string
+          logo_url: string | null
+          school_id: string | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          group_name: string
+          group_type_id?: string | null
+          id?: string
+          logo_url?: string | null
+          school_id?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          group_name?: string
+          group_type_id?: string | null
+          id?: string
+          logo_url?: string | null
+          school_id?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_group_type_id_fkey"
+            columns: ["group_type_id"]
+            isOneToOne: false
+            referencedRelation: "group_type"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locale: {
         Row: {
           created_at: string
