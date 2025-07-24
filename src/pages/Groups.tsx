@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MoreHorizontal, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,56 +19,86 @@ import {
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { CreateGroupForm } from "@/components/CreateGroupForm";
+import { supabase } from "@/integrations/supabase/client";
+import { useSchoolUser } from "@/hooks/useSchoolUser";
 
-const mockGroups = [
-  {
-    id: 1,
-    name: "Track and Field",
-    school: "Tates Creek High School",
-    type: "PTO",
-    status: "Inactive",
-  },
-  {
-    id: 2,
-    name: "Softball (Fastpitch)",
-    school: "Tates Creek High School",
-    type: "Sport",
-    status: "Inactive",
-  },
-  {
-    id: 3,
-    name: "Mens Lacross",
-    school: "Tates Creek High School",
-    type: "Sport",
-    status: "Inactive",
-  },
-  {
-    id: 4,
-    name: "Lacrosse",
-    school: "Tates Creek High School",
-    type: "Club",
-    status: "Inactive",
-  },
-  {
-    id: 5,
-    name: "Football",
-    school: "Tates Creek High School",
-    type: "Sport",
-    status: "Inactive",
-  },
-  {
-    id: 6,
-    name: "Baseball",
-    school: "Tates Creek High School",
-    type: "Sport",
-    status: "Inactive",
-  },
-];
+interface Group {
+  id: string;
+  group_name: string;
+  school_name: string;
+  group_type_name: string;
+}
 
 const Groups = () => {
   const [sortBy, setSortBy] = useState("name");
   const [filterBy, setFilterBy] = useState("all");
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { schoolUser } = useSchoolUser();
+
+  const fetchGroups = async () => {
+    if (!schoolUser) return;
+
+    try {
+      setLoading(true);
+      let query = supabase
+        .from("groups")
+        .select(`
+          id,
+          group_name,
+          schools!inner(school_name),
+          group_type!inner(name)
+        `);
+
+      // Apply role-based filtering
+      if (schoolUser.user_type.name === "Principal") {
+        // Principals see all groups for their school
+        query = query.eq("school_id", schoolUser.school_id);
+      } else if (schoolUser.user_type.name === "Athletic Director") {
+        // Athletic Directors see all sports teams at their school
+        query = query
+          .eq("school_id", schoolUser.school_id)
+          .eq("group_type.name", "Sport");
+      } else if (["Coach", "Club Sponsor", "Booster Leader"].includes(schoolUser.user_type.name)) {
+        // These roles see only groups they are connected to
+        if (schoolUser.group_id) {
+          query = query.eq("id", schoolUser.group_id);
+        } else {
+          // If no group assigned, show empty results
+          setGroups([]);
+          setLoading(false);
+          return;
+        }
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching groups:", error);
+        return;
+      }
+
+      const formattedGroups: Group[] = (data || []).map((group) => ({
+        id: group.id,
+        group_name: group.group_name,
+        school_name: group.schools.school_name,
+        group_type_name: group.group_type.name,
+      }));
+
+      setGroups(formattedGroups);
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (schoolUser) {
+      fetchGroups();
+    }
+  }, [schoolUser]);
 
   const handleNewGroupClick = () => {
     setShowCreateForm(true);
@@ -80,7 +110,7 @@ const Groups = () => {
 
   const handleFormSuccess = () => {
     setShowCreateForm(false);
-    // You could refresh the groups list here if using real data
+    fetchGroups(); // Refresh the groups list
   };
 
   return (
@@ -175,34 +205,48 @@ const Groups = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {mockGroups.map((group) => (
-                          <TableRow key={group.id}>
-                            <TableCell className="font-medium">{group.name}</TableCell>
-                            <TableCell>{group.school}</TableCell>
-                            <TableCell>{group.type}</TableCell>
-                            <TableCell>
-                              <Button variant="default" size="sm">
-                                Manage
-                              </Button>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-muted-foreground">{group.status}</span>
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>Edit</DropdownMenuItem>
-                                  <DropdownMenuItem>Delete</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center py-4">
+                              Loading...
                             </TableCell>
                           </TableRow>
-                        ))}
+                        ) : groups.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                              No groups found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          groups.map((group) => (
+                            <TableRow key={group.id}>
+                              <TableCell className="font-medium">{group.group_name}</TableCell>
+                              <TableCell>{group.school_name}</TableCell>
+                              <TableCell>{group.group_type_name}</TableCell>
+                              <TableCell>
+                                <Button variant="default" size="sm">
+                                  Manage
+                                </Button>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-muted-foreground">Inactive</span>
+                              </TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem>Delete</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
                       </TableBody>
                     </Table>
                   </CardContent>
