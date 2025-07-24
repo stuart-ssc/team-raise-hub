@@ -78,7 +78,7 @@ const Groups = () => {
           <div className="p-6 space-y-6">
 
             {/* Groups Section */}
-            <div className="space-y-4">
+            <div id="groups-admin-table" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-foreground">Groups</h2>
                 
