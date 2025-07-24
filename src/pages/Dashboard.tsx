@@ -4,92 +4,70 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-
 const Dashboard = () => {
-  const { signOut, user } = useAuth();
+  const {
+    signOut,
+    user
+  } = useAuth();
   const navigate = useNavigate();
-
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
   };
   // Mock data for campaigns
-  const campaigns = [
-    {
-      name: "VIP Dance 2",
-      schoolGroup: "Tates Creek High School - Lacrosse",
-      goal: "$9,876",
-      startDate: "7/28/25",
-      endDate: "7/30/25",
-      status: "Inactive"
-    },
-    {
-      name: "VIP Dance 1",
-      schoolGroup: "Tates Creek High School - Football",
-      goal: "$5,432",
-      startDate: "7/27/25",
-      endDate: "8/02/25",
-      status: "Inactive"
-    },
-    {
-      name: "Test Sponsor-u",
-      schoolGroup: "Tates Creek High School - Baseball",
-      goal: "$11,000",
-      startDate: "7/06/25",
-      endDate: "7/24/25",
-      status: "Active"
-    },
-    {
-      name: "test dance",
-      schoolGroup: "Tates Creek High School - Men's Lacrosse",
-      goal: "$12,345",
-      startDate: "7/29/25",
-      endDate: "7/31/25",
-      status: "Inactive"
-    },
-  ];
+  const campaigns = [{
+    name: "VIP Dance 2",
+    schoolGroup: "Tates Creek High School - Lacrosse",
+    goal: "$9,876",
+    startDate: "7/28/25",
+    endDate: "7/30/25",
+    status: "Inactive"
+  }, {
+    name: "VIP Dance 1",
+    schoolGroup: "Tates Creek High School - Football",
+    goal: "$5,432",
+    startDate: "7/27/25",
+    endDate: "8/02/25",
+    status: "Inactive"
+  }, {
+    name: "Test Sponsor-u",
+    schoolGroup: "Tates Creek High School - Baseball",
+    goal: "$11,000",
+    startDate: "7/06/25",
+    endDate: "7/24/25",
+    status: "Active"
+  }, {
+    name: "test dance",
+    schoolGroup: "Tates Creek High School - Men's Lacrosse",
+    goal: "$12,345",
+    startDate: "7/29/25",
+    endDate: "7/31/25",
+    status: "Inactive"
+  }];
 
   // Mock data for donors
-  const donors = [
-    {
-      name: "Jeff Conner",
-      email: "jconner@testemail.com",
-      title: "jconner@testemail.com",
-      role: "Standard"
-    },
-    {
-      name: "Emma Perez",
-      email: "eperez@testemail.com",
-      title: "eperez@testemail.com",
-      role: "Standard"
-    },
-    {
-      name: "Raj Mishra",
-      email: "rmishra@testemail.com",
-      title: "rmishra@testemail.com",
-      role: "Standard"
-    },
-  ];
-
-  return (
-    <div className="flex min-h-screen w-full bg-background">
+  const donors = [{
+    name: "Jeff Conner",
+    email: "jconner@testemail.com",
+    title: "jconner@testemail.com",
+    role: "Standard"
+  }, {
+    name: "Emma Perez",
+    email: "eperez@testemail.com",
+    title: "eperez@testemail.com",
+    role: "Standard"
+  }, {
+    name: "Raj Mishra",
+    email: "rmishra@testemail.com",
+    title: "rmishra@testemail.com",
+    role: "Standard"
+  }];
+  return <div className="flex min-h-screen w-full bg-background">
       <DashboardSidebar />
       
       <div className="flex-1 flex flex-col">
@@ -97,11 +75,8 @@ const Dashboard = () => {
         <header className="h-16 border-b bg-background px-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search..."
-                className="pl-10 w-64"
-              />
+              
+              
             </div>
           </div>
           
@@ -196,8 +171,7 @@ const Dashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {campaigns.map((campaign, index) => (
-                    <TableRow key={index}>
+                  {campaigns.map((campaign, index) => <TableRow key={index}>
                       <TableCell className="font-medium">{campaign.name}</TableCell>
                       <TableCell>
                         <div className="text-sm">{campaign.schoolGroup.split(' - ')[0]}</div>
@@ -216,8 +190,7 @@ const Dashboard = () => {
                       <TableCell>
                         <Button variant="ghost" size="sm">⋮</Button>
                       </TableCell>
-                    </TableRow>
-                  ))}
+                    </TableRow>)}
                 </TableBody>
               </Table>
             </CardContent>
@@ -246,8 +219,7 @@ const Dashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {donors.map((donor, index) => (
-                    <TableRow key={index}>
+                  {donors.map((donor, index) => <TableRow key={index}>
                       <TableCell className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src="/placeholder.svg" />
@@ -263,16 +235,13 @@ const Dashboard = () => {
                       <TableCell>
                         <Button variant="ghost" size="sm">⋮</Button>
                       </TableCell>
-                    </TableRow>
-                  ))}
+                    </TableRow>)}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
         </main>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Dashboard;
