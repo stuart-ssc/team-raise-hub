@@ -72,7 +72,7 @@ const Dashboard = () => {
       
       <div className="flex-1 flex flex-col">
         {/* Top Header */}
-        <header className="h-16 border-b bg-background px-6 flex items-center justify-between">
+        <header className="border-b bg-background px-6 py-4 flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <h1 id="school-name-title" className="text-3xl font-bold text-foreground">Tates Creek High School</h1>
             <div className="flex items-center gap-4 mb-3">
