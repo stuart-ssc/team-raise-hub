@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
+import { CreateGroupForm } from "@/components/CreateGroupForm";
 
 const mockGroups = [
   {
@@ -67,6 +68,20 @@ const mockGroups = [
 const Groups = () => {
   const [sortBy, setSortBy] = useState("name");
   const [filterBy, setFilterBy] = useState("all");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  const handleNewGroupClick = () => {
+    setShowCreateForm(true);
+  };
+
+  const handleFormCancel = () => {
+    setShowCreateForm(false);
+  };
+
+  const handleFormSuccess = () => {
+    setShowCreateForm(false);
+    // You could refresh the groups list here if using real data
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -77,112 +92,123 @@ const Groups = () => {
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
 
-            {/* Groups Section */}
-            <div id="groups-admin-table" className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-foreground">Groups</h2>
-                
-                <div className="flex items-center gap-3">
-                  {/* Sort Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-24">
-                        Sort
-                        <ChevronDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setSortBy("name")}>
-                        Name
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSortBy("type")}>
-                        Type
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSortBy("status")}>
-                        Status
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+            {showCreateForm ? (
+              // Show Create Group Form
+              <CreateGroupForm 
+                onCancel={handleFormCancel}
+                onSuccess={handleFormSuccess}
+              />
+            ) : (
+              // Show Groups Admin Table
+              <div id="groups-admin-table" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-foreground">Groups</h2>
+                  
+                  <div className="flex items-center gap-3">
+                    {/* Sort Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-24">
+                          Sort
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => setSortBy("name")}>
+                          Name
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setSortBy("type")}>
+                          Type
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setSortBy("status")}>
+                          Status
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
-                  {/* Filter Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-24">
-                        Filter
-                        <ChevronDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setFilterBy("all")}>
-                        All
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setFilterBy("active")}>
-                        Active
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setFilterBy("inactive")}>
-                        Inactive
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    {/* Filter Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-24">
+                          Filter
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => setFilterBy("all")}>
+                          All
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setFilterBy("active")}>
+                          Active
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setFilterBy("inactive")}>
+                          Inactive
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
-                  {/* New Button */}
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                    New
-                  </Button>
+                    {/* New Button */}
+                    <Button 
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      onClick={handleNewGroupClick}
+                    >
+                      New
+                    </Button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Groups Table */}
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="flex items-center gap-2">
-                          Group Name
-                          <ChevronDown className="h-4 w-4" />
-                        </TableHead>
-                        <TableHead>School</TableHead>
-                        <TableHead>Group Type</TableHead>
-                        <TableHead>Manage Roster</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-12"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockGroups.map((group) => (
-                        <TableRow key={group.id}>
-                          <TableCell className="font-medium">{group.name}</TableCell>
-                          <TableCell>{group.school}</TableCell>
-                          <TableCell>{group.type}</TableCell>
-                          <TableCell>
-                            <Button variant="default" size="sm">
-                              Manage
-                            </Button>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-muted-foreground">{group.status}</span>
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Edit</DropdownMenuItem>
-                                <DropdownMenuItem>Delete</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
+                {/* Groups Table */}
+                <Card>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="flex items-center gap-2">
+                            Group Name
+                            <ChevronDown className="h-4 w-4" />
+                          </TableHead>
+                          <TableHead>School</TableHead>
+                          <TableHead>Group Type</TableHead>
+                          <TableHead>Manage Roster</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="w-12"></TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
+                      </TableHeader>
+                      <TableBody>
+                        {mockGroups.map((group) => (
+                          <TableRow key={group.id}>
+                            <TableCell className="font-medium">{group.name}</TableCell>
+                            <TableCell>{group.school}</TableCell>
+                            <TableCell>{group.type}</TableCell>
+                            <TableCell>
+                              <Button variant="default" size="sm">
+                                Manage
+                              </Button>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-muted-foreground">{group.status}</span>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem>Edit</DropdownMenuItem>
+                                  <DropdownMenuItem>Delete</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         </div>
       </div>
