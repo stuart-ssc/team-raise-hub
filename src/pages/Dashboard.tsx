@@ -74,7 +74,7 @@ const Dashboard = () => {
         {/* Top Header */}
         <header className="h-16 border-b bg-background px-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold text-foreground">Tates Creek High School</h1>
+            <h1 id="school-name-title" className="text-3xl font-bold text-foreground">Tates Creek High School</h1>
           </div>
           
           <div className="flex items-center gap-4">
