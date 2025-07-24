@@ -75,7 +75,7 @@ const Dashboard = () => {
         <header className="h-16 border-b bg-background px-6 flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <h1 id="school-name-title" className="text-3xl font-bold text-foreground">Tates Creek High School</h1>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 mb-3">
               <span className="text-muted-foreground">Teams/Groups:</span>
               <Badge variant="secondary">Football</Badge>
               <Badge variant="secondary">Softball (Fastpitch)</Badge>
