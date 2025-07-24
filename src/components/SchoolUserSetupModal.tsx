@@ -203,13 +203,13 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
         .insert({
           user_id: userId,
           school_id: data.schoolId,
-          group_id: groupId,
+          group_id: groupId || null,
           user_type_id: data.userTypeId,
         })
         .select(`
           *,
           schools!inner(id, school_name, city, state),
-          groups!inner(id, group_name),
+          groups(id, group_name),
           user_type!inner(id, name)
         `)
         .single();

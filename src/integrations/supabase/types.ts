@@ -255,7 +255,7 @@ export type Database = {
       school_user: {
         Row: {
           created_at: string
-          group_id: string
+          group_id: string | null
           id: string
           school_id: string
           updated_at: string
@@ -264,7 +264,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          group_id: string
+          group_id?: string | null
           id?: string
           school_id: string
           updated_at?: string
@@ -273,7 +273,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          group_id?: string
+          group_id?: string | null
           id?: string
           school_id?: string
           updated_at?: string

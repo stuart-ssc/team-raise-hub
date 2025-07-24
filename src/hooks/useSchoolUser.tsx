@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 interface SchoolUserData {
   id: string;
   school_id: string;
-  group_id: string;
+  group_id: string | null;
   user_type_id: string;
   schools: {
     id: string;
@@ -16,7 +16,7 @@ interface SchoolUserData {
   groups: {
     id: string;
     group_name: string;
-  };
+  } | null;
   user_type: {
     id: string;
     name: string;
@@ -50,7 +50,7 @@ export const SchoolUserProvider = ({ children }: { children: ReactNode }) => {
         .select(`
           *,
           schools!inner(id, school_name, city, state),
-          groups!inner(id, group_name),
+          groups(id, group_name),
           user_type!inner(id, name)
         `)
         .eq("user_id", user.id)
