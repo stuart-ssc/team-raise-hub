@@ -74,6 +74,7 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
   const [groupTypes, setGroupTypes] = useState<GroupType[]>([]);
   const [userTypes, setUserTypes] = useState<UserType[]>([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>("");
+  const [selectedUserType, setSelectedUserType] = useState<string>("");
   const [showNewGroupFields, setShowNewGroupFields] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -129,6 +130,23 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
     return () => clearTimeout(debounce);
   }, [schoolSearch]);
 
+  // Helper functions to determine group field visibility
+  const getSelectedUserTypeName = () => {
+    return userTypes.find(type => type.id === selectedUserType)?.name || "";
+  };
+
+  const shouldShowGroupFields = () => {
+    const userTypeName = getSelectedUserTypeName();
+    const noGroupRoles = ["Principal", "Athletic Director", "Sponsor"];
+    return !noGroupRoles.includes(userTypeName);
+  };
+
+  const canCreateGroup = () => {
+    const userTypeName = getSelectedUserTypeName();
+    const canCreateRoles = ["Coach", "Club Sponsor", "Booster Leader"];
+    return canCreateRoles.includes(userTypeName);
+  };
+
   // Load groups when school is selected
   useEffect(() => {
     const loadGroups = async () => {
@@ -145,12 +163,12 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
 
       if (data) {
         setGroups(data);
-        setShowNewGroupFields(data.length === 0);
+        setShowNewGroupFields(data.length === 0 && canCreateGroup());
       }
     };
 
     loadGroups();
-  }, [selectedSchoolId]);
+  }, [selectedSchoolId, selectedUserType]);
 
   const onSubmit = async (data: SchoolUserFormData) => {
     setIsSubmitting(true);
@@ -174,8 +192,9 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
         groupId = newGroup.id;
       }
 
-      if (!groupId) {
-        throw new Error("Group is required");
+      // Only require group for roles that need groups
+      if (shouldShowGroupFields() && !groupId) {
+        throw new Error("Group is required for your role");
       }
 
       // Create school_user record
@@ -258,8 +277,39 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
               )}
             </div>
 
-            {/* Group Selection or Creation */}
+            {/* User Role Selection */}
             {selectedSchoolId && (
+              <FormField
+                control={form.control}
+                name="userTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Your Role</FormLabel>
+                    <Select onValueChange={(value) => {
+                      field.onChange(value);
+                      setSelectedUserType(value);
+                    }} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {userTypes.map((type) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Group Selection or Creation */}
+            {selectedSchoolId && selectedUserType && shouldShowGroupFields() && (
               <>
                 {groups.length > 0 ? (
                   <FormField
@@ -286,7 +336,7 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
                       </FormItem>
                     )}
                   />
-                ) : (
+                ) : canCreateGroup() ? (
                   <div className="space-y-4">
                     <FormField
                       control={form.control}
@@ -327,37 +377,19 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
                       )}
                     />
                   </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    No groups available for this school. Please contact an administrator.
+                  </div>
                 )}
-
-                <FormField
-                  control={form.control}
-                  name="userTypeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Your Role</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select your role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {userTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? "Setting up..." : "Complete Setup"}
-                </Button>
               </>
+            )}
+
+            {/* Submit Button */}
+            {selectedSchoolId && selectedUserType && (
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Setting up..." : "Complete Setup"}
+              </Button>
             )}
           </form>
         </Form>
