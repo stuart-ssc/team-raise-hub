@@ -47,8 +47,8 @@ const Groups = () => {
         .select(`
           id,
           group_name,
-          schools!inner(school_name),
-          group_type!inner(name)
+          schools!school_id(school_name),
+          group_type!group_type_id(name)
         `);
 
       // Apply role-based filtering
