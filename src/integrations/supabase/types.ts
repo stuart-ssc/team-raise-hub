@@ -38,6 +38,44 @@ export type Database = {
         }
         Relationships: []
       }
+      school_districts: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          nces_district_id: string | null
+          state_district_id: string | null
+          state_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          nces_district_id?: string | null
+          state_district_id?: string | null
+          state_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          nces_district_id?: string | null
+          state_district_id?: string | null
+          state_id?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_districts_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           Charter: boolean | null
@@ -55,8 +93,8 @@ export type Database = {
           NCES_School_ID: string | null
           phone: string | null
           reduced_lunch: number | null
+          school_district_id: string | null
           school_name: string
-          state: string
           state_id: number | null
           state_school_ID: string | null
           status: string | null
@@ -84,8 +122,8 @@ export type Database = {
           NCES_School_ID?: string | null
           phone?: string | null
           reduced_lunch?: number | null
+          school_district_id?: string | null
           school_name: string
-          state: string
           state_id?: number | null
           state_school_ID?: string | null
           status?: string | null
@@ -113,8 +151,8 @@ export type Database = {
           NCES_School_ID?: string | null
           phone?: string | null
           reduced_lunch?: number | null
+          school_district_id?: string | null
           school_name?: string
-          state?: string
           state_id?: number | null
           state_school_ID?: string | null
           status?: string | null
@@ -132,6 +170,13 @@ export type Database = {
             columns: ["locale_id"]
             isOneToOne: false
             referencedRelation: "locale"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schools_school_district_id_fkey"
+            columns: ["school_district_id"]
+            isOneToOne: false
+            referencedRelation: "school_districts"
             referencedColumns: ["id"]
           },
           {
