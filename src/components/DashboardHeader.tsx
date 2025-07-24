@@ -4,10 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
+import { useSchoolUser } from "@/hooks/useSchoolUser";
 import { useNavigate } from "react-router-dom";
 
 const DashboardHeader = () => {
   const { signOut } = useAuth();
+  const { schoolUser } = useSchoolUser();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -18,7 +20,7 @@ const DashboardHeader = () => {
   return (
     <header className="bg-background px-6 py-4 flex items-center justify-between">
       <div className="flex flex-col gap-1">
-        <h1 id="school-name-title" className="text-3xl font-bold text-foreground">Tates Creek High School</h1>
+        <h1 id="school-name-title" className="text-3xl font-bold text-foreground">{schoolUser?.schools?.school_name || "School"}</h1>
         <div className="flex items-center gap-4 mb-3">
           <span className="text-muted-foreground">Teams/Groups:</span>
           <Badge variant="secondary">Football</Badge>
