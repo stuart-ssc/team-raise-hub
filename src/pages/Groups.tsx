@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardHeader from "@/components/DashboardHeader";
 
 const mockGroups = [
   {
@@ -72,12 +73,9 @@ const Groups = () => {
       <DashboardSidebar />
       
       <div className="flex-1 flex flex-col overflow-hidden">
+        <DashboardHeader />
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
-            {/* School Header */}
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">Tates Creek High School</h1>
-            </div>
 
             {/* Groups Section */}
             <div className="space-y-4">
