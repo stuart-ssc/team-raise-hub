@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import SchoolLogo from "@/components/SchoolLogo";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -12,15 +17,42 @@ const Signup = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    schoolName: "",
+    schoolId: "",
   });
+  const [schools, setSchools] = useState<any[]>([]);
+  const [open, setOpen] = useState(false);
+  const [selectedSchool, setSelectedSchool] = useState<any>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchSchools();
+  }, []);
+
+  const fetchSchools = async () => {
+    const { data, error } = await supabase
+      .from('schools')
+      .select('*')
+      .order('school_name');
+    
+    if (data && !error) {
+      setSchools(data);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
+  };
+
+  const handleSchoolSelect = (school: any) => {
+    setSelectedSchool(school);
+    setFormData(prev => ({
+      ...prev,
+      schoolId: school.id
+    }));
+    setOpen(false);
   };
 
   const handleSignup = (e: React.FormEvent) => {
@@ -77,14 +109,48 @@ const Signup = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="schoolName">School Name</Label>
-              <Input
-                id="schoolName"
-                name="schoolName"
-                value={formData.schoolName}
-                onChange={handleChange}
-                required
-              />
+              <Label htmlFor="school">School Name</Label>
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between"
+                  >
+                    {selectedSchool ? 
+                      `${selectedSchool.school_name} - ${selectedSchool.city}, ${selectedSchool.state}` 
+                      : "Select school..."
+                    }
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Search schools..." />
+                    <CommandList>
+                      <CommandEmpty>No schools found.</CommandEmpty>
+                      <CommandGroup>
+                        {schools.map((school) => (
+                          <CommandItem
+                            key={school.id}
+                            value={`${school.school_name} ${school.city} ${school.state}`}
+                            onSelect={() => handleSchoolSelect(school)}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedSchool?.id === school.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {school.school_name} - {school.city}, {school.state}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
