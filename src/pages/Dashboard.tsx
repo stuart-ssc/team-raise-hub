@@ -73,8 +73,13 @@ const Dashboard = () => {
       <div className="flex-1 flex flex-col">
         {/* Top Header */}
         <header className="h-16 border-b bg-background px-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-1">
             <h1 id="school-name-title" className="text-3xl font-bold text-foreground">Tates Creek High School</h1>
+            <div className="flex items-center gap-4">
+              <span className="text-muted-foreground">Teams/Groups:</span>
+              <Badge variant="secondary">Football</Badge>
+              <Badge variant="secondary">Softball (Fastpitch)</Badge>
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
@@ -103,15 +108,6 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <main className="flex-1 p-6 space-y-6">
-          {/* Teams/Groups */}
-          <div>
-            <div className="flex items-center gap-4">
-              <span className="text-muted-foreground">Teams/Groups:</span>
-              <Badge variant="secondary">Football</Badge>
-              <Badge variant="secondary">Softball (Fastpitch)</Badge>
-            </div>
-          </div>
-
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
