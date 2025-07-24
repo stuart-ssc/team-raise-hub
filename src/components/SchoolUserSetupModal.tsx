@@ -389,26 +389,26 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
 
             {/* Submit Button */}
             {selectedSchoolId && selectedUserType && (
-              <div className="space-y-2">
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isSubmitting || (shouldShowGroupFields() && !form.watch("groupId") && !canCreateGroup())}
-                >
-                  {isSubmitting ? "Setting up..." : "Complete Setup"}
-                </Button>
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => signOut()}
-                    className="text-sm text-muted-foreground hover:text-foreground underline"
-                  >
-                    Exit Setup
-                  </button>
-                </div>
-              </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isSubmitting || (shouldShowGroupFields() && !form.watch("groupId") && !canCreateGroup())}
+              >
+                {isSubmitting ? "Setting up..." : "Complete Setup"}
+              </Button>
             )}
           </form>
+          
+          {/* Exit Setup Link - Always visible */}
+          <div className="text-center mt-4">
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="text-sm text-muted-foreground hover:text-foreground underline"
+            >
+              Exit Setup
+            </button>
+          </div>
         </Form>
       </DialogContent>
     </Dialog>
