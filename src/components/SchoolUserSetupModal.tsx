@@ -236,7 +236,7 @@ export const SchoolUserSetupModal = ({ open, onComplete, userId }: SchoolUserSet
   };
 
   return (
-    <Dialog open={open}>
+    <Dialog open={open} onOpenChange={(open) => !open && signOut()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Complete Your Profile</DialogTitle>
