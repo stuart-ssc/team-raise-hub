@@ -39,12 +39,20 @@ interface GroupType {
   name: string;
 }
 
+interface Group {
+  id: string;
+  group_name: string;
+  school_name: string;
+  group_type_name: string;
+}
+
 interface CreateGroupFormProps {
   onCancel: () => void;
   onSuccess: () => void;
+  editingGroup?: Group | null;
 }
 
-export const CreateGroupForm = ({ onCancel, onSuccess }: CreateGroupFormProps) => {
+export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGroupFormProps) => {
   const [groupTypes, setGroupTypes] = useState<GroupType[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -55,7 +63,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess }: CreateGroupFormProps) =
   const form = useForm<CreateGroupFormData>({
     resolver: zodResolver(createGroupSchema),
     defaultValues: {
-      groupName: "",
+      groupName: editingGroup?.group_name || "",
       websiteAddress: "",
       groupTypeId: "",
     },
@@ -74,6 +82,29 @@ export const CreateGroupForm = ({ onCancel, onSuccess }: CreateGroupFormProps) =
 
     loadGroupTypes();
   }, []);
+
+  // Load existing group data when editing
+  useEffect(() => {
+    if (editingGroup) {
+      const loadGroupData = async () => {
+        const { data } = await supabase
+          .from("groups")
+          .select("website_url, group_type_id")
+          .eq("id", editingGroup.id)
+          .single();
+        
+        if (data) {
+          form.reset({
+            groupName: editingGroup.group_name,
+            websiteAddress: data.website_url || "",
+            groupTypeId: data.group_type_id || "",
+          });
+        }
+      };
+      
+      loadGroupData();
+    }
+  }, [editingGroup, form]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -144,31 +175,65 @@ export const CreateGroupForm = ({ onCancel, onSuccess }: CreateGroupFormProps) =
         }
       }
 
-      // Create group record
-      const { error: groupError } = await supabase
-        .from("groups")
-        .insert({
+      // Create or update group record
+      if (editingGroup) {
+        // Update existing group
+        const updateData: any = {
           group_name: data.groupName,
           website_url: data.websiteAddress || null,
           group_type_id: data.groupTypeId,
-          school_id: schoolUser.school_id,
-          logo_url: logoUrl,
-        });
+        };
+        
+        if (logoUrl) {
+          updateData.logo_url = logoUrl;
+        }
 
-      if (groupError) {
-        console.error('Error creating group:', groupError);
+        const { error: groupError } = await supabase
+          .from("groups")
+          .update(updateData)
+          .eq("id", editingGroup.id);
+
+        if (groupError) {
+          console.error('Error updating group:', groupError);
+          toast({
+            title: "Error",
+            description: "Failed to update group",
+            variant: "destructive",
+          });
+          return;
+        }
+
         toast({
-          title: "Error",
-          description: "Failed to create group",
-          variant: "destructive",
+          title: "Success",
+          description: "Group updated successfully",
         });
-        return;
-      }
+      } else {
+        // Create new group
+        const { error: groupError } = await supabase
+          .from("groups")
+          .insert({
+            group_name: data.groupName,
+            website_url: data.websiteAddress || null,
+            group_type_id: data.groupTypeId,
+            school_id: schoolUser.school_id,
+            logo_url: logoUrl,
+          });
 
-      toast({
-        title: "Success",
-        description: "Group created successfully",
-      });
+        if (groupError) {
+          console.error('Error creating group:', groupError);
+          toast({
+            title: "Error",
+            description: "Failed to create group",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Success",
+          description: "Group created successfully",
+        });
+      }
 
       onSuccess();
     } catch (error) {
@@ -186,7 +251,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess }: CreateGroupFormProps) =
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">Create a Group</h2>
+        <h2 className="text-2xl font-bold text-foreground">{editingGroup ? 'Edit Group' : 'Create a Group'}</h2>
         <Button variant="ghost" size="icon" onClick={onCancel}>
           <X className="h-4 w-4" />
         </Button>
@@ -236,7 +301,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess }: CreateGroupFormProps) =
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Group Type</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select group type" />

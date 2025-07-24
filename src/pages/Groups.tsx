@@ -33,6 +33,7 @@ const Groups = () => {
   const [sortBy, setSortBy] = useState("name");
   const [filterBy, setFilterBy] = useState("all");
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const { schoolUser } = useSchoolUser();
@@ -104,12 +105,19 @@ const Groups = () => {
     setShowCreateForm(true);
   };
 
+  const handleEditGroup = (group: Group) => {
+    setEditingGroup(group);
+    setShowCreateForm(true);
+  };
+
   const handleFormCancel = () => {
     setShowCreateForm(false);
+    setEditingGroup(null);
   };
 
   const handleFormSuccess = () => {
     setShowCreateForm(false);
+    setEditingGroup(null);
     fetchGroups(); // Refresh the groups list
   };
 
@@ -127,6 +135,7 @@ const Groups = () => {
               <CreateGroupForm 
                 onCancel={handleFormCancel}
                 onSuccess={handleFormSuccess}
+                editingGroup={editingGroup}
               />
             ) : (
               // Show Groups Admin Table
@@ -239,7 +248,7 @@ const Groups = () => {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
-                                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleEditGroup(group)}>Edit</DropdownMenuItem>
                                     <DropdownMenuItem>Delete</DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
