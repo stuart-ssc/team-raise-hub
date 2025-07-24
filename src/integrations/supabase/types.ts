@@ -14,30 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      schools: {
+      locale: {
         Row: {
-          city: string
           created_at: string
           id: string
-          school_name: string
-          state: string
+          locale_code: string
+          name: string
           updated_at: string
         }
         Insert: {
-          city: string
           created_at?: string
           id?: string
-          school_name: string
-          state: string
+          locale_code: string
+          name: string
           updated_at?: string
         }
         Update: {
-          city?: string
           created_at?: string
           id?: string
+          locale_code?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      schools: {
+        Row: {
+          Charter: boolean | null
+          city: string
+          county_name: string | null
+          created_at: string
+          directly_certified: number | null
+          district_name: string | null
+          free_lunch: number | null
+          high_grade: string | null
+          id: string
+          locale_id: string | null
+          logo_file: string | null
+          low_grade: string | null
+          NCES_School_ID: string | null
+          phone: string | null
+          reduced_lunch: number | null
+          school_name: string
+          state: string
+          state_school_ID: string | null
+          status: string | null
+          street_address: string | null
+          student_teacher_ratio: string | null
+          students: number | null
+          teachers: number | null
+          updated_at: string
+          zip: string | null
+          zip_4_digit: number | null
+        }
+        Insert: {
+          Charter?: boolean | null
+          city: string
+          county_name?: string | null
+          created_at?: string
+          directly_certified?: number | null
+          district_name?: string | null
+          free_lunch?: number | null
+          high_grade?: string | null
+          id?: string
+          locale_id?: string | null
+          logo_file?: string | null
+          low_grade?: string | null
+          NCES_School_ID?: string | null
+          phone?: string | null
+          reduced_lunch?: number | null
+          school_name: string
+          state: string
+          state_school_ID?: string | null
+          status?: string | null
+          street_address?: string | null
+          student_teacher_ratio?: string | null
+          students?: number | null
+          teachers?: number | null
+          updated_at?: string
+          zip?: string | null
+          zip_4_digit?: number | null
+        }
+        Update: {
+          Charter?: boolean | null
+          city?: string
+          county_name?: string | null
+          created_at?: string
+          directly_certified?: number | null
+          district_name?: string | null
+          free_lunch?: number | null
+          high_grade?: string | null
+          id?: string
+          locale_id?: string | null
+          logo_file?: string | null
+          low_grade?: string | null
+          NCES_School_ID?: string | null
+          phone?: string | null
+          reduced_lunch?: number | null
           school_name?: string
           state?: string
+          state_school_ID?: string | null
+          status?: string | null
+          street_address?: string | null
+          student_teacher_ratio?: string | null
+          students?: number | null
+          teachers?: number | null
           updated_at?: string
+          zip?: string | null
+          zip_4_digit?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schools_locale_id_fkey"
+            columns: ["locale_id"]
+            isOneToOne: false
+            referencedRelation: "locale"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      states: {
+        Row: {
+          abbreviation: string | null
+          created_at: string
+          id: number
+          name: string | null
+        }
+        Insert: {
+          abbreviation?: string | null
+          created_at?: string
+          id?: number
+          name?: string | null
+        }
+        Update: {
+          abbreviation?: string | null
+          created_at?: string
+          id?: number
+          name?: string | null
         }
         Relationships: []
       }
