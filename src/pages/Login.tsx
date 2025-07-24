@@ -15,8 +15,10 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signIn, resetPassword, user } = useAuth();
   const { toast } = useToast();
 
   // Redirect if already logged in
@@ -57,6 +59,38 @@ const Login = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const { error } = await resetPassword(resetEmail);
+      
+      if (error) {
+        toast({
+          title: "Reset Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Reset Email Sent",
+          description: "Please check your email for password reset instructions.",
+        });
+        setShowForgotPassword(false);
+        setResetEmail("");
+      }
+    } catch (error) {
+      toast({
+        title: "Reset Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex">
       {/* Left side - Login Form */}
@@ -64,10 +98,46 @@ const Login = () => {
         <div className="w-full max-w-md space-y-8">
           <div>
             <SchoolLogo className="mb-8" />
-            <h1 className="text-3xl font-semibold mb-2">Log in</h1>
+            <h1 className="text-3xl font-semibold mb-2">
+              {showForgotPassword ? "Reset Password" : "Log in"}
+            </h1>
+            {showForgotPassword && (
+              <p className="text-muted-foreground mb-4">
+                Enter your email address and we'll send you a link to reset your password.
+              </p>
+            )}
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          {showForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="resetEmail">Email</Label>
+                <Input
+                  id="resetEmail"
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  className="w-full"
+                  required
+                />
+              </div>
+
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                {loading ? "Sending..." : "Send Reset Link"}
+              </Button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  className="text-sm text-primary hover:underline"
+                  onClick={() => setShowForgotPassword(false)}
+                >
+                  Back to login
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -106,6 +176,7 @@ const Login = () => {
               <button
                 type="button"
                 className="text-sm text-primary hover:underline"
+                onClick={() => setShowForgotPassword(true)}
               >
                 Forgot password?
               </button>
@@ -125,7 +196,8 @@ const Login = () => {
                 Sign up
               </button>
             </div>
-          </form>
+            </form>
+          )}
         </div>
       </div>
 
