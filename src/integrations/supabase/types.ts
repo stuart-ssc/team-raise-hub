@@ -252,6 +252,58 @@ export type Database = {
         }
         Relationships: []
       }
+      school_user: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          school_id: string
+          updated_at: string
+          user_id: string
+          user_type_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          school_id: string
+          updated_at?: string
+          user_id: string
+          user_type_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          school_id?: string
+          updated_at?: string
+          user_id?: string
+          user_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_user_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_user_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_user_user_type_id_fkey"
+            columns: ["user_type_id"]
+            isOneToOne: false
+            referencedRelation: "user_type"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           Charter: boolean | null
@@ -264,6 +316,7 @@ export type Database = {
           free_lunch: number | null
           high_grade: string | null
           id: string
+          locale: string | null
           locale_id: string | null
           logo_file: string | null
           low_grade: string | null
@@ -272,7 +325,9 @@ export type Database = {
           reduced_lunch: number | null
           school_district_id: string | null
           school_name: string
+          school_type: string | null
           school_type_id: string | null
+          state: string | null
           state_id: number | null
           state_school_ID: string | null
           status: string | null
@@ -295,6 +350,7 @@ export type Database = {
           free_lunch?: number | null
           high_grade?: string | null
           id?: string
+          locale?: string | null
           locale_id?: string | null
           logo_file?: string | null
           low_grade?: string | null
@@ -303,7 +359,9 @@ export type Database = {
           reduced_lunch?: number | null
           school_district_id?: string | null
           school_name: string
+          school_type?: string | null
           school_type_id?: string | null
+          state?: string | null
           state_id?: number | null
           state_school_ID?: string | null
           status?: string | null
@@ -326,6 +384,7 @@ export type Database = {
           free_lunch?: number | null
           high_grade?: string | null
           id?: string
+          locale?: string | null
           locale_id?: string | null
           logo_file?: string | null
           low_grade?: string | null
@@ -334,7 +393,9 @@ export type Database = {
           reduced_lunch?: number | null
           school_district_id?: string | null
           school_name?: string
+          school_type?: string | null
           school_type_id?: string | null
+          state?: string | null
           state_id?: number | null
           state_school_ID?: string | null
           status?: string | null

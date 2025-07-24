@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,26 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
+import { SchoolUserSetupModal } from "@/components/SchoolUserSetupModal";
+import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useAuth } from "@/hooks/useAuth";
 const Dashboard = () => {
+  const { user } = useAuth();
+  const { schoolUser, loading } = useSchoolUser();
+  const [showSetupModal, setShowSetupModal] = useState(false);
+
+  // Check if user needs to complete school/group setup
+  useEffect(() => {
+    if (user && !loading && !schoolUser) {
+      setShowSetupModal(true);
+    }
+  }, [user, loading, schoolUser]);
+
+  const handleSetupComplete = (schoolUserData: any) => {
+    setShowSetupModal(false);
+    // This will trigger a refresh in the SchoolUserProvider
+  };
+
   // Dashboard component with reusable header
   const campaigns = [{
     name: "VIP Dance 2",
@@ -188,6 +208,15 @@ const Dashboard = () => {
           </Card>
         </main>
       </div>
+
+      {/* School User Setup Modal */}
+      {user && (
+        <SchoolUserSetupModal 
+          open={showSetupModal}
+          onComplete={handleSetupComplete}
+          userId={user.id}
+        />
+      )}
     </div>;
 };
 export default Dashboard;
