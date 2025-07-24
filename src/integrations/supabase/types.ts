@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      counties: {
+        Row: {
+          county_name: string
+          created_at: string
+          id: string
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          county_name: string
+          created_at?: string
+          id?: string
+          state: string
+          updated_at?: string
+        }
+        Update: {
+          county_name?: string
+          created_at?: string
+          id?: string
+          state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       locale: {
         Row: {
           created_at: string
