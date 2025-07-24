@@ -106,6 +106,7 @@ const Signup = () => {
   };
 
   return (
+    // Clean signup form without school selection
     <div className="min-h-screen flex">
       {/* Left side - Signup Form */}
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
