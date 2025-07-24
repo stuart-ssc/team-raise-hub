@@ -39,11 +39,14 @@ export const SchoolUserProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchSchoolUser = async () => {
     if (!user) {
+      console.log("No user found, setting schoolUser to null");
       setSchoolUser(null);
       setLoading(false);
       return;
     }
 
+    console.log("Fetching school user for user:", user.id);
+    
     try {
       const { data, error } = await supabase
         .from("school_user")
@@ -56,11 +59,14 @@ export const SchoolUserProvider = ({ children }: { children: ReactNode }) => {
         .eq("user_id", user.id)
         .single();
 
+      console.log("School user query result:", { data, error });
+
       if (error && error.code !== "PGRST116") { // PGRST116 means no rows returned
         console.error("Error fetching school user:", error);
         return;
       }
 
+      console.log("Setting schoolUser to:", data || null);
       setSchoolUser(data || null);
     } catch (error) {
       console.error("Error fetching school user:", error);

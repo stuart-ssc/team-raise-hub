@@ -16,8 +16,13 @@ const Dashboard = () => {
 
   // Check if user needs to complete school/group setup
   useEffect(() => {
+    console.log("Dashboard useEffect - user:", !!user, "loading:", loading, "schoolUser:", !!schoolUser);
     if (user && !loading && !schoolUser) {
+      console.log("Showing setup modal because no schoolUser found");
       setShowSetupModal(true);
+    } else {
+      console.log("Not showing setup modal");
+      setShowSetupModal(false);
     }
   }, [user, loading, schoolUser]);
 
