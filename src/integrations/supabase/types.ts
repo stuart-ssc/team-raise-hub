@@ -57,6 +57,7 @@ export type Database = {
           reduced_lunch: number | null
           school_name: string
           state: string
+          state_id: number | null
           state_school_ID: string | null
           status: string | null
           street_address: string | null
@@ -85,6 +86,7 @@ export type Database = {
           reduced_lunch?: number | null
           school_name: string
           state: string
+          state_id?: number | null
           state_school_ID?: string | null
           status?: string | null
           street_address?: string | null
@@ -113,6 +115,7 @@ export type Database = {
           reduced_lunch?: number | null
           school_name?: string
           state?: string
+          state_id?: number | null
           state_school_ID?: string | null
           status?: string | null
           street_address?: string | null
@@ -129,6 +132,13 @@ export type Database = {
             columns: ["locale_id"]
             isOneToOne: false
             referencedRelation: "locale"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schools_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
             referencedColumns: ["id"]
           },
         ]
