@@ -38,6 +38,7 @@ const Users = () => {
   const [filterBy, setFilterBy] = useState("active");
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedGroup, setSelectedGroup] = useState<{id: string, group_name: string} | null>(null);
   const { schoolUser } = useSchoolUser();
 
   const fetchUsers = async () => {
@@ -132,7 +133,24 @@ const Users = () => {
     if (schoolUser) {
       fetchUsers();
     }
-  }, [schoolUser]);
+  }, [schoolUser, selectedGroup]);
+
+  const handleGroupClick = async (groupId: string | null) => {
+    if (groupId) {
+      // Fetch the group details to get the name
+      const { data: groupData } = await supabase
+        .from("groups")
+        .select("id, group_name")
+        .eq("id", groupId)
+        .single();
+        
+      if (groupData) {
+        setSelectedGroup(groupData);
+      }
+    } else {
+      setSelectedGroup(null);
+    }
+  };
 
   const handleUpdateUserStatus = async (schoolUserId: string, newStatus: boolean) => {
     try {
@@ -166,9 +184,14 @@ const Users = () => {
 
   // Apply filtering first
   const filteredUsers = users.filter((user) => {
-    if (filterBy === "active") return user.status === true;
-    if (filterBy === "inactive") return user.status === false;
-    return true; // "all" shows everything
+    // Apply status filter
+    if (filterBy === "active" && user.status !== true) return false;
+    if (filterBy === "inactive" && user.status !== false) return false;
+    
+    // Apply group filter if a specific group is selected
+    if (selectedGroup && user.group_name !== selectedGroup.group_name) return false;
+    
+    return true;
   });
 
   const sortedUsers = [...filteredUsers].sort((a, b) => {
@@ -210,7 +233,10 @@ const Users = () => {
       <DashboardSidebar />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader />
+        <DashboardHeader 
+          activeGroup={selectedGroup}
+          onGroupClick={handleGroupClick}
+        />
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
             <div id="users-admin-table" className="space-y-4">
