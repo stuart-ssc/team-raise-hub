@@ -99,7 +99,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
 
       setRosters(data || []);
       
-      // Extract unique years
+      // Extract unique years and ensure they're properly sorted
       const years = [...new Set((data || []).map(roster => roster.roster_year))].sort((a, b) => b - a);
       setAvailableYears(years);
 
@@ -109,6 +109,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
         setSelectedYear(currentRoster.roster_year.toString());
         fetchSchoolUsers(currentRoster.id);
       } else if (years.length > 0) {
+        // If no current roster, default to the most recent year
         setSelectedYear(years[0].toString());
         const firstRoster = (data || []).find(roster => roster.roster_year === years[0]);
         if (firstRoster) {
