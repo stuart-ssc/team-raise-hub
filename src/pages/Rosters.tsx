@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MoreHorizontal, ChevronDown, ArrowLeft } from "lucide-react";
+import { ChevronDown, ArrowLeft } from "lucide-react";
 import { NewRosterForm } from "@/components/NewRosterForm";
 import { AddParticipantForm } from "@/components/AddParticipantForm";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -119,11 +124,12 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
 
   const fetchSchoolUsers = async (rosterId: number) => {
     try {
-      // First get school users for this roster
+      // First get school users for this roster (only active users)
       const { data: schoolUsersData, error: schoolUsersError } = await supabase
         .from("school_user")
         .select("id, user_id, user_type_id, roster_id")
-        .eq("roster_id", rosterId);
+        .eq("roster_id", rosterId)
+        .eq("active_user", true);
 
       if (schoolUsersError) {
         console.error("Error fetching school users:", schoolUsersError);
@@ -272,6 +278,43 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
     }
   });
 
+  const handleRemoveUser = async (userId: string, userName: string) => {
+    try {
+      const { error } = await supabase
+        .from("school_user")
+        .update({ active_user: false })
+        .eq("id", userId);
+
+      if (error) {
+        console.error("Error removing user:", error);
+        toast({
+          title: "Error",
+          description: "Failed to remove user from roster",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: `${userName} has been removed from the roster`,
+      });
+
+      // Refresh the users list
+      const selectedRoster = rosters.find(r => r.roster_year.toString() === selectedYear);
+      if (selectedRoster) {
+        fetchSchoolUsers(selectedRoster.id);
+      }
+    } catch (error) {
+      console.error("Error removing user:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove user from roster",
+        variant: "destructive",
+      });
+    }
+  };
+
    return (
      <div id="rosters-table" className="space-y-4">
         {showAddParticipantForm ? (
@@ -311,23 +354,16 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
               </SelectContent>
             </Select>
 
-           {/* Sort Dropdown */}
-           <DropdownMenu>
-             <DropdownMenuTrigger asChild>
-               <Button variant="outline" className="w-24">
-                 Sort
-                 <ChevronDown className="ml-2 h-4 w-4" />
-               </Button>
-             </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleSort("name")}>
-                  Name {sortBy === "name" ? (sortDirection === "desc" ? "↓" : "↑") : ""}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleSort("user_type")}>
-                  User Type {sortBy === "user_type" ? (sortDirection === "desc" ? "↓" : "↑") : ""}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-           </DropdownMenu>
+            {/* Sort Controls */}
+            <Select value={sortBy} onValueChange={(value) => handleSort(value)}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="user_type">User Type</SelectItem>
+              </SelectContent>
+            </Select>
 
                {/* New Button */}
                 <Button 
@@ -383,21 +419,36 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
                       <TableCell>
                         {user.user_type.name}
                       </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              Remove from Roster
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                       <TableCell>
+                         <AlertDialog>
+                           <AlertDialogTrigger asChild>
+                             <Button 
+                               variant="ghost" 
+                               size="sm"
+                               className="text-red-600 hover:text-white hover:bg-red-600"
+                             >
+                               Remove
+                             </Button>
+                           </AlertDialogTrigger>
+                           <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>Remove Participant</AlertDialogTitle>
+                               <AlertDialogDescription>
+                                 Are you sure you want to remove {user.profiles.first_name} {user.profiles.last_name} from this roster? This action cannot be undone.
+                               </AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>Cancel</AlertDialogCancel>
+                               <AlertDialogAction 
+                                 onClick={() => handleRemoveUser(user.id, `${user.profiles.first_name} ${user.profiles.last_name}`)}
+                                 className="bg-red-600 hover:bg-red-700"
+                               >
+                                 Remove
+                               </AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                         </AlertDialog>
+                       </TableCell>
                     </TableRow>
                   ))
                 )}
