@@ -289,6 +289,7 @@ export type Database = {
       }
       school_user: {
         Row: {
+          active_user: boolean
           created_at: string
           group_id: string | null
           id: string
@@ -299,6 +300,7 @@ export type Database = {
           user_type_id: string
         }
         Insert: {
+          active_user?: boolean
           created_at?: string
           group_id?: string | null
           id?: string
@@ -309,6 +311,7 @@ export type Database = {
           user_type_id: string
         }
         Update: {
+          active_user?: boolean
           created_at?: string
           group_id?: string | null
           id?: string
