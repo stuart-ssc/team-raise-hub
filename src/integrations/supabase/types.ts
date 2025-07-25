@@ -94,6 +94,7 @@ export type Database = {
           id: string
           logo_url: string | null
           school_id: string | null
+          status: boolean | null
           updated_at: string
           website_url: string | null
         }
@@ -104,6 +105,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           school_id?: string | null
+          status?: boolean | null
           updated_at?: string
           website_url?: string | null
         }
@@ -114,6 +116,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           school_id?: string | null
+          status?: boolean | null
           updated_at?: string
           website_url?: string | null
         }
@@ -189,6 +192,38 @@ export type Database = {
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      Rosters: {
+        Row: {
+          created_at: string
+          current_roster: boolean | null
+          group_id: string | null
+          id: number
+          roster_year: number | null
+        }
+        Insert: {
+          created_at?: string
+          current_roster?: boolean | null
+          group_id?: string | null
+          id?: number
+          roster_year?: number | null
+        }
+        Update: {
+          created_at?: string
+          current_roster?: boolean | null
+          group_id?: string | null
+          id?: number
+          roster_year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Rosters_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
         ]
