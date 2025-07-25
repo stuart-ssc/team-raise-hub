@@ -249,7 +249,7 @@ const Users = () => {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="w-24">
-                        Filter
+                        {filterBy === "all" ? "All" : filterBy === "active" ? "Active" : "Inactive"}
                         <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
