@@ -310,6 +310,43 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
     }
   };
 
+  const handleReactivateUser = async (userId: string, userName: string) => {
+    try {
+      const { error } = await supabase
+        .from("school_user")
+        .update({ active_user: true })
+        .eq("id", userId);
+
+      if (error) {
+        console.error("Error reactivating user:", error);
+        toast({
+          title: "Error",
+          description: "Failed to reactivate user",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: `${userName} has been reactivated`,
+      });
+
+      // Refresh the users list
+      const selectedRoster = rosters.find(r => r.roster_year.toString() === selectedYear);
+      if (selectedRoster) {
+        fetchSchoolUsers(selectedRoster.id);
+      }
+    } catch (error) {
+      console.error("Error reactivating user:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reactivate user",
+        variant: "destructive",
+      });
+    }
+  };
+
    return (
      <div id="rosters-table" className="space-y-4">
         {showAddParticipantForm ? (
@@ -428,38 +465,47 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
                            {user.active_user ? "Active" : "Inactive"}
                          </span>
                        </TableCell>
-                        <TableCell>
-                          {user.active_user && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  className="text-red-600 hover:text-white hover:bg-red-600"
-                                >
-                                  Remove
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Remove Participant</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to remove {user.profiles.first_name} {user.profiles.last_name} from this roster? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => handleRemoveUser(user.id, `${user.profiles.first_name} ${user.profiles.last_name}`)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Remove
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </TableCell>
+                         <TableCell>
+                           {user.active_user ? (
+                             <AlertDialog>
+                               <AlertDialogTrigger asChild>
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm"
+                                   className="text-red-600 hover:text-white hover:bg-red-600"
+                                 >
+                                   Remove
+                                 </Button>
+                               </AlertDialogTrigger>
+                               <AlertDialogContent>
+                                 <AlertDialogHeader>
+                                   <AlertDialogTitle>Remove Participant</AlertDialogTitle>
+                                   <AlertDialogDescription>
+                                     Are you sure you want to remove {user.profiles.first_name} {user.profiles.last_name} from this roster? This action cannot be undone.
+                                   </AlertDialogDescription>
+                                 </AlertDialogHeader>
+                                 <AlertDialogFooter>
+                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                   <AlertDialogAction 
+                                     onClick={() => handleRemoveUser(user.id, `${user.profiles.first_name} ${user.profiles.last_name}`)}
+                                     className="bg-red-600 hover:bg-red-700"
+                                   >
+                                     Remove
+                                   </AlertDialogAction>
+                                 </AlertDialogFooter>
+                               </AlertDialogContent>
+                             </AlertDialog>
+                           ) : (
+                             <Button 
+                               variant="link" 
+                               size="sm"
+                               className="text-blue-600 hover:text-blue-800 p-0 h-auto"
+                               onClick={() => handleReactivateUser(user.id, `${user.profiles.first_name} ${user.profiles.last_name}`)}
+                             >
+                               Reactivate
+                             </Button>
+                           )}
+                         </TableCell>
                      </TableRow>
                    ))
                  )}
