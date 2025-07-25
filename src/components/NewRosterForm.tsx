@@ -69,10 +69,7 @@ export const NewRosterForm = ({ open, onOpenChange, onSubmit }: NewRosterFormPro
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="current-roster" className="text-right">
-                Current Roster
-              </Label>
-              <div className="col-span-3 flex items-center space-x-2">
+              <div className="col-span-3 col-start-2 flex items-center space-x-2">
                 <Checkbox
                   id="current-roster"
                   checked={currentRoster}
