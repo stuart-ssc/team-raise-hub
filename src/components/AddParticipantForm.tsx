@@ -78,92 +78,27 @@ export const AddParticipantForm = ({ groupId, groupName, schoolId, rosters, onBa
     try {
       let userId: string;
 
-      // First, try to find if a user with this email already exists in profiles
-      const { data: existingProfiles, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name")
-        .ilike("first_name", firstName.trim())
-        .ilike("last_name", lastName.trim());
-
-      // If we found a matching profile, use that user ID
-      if (existingProfiles && existingProfiles.length > 0) {
-        // Use the first matching profile (assuming name match indicates same person)
-        userId = existingProfiles[0].id;
-      } else {
-        // Try to create a new user account
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Use edge function to create user without affecting current session
+      const { data: inviteData, error: inviteError } = await supabase.functions.invoke('invite-user', {
+        body: {
           email,
-          password: Math.random().toString(36).slice(-8), // Temporary password
-          options: {
-            data: {
-              first_name: firstName.trim(),
-              last_name: lastName.trim(),
-            }
-          }
-        });
-
-        if (authError) {
-          // If signup fails, it might be because user already exists
-          // In this case, we can't easily get their ID, so we'll show an error
-          console.error("Error creating user:", authError);
-          return;
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          userTypeId: selectedUserType,
+          schoolId,
+          groupId,
+          rosterId: parseInt(selectedRoster)
         }
+      });
 
-        if (!authData.user) {
-          console.error("No user data returned from signup");
-          return;
-        }
-
-        userId = authData.user.id;
-      }
-
-      // Check if an inactive school_user record already exists
-      const { data: existingSchoolUser, error: checkError } = await supabase
-        .from("school_user")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("school_id", schoolId)
-        .eq("group_id", groupId)
-        .eq("active_user", false)
-        .single();
-
-      if (checkError && checkError.code !== "PGRST116") {
-        console.error("Error checking for existing school user:", checkError);
+      if (inviteError) {
+        console.error("Error inviting user:", inviteError);
         return;
       }
 
-      if (existingSchoolUser) {
-        // Reactivate the existing inactive record
-        const { error: updateError } = await supabase
-          .from("school_user")
-          .update({
-            user_type_id: selectedUserType,
-            roster_id: parseInt(selectedRoster),
-            active_user: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", existingSchoolUser.id);
-
-        if (updateError) {
-          console.error("Error reactivating school user:", updateError);
-          return;
-        }
-      } else {
-        // Create new school_user record
-        const { error: schoolUserError } = await supabase
-          .from("school_user")
-          .insert({
-            user_id: userId,
-            user_type_id: selectedUserType,
-            school_id: schoolId,
-            group_id: groupId,
-            roster_id: parseInt(selectedRoster)
-          });
-
-        if (schoolUserError) {
-          console.error("Error creating school user:", schoolUserError);
-          return;
-        }
+      if (!inviteData?.success) {
+        console.error("Failed to create user invitation");
+        return;
       }
 
       // Reset form
