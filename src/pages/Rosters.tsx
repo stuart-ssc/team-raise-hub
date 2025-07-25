@@ -274,11 +274,12 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
 
    return (
      <div id="rosters-table" className="space-y-4">
-       {showAddParticipantForm ? (
-         <AddParticipantForm
-           groupId={selectedGroup.id}
-           schoolId={schoolUser?.school_id || ""}
-           rosters={rosters}
+        {showAddParticipantForm ? (
+          <AddParticipantForm
+            groupId={selectedGroup.id}
+            groupName={selectedGroup.group_name}
+            schoolId={schoolUser?.school_id || ""}
+            rosters={rosters}
            onBack={() => setShowAddParticipantForm(false)}
            onSuccess={() => {
              setShowAddParticipantForm(false);
