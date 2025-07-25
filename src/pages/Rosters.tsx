@@ -137,14 +137,14 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
    return (
      <div id="rosters-table" className="space-y-4">
        <div className="flex items-center justify-between">
-         <div className="flex items-center gap-4">
-           <Button variant="ghost" size="sm" onClick={onBack}>
-             <ArrowLeft className="h-4 w-4 mr-2" />
-             Back to Groups
-           </Button>
+         <div>
            <h2 className="text-xl font-semibold text-foreground">
              {selectedGroup.group_name} Roster
            </h2>
+           <Button variant="ghost" size="sm" onClick={onBack} className="text-xs mt-1">
+             <ArrowLeft className="h-3 w-3 mr-1" />
+             Back to Groups
+           </Button>
          </div>
          
          <div className="flex items-center gap-3">
