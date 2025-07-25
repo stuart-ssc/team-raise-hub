@@ -54,17 +54,8 @@ Deno.serve(async (req) => {
     // Find groups that don't have rosters
     const { data: groupsWithoutRosters, error: queryError } = await supabase
       .from('groups')
-      .select(`
-        id,
-        group_name,
-        school_id,
-        status
-      `)
-      .not('id', 'in', `(
-        SELECT DISTINCT group_id 
-        FROM "Rosters" 
-        WHERE group_id IS NOT NULL
-      )`)
+      .select('id, group_name, school_id, status')
+      .is('id', 'not.in.(select group_id from "Rosters" where group_id is not null)')
 
     if (queryError) {
       console.error('Error querying groups:', queryError)
