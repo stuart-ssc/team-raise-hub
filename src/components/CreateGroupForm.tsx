@@ -206,6 +206,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
         toast({
           title: "Success",
           description: "Group updated successfully",
+          variant: "success",
         });
       } else {
         // Create new group
@@ -232,6 +233,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
         toast({
           title: "Success",
           description: "Group created successfully",
+          variant: "success",
         });
       }
 
