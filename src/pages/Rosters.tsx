@@ -424,10 +424,10 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
                    </TableRow>
                  ) : (
                    sortedSchoolUsers.map((user) => (
-                     <TableRow 
-                       key={user.id} 
-                       className={!user.active_user ? "bg-muted/30" : ""}
-                     >
+                      <TableRow 
+                        key={user.id} 
+                        className={!user.active_user ? "bg-muted/50" : ""}
+                      >
                        <TableCell className="font-medium">
                          {user.profiles.last_name}, {user.profiles.first_name}
                        </TableCell>
