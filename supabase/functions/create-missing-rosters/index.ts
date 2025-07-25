@@ -51,14 +51,13 @@ Deno.serve(async (req) => {
     // Get current year
     const currentYear = new Date().getFullYear()
 
-    // Find groups that don't have rosters
-    const { data: groupsWithoutRosters, error: queryError } = await supabase
+    // Get all groups first
+    const { data: allGroups, error: groupsError } = await supabase
       .from('groups')
       .select('id, group_name, school_id, status')
-      .is('id', 'not.in.(select group_id from "Rosters" where group_id is not null)')
 
-    if (queryError) {
-      console.error('Error querying groups:', queryError)
+    if (groupsError) {
+      console.error('Error querying groups:', groupsError)
       return new Response(
         JSON.stringify({ error: 'Failed to query groups' }),
         { 
@@ -67,6 +66,27 @@ Deno.serve(async (req) => {
         }
       )
     }
+
+    // Get all existing rosters
+    const { data: existingRosters, error: rostersError } = await supabase
+      .from('Rosters')
+      .select('group_id')
+
+    if (rostersError) {
+      console.error('Error querying rosters:', rostersError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to query rosters' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Find groups without rosters
+    const existingGroupIds = new Set(existingRosters?.map(r => r.group_id) || [])
+    const groupsWithoutRosters = allGroups?.filter(group => !existingGroupIds.has(group.id)) || []
+
 
     console.log(`Found ${groupsWithoutRosters?.length || 0} groups without rosters`)
 

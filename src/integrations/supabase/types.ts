@@ -196,7 +196,7 @@ export type Database = {
           },
         ]
       }
-      Rosters: {
+      rosters: {
         Row: {
           created_at: string
           current_roster: boolean | null
