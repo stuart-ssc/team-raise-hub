@@ -19,6 +19,7 @@ import {
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { CreateGroupForm } from "@/components/CreateGroupForm";
+import Rosters from "@/pages/Rosters";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
 
@@ -36,6 +37,8 @@ const Groups = () => {
   const [filterBy, setFilterBy] = useState("active");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [showRosters, setShowRosters] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const { schoolUser } = useSchoolUser();
@@ -141,6 +144,16 @@ const Groups = () => {
     fetchGroups(); // Refresh the groups list
   };
 
+  const handleManageRoster = (group: Group) => {
+    setSelectedGroup(group);
+    setShowRosters(true);
+  };
+
+  const handleBackToGroups = () => {
+    setShowRosters(false);
+    setSelectedGroup(null);
+  };
+
   const handleUpdateGroupStatus = async (groupId: string, newStatus: boolean) => {
     try {
       const { error } = await supabase
@@ -209,11 +222,17 @@ const Groups = () => {
       <DashboardSidebar />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader />
+        <DashboardHeader activeGroup={showRosters ? selectedGroup : null} />
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
 
-            {showCreateForm ? (
+            {showRosters && selectedGroup ? (
+              // Show Rosters Page
+              <Rosters 
+                selectedGroup={selectedGroup}
+                onBack={handleBackToGroups}
+              />
+            ) : showCreateForm ? (
               // Show Create Group Form
               <CreateGroupForm 
                 onCancel={handleFormCancel}
@@ -315,11 +334,15 @@ const Groups = () => {
                               <TableCell className="font-medium">{group.group_name}</TableCell>
                               <TableCell>{group.school_name}</TableCell>
                               <TableCell>{group.group_type_name}</TableCell>
-                              <TableCell>
-                                <Button variant="default" size="sm">
-                                  Manage
-                                </Button>
-                              </TableCell>
+                               <TableCell>
+                                 <Button 
+                                   variant="default" 
+                                   size="sm"
+                                   onClick={() => handleManageRoster(group)}
+                                 >
+                                   Manage
+                                 </Button>
+                               </TableCell>
                                <TableCell>
                                  <span className={group.status ? "text-green-600" : "text-muted-foreground"}>
                                    {group.status ? "Active" : "Inactive"}

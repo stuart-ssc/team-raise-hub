@@ -9,7 +9,14 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const DashboardHeader = () => {
+interface DashboardHeaderProps {
+  activeGroup?: {
+    id: string;
+    group_name: string;
+  } | null;
+}
+
+const DashboardHeader = ({ activeGroup }: DashboardHeaderProps) => {
   const { signOut } = useAuth();
   const { schoolUser } = useSchoolUser();
   const navigate = useNavigate();
@@ -61,9 +68,14 @@ const DashboardHeader = () => {
         <h1 id="school-name-title" className="text-3xl font-bold text-foreground">{schoolUser?.schools?.school_name || "School"}</h1>
         <div className="flex items-center gap-4 mb-3">
           <span className="text-muted-foreground">Teams/Groups:</span>
-          <Badge variant="default">All</Badge>
+          <Badge variant={!activeGroup ? "default" : "secondary"}>All</Badge>
           {groups.map((group) => (
-            <Badge key={group.id} variant="secondary">{group.group_name}</Badge>
+            <Badge 
+              key={group.id} 
+              variant={activeGroup?.id === group.id ? "default" : "secondary"}
+            >
+              {group.group_name}
+            </Badge>
           ))}
         </div>
       </div>
