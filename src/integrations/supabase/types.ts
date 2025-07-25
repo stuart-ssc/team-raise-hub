@@ -292,6 +292,7 @@ export type Database = {
           created_at: string
           group_id: string | null
           id: string
+          roster_id: number | null
           school_id: string
           updated_at: string
           user_id: string
@@ -301,6 +302,7 @@ export type Database = {
           created_at?: string
           group_id?: string | null
           id?: string
+          roster_id?: number | null
           school_id: string
           updated_at?: string
           user_id: string
@@ -310,6 +312,7 @@ export type Database = {
           created_at?: string
           group_id?: string | null
           id?: string
+          roster_id?: number | null
           school_id?: string
           updated_at?: string
           user_id?: string
@@ -321,6 +324,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_user_roster_id_fkey"
+            columns: ["roster_id"]
+            isOneToOne: false
+            referencedRelation: "rosters"
             referencedColumns: ["id"]
           },
           {
