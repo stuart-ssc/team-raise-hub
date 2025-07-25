@@ -55,7 +55,7 @@ export const AddParticipantForm = ({ groupId, groupName, schoolId, rosters, onBa
       const { data, error } = await supabase
         .from("user_type")
         .select("id, name")
-        .not("name", "in", '("Principal","Athletic Director","Club Sponsor")')
+        .not("name", "in", '("Principal","Athletic Director","Sponsor")')
         .order("name");
 
       if (!error && data) {
