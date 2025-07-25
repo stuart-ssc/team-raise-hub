@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { MoreHorizontal, ChevronDown, ArrowLeft } from "lucide-react";
+import { NewRosterForm } from "@/components/NewRosterForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -54,6 +55,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
   const [rosters, setRosters] = useState<Roster[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showNewRosterForm, setShowNewRosterForm] = useState(false);
   const { schoolUser } = useSchoolUser();
 
   const fetchRosters = async () => {
@@ -178,12 +180,13 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
              </DropdownMenuContent>
            </DropdownMenu>
 
-           {/* New Button */}
-            <Button 
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              New Roster
-            </Button>
+            {/* New Button */}
+             <Button 
+               className="bg-primary text-primary-foreground hover:bg-primary/90"
+               onClick={() => setShowNewRosterForm(true)}
+             >
+               New Roster
+             </Button>
          </div>
        </div>
 
@@ -259,14 +262,23 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
          </CardContent>
         </Card>
         
-        <div className="mt-4">
-          <Button variant="ghost" size="sm" onClick={onBack} className="text-xs">
-            <ArrowLeft className="h-3 w-3 mr-1" />
-            Back to Groups
-          </Button>
-        </div>
-      </div>
-   );
+         <div className="mt-4">
+           <Button variant="ghost" size="sm" onClick={onBack} className="text-xs">
+             <ArrowLeft className="h-3 w-3 mr-1" />
+             Back to Groups
+           </Button>
+         </div>
+
+         <NewRosterForm
+           open={showNewRosterForm}
+           onOpenChange={setShowNewRosterForm}
+           onSubmit={(data) => {
+             console.log("New roster data:", data);
+             // TODO: Implement roster creation logic
+           }}
+         />
+       </div>
+    );
 };
 
 export default Rosters;
