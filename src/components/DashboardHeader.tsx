@@ -61,7 +61,6 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
 
   const handleLogout = async () => {
     await signOut();
-    navigate('/login');
   };
 
   return (
