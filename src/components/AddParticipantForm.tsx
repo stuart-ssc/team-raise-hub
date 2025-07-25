@@ -126,13 +126,7 @@ export const AddParticipantForm = ({ groupId, schoolId, rosters, onBack, onSucce
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Roster
-        </Button>
-        <h2 className="text-xl font-semibold text-foreground">Add Participant</h2>
-      </div>
+      <h2 className="text-xl font-semibold text-foreground">Add Participant</h2>
 
       <Card>
         <CardHeader>
@@ -215,6 +209,11 @@ export const AddParticipantForm = ({ groupId, schoolId, rosters, onBack, onSucce
           </form>
         </CardContent>
       </Card>
+      
+      <Button variant="ghost" size="sm" onClick={onBack}>
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back to Roster
+      </Button>
     </div>
   );
 };
