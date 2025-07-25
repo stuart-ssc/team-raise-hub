@@ -39,6 +39,7 @@ interface SchoolUser {
   user_id: string;
   user_type_id: string;
   roster_id: number;
+  active_user: boolean;
   profiles: {
     first_name: string;
     last_name: string;
@@ -135,12 +136,11 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
 
   const fetchSchoolUsers = async (rosterId: number) => {
     try {
-      // First get school users for this roster (only active users)
+      // Get all school users for this roster (both active and inactive)
       const { data: schoolUsersData, error: schoolUsersError } = await supabase
         .from("school_user")
-        .select("id, user_id, user_type_id, roster_id")
-        .eq("roster_id", rosterId)
-        .eq("active_user", true);
+        .select("id, user_id, user_type_id, roster_id, active_user")
+        .eq("roster_id", rosterId);
 
       if (schoolUsersError) {
         console.error("Error fetching school users:", schoolUsersError);
@@ -398,72 +398,87 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
         <Card>
           <CardContent className="p-0">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="flex items-center gap-2">
-                    Name
-                    <ChevronDown className="h-4 w-4" />
-                  </TableHead>
-                  <TableHead>User Type</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center py-4">
-                      Loading...
-                    </TableCell>
-                  </TableRow>
-                ) : schoolUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
-                      No users found for this roster
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  sortedSchoolUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        {user.profiles.last_name}, {user.profiles.first_name}
-                      </TableCell>
-                      <TableCell>
-                        {user.user_type.name}
-                      </TableCell>
-                       <TableCell>
-                         <AlertDialog>
-                           <AlertDialogTrigger asChild>
-                             <Button 
-                               variant="ghost" 
-                               size="sm"
-                               className="text-red-600 hover:text-white hover:bg-red-600"
-                             >
-                               Remove
-                             </Button>
-                           </AlertDialogTrigger>
-                           <AlertDialogContent>
-                             <AlertDialogHeader>
-                               <AlertDialogTitle>Remove Participant</AlertDialogTitle>
-                               <AlertDialogDescription>
-                                 Are you sure you want to remove {user.profiles.first_name} {user.profiles.last_name} from this roster? This action cannot be undone.
-                               </AlertDialogDescription>
-                             </AlertDialogHeader>
-                             <AlertDialogFooter>
-                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                               <AlertDialogAction 
-                                 onClick={() => handleRemoveUser(user.id, `${user.profiles.first_name} ${user.profiles.last_name}`)}
-                                 className="bg-red-600 hover:bg-red-700"
-                               >
-                                 Remove
-                               </AlertDialogAction>
-                             </AlertDialogFooter>
-                           </AlertDialogContent>
-                         </AlertDialog>
+               <TableHeader>
+                 <TableRow>
+                   <TableHead className="flex items-center gap-2">
+                     Name
+                     <ChevronDown className="h-4 w-4" />
+                   </TableHead>
+                   <TableHead>User Type</TableHead>
+                   <TableHead>Status</TableHead>
+                   <TableHead className="w-12"></TableHead>
+                 </TableRow>
+               </TableHeader>
+               <TableBody>
+                 {loading ? (
+                   <TableRow>
+                     <TableCell colSpan={4} className="text-center py-4">
+                       Loading...
+                     </TableCell>
+                   </TableRow>
+                 ) : schoolUsers.length === 0 ? (
+                   <TableRow>
+                     <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                       No users found for this roster
+                     </TableCell>
+                   </TableRow>
+                 ) : (
+                   sortedSchoolUsers.map((user) => (
+                     <TableRow 
+                       key={user.id} 
+                       className={!user.active_user ? "bg-muted/30" : ""}
+                     >
+                       <TableCell className="font-medium">
+                         {user.profiles.last_name}, {user.profiles.first_name}
                        </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
+                       <TableCell>
+                         {user.user_type.name}
+                       </TableCell>
+                       <TableCell>
+                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                           user.active_user 
+                             ? "bg-green-100 text-green-800" 
+                             : "bg-gray-100 text-gray-800"
+                         }`}>
+                           {user.active_user ? "Active" : "Inactive"}
+                         </span>
+                       </TableCell>
+                        <TableCell>
+                          {user.active_user && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="text-red-600 hover:text-white hover:bg-red-600"
+                                >
+                                  Remove
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Remove Participant</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to remove {user.profiles.first_name} {user.profiles.last_name} from this roster? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleRemoveUser(user.id, `${user.profiles.first_name} ${user.profiles.last_name}`)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Remove
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </TableCell>
+                     </TableRow>
+                   ))
+                 )}
+               </TableBody>
             </Table>
           </CardContent>
          </Card>
