@@ -27,12 +27,13 @@ interface Group {
   group_name: string;
   school_name: string;
   group_type_name: string;
+  status: boolean;
 }
 
 const Groups = () => {
   const [sortBy, setSortBy] = useState("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [filterBy, setFilterBy] = useState("all");
+  const [filterBy, setFilterBy] = useState("active");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -49,6 +50,7 @@ const Groups = () => {
         .select(`
           id,
           group_name,
+          status,
           schools!school_id(school_name),
           group_type!group_type_id(name)
         `);
@@ -81,11 +83,12 @@ const Groups = () => {
         return;
       }
 
-      const formattedGroups: Group[] = (data || []).map((group) => ({
+      const formattedGroups: Group[] = (data || []).map((group: any) => ({
         id: group.id,
         group_name: group.group_name,
         school_name: group.schools.school_name,
         group_type_name: group.group_type.name,
+        status: group.status ?? true,
       }));
 
       setGroups(formattedGroups);
@@ -133,7 +136,14 @@ const Groups = () => {
     }
   };
 
-  const sortedGroups = [...groups].sort((a, b) => {
+  // Apply filtering first
+  const filteredGroups = groups.filter((group) => {
+    if (filterBy === "active") return group.status === true;
+    if (filterBy === "inactive") return group.status === false;
+    return true; // "all" shows everything
+  });
+
+  const sortedGroups = [...filteredGroups].sort((a, b) => {
     let aValue: string;
     let bValue: string;
 
@@ -147,8 +157,8 @@ const Groups = () => {
         bValue = b.group_type_name;
         break;
       case "status":
-        aValue = "Inactive"; // Since all are inactive for now
-        bValue = "Inactive";
+        aValue = a.status ? "Active" : "Inactive";
+        bValue = b.status ? "Active" : "Inactive";
         break;
       default:
         aValue = a.group_name;
@@ -275,9 +285,11 @@ const Groups = () => {
                                   Manage
                                 </Button>
                               </TableCell>
-                              <TableCell>
-                                <span className="text-muted-foreground">Inactive</span>
-                              </TableCell>
+                               <TableCell>
+                                 <span className={group.status ? "text-green-600" : "text-muted-foreground"}>
+                                   {group.status ? "Active" : "Inactive"}
+                                 </span>
+                               </TableCell>
                               <TableCell>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
