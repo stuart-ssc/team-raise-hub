@@ -52,7 +52,7 @@ interface RostersProps {
 const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
   const [sortBy, setSortBy] = useState("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [selectedYear, setSelectedYear] = useState<string>("all");
+  const [selectedYear, setSelectedYear] = useState<string>("");
   const [rosters, setRosters] = useState<Roster[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +80,14 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
       // Extract unique years
       const years = [...new Set((data || []).map(roster => roster.roster_year))].sort((a, b) => b - a);
       setAvailableYears(years);
+
+      // Set default year to current roster year
+      const currentRoster = (data || []).find(roster => roster.current_roster);
+      if (currentRoster) {
+        setSelectedYear(currentRoster.roster_year.toString());
+      } else if (years.length > 0) {
+        setSelectedYear(years[0].toString());
+      }
     } catch (error) {
       console.error("Error fetching rosters:", error);
     } finally {
@@ -137,7 +145,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
 
   // Apply filtering and sorting
   const filteredRosters = rosters.filter((roster) => {
-    if (selectedYear === "all") return true;
+    if (!selectedYear) return true;
     return roster.roster_year.toString() === selectedYear;
   });
 
@@ -178,20 +186,19 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
          </h2>
          
          <div className="flex items-center gap-3">
-           {/* Year Filter */}
-           <Select value={selectedYear} onValueChange={setSelectedYear}>
-             <SelectTrigger className="w-32">
-               <SelectValue placeholder="Year" />
-             </SelectTrigger>
-             <SelectContent>
-               <SelectItem value="all">All Years</SelectItem>
-               {availableYears.map((year) => (
-                 <SelectItem key={year} value={year.toString()}>
-                   {year}
-                 </SelectItem>
-               ))}
-             </SelectContent>
-           </Select>
+            {/* Year Filter */}
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
            {/* Sort Dropdown */}
            <DropdownMenu>
