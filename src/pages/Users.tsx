@@ -45,6 +45,8 @@ const Users = () => {
 
     try {
       setLoading(true);
+      
+      // Build the base query with proper joins
       let query = supabase
         .from("school_user")
         .select(`
@@ -52,9 +54,8 @@ const Users = () => {
           user_id,
           active_user,
           user_type!inner(name),
-          groups(group_name),
-          rosters(roster_year),
-          profiles!inner(first_name, last_name)
+          groups(group_name, group_type!inner(name)),
+          rosters(roster_year)
         `);
 
       // Apply role-based filtering
@@ -65,7 +66,7 @@ const Users = () => {
         // Athletic Directors see users in sports groups at their school
         query = query
           .eq("school_id", schoolUser.school_id)
-          .eq("groups.group_type.name", "Sport");
+          .eq("groups.group_type.name", "Sports Team");
       } else if (["Coach", "Club Sponsor", "Booster Leader"].includes(schoolUser.user_type.name)) {
         // These roles see only users in groups they are connected to
         if (schoolUser.group_id) {
@@ -85,16 +86,39 @@ const Users = () => {
         return;
       }
 
-      const formattedUsers: User[] = (data || []).map((user: any) => ({
-        id: user.user_id,
-        school_user_id: user.id,
-        first_name: user.profiles?.first_name || "",
-        last_name: user.profiles?.last_name || "",
-        role: user.user_type?.name || "",
-        group_name: user.groups?.group_name || null,
-        roster_year: user.rosters?.roster_year || null,
-        status: user.active_user ?? true,
-      }));
+      // Now fetch profile data for each user
+      const userIds = (data || []).map((user: any) => user.user_id);
+      
+      let profilesData = [];
+      if (userIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name")
+          .in("id", userIds);
+
+        if (profilesError) {
+          console.error("Error fetching profiles:", profilesError);
+          return;
+        }
+        
+        profilesData = profiles || [];
+      }
+
+      // Merge the data
+      const formattedUsers: User[] = (data || []).map((user: any) => {
+        const profile = profilesData.find((p: any) => p.id === user.user_id);
+        
+        return {
+          id: user.user_id,
+          school_user_id: user.id,
+          first_name: profile?.first_name || "",
+          last_name: profile?.last_name || "",
+          role: user.user_type?.name || "",
+          group_name: user.groups?.group_name || null,
+          roster_year: user.rosters?.roster_year || null,
+          status: user.active_user ?? true,
+        };
+      });
 
       setUsers(formattedUsers);
     } catch (error) {
