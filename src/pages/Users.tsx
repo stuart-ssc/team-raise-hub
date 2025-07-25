@@ -367,6 +367,10 @@ const Users = () => {
                   </Table>
                 </CardContent>
               </Card>
+              
+              <p className="text-sm text-muted-foreground italic mt-4">
+                Note: Once a person is added to the system, only they can update their person information (Name, email).
+              </p>
             </div>
           </div>
         </div>
