@@ -16,7 +16,7 @@ interface Database {
           status: boolean
         }
       }
-      Rosters: {
+      rosters: {
         Row: {
           id: number
           group_id: string
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
 
     // Get all existing rosters
     const { data: existingRosters, error: rostersError } = await supabase
-      .from('Rosters')
+      .from('rosters')
       .select('group_id')
 
     if (rostersError) {
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     }))
 
     const { data: createdRosters, error: insertError } = await supabase
-      .from('Rosters')
+      .from('rosters')
       .insert(rostersToCreate)
       .select()
 
