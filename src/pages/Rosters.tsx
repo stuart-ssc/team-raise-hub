@@ -71,8 +71,7 @@ interface RostersProps {
 }
 
 const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
-  const [sortBy, setSortBy] = useState("created_at");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [filterBy, setFilterBy] = useState("active");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [rosters, setRosters] = useState<Roster[]>([]);
   const [schoolUsers, setSchoolUsers] = useState<SchoolUser[]>([]);
@@ -244,13 +243,8 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
     }
   }, [selectedGroup]);
 
-  const handleSort = (newSortBy: string) => {
-    if (sortBy === newSortBy) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(newSortBy);
-      setSortDirection("desc");
-    }
+  const handleFilterChange = (filter: string) => {
+    setFilterBy(filter);
   };
 
   const handleYearChange = (year: string) => {
@@ -261,32 +255,22 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
     }
   };
 
-  // Apply sorting to school users
-  const sortedSchoolUsers = [...schoolUsers].sort((a, b) => {
-    let aValue: any;
-    let bValue: any;
-
-    switch (sortBy) {
-      case "name":
-        aValue = `${a.profiles.last_name}, ${a.profiles.first_name}`;
-        bValue = `${b.profiles.last_name}, ${b.profiles.first_name}`;
-        break;
-      case "user_type":
-        aValue = a.user_type.name;
-        bValue = b.user_type.name;
-        break;
+  // Apply filtering to school users
+  const filteredSchoolUsers = schoolUsers.filter((user) => {
+    switch (filterBy) {
+      case "active":
+        return user.active_user === true;
+      case "inactive":
+        return user.active_user === false;
+      case "all":
       default:
-        aValue = `${a.profiles.last_name}, ${a.profiles.first_name}`;
-        bValue = `${b.profiles.last_name}, ${b.profiles.first_name}`;
-        break;
+        return true;
     }
-    if (typeof aValue === "string" && typeof bValue === "string") {
-      const comparison = aValue.localeCompare(bValue);
-      return sortDirection === "asc" ? comparison : -comparison;
-    } else {
-      const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      return sortDirection === "asc" ? comparison : -comparison;
-    }
+  }).sort((a, b) => {
+    // Sort by name (last name, first name)
+    const aName = `${a.profiles.last_name}, ${a.profiles.first_name}`;
+    const bName = `${b.profiles.last_name}, ${b.profiles.first_name}`;
+    return aName.localeCompare(bName);
   });
 
   const handleRemoveUser = async (userId: string, userName: string) => {
@@ -365,14 +349,15 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
               </SelectContent>
             </Select>
 
-            {/* Sort Controls */}
-            <Select value={sortBy} onValueChange={(value) => handleSort(value)}>
+            {/* Filter Controls */}
+            <Select value={filterBy} onValueChange={handleFilterChange}>
               <SelectTrigger className="w-32">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder="Filter by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="name">Name</SelectItem>
-                <SelectItem value="user_type">User Type</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
 
@@ -423,7 +408,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
                      </TableCell>
                    </TableRow>
                  ) : (
-                   sortedSchoolUsers.map((user) => (
+                   filteredSchoolUsers.map((user) => (
                       <TableRow 
                         key={user.id} 
                         className={!user.active_user ? "bg-muted/50" : ""}
