@@ -117,20 +117,53 @@ export const AddParticipantForm = ({ groupId, groupName, schoolId, rosters, onBa
         userId = authData.user.id;
       }
 
-      // Create school_user record using the userId (either existing or new)
-      const { error: schoolUserError } = await supabase
+      // Check if an inactive school_user record already exists
+      const { data: existingSchoolUser, error: checkError } = await supabase
         .from("school_user")
-        .insert({
-          user_id: userId,
-          user_type_id: selectedUserType,
-          school_id: schoolId,
-          group_id: groupId,
-          roster_id: parseInt(selectedRoster)
-        });
+        .select("id")
+        .eq("user_id", userId)
+        .eq("school_id", schoolId)
+        .eq("group_id", groupId)
+        .eq("active_user", false)
+        .single();
 
-      if (schoolUserError) {
-        console.error("Error creating school user:", schoolUserError);
+      if (checkError && checkError.code !== "PGRST116") {
+        console.error("Error checking for existing school user:", checkError);
         return;
+      }
+
+      if (existingSchoolUser) {
+        // Reactivate the existing inactive record
+        const { error: updateError } = await supabase
+          .from("school_user")
+          .update({
+            user_type_id: selectedUserType,
+            roster_id: parseInt(selectedRoster),
+            active_user: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", existingSchoolUser.id);
+
+        if (updateError) {
+          console.error("Error reactivating school user:", updateError);
+          return;
+        }
+      } else {
+        // Create new school_user record
+        const { error: schoolUserError } = await supabase
+          .from("school_user")
+          .insert({
+            user_id: userId,
+            user_type_id: selectedUserType,
+            school_id: schoolId,
+            group_id: groupId,
+            roster_id: parseInt(selectedRoster)
+          });
+
+        if (schoolUserError) {
+          console.error("Error creating school user:", schoolUserError);
+          return;
+        }
       }
 
       // Reset form
