@@ -543,6 +543,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_update_school_user: {
+        Args: { target_school_user_id: string }
+        Returns: boolean
+      }
       user_belongs_to_school: {
         Args: { user_id: string; school_id: string }
         Returns: boolean
