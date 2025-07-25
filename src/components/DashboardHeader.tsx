@@ -69,14 +69,16 @@ const DashboardHeader = ({ activeGroup }: DashboardHeaderProps) => {
         <div className="flex items-center gap-4 mb-3">
           <span className="text-muted-foreground">Teams/Groups:</span>
           <Badge variant={!activeGroup ? "default" : "secondary"}>All</Badge>
-          {groups.map((group) => (
-            <Badge 
-              key={group.id} 
-              variant={activeGroup?.id === group.id ? "default" : "secondary"}
-            >
-              {group.group_name}
-            </Badge>
-          ))}
+          {groups
+            .sort((a, b) => a.group_name.localeCompare(b.group_name))
+            .map((group) => (
+              <Badge 
+                key={group.id} 
+                variant={activeGroup?.id === group.id ? "default" : "secondary"}
+              >
+                {group.group_name}
+              </Badge>
+            ))}
         </div>
       </div>
       
