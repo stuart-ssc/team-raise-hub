@@ -304,9 +304,8 @@ const Groups = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="flex items-center gap-2">
+                          <TableHead>
                             Group Name
-                            <ChevronDown className="h-4 w-4" />
                           </TableHead>
                           <TableHead>School</TableHead>
                           <TableHead>Group Type</TableHead>
