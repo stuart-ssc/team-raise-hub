@@ -543,7 +543,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      user_belongs_to_school: {
+        Args: { user_id: string; school_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
