@@ -76,49 +76,71 @@ export const AddParticipantForm = ({ groupId, groupName, schoolId, rosters, onBa
     setLoading(true);
 
     try {
-      // Create user account first
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password: Math.random().toString(36).slice(-8), // Temporary password
-        options: {
-          data: {
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
+      let userId: string;
+
+      // First, try to find if a user with this email already exists in profiles
+      const { data: existingProfiles, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .ilike("first_name", firstName.trim())
+        .ilike("last_name", lastName.trim());
+
+      // If we found a matching profile, use that user ID
+      if (existingProfiles && existingProfiles.length > 0) {
+        // Use the first matching profile (assuming name match indicates same person)
+        userId = existingProfiles[0].id;
+      } else {
+        // Try to create a new user account
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email,
+          password: Math.random().toString(36).slice(-8), // Temporary password
+          options: {
+            data: {
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+            }
           }
-        }
-      });
+        });
 
-      if (authError) {
-        console.error("Error creating user:", authError);
-        return;
-      }
-
-      if (authData.user) {
-        // Create school_user record
-        const { error: schoolUserError } = await supabase
-          .from("school_user")
-          .insert({
-            user_id: authData.user.id,
-            user_type_id: selectedUserType,
-            school_id: schoolId,
-            group_id: groupId,
-            roster_id: parseInt(selectedRoster)
-          });
-
-        if (schoolUserError) {
-          console.error("Error creating school user:", schoolUserError);
+        if (authError) {
+          // If signup fails, it might be because user already exists
+          // In this case, we can't easily get their ID, so we'll show an error
+          console.error("Error creating user:", authError);
           return;
         }
 
-        // Reset form
-        setFirstName("");
-        setLastName("");
-        setEmail("");
-        setSelectedUserType("");
-        setSelectedRoster(currentRoster?.id.toString() || "");
-        
-        onSuccess();
+        if (!authData.user) {
+          console.error("No user data returned from signup");
+          return;
+        }
+
+        userId = authData.user.id;
       }
+
+      // Create school_user record using the userId (either existing or new)
+      const { error: schoolUserError } = await supabase
+        .from("school_user")
+        .insert({
+          user_id: userId,
+          user_type_id: selectedUserType,
+          school_id: schoolId,
+          group_id: groupId,
+          roster_id: parseInt(selectedRoster)
+        });
+
+      if (schoolUserError) {
+        console.error("Error creating school user:", schoolUserError);
+        return;
+      }
+
+      // Reset form
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setSelectedUserType("");
+      setSelectedRoster(currentRoster?.id.toString() || "");
+      
+      onSuccess();
     } catch (error) {
       console.error("Error adding participant:", error);
     } finally {
