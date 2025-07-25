@@ -137,15 +137,9 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
    return (
      <div id="rosters-table" className="space-y-4">
        <div className="flex items-center justify-between">
-         <div className="flex items-center gap-3">
-           <h2 className="text-xl font-semibold text-foreground">
-             {selectedGroup.group_name} Roster
-           </h2>
-           <Button variant="ghost" size="sm" onClick={onBack} className="text-xs">
-             <ArrowLeft className="h-3 w-3 mr-1" />
-             Back to Groups
-           </Button>
-         </div>
+         <h2 className="text-xl font-semibold text-foreground">
+           {selectedGroup.group_name} Roster
+         </h2>
          
          <div className="flex items-center gap-3">
            {/* Year Filter */}
@@ -263,8 +257,15 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
              </TableBody>
            </Table>
          </CardContent>
-       </Card>
-     </div>
+        </Card>
+        
+        <div className="mt-4">
+          <Button variant="ghost" size="sm" onClick={onBack} className="text-xs">
+            <ArrowLeft className="h-3 w-3 mr-1" />
+            Back to Groups
+          </Button>
+        </div>
+      </div>
    );
 };
 
