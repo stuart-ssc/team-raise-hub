@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { toast } from "sonner";
 
 interface Roster {
   id: number;
@@ -83,6 +84,39 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
       console.error("Error fetching rosters:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateRoster = async (data: { rosterYear: number; currentRoster: boolean }) => {
+    try {
+      // If marking as current roster, first set all other rosters for this group to false
+      if (data.currentRoster) {
+        await supabase
+          .from("rosters")
+          .update({ current_roster: false })
+          .eq("group_id", selectedGroup.id);
+      }
+
+      // Create the new roster
+      const { error } = await supabase
+        .from("rosters")
+        .insert({
+          group_id: selectedGroup.id,
+          roster_year: data.rosterYear,
+          current_roster: data.currentRoster,
+        });
+
+      if (error) {
+        console.error("Error creating roster:", error);
+        toast.error("Failed to create roster");
+        return;
+      }
+
+      toast.success("Roster created successfully");
+      fetchRosters(); // Refresh the rosters list
+    } catch (error) {
+      console.error("Error creating roster:", error);
+      toast.error("Failed to create roster");
     }
   };
 
@@ -272,10 +306,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
          <NewRosterForm
            open={showNewRosterForm}
            onOpenChange={setShowNewRosterForm}
-           onSubmit={(data) => {
-             console.log("New roster data:", data);
-             // TODO: Implement roster creation logic
-           }}
+           onSubmit={handleCreateRoster}
          />
        </div>
     );
