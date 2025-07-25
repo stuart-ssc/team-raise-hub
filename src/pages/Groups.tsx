@@ -102,8 +102,24 @@ const Groups = () => {
   useEffect(() => {
     if (schoolUser) {
       fetchGroups();
+      createMissingRosters();
     }
   }, [schoolUser]);
+
+  const createMissingRosters = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-missing-rosters');
+      
+      if (error) {
+        console.error('Error creating missing rosters:', error);
+        return;
+      }
+      
+      console.log('Missing rosters creation result:', data);
+    } catch (error) {
+      console.error('Error calling create-missing-rosters function:', error);
+    }
+  };
 
   const handleNewGroupClick = () => {
     setShowCreateForm(true);
