@@ -86,6 +86,8 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
 
     try {
       setLoading(true);
+      console.log("Fetching rosters for group:", selectedGroup.id);
+      
       const { data, error } = await supabase
         .from("rosters")
         .select("*")
@@ -97,24 +99,32 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
         return;
       }
 
+      console.log("Roster data:", data);
       setRosters(data || []);
       
       // Extract unique years and ensure they're properly sorted
       const years = [...new Set((data || []).map(roster => roster.roster_year))].sort((a, b) => b - a);
+      console.log("Available years:", years);
       setAvailableYears(years);
 
       // Set default year to current roster year
       const currentRoster = (data || []).find(roster => roster.current_roster);
+      console.log("Current roster:", currentRoster);
+      
       if (currentRoster) {
+        console.log("Setting selected year to current roster year:", currentRoster.roster_year);
         setSelectedYear(currentRoster.roster_year.toString());
         fetchSchoolUsers(currentRoster.id);
       } else if (years.length > 0) {
         // If no current roster, default to the most recent year
+        console.log("No current roster found, defaulting to most recent year:", years[0]);
         setSelectedYear(years[0].toString());
         const firstRoster = (data || []).find(roster => roster.roster_year === years[0]);
         if (firstRoster) {
           fetchSchoolUsers(firstRoster.id);
         }
+      } else {
+        console.log("No rosters found for this group");
       }
     } catch (error) {
       console.error("Error fetching rosters:", error);
