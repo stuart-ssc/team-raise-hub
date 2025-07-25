@@ -125,6 +125,25 @@ const Groups = () => {
     fetchGroups(); // Refresh the groups list
   };
 
+  const handleUpdateGroupStatus = async (groupId: string, newStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("groups")
+        .update({ status: newStatus } as any)
+        .eq("id", groupId);
+
+      if (error) {
+        console.error("Error updating group status:", error);
+        return;
+      }
+
+      // Refresh the groups list
+      fetchGroups();
+    } catch (error) {
+      console.error("Error updating group status:", error);
+    }
+  };
+
   const handleSort = (newSortBy: string) => {
     if (sortBy === newSortBy) {
       // Toggle direction if same sort field
@@ -297,10 +316,18 @@ const Groups = () => {
                                       <MoreHorizontal className="h-4 w-4" />
                                     </Button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleEditGroup(group)}>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem>Delete</DropdownMenuItem>
-                                  </DropdownMenuContent>
+                                   <DropdownMenuContent align="end">
+                                     <DropdownMenuItem onClick={() => handleEditGroup(group)}>Edit</DropdownMenuItem>
+                                     {group.status ? (
+                                       <DropdownMenuItem onClick={() => handleUpdateGroupStatus(group.id, false)}>
+                                         Delete
+                                       </DropdownMenuItem>
+                                     ) : (
+                                       <DropdownMenuItem onClick={() => handleUpdateGroupStatus(group.id, true)}>
+                                         Activate
+                                       </DropdownMenuItem>
+                                     )}
+                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </TableCell>
                             </TableRow>
