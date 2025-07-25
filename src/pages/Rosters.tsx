@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { MoreHorizontal, ChevronDown, ArrowLeft } from "lucide-react";
 import { NewRosterForm } from "@/components/NewRosterForm";
+import { AddParticipantForm } from "@/components/AddParticipantForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -26,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 interface SchoolUser {
   id: string;
@@ -72,6 +73,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewRosterForm, setShowNewRosterForm] = useState(false);
+  const [showAddParticipantForm, setShowAddParticipantForm] = useState(false);
   const { schoolUser } = useSchoolUser();
 
   const fetchRosters = async () => {
@@ -196,15 +198,26 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
 
       if (error) {
         console.error("Error creating roster:", error);
-        toast.error("Failed to create roster");
+        toast({
+          title: "Error",
+          description: "Failed to create roster",
+          variant: "destructive",
+        });
         return;
       }
 
-      toast.success("Roster created successfully");
+      toast({
+        title: "Success",
+        description: "Roster created successfully",
+      });
       fetchRosters(); // Refresh the rosters list
     } catch (error) {
       console.error("Error creating roster:", error);
-      toast.error("Failed to create roster");
+      toast({
+        title: "Error",
+        description: "Failed to create roster",
+        variant: "destructive",
+      });
     }
   };
 
@@ -261,12 +274,28 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
 
    return (
      <div id="rosters-table" className="space-y-4">
-       <div className="flex items-center justify-between">
-         <h2 className="text-xl font-semibold text-foreground">
-           {selectedGroup.group_name} Roster
-         </h2>
-         
-         <div className="flex items-center gap-3">
+       {showAddParticipantForm ? (
+         <AddParticipantForm
+           groupId={selectedGroup.id}
+           schoolId={schoolUser?.school_id || ""}
+           rosters={rosters}
+           onBack={() => setShowAddParticipantForm(false)}
+           onSuccess={() => {
+             setShowAddParticipantForm(false);
+             const selectedRoster = rosters.find(r => r.roster_year.toString() === selectedYear);
+             if (selectedRoster) {
+               fetchSchoolUsers(selectedRoster.id);
+             }
+           }}
+         />
+       ) : (
+         <>
+           <div className="flex items-center justify-between">
+             <h2 className="text-xl font-semibold text-foreground">
+               {selectedGroup.group_name} Roster
+             </h2>
+             
+             <div className="flex items-center gap-3">
             {/* Year Filter */}
             <Select value={selectedYear} onValueChange={handleYearChange}>
               <SelectTrigger className="w-32">
@@ -299,15 +328,23 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
               </DropdownMenuContent>
            </DropdownMenu>
 
-            {/* New Button */}
-             <Button 
-               className="bg-primary text-primary-foreground hover:bg-primary/90"
-               onClick={() => setShowNewRosterForm(true)}
-             >
-               New Roster
-             </Button>
-         </div>
-       </div>
+               {/* New Button */}
+                <Button 
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => setShowNewRosterForm(true)}
+                >
+                  New Roster
+                </Button>
+
+                {/* Add Participant Button */}
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowAddParticipantForm(true)}
+                >
+                  Add Participant
+                </Button>
+             </div>
+           </div>
 
         {/* School Users Table */}
         <Card>
@@ -368,20 +405,22 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
           </CardContent>
          </Card>
         
-         <div className="mt-4">
-           <Button variant="ghost" size="sm" onClick={onBack} className="text-xs">
-             <ArrowLeft className="h-3 w-3 mr-1" />
-             Back to Groups
-           </Button>
-         </div>
+           <div className="mt-4">
+             <Button variant="ghost" size="sm" onClick={onBack} className="text-xs">
+               <ArrowLeft className="h-3 w-3 mr-1" />
+               Back to Groups
+             </Button>
+           </div>
+         </>
+       )}
 
-         <NewRosterForm
-           open={showNewRosterForm}
-           onOpenChange={setShowNewRosterForm}
-           onSubmit={handleCreateRoster}
-         />
-       </div>
-    );
+       <NewRosterForm
+         open={showNewRosterForm}
+         onOpenChange={setShowNewRosterForm}
+         onSubmit={handleCreateRoster}
+       />
+     </div>
+   );
 };
 
 export default Rosters;
