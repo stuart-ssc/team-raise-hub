@@ -154,6 +154,21 @@ const Groups = () => {
     setSelectedGroup(null);
   };
 
+  const handleGroupClick = (groupId: string | null) => {
+    if (groupId === null) {
+      // Clicked "All" - go back to groups view
+      setShowRosters(false);
+      setSelectedGroup(null);
+    } else {
+      // Clicked a specific group - find it and show its roster
+      const group = groups.find(g => g.id === groupId);
+      if (group) {
+        setSelectedGroup(group);
+        setShowRosters(true);
+      }
+    }
+  };
+
   const handleUpdateGroupStatus = async (groupId: string, newStatus: boolean) => {
     try {
       const { error } = await supabase
@@ -222,7 +237,11 @@ const Groups = () => {
       <DashboardSidebar />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader activeGroup={showRosters ? selectedGroup : null} />
+        <DashboardHeader 
+          activeGroup={showRosters ? selectedGroup : null}
+          onGroupClick={handleGroupClick}
+          showRosters={showRosters}
+        />
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
 

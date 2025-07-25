@@ -14,9 +14,11 @@ interface DashboardHeaderProps {
     id: string;
     group_name: string;
   } | null;
+  onGroupClick?: (groupId: string | null) => void;
+  showRosters?: boolean;
 }
 
-const DashboardHeader = ({ activeGroup }: DashboardHeaderProps) => {
+const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHeaderProps) => {
   const { signOut } = useAuth();
   const { schoolUser } = useSchoolUser();
   const navigate = useNavigate();
@@ -66,19 +68,31 @@ const DashboardHeader = ({ activeGroup }: DashboardHeaderProps) => {
     <header className="bg-background px-6 py-4 flex items-center justify-between">
       <div className="flex flex-col gap-1">
         <h1 id="school-name-title" className="text-3xl font-bold text-foreground">{schoolUser?.schools?.school_name || "School"}</h1>
-        <div className="flex items-center gap-4 mb-3">
-          <span className="text-muted-foreground">Teams/Groups:</span>
-          <Badge variant={!activeGroup ? "default" : "secondary"}>All</Badge>
-          {groups
-            .sort((a, b) => a.group_name.localeCompare(b.group_name))
-            .map((group) => (
-              <Badge 
-                key={group.id} 
-                variant={activeGroup?.id === group.id ? "default" : "secondary"}
-              >
-                {group.group_name}
-              </Badge>
-            ))}
+         <div className="flex items-center gap-4 mb-3">
+           <span className="text-muted-foreground">Teams/Groups:</span>
+           <Badge 
+             variant={!activeGroup ? "default" : "secondary"}
+             className={showRosters ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+             onClick={() => {
+               if (!showRosters && onGroupClick) {
+                 onGroupClick(null);
+               }
+             }}
+           >
+             All
+           </Badge>
+           {groups
+             .sort((a, b) => a.group_name.localeCompare(b.group_name))
+             .map((group) => (
+               <Badge 
+                 key={group.id} 
+                 variant={activeGroup?.id === group.id ? "default" : "secondary"}
+                 className="cursor-pointer"
+                 onClick={() => onGroupClick && onGroupClick(group.id)}
+               >
+                 {group.group_name}
+               </Badge>
+             ))}
         </div>
       </div>
       
