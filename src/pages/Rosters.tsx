@@ -28,6 +28,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
 import { toast } from "sonner";
 
+interface SchoolUser {
+  id: string;
+  user_id: string;
+  user_type_id: string;
+  roster_id: number;
+  profiles: {
+    first_name: string;
+    last_name: string;
+  };
+  user_type: {
+    name: string;
+  };
+}
+
 interface Roster {
   id: number;
   group_id: string;
@@ -54,6 +68,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [rosters, setRosters] = useState<Roster[]>([]);
+  const [schoolUsers, setSchoolUsers] = useState<SchoolUser[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewRosterForm, setShowNewRosterForm] = useState(false);
@@ -85,13 +100,78 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
       const currentRoster = (data || []).find(roster => roster.current_roster);
       if (currentRoster) {
         setSelectedYear(currentRoster.roster_year.toString());
+        fetchSchoolUsers(currentRoster.id);
       } else if (years.length > 0) {
         setSelectedYear(years[0].toString());
+        const firstRoster = (data || []).find(roster => roster.roster_year === years[0]);
+        if (firstRoster) {
+          fetchSchoolUsers(firstRoster.id);
+        }
       }
     } catch (error) {
       console.error("Error fetching rosters:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSchoolUsers = async (rosterId: number) => {
+    try {
+      // First get school users for this roster
+      const { data: schoolUsersData, error: schoolUsersError } = await supabase
+        .from("school_user")
+        .select("id, user_id, user_type_id, roster_id")
+        .eq("roster_id", rosterId);
+
+      if (schoolUsersError) {
+        console.error("Error fetching school users:", schoolUsersError);
+        return;
+      }
+
+      if (!schoolUsersData || schoolUsersData.length === 0) {
+        setSchoolUsers([]);
+        return;
+      }
+
+      // Get user profiles
+      const userIds = schoolUsersData.map(user => user.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", userIds);
+
+      // Get user types
+      const userTypeIds = schoolUsersData.map(user => user.user_type_id);
+      const { data: userTypesData, error: userTypesError } = await supabase
+        .from("user_type")
+        .select("id, name")
+        .in("id", userTypeIds);
+
+      if (profilesError || userTypesError) {
+        console.error("Error fetching user data:", { profilesError, userTypesError });
+        return;
+      }
+
+      // Combine the data
+      const combinedData = schoolUsersData.map(user => {
+        const profile = profilesData?.find(p => p.id === user.user_id);
+        const userType = userTypesData?.find(ut => ut.id === user.user_type_id);
+        
+        return {
+          ...user,
+          profiles: {
+            first_name: profile?.first_name || "",
+            last_name: profile?.last_name || ""
+          },
+          user_type: {
+            name: userType?.name || ""
+          }
+        };
+      });
+
+      setSchoolUsers(combinedData);
+    } catch (error) {
+      console.error("Error fetching school users:", error);
     }
   };
 
@@ -143,32 +223,33 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
     }
   };
 
-  // Apply filtering and sorting
-  const filteredRosters = rosters.filter((roster) => {
-    if (!selectedYear) return true;
-    return roster.roster_year.toString() === selectedYear;
-  });
+  const handleYearChange = (year: string) => {
+    setSelectedYear(year);
+    const selectedRoster = rosters.find(roster => roster.roster_year.toString() === year);
+    if (selectedRoster) {
+      fetchSchoolUsers(selectedRoster.id);
+    }
+  };
 
-  const sortedRosters = [...filteredRosters].sort((a, b) => {
+  // Apply sorting to school users
+  const sortedSchoolUsers = [...schoolUsers].sort((a, b) => {
     let aValue: any;
     let bValue: any;
 
     switch (sortBy) {
-      case "roster_year":
-        aValue = a.roster_year;
-        bValue = b.roster_year;
+      case "name":
+        aValue = `${a.profiles.last_name}, ${a.profiles.first_name}`;
+        bValue = `${b.profiles.last_name}, ${b.profiles.first_name}`;
         break;
-      case "current_roster":
-        aValue = a.current_roster ? "Current" : "Past";
-        bValue = b.current_roster ? "Current" : "Past";
+      case "user_type":
+        aValue = a.user_type.name;
+        bValue = b.user_type.name;
         break;
-      case "created_at":
       default:
-        aValue = new Date(a.created_at);
-        bValue = new Date(b.created_at);
+        aValue = `${a.profiles.last_name}, ${a.profiles.first_name}`;
+        bValue = `${b.profiles.last_name}, ${b.profiles.first_name}`;
         break;
     }
-
     if (typeof aValue === "string" && typeof bValue === "string") {
       const comparison = aValue.localeCompare(bValue);
       return sortDirection === "asc" ? comparison : -comparison;
@@ -187,7 +268,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
          
          <div className="flex items-center gap-3">
             {/* Year Filter */}
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <Select value={selectedYear} onValueChange={handleYearChange}>
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
@@ -208,17 +289,14 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
                  <ChevronDown className="ml-2 h-4 w-4" />
                </Button>
              </DropdownMenuTrigger>
-             <DropdownMenuContent>
-               <DropdownMenuItem onClick={() => handleSort("roster_year")}>
-                 Year {sortBy === "roster_year" ? (sortDirection === "desc" ? "↓" : "↑") : ""}
-               </DropdownMenuItem>
-               <DropdownMenuItem onClick={() => handleSort("current_roster")}>
-                 Status {sortBy === "current_roster" ? (sortDirection === "desc" ? "↓" : "↑") : ""}
-               </DropdownMenuItem>
-               <DropdownMenuItem onClick={() => handleSort("created_at")}>
-                 Created {sortBy === "created_at" ? (sortDirection === "desc" ? "↓" : "↑") : ""}
-               </DropdownMenuItem>
-             </DropdownMenuContent>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleSort("name")}>
+                  Name {sortBy === "name" ? (sortDirection === "desc" ? "↓" : "↑") : ""}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSort("user_type")}>
+                  User Type {sortBy === "user_type" ? (sortDirection === "desc" ? "↓" : "↑") : ""}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
            </DropdownMenu>
 
             {/* New Button */}
@@ -231,77 +309,64 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
          </div>
        </div>
 
-       {/* Rosters Table */}
-       <Card>
-         <CardContent className="p-0">
-           <Table>
-             <TableHeader>
-               <TableRow>
-                 <TableHead className="flex items-center gap-2">
-                   Roster Year
-                   <ChevronDown className="h-4 w-4" />
-                 </TableHead>
-                 <TableHead>Status</TableHead>
-                 <TableHead>Created Date</TableHead>
-                 <TableHead>Manage Players</TableHead>
-                 <TableHead className="w-12"></TableHead>
-               </TableRow>
-             </TableHeader>
-             <TableBody>
-               {loading ? (
-                 <TableRow>
-                   <TableCell colSpan={5} className="text-center py-4">
-                     Loading...
-                   </TableCell>
-                 </TableRow>
-               ) : rosters.length === 0 ? (
-                 <TableRow>
-                   <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
-                     No rosters found
-                   </TableCell>
-                 </TableRow>
-               ) : (
-                 sortedRosters.map((roster) => (
-                   <TableRow key={roster.id}>
-                     <TableCell className="font-medium">{roster.roster_year}</TableCell>
-                     <TableCell>
-                       <span className={roster.current_roster ? "text-green-600" : "text-muted-foreground"}>
-                         {roster.current_roster ? "Current" : "Past"}
-                       </span>
-                     </TableCell>
-                     <TableCell>
-                       {new Date(roster.created_at).toLocaleDateString()}
-                     </TableCell>
-                     <TableCell>
-                       <Button variant="default" size="sm">
-                         Manage
-                       </Button>
-                     </TableCell>
-                     <TableCell>
-                       <DropdownMenu>
-                         <DropdownMenuTrigger asChild>
-                           <Button variant="ghost" size="sm">
-                             <MoreHorizontal className="h-4 w-4" />
-                           </Button>
-                         </DropdownMenuTrigger>
-                         <DropdownMenuContent align="end">
-                           <DropdownMenuItem>Edit</DropdownMenuItem>
-                           <DropdownMenuItem>
-                             {roster.current_roster ? "Archive" : "Make Current"}
-                           </DropdownMenuItem>
-                           <DropdownMenuItem className="text-red-600">
-                             Delete
-                           </DropdownMenuItem>
-                         </DropdownMenuContent>
-                       </DropdownMenu>
-                     </TableCell>
-                   </TableRow>
-                 ))
-               )}
-             </TableBody>
-           </Table>
-         </CardContent>
-        </Card>
+        {/* School Users Table */}
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="flex items-center gap-2">
+                    Name
+                    <ChevronDown className="h-4 w-4" />
+                  </TableHead>
+                  <TableHead>User Type</TableHead>
+                  <TableHead className="w-12"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-4">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : schoolUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
+                      No users found for this roster
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  sortedSchoolUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">
+                        {user.profiles.last_name}, {user.profiles.first_name}
+                      </TableCell>
+                      <TableCell>
+                        {user.user_type.name}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>Edit</DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600">
+                              Remove from Roster
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+         </Card>
         
          <div className="mt-4">
            <Button variant="ghost" size="sm" onClick={onBack} className="text-xs">
