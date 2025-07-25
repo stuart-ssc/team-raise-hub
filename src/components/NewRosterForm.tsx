@@ -19,14 +19,18 @@ interface NewRosterFormProps {
 }
 
 export const NewRosterForm = ({ open, onOpenChange, onSubmit }: NewRosterFormProps) => {
-  const [rosterYear, setRosterYear] = useState("");
+  const currentYear = new Date().getFullYear();
+  const nextYear = currentYear + 1;
+  const minYear = currentYear - 3;
+  
+  const [rosterYear, setRosterYear] = useState(nextYear.toString());
   const [currentRoster, setCurrentRoster] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const year = parseInt(rosterYear);
-    if (isNaN(year) || year < 1900 || year > 2100) {
+    if (isNaN(year) || year < minYear || year > 2100) {
       return;
     }
 
@@ -36,7 +40,7 @@ export const NewRosterForm = ({ open, onOpenChange, onSubmit }: NewRosterFormPro
     });
 
     // Reset form
-    setRosterYear("");
+    setRosterYear(nextYear.toString());
     setCurrentRoster(false);
     onOpenChange(false);
   };
@@ -62,9 +66,9 @@ export const NewRosterForm = ({ open, onOpenChange, onSubmit }: NewRosterFormPro
                 value={rosterYear}
                 onChange={(e) => setRosterYear(e.target.value)}
                 className="col-span-3"
-                placeholder="2024"
+                placeholder={nextYear.toString()}
                 required
-                min="1900"
+                min={minYear}
                 max="2100"
               />
             </div>
