@@ -127,7 +127,6 @@ export const AddParticipantForm = ({ groupId, groupName, schoolId, rosters, onBa
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-foreground">Add Participant</h2>
 
       <Card>
         <CardHeader>
