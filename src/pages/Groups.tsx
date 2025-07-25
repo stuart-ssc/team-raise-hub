@@ -31,6 +31,7 @@ interface Group {
 
 const Groups = () => {
   const [sortBy, setSortBy] = useState("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [filterBy, setFilterBy] = useState("all");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
@@ -121,6 +122,43 @@ const Groups = () => {
     fetchGroups(); // Refresh the groups list
   };
 
+  const handleSort = (newSortBy: string) => {
+    if (sortBy === newSortBy) {
+      // Toggle direction if same sort field
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // New sort field, default to descending
+      setSortBy(newSortBy);
+      setSortDirection("desc");
+    }
+  };
+
+  const sortedGroups = [...groups].sort((a, b) => {
+    let aValue: string;
+    let bValue: string;
+
+    switch (sortBy) {
+      case "name":
+        aValue = a.group_name;
+        bValue = b.group_name;
+        break;
+      case "type":
+        aValue = a.group_type_name;
+        bValue = b.group_type_name;
+        break;
+      case "status":
+        aValue = "Inactive"; // Since all are inactive for now
+        bValue = "Inactive";
+        break;
+      default:
+        aValue = a.group_name;
+        bValue = b.group_name;
+    }
+
+    const comparison = aValue.localeCompare(bValue);
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
+
   return (
     <div className="flex h-screen bg-background">
       <DashboardSidebar />
@@ -152,17 +190,17 @@ const Groups = () => {
                           <ChevronDown className="ml-2 h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => setSortBy("name")}>
-                          Name
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setSortBy("type")}>
-                          Type
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setSortBy("status")}>
-                          Status
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
+                       <DropdownMenuContent>
+                         <DropdownMenuItem onClick={() => handleSort("name")}>
+                           Name {sortBy === "name" ? (sortDirection === "desc" ? "↓" : "↑") : ""}
+                         </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => handleSort("type")}>
+                           Type {sortBy === "type" ? (sortDirection === "desc" ? "↓" : "↑") : ""}
+                         </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => handleSort("status")}>
+                           Status {sortBy === "status" ? (sortDirection === "desc" ? "↓" : "↑") : ""}
+                         </DropdownMenuItem>
+                       </DropdownMenuContent>
                     </DropdownMenu>
 
                     {/* Filter Dropdown */}
@@ -226,8 +264,8 @@ const Groups = () => {
                               No groups found
                             </TableCell>
                           </TableRow>
-                        ) : (
-                          groups.map((group) => (
+                         ) : (
+                           sortedGroups.map((group) => (
                             <TableRow key={group.id}>
                               <TableCell className="font-medium">{group.group_name}</TableCell>
                               <TableCell>{group.school_name}</TableCell>
