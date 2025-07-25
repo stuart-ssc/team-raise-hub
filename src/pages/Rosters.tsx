@@ -179,11 +179,11 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
            </DropdownMenu>
 
            {/* New Button */}
-           <Button 
-             className="bg-primary text-primary-foreground hover:bg-primary/90"
-           >
-             New
-           </Button>
+            <Button 
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              New Roster
+            </Button>
          </div>
        </div>
 
