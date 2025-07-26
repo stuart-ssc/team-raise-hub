@@ -38,6 +38,66 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          amount_raised: number | null
+          campaign_type_id: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          goal_amount: number | null
+          group_id: string | null
+          id: string
+          name: string
+          start_date: string | null
+          status: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          amount_raised?: number | null
+          campaign_type_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          goal_amount?: number | null
+          group_id?: string | null
+          id?: string
+          name: string
+          start_date?: string | null
+          status?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          amount_raised?: number | null
+          campaign_type_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          goal_amount?: number | null
+          group_id?: string | null
+          id?: string
+          name?: string
+          start_date?: string | null
+          status?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_campaign_type_id_fkey"
+            columns: ["campaign_type_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_type"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       counties: {
         Row: {
           county_name: string

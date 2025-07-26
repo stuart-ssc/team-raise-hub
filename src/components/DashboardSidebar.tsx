@@ -58,8 +58,8 @@ const DashboardSidebar = () => {
             const Icon = item.icon;
             const active = isActive(item.url, item.end);
             
-            // Hide Users menu item for unauthorized roles
-            if (item.title === "Users" && !canSeeUsers) {
+            // Hide Users and Campaigns menu items for unauthorized roles
+            if ((item.title === "Users" || item.title === "Campaigns") && !canSeeUsers) {
               return null;
             }
             
