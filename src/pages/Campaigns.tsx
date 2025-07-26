@@ -251,17 +251,17 @@ export default function Campaigns() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-1">
-                <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search campaigns..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search campaigns..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 <Select value={sortBy} onValueChange={(value) => setSortBy(value as keyof Campaign)}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Sort by" />
@@ -286,12 +286,12 @@ export default function Campaigns() {
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
 
-              <Button onClick={() => setShowAddCampaign(true)} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add Campaign
-              </Button>
+                <Button onClick={() => setShowAddCampaign(true)} className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Campaign
+                </Button>
+              </div>
             </div>
 
             <div className="rounded-md border">
