@@ -3,6 +3,7 @@ import { Home, Users, DollarSign, Target, BarChart3, Menu } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SchoolLogo from "@/components/SchoolLogo";
 import { Button } from "@/components/ui/button";
+import { useSchoolUser } from "@/hooks/useSchoolUser";
 
 const sidebarItems = [
   { title: "Home", icon: Home, url: "/dashboard", end: true },
@@ -16,6 +17,11 @@ const sidebarItems = [
 const DashboardSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const { schoolUser } = useSchoolUser();
+
+  // Check if user has permission to see Users menu item
+  const authorizedRoles = ["Principal", "Athletic Director", "Coach", "Club Sponsor", "Booster Leader"];
+  const canSeeUsers = schoolUser?.user_type?.name && authorizedRoles.includes(schoolUser.user_type.name);
 
   const isActive = (path: string, end?: boolean) => {
     if (end) {
@@ -51,6 +57,11 @@ const DashboardSidebar = () => {
           {sidebarItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.url, item.end);
+            
+            // Hide Users menu item for unauthorized roles
+            if (item.title === "Users" && !canSeeUsers) {
+              return null;
+            }
             
             return (
               <li key={item.title}>

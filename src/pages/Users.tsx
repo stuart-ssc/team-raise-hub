@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { MoreHorizontal, ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,6 +56,23 @@ const Users = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddUserForm, setShowAddUserForm] = useState(false);
   const { schoolUser } = useSchoolUser();
+  const navigate = useNavigate();
+
+  // Check if user has permission to access this page
+  const authorizedRoles = ["Principal", "Athletic Director", "Coach", "Club Sponsor", "Booster Leader"];
+  const hasAccess = schoolUser?.user_type?.name && authorizedRoles.includes(schoolUser.user_type.name);
+
+  // Redirect unauthorized users
+  useEffect(() => {
+    if (schoolUser && !hasAccess) {
+      navigate("/dashboard");
+    }
+  }, [schoolUser, hasAccess, navigate]);
+
+  // Don't render anything for unauthorized users
+  if (schoolUser && !hasAccess) {
+    return null;
+  }
 
   const fetchUsers = async () => {
     if (!schoolUser) return;
