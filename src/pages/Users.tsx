@@ -21,6 +21,7 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { AddUserForm } from "@/components/AddUserForm";
 
 interface User {
   id: string;
@@ -41,6 +42,7 @@ const Users = () => {
   const [loading, setLoading] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState<{id: string, group_name: string} | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showAddUserForm, setShowAddUserForm] = useState(false);
   const { schoolUser } = useSchoolUser();
 
   const fetchUsers = async () => {
@@ -312,7 +314,7 @@ const Users = () => {
                   </DropdownMenu>
 
                   {/* Add User Button */}
-                  <Button>
+                  <Button onClick={() => setShowAddUserForm(true)}>
                     Add User
                   </Button>
                 </div>
@@ -399,6 +401,13 @@ const Users = () => {
           </div>
         </div>
       </div>
+
+      <AddUserForm
+        open={showAddUserForm}
+        onOpenChange={setShowAddUserForm}
+        schoolId={schoolUser?.school_id || ""}
+        onSuccess={fetchUsers}
+      />
     </div>
   );
 };
