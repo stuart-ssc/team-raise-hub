@@ -310,6 +310,11 @@ const Users = () => {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+
+                  {/* Add User Button */}
+                  <Button>
+                    Add User
+                  </Button>
                 </div>
               </div>
 
