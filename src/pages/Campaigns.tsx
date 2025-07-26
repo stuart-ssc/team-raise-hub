@@ -333,17 +333,6 @@ export default function Campaigns() {
                     </TableHead>
                     <TableHead 
                       className="cursor-pointer select-none"
-                      onClick={() => handleSort("goal_amount")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Goal Amount
-                        {sortBy === "goal_amount" && (
-                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer select-none"
                       onClick={() => handleSort("amount_raised")}
                     >
                       <div className="flex items-center gap-2">
@@ -382,7 +371,7 @@ export default function Campaigns() {
                 <TableBody>
                   {sortedCampaigns.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-12">
+                      <TableCell colSpan={8} className="text-center py-12">
                         <div className="flex flex-col items-center space-y-4">
                           <p className="text-muted-foreground">No campaigns found.</p>
                           <Button 
@@ -404,10 +393,7 @@ export default function Campaigns() {
                         <TableCell>{campaign.group_name || "—"}</TableCell>
                         <TableCell>{campaign.campaign_type_name || "—"}</TableCell>
                         <TableCell>
-                          {campaign.goal_amount ? `$${campaign.goal_amount.toLocaleString()}` : "—"}
-                        </TableCell>
-                        <TableCell>
-                          {campaign.amount_raised ? `$${campaign.amount_raised.toLocaleString()}` : "$0"}
+                          {`$${(campaign.amount_raised || 0).toLocaleString()}/${campaign.goal_amount ? campaign.goal_amount.toLocaleString() : '0'}`}
                         </TableCell>
                         <TableCell>
                           {campaign.start_date ? new Date(campaign.start_date).toLocaleDateString() : "—"}
