@@ -378,7 +378,7 @@ const Users = () => {
                         </TableRow>
                       ) : (
                         sortedUsers.map((user) => (
-                          <TableRow key={user.id}>
+                          <TableRow key={user.school_user_id}>
                             <TableCell className="font-medium">
                               {user.last_name}, {user.first_name}
                             </TableCell>
