@@ -32,7 +32,7 @@ export default function Campaigns() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<keyof Campaign>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [filterBy, setFilterBy] = useState("all");
+  const [filterBy, setFilterBy] = useState("active");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [showAddCampaign, setShowAddCampaign] = useState(false);
