@@ -385,7 +385,7 @@ const Users = () => {
                                       <AlertDialogTitle>Deactivate User</AlertDialogTitle>
                                       <AlertDialogDescription>
                                         Are you sure you want to deactivate {user.first_name} {user.last_name}? 
-                                        They will no longer have access to the system until reactivated.
+                                        They will no longer be able to participate in that groups campaigns.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
