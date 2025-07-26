@@ -382,8 +382,17 @@ export default function Campaigns() {
                 <TableBody>
                   {sortedCampaigns.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                        No campaigns found.
+                      <TableCell colSpan={9} className="text-center py-12">
+                        <div className="flex flex-col items-center space-y-4">
+                          <p className="text-muted-foreground">No campaigns found.</p>
+                          <Button 
+                            onClick={() => setShowAddCampaign(true)}
+                            className="flex items-center gap-2"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Let's Create a Campaign
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
