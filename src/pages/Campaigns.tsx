@@ -347,19 +347,8 @@ export default function Campaigns() {
                       onClick={() => handleSort("start_date")}
                     >
                       <div className="flex items-center gap-2">
-                        Start Date
+                        Dates
                         {sortBy === "start_date" && (
-                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("end_date")}
-                    >
-                      <div className="flex items-center gap-2">
-                        End Date
-                        {sortBy === "end_date" && (
                           sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
                         )}
                       </div>
@@ -371,7 +360,7 @@ export default function Campaigns() {
                 <TableBody>
                   {sortedCampaigns.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-12">
+                      <TableCell colSpan={7} className="text-center py-12">
                         <div className="flex flex-col items-center space-y-4">
                           <p className="text-muted-foreground">No campaigns found.</p>
                           <Button 
@@ -396,10 +385,14 @@ export default function Campaigns() {
                           {`$${(campaign.amount_raised || 0).toLocaleString()}/${campaign.goal_amount ? campaign.goal_amount.toLocaleString() : '0'}`}
                         </TableCell>
                         <TableCell>
-                          {campaign.start_date ? new Date(campaign.start_date).toLocaleDateString() : "—"}
-                        </TableCell>
-                        <TableCell>
-                          {campaign.end_date ? new Date(campaign.end_date).toLocaleDateString() : "—"}
+                          {campaign.start_date && campaign.end_date 
+                            ? `${new Date(campaign.start_date).toLocaleDateString()}-${new Date(campaign.end_date).toLocaleDateString()}`
+                            : campaign.start_date 
+                              ? new Date(campaign.start_date).toLocaleDateString()
+                              : campaign.end_date
+                                ? new Date(campaign.end_date).toLocaleDateString()
+                                : "—"
+                          }
                         </TableCell>
                         <TableCell>
                           <Badge variant={campaign.status ? "default" : "secondary"}>
