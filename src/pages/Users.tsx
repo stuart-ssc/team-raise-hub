@@ -362,29 +362,12 @@ const Users = () => {
                               </span>
                             </TableCell>
                             <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>Edit</DropdownMenuItem>
-                                  {user.status ? (
-                                    <DropdownMenuItem 
-                                      onClick={() => handleUpdateUserStatus(user.school_user_id, false)}
-                                    >
-                                      Remove
-                                    </DropdownMenuItem>
-                                  ) : (
-                                    <DropdownMenuItem 
-                                      onClick={() => handleUpdateUserStatus(user.school_user_id, true)}
-                                    >
-                                      Reactivate
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              <button
+                                onClick={() => handleUpdateUserStatus(user.school_user_id, !user.status)}
+                                className="text-primary hover:text-primary/80 text-sm underline"
+                              >
+                                {user.status ? "Deactivate" : "Activate"}
+                              </button>
                             </TableCell>
                           </TableRow>
                         ))
