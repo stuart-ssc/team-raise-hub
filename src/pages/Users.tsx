@@ -382,7 +382,7 @@ const Users = () => {
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>Deactivate User</AlertDialogTitle>
+                                      <AlertDialogTitle>Confirm Deactivation of {user.first_name} {user.last_name}</AlertDialogTitle>
                                       <AlertDialogDescription>
                                         Are you sure you want to deactivate {user.first_name} {user.last_name}? 
                                         They will no longer be able to participate in that groups campaigns.
