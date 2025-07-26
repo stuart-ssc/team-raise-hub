@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { MoreHorizontal, ChevronDown } from "lucide-react";
+import { MoreHorizontal, ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -39,6 +40,7 @@ const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState<{id: string, group_name: string} | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const { schoolUser } = useSchoolUser();
 
   const fetchUsers = async () => {
@@ -191,6 +193,13 @@ const Users = () => {
     // Apply group filter if a specific group is selected
     if (selectedGroup && user.group_name !== selectedGroup.group_name) return false;
     
+    // Apply search filter if search term is 3+ characters
+    if (searchTerm.length >= 3) {
+      const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+      const searchLower = searchTerm.toLowerCase();
+      if (!fullName.includes(searchLower)) return false;
+    }
+    
     return true;
   });
 
@@ -239,9 +248,19 @@ const Users = () => {
         />
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
+            <h2 className="text-xl font-semibold text-foreground">Users</h2>
+            
             <div id="users-admin-table" className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-foreground">Users</h2>
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search by name (min 3 characters)..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
                 
                 <div className="flex items-center gap-3">
                   {/* Sort Dropdown */}
