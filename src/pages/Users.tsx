@@ -17,6 +17,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -362,12 +373,39 @@ const Users = () => {
                               </span>
                             </TableCell>
                             <TableCell>
-                              <button
-                                onClick={() => handleUpdateUserStatus(user.school_user_id, !user.status)}
-                                className="text-primary hover:text-primary/80 text-sm underline"
-                              >
-                                {user.status ? "Deactivate" : "Activate"}
-                              </button>
+                              {user.status ? (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <button className="text-primary hover:text-primary/80 text-sm underline">
+                                      Deactivate
+                                    </button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Deactivate User</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to deactivate {user.first_name} {user.last_name}? 
+                                        They will no longer have access to the system until reactivated.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction 
+                                        onClick={() => handleUpdateUserStatus(user.school_user_id, false)}
+                                      >
+                                        Deactivate
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              ) : (
+                                <button
+                                  onClick={() => handleUpdateUserStatus(user.school_user_id, true)}
+                                  className="text-primary hover:text-primary/80 text-sm underline"
+                                >
+                                  Activate
+                                </button>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))
