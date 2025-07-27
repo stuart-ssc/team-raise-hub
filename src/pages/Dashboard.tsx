@@ -21,6 +21,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [totalCampaigns, setTotalCampaigns] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
   const [showAddCampaignForm, setShowAddCampaignForm] = useState(false);
@@ -48,7 +49,31 @@ const Dashboard = () => {
     if (!schoolUser?.school_id) return;
 
     try {
-      let query = supabase
+      // First, get total campaigns (all campaigns) for this school/group to check if any exist
+      let totalQuery = supabase
+        .from("campaigns")
+        .select(`
+          *,
+          groups!inner(id, group_name, school_id)
+        `)
+        .eq("groups.school_id", schoolUser.school_id);
+
+      // Filter by selected group if one is selected
+      if (selectedGroup && selectedGroup !== "All") {
+        totalQuery = totalQuery.eq("group_id", selectedGroup);
+      }
+
+      const { data: totalData, error: totalError } = await totalQuery;
+
+      if (totalError) {
+        console.error("Error fetching total campaigns:", totalError);
+        return;
+      }
+
+      setTotalCampaigns(totalData?.length || 0);
+
+      // Then get active campaigns only
+      let activeQuery = supabase
         .from("campaigns")
         .select(`
           *,
@@ -61,17 +86,17 @@ const Dashboard = () => {
 
       // Filter by selected group if one is selected
       if (selectedGroup && selectedGroup !== "All") {
-        query = query.eq("group_id", selectedGroup);
+        activeQuery = activeQuery.eq("group_id", selectedGroup);
       }
 
-      const { data, error } = await query;
+      const { data: activeData, error: activeError } = await activeQuery;
 
-      if (error) {
-        console.error("Error fetching campaigns:", error);
+      if (activeError) {
+        console.error("Error fetching active campaigns:", activeError);
         return;
       }
 
-      setCampaigns(data || []);
+      setCampaigns(activeData || []);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
     }
@@ -225,64 +250,79 @@ const Dashboard = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Campaign</TableHead>
-                    <TableHead>Group</TableHead>
-                    <TableHead>Amount Raised</TableHead>
-                    <TableHead>Dates</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {campaigns.map((campaign, index) => <TableRow key={index}>
-                      <TableCell className="font-medium">{campaign.name}</TableCell>
-                      <TableCell>
-                        <div className="text-xs text-muted-foreground">{campaign.groups?.group_name}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          ${campaign.amount_raised?.toLocaleString() || 0}/${campaign.goal_amount?.toLocaleString() || 0}
-                        </div>
-                      </TableCell>
-                      <TableCell>{formatDateRange(campaign.start_date, campaign.end_date)}</TableCell>
-                       <TableCell>
-                         <DropdownMenu>
-                           <DropdownMenuTrigger asChild>
-                             <Button variant="outline" size="sm">
-                               <MoreHorizontal className="h-4 w-4" />
-                             </Button>
-                           </DropdownMenuTrigger>
-                           <DropdownMenuContent align="end" className="bg-background border">
-                             <DropdownMenuItem 
-                               className="cursor-pointer"
-                               onClick={() => {
-                                 setEditCampaign(campaign);
-                                 setManageCampaignId(null);
-                                 setShowAddCampaignForm(true);
-                               }}
-                             >
-                               <Edit className="mr-2 h-4 w-4" />
-                               Update Campaign
-                             </DropdownMenuItem>
-                             <DropdownMenuItem 
-                               className="cursor-pointer"
-                               onClick={() => {
-                                 setEditCampaign(null);
-                                 setManageCampaignId(campaign.id);
-                                 setShowAddCampaignForm(true);
-                               }}
-                             >
-                               <Package className="mr-2 h-4 w-4" />
-                               Manage Items
-                             </DropdownMenuItem>
-                           </DropdownMenuContent>
-                         </DropdownMenu>
-                       </TableCell>
-                    </TableRow>)}
-                </TableBody>
-              </Table>
+              {totalCampaigns === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-lg font-medium mb-2">Let's get started - Create a Campaign Now</div>
+                  <div className="text-muted-foreground mb-4">Start fundraising by creating your first campaign</div>
+                  <Button onClick={() => setShowAddCampaignForm(true)}>
+                    Create Campaign
+                  </Button>
+                </div>
+              ) : campaigns.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-lg font-medium mb-2">You currently have no active campaigns</div>
+                  <div className="text-muted-foreground">All your campaigns are inactive or ended</div>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Campaign</TableHead>
+                      <TableHead>Group</TableHead>
+                      <TableHead>Amount Raised</TableHead>
+                      <TableHead>Dates</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {campaigns.map((campaign, index) => <TableRow key={index}>
+                        <TableCell className="font-medium">{campaign.name}</TableCell>
+                        <TableCell>
+                          <div className="text-xs text-muted-foreground">{campaign.groups?.group_name}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            ${campaign.amount_raised?.toLocaleString() || 0}/${campaign.goal_amount?.toLocaleString() || 0}
+                          </div>
+                        </TableCell>
+                        <TableCell>{formatDateRange(campaign.start_date, campaign.end_date)}</TableCell>
+                         <TableCell>
+                           <DropdownMenu>
+                             <DropdownMenuTrigger asChild>
+                               <Button variant="outline" size="sm">
+                                 <MoreHorizontal className="h-4 w-4" />
+                               </Button>
+                             </DropdownMenuTrigger>
+                             <DropdownMenuContent align="end" className="bg-background border">
+                               <DropdownMenuItem 
+                                 className="cursor-pointer"
+                                 onClick={() => {
+                                   setEditCampaign(campaign);
+                                   setManageCampaignId(null);
+                                   setShowAddCampaignForm(true);
+                                 }}
+                               >
+                                 <Edit className="mr-2 h-4 w-4" />
+                                 Update Campaign
+                               </DropdownMenuItem>
+                               <DropdownMenuItem 
+                                 className="cursor-pointer"
+                                 onClick={() => {
+                                   setEditCampaign(null);
+                                   setManageCampaignId(campaign.id);
+                                   setShowAddCampaignForm(true);
+                                 }}
+                               >
+                                 <Package className="mr-2 h-4 w-4" />
+                                 Manage Items
+                               </DropdownMenuItem>
+                             </DropdownMenuContent>
+                           </DropdownMenu>
+                         </TableCell>
+                      </TableRow>)}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
 
