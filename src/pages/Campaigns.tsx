@@ -11,7 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { AddCampaignForm } from "@/components/AddCampaignForm";
-import { ChevronDown, ChevronUp, Plus, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Package, X } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Campaign {
   id: string;
@@ -400,39 +401,59 @@ export default function Campaigns() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => setSelectedCampaign(campaign)}
-                              >
-                                {campaign.status ? "Deactivate" : "Activate"}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {campaign.status ? "Deactivate" : "Activate"} Campaign
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to {campaign.status ? "deactivate" : "activate"} the campaign "{campaign.name}"?
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => {
-                                    if (selectedCampaign) {
-                                      handleUpdateCampaignStatus(selectedCampaign.id, !selectedCampaign.status);
-                                    }
-                                  }}
-                                >
-                                  {campaign.status ? "Deactivate" : "Activate"}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-background border">
+                              <DropdownMenuItem className="cursor-pointer">
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Campaign
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer">
+                                <Package className="mr-2 h-4 w-4" />
+                                Manage Campaign Items
+                              </DropdownMenuItem>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem 
+                                    className="cursor-pointer text-destructive focus:text-destructive"
+                                    onSelect={(e) => {
+                                      e.preventDefault();
+                                      setSelectedCampaign(campaign);
+                                    }}
+                                  >
+                                    <X className="mr-2 h-4 w-4" />
+                                    {campaign.status ? "Deactivate" : "Activate"} Campaign
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      {campaign.status ? "Deactivate" : "Activate"} Campaign
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to {campaign.status ? "deactivate" : "activate"} the campaign "{campaign.name}"?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => {
+                                        if (selectedCampaign) {
+                                          handleUpdateCampaignStatus(selectedCampaign.id, !selectedCampaign.status);
+                                        }
+                                      }}
+                                    >
+                                      {campaign.status ? "Deactivate" : "Activate"}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))
