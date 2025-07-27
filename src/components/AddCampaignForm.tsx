@@ -12,7 +12,7 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit } from "lucide-react";
 
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
@@ -50,6 +50,7 @@ interface AddCampaignFormProps {
     group_id: string;
     campaign_type_id: string;
   } | null;
+  manageCampaignId?: string | null;
 }
 
 interface Group {
@@ -75,13 +76,14 @@ interface CampaignItem {
   eventEndDate?: string;
 }
 
-export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampaign }: AddCampaignFormProps) {
+export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampaign, manageCampaignId }: AddCampaignFormProps) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [campaignTypes, setCampaignTypes] = useState<CampaignType[]>([]);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [createdCampaignId, setCreatedCampaignId] = useState<string | null>(null);
   const [campaignItems, setCampaignItems] = useState<CampaignItem[]>([]);
+  const [editingItem, setEditingItem] = useState<CampaignItem | null>(null);
   const { schoolUser } = useSchoolUser();
   const { toast } = useToast();
 
@@ -172,13 +174,50 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     }
   };
 
+  const fetchCampaignItems = async (campaignId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("campaign_items")
+        .select("*")
+        .eq("campaign_id", campaignId);
+
+      if (error) {
+        console.error("Error fetching campaign items:", error);
+        return;
+      }
+
+      const formattedItems: CampaignItem[] = (data || []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        cost: item.cost,
+        quantityOffered: item.quantity_offered,
+        quantityAvailable: item.quantity_available,
+        maxItemsPurchased: item.max_items_purchased,
+        size: item.size,
+        eventStartDate: item.event_start_date,
+        eventEndDate: item.event_end_date,
+      }));
+
+      setCampaignItems(formattedItems);
+    } catch (error) {
+      console.error("Error fetching campaign items:", error);
+    }
+  };
+
   useEffect(() => {
     if (open) {
       fetchGroups();
       fetchCampaignTypes();
       
+      // Handle manage campaign items mode
+      if (manageCampaignId) {
+        setCreatedCampaignId(manageCampaignId);
+        setStep(2);
+        fetchCampaignItems(manageCampaignId);
+      }
       // Pre-populate form if editing
-      if (editCampaign) {
+      else if (editCampaign) {
         campaignForm.reset({
           name: editCampaign.name,
           description: editCampaign.description || "",
@@ -191,7 +230,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         setCreatedCampaignId(editCampaign.id);
       }
     }
-  }, [open, schoolUser, editCampaign]);
+  }, [open, schoolUser, editCampaign, manageCampaignId]);
 
   const onCampaignSubmit = async (values: z.infer<typeof campaignSchema>) => {
     if (!schoolUser) return;
@@ -274,7 +313,6 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
 
     try {
       const itemData = {
-        campaign_id: createdCampaignId,
         name: values.name,
         description: values.description || null,
         cost: parseFloat(values.cost),
@@ -286,49 +324,76 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         event_end_date: values.eventEndDate || null,
       };
 
-      const { data, error } = await supabase
-        .from("campaign_items")
-        .insert([itemData])
-        .select()
-        .single();
+      if (editingItem) {
+        // Update existing item
+        const { error } = await supabase
+          .from("campaign_items")
+          .update(itemData)
+          .eq("id", editingItem.id);
 
-      if (error) {
-        console.error("Error creating campaign item:", error);
+        if (error) {
+          console.error("Error updating campaign item:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update campaign item. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         toast({
-          title: "Error",
-          description: "Failed to add campaign item. Please try again.",
-          variant: "destructive",
+          title: "Success",
+          description: "Campaign item updated successfully!",
         });
-        return;
+      } else {
+        // Create new item
+        const { error } = await supabase
+          .from("campaign_items")
+          .insert([{ ...itemData, campaign_id: createdCampaignId }]);
+
+        if (error) {
+          console.error("Error creating campaign item:", error);
+          toast({
+            title: "Error",
+            description: "Failed to add campaign item. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Success",
+          description: "Campaign item added successfully!",
+        });
       }
 
-      const newItem: CampaignItem = {
-        id: data.id,
-        name: values.name,
-        description: values.description,
-        cost: parseFloat(values.cost),
-        quantityOffered: parseInt(values.quantityOffered),
-        quantityAvailable: parseInt(values.quantityAvailable),
-        maxItemsPurchased: values.maxItemsPurchased ? parseInt(values.maxItemsPurchased) : undefined,
-        size: values.size,
-        eventStartDate: values.eventStartDate,
-        eventEndDate: values.eventEndDate,
-      };
-
-      setCampaignItems([...campaignItems, newItem]);
+      // Refresh items list, clear form, and reset editing state
+      await fetchCampaignItems(createdCampaignId);
       itemForm.reset();
-      toast({
-        title: "Success",
-        description: "Campaign item added successfully!",
-      });
+      setEditingItem(null);
     } catch (error) {
-      console.error("Error creating campaign item:", error);
+      console.error("Error with campaign item:", error);
       toast({
         title: "Error",
-        description: "Failed to add campaign item. Please try again.",
+        description: "Failed to save campaign item. Please try again.",
         variant: "destructive",
       });
     }
+  };
+
+  const editCampaignItem = (item: CampaignItem) => {
+    setEditingItem(item);
+    itemForm.reset({
+      name: item.name,
+      description: item.description || "",
+      cost: item.cost.toString(),
+      quantityOffered: item.quantityOffered.toString(),
+      quantityAvailable: item.quantityAvailable.toString(),
+      maxItemsPurchased: item.maxItemsPurchased?.toString() || "",
+      size: item.size || "",
+      eventStartDate: item.eventStartDate || "",
+      eventEndDate: item.eventEndDate || "",
+    });
   };
 
   const removeCampaignItem = async (itemId: string) => {
@@ -348,7 +413,9 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         return;
       }
 
-      setCampaignItems(campaignItems.filter(item => item.id !== itemId));
+      if (createdCampaignId) {
+        await fetchCampaignItems(createdCampaignId);
+      }
       toast({
         title: "Success",
         description: "Campaign item removed successfully!",
@@ -367,6 +434,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     setStep(1);
     setCreatedCampaignId(null);
     setCampaignItems([]);
+    setEditingItem(null);
     campaignForm.reset();
     itemForm.reset();
     onOpenChange(false);
@@ -380,12 +448,12 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {step === 1 ? (editCampaign ? "Edit Campaign" : "Add New Campaign") : "Add Campaign Items"}
+            {step === 1 ? (editCampaign ? "Edit Campaign" : "Add New Campaign") : (manageCampaignId ? "Manage Campaign Items" : "Add Campaign Items")}
           </DialogTitle>
           <DialogDescription>
             {step === 1 
-              ? "Create a new fundraising campaign for your group."
-              : "Add items to your campaign. You can add multiple items and remove them as needed."
+              ? (editCampaign ? "Edit your campaign details." : "Create a new fundraising campaign for your group.")
+              : (manageCampaignId ? "Manage items for your campaign. You can add, edit, or remove items as needed." : "Add items to your campaign. You can add multiple items and remove them as needed.")
             }
           </DialogDescription>
         </DialogHeader>
@@ -541,7 +609,9 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
           <div className="space-y-6">
             <Form {...itemForm}>
               <form onSubmit={itemForm.handleSubmit(onItemSubmit)} className="space-y-4 border rounded-lg p-4">
-                <h3 className="text-lg font-semibold">Add Campaign Item</h3>
+                <h3 className="text-lg font-semibold">
+                  {editingItem ? "Edit Campaign Item" : "Add Campaign Item"}
+                </h3>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -697,9 +767,17 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                   />
                 </div>
 
-                <Button type="submit" className="w-full">
-                  Add Item
-                </Button>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" onClick={() => {
+                    itemForm.reset();
+                    setEditingItem(null);
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">
+                    {editingItem ? "Update Item" : "Add Item"}
+                  </Button>
+                </div>
               </form>
             </Form>
 
@@ -720,13 +798,24 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                         <TableCell>{item.name}</TableCell>
                         <TableCell>${item.cost.toFixed(2)}</TableCell>
                         <TableCell>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => item.id && removeCampaignItem(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => editCampaignItem(item)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            {manageCampaignId && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => item.id && removeCampaignItem(item.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

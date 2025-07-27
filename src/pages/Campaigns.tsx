@@ -40,6 +40,7 @@ export default function Campaigns() {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [showAddCampaign, setShowAddCampaign] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [managingCampaignId, setManagingCampaignId] = useState<string | null>(null);
   const { schoolUser, loading: schoolUserLoading } = useSchoolUser();
   const { toast } = useToast();
 
@@ -423,7 +424,13 @@ export default function Campaigns() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Campaign
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="cursor-pointer">
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  setManagingCampaignId(campaign.id);
+                                  setShowAddCampaign(true);
+                                }}
+                              >
                                 <Package className="mr-2 h-4 w-4" />
                                 Manage Campaign Items
                               </DropdownMenuItem>
@@ -481,7 +488,10 @@ export default function Campaigns() {
               open={showAddCampaign}
               onOpenChange={(open) => {
                 setShowAddCampaign(open);
-                if (!open) setEditingCampaign(null);
+                if (!open) {
+                  setEditingCampaign(null);
+                  setManagingCampaignId(null);
+                }
               }}
               onCampaignAdded={fetchCampaigns}
               editCampaign={editingCampaign ? {
@@ -494,6 +504,7 @@ export default function Campaigns() {
                 group_id: editingCampaign.group_id || '',
                 campaign_type_id: editingCampaign.campaign_type_id || '',
               } : null}
+              manageCampaignId={managingCampaignId}
             />
           )}
     </div>
