@@ -188,6 +188,13 @@ const Dashboard = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Campaigns</CardTitle>
               <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/campaigns')}
+                  size="sm"
+                >
+                  Manage All Campaigns
+                </Button>
                 <Button onClick={() => setShowAddCampaignForm(true)} size="sm">Add Campaign</Button>
               </div>
             </CardHeader>
@@ -220,14 +227,6 @@ const Dashboard = () => {
                     </TableRow>)}
                 </TableBody>
               </Table>
-              <div className="mt-4 flex justify-center">
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/campaigns')}
-                >
-                  Manage All Campaigns
-                </Button>
-              </div>
             </CardContent>
           </Card>
 
