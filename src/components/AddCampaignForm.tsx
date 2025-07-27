@@ -34,6 +34,7 @@ const campaignItemSchema = z.object({
   size: z.string().optional(),
   eventStartDate: z.string().optional(),
   eventEndDate: z.string().optional(),
+  image: z.string().optional(),
 });
 
 interface AddCampaignFormProps {
@@ -74,6 +75,7 @@ interface CampaignItem {
   size?: string;
   eventStartDate?: string;
   eventEndDate?: string;
+  image?: string;
 }
 
 export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampaign, manageCampaignId }: AddCampaignFormProps) {
@@ -84,6 +86,9 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
   const [createdCampaignId, setCreatedCampaignId] = useState<string | null>(null);
   const [campaignItems, setCampaignItems] = useState<CampaignItem[]>([]);
   const [editingItem, setEditingItem] = useState<CampaignItem | null>(null);
+  const [campaignTypeId, setCampaignTypeId] = useState<string>("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const { schoolUser } = useSchoolUser();
   const { toast } = useToast();
 
@@ -112,6 +117,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       size: "",
       eventStartDate: "",
       eventEndDate: "",
+      image: "",
     },
   });
 
@@ -197,11 +203,31 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         size: item.size,
         eventStartDate: item.event_start_date,
         eventEndDate: item.event_end_date,
+        image: item.image,
       }));
 
       setCampaignItems(formattedItems);
     } catch (error) {
       console.error("Error fetching campaign items:", error);
+    }
+  };
+
+  const fetchCampaignType = async (campaignId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("campaigns")
+        .select("campaign_type_id")
+        .eq("id", campaignId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching campaign type:", error);
+        return;
+      }
+
+      setCampaignTypeId(data.campaign_type_id);
+    } catch (error) {
+      console.error("Error fetching campaign type:", error);
     }
   };
 
@@ -215,6 +241,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         setCreatedCampaignId(manageCampaignId);
         setStep(2);
         fetchCampaignItems(manageCampaignId);
+        fetchCampaignType(manageCampaignId);
       }
       // Pre-populate form if editing
       else if (editCampaign) {
@@ -228,6 +255,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
           campaignTypeId: editCampaign.campaign_type_id,
         });
         setCreatedCampaignId(editCampaign.id);
+        setCampaignTypeId(editCampaign.campaign_type_id);
       }
     }
   }, [open, schoolUser, editCampaign, manageCampaignId]);
@@ -289,8 +317,9 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
           return;
         }
 
-        setCreatedCampaignId(data.id);
-        setStep(2);
+      setCreatedCampaignId(data.id);
+      setCampaignTypeId(values.campaignTypeId);
+      setStep(2);
         toast({
           title: "Success",
           description: "Campaign created! Now add campaign items.",
@@ -308,10 +337,35 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     }
   };
 
+  const uploadImage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('campaign-item-images')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('campaign-item-images')
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
+  };
+
   const onItemSubmit = async (values: z.infer<typeof campaignItemSchema>) => {
     if (!createdCampaignId) return;
 
+    setUploading(true);
     try {
+      let imageUrl = values.image;
+
+      // Upload new image if selected
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+      }
+
       const itemData = {
         name: values.name,
         description: values.description || null,
@@ -322,6 +376,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         size: values.size || null,
         event_start_date: values.eventStartDate || null,
         event_end_date: values.eventEndDate || null,
+        image: imageUrl || null,
       };
 
       if (editingItem) {
@@ -371,6 +426,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       await fetchCampaignItems(createdCampaignId);
       itemForm.reset();
       setEditingItem(null);
+      setImageFile(null);
     } catch (error) {
       console.error("Error with campaign item:", error);
       toast({
@@ -378,11 +434,14 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         description: "Failed to save campaign item. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setUploading(false);
     }
   };
 
   const editCampaignItem = (item: CampaignItem) => {
     setEditingItem(item);
+    setImageFile(null);
     itemForm.reset({
       name: item.name,
       description: item.description || "",
@@ -393,6 +452,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       size: item.size || "",
       eventStartDate: item.eventStartDate || "",
       eventEndDate: item.eventEndDate || "",
+      image: item.image || "",
     });
   };
 
@@ -435,6 +495,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     setCreatedCampaignId(null);
     setCampaignItems([]);
     setEditingItem(null);
+    setCampaignTypeId("");
+    setImageFile(null);
     campaignForm.reset();
     itemForm.reset();
     onOpenChange(false);
@@ -723,49 +785,127 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <FormField
-                    control={itemForm.control}
-                    name="size"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Size</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. Small, Medium, Large" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* Image Upload Field */}
+                <FormField
+                  control={itemForm.control}
+                  name="image"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Item Image</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          {field.value && !imageFile && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span>Current: {field.value.split('/').pop()}</span>
+                              <Button 
+                                type="button" 
+                                variant="link" 
+                                size="sm" 
+                                className="h-auto p-0"
+                                onClick={() => document.getElementById('image-upload')?.click()}
+                              >
+                                Replace
+                              </Button>
+                            </div>
+                          )}
+                          <div 
+                            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                            onClick={() => document.getElementById('image-upload')?.click()}
+                          >
+                            <Input
+                              id="image-upload"
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  setImageFile(file);
+                                }
+                              }}
+                            />
+                            <div className="space-y-2">
+                              <div className="text-muted-foreground">
+                                {imageFile ? (
+                                  <span>Selected: {imageFile.name}</span>
+                                ) : field.value && !imageFile ? (
+                                  <span>Click to replace image</span>
+                                ) : (
+                                  <span>Click to upload an image or drag and drop</span>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                PNG, JPG, JPEG up to 10MB
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <FormField
-                    control={itemForm.control}
-                    name="eventStartDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Event Start Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* Conditional fields based on campaign type */}
+                {(() => {
+                  // Find the campaign type name
+                  const currentCampaignType = campaignTypes.find(type => type.id === campaignTypeId);
+                  const campaignTypeName = currentCampaignType?.name;
 
-                  <FormField
-                    control={itemForm.control}
-                    name="eventEndDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Event End Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                  return (
+                    <div className="grid grid-cols-3 gap-4">
+                      {/* Size field - only show for Merchandise Sales */}
+                      {campaignTypeName === "Merchandise Sale" && (
+                        <FormField
+                          control={itemForm.control}
+                          name="size"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Size</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. Small, Medium, Large" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+
+                      {/* Event dates - only show for Events */}
+                      {campaignTypeName === "Event" && (
+                        <>
+                          <FormField
+                            control={itemForm.control}
+                            name="eventStartDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Event Start Date</FormLabel>
+                                <FormControl>
+                                  <Input type="date" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={itemForm.control}
+                            name="eventEndDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Event End Date</FormLabel>
+                                <FormControl>
+                                  <Input type="date" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <div className="flex gap-2">
                   <Button type="button" variant="outline" onClick={() => {
@@ -774,8 +914,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                   }}>
                     Cancel
                   </Button>
-                  <Button type="submit">
-                    {editingItem ? "Update Item" : "Add Item"}
+                  <Button type="submit" disabled={uploading}>
+                    {uploading ? "Saving..." : (editingItem ? "Update Item" : "Add Item")}
                   </Button>
                 </div>
               </form>
