@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaign_items: {
+        Row: {
+          campaign_id: string
+          cost: number | null
+          created_at: string
+          description: string | null
+          event_end_date: string | null
+          event_start_date: string | null
+          id: string
+          image: string | null
+          max_items_purchased: number | null
+          name: string
+          quantity_available: number | null
+          quantity_offered: number | null
+          size: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          event_end_date?: string | null
+          event_start_date?: string | null
+          id?: string
+          image?: string | null
+          max_items_purchased?: number | null
+          name: string
+          quantity_available?: number | null
+          quantity_offered?: number | null
+          size?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          event_end_date?: string | null
+          event_start_date?: string | null
+          id?: string
+          image?: string | null
+          max_items_purchased?: number | null
+          name?: string
+          quantity_available?: number | null
+          quantity_offered?: number | null
+          size?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_campaign_items_campaign_id"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_type: {
         Row: {
           created_at: string
