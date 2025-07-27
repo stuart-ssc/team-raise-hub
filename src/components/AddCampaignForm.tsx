@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -89,6 +90,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
   const [campaignTypeId, setCampaignTypeId] = useState<string>("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [accordionValue, setAccordionValue] = useState<string>("");
   const { schoolUser } = useSchoolUser();
   const { toast } = useToast();
 
@@ -453,6 +455,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
   const editCampaignItem = (item: CampaignItem) => {
     setEditingItem(item);
     setImageFile(null);
+    setAccordionValue("add-item"); // Expand accordion when editing
     itemForm.reset({
       name: item.name,
       description: item.description || "",
@@ -680,258 +683,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
           </Form>
         ) : (
           <div className="space-y-6">
-            <Form {...itemForm}>
-              <form onSubmit={itemForm.handleSubmit(onItemSubmit)} className="space-y-4 border rounded-lg p-4">
-                <h3 className="text-lg font-semibold">
-                  {editingItem ? "Edit Campaign Item" : "Add Campaign Item"}
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={itemForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Item Name *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter item name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={itemForm.control}
-                    name="cost"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cost *</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.01"
-                            placeholder="0.00" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={itemForm.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Enter item description" 
-                          className="resize-none"
-                          rows={2}
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-3 gap-4">
-                  <FormField
-                    control={itemForm.control}
-                    name="quantityOffered"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Quantity Offered *</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={itemForm.control}
-                    name="quantityAvailable"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Quantity Available *</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={itemForm.control}
-                    name="maxItemsPurchased"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Max Items per Purchase</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="No limit" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Image Upload Field */}
-                <FormField
-                  control={itemForm.control}
-                  name="image"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Item Image</FormLabel>
-                      <FormControl>
-                        <div className="space-y-2">
-                          {field.value && !imageFile && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span>Current: {field.value.split('/').pop()}</span>
-                              <Button 
-                                type="button" 
-                                variant="link" 
-                                size="sm" 
-                                className="h-auto p-0"
-                                onClick={() => document.getElementById('image-upload')?.click()}
-                              >
-                                Replace
-                              </Button>
-                            </div>
-                          )}
-                          <div 
-                            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
-                            onClick={() => document.getElementById('image-upload')?.click()}
-                          >
-                            <Input
-                              id="image-upload"
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  setImageFile(file);
-                                }
-                              }}
-                            />
-                            <div className="space-y-2">
-                              <div className="text-muted-foreground">
-                                {imageFile ? (
-                                  <span>Selected: {imageFile.name}</span>
-                                ) : field.value && !imageFile ? (
-                                  <span>Click to replace image</span>
-                                ) : (
-                                  <span>Click to upload an image or drag and drop</span>
-                                )}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                PNG, JPG, JPEG up to 10MB
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Conditional fields based on campaign type */}
-                {(() => {
-                  // Find the campaign type name
-                  const currentCampaignType = campaignTypes.find(type => type.id === campaignTypeId);
-                  const campaignTypeName = currentCampaignType?.name;
-
-                  return (
-                    <div className="grid grid-cols-3 gap-4">
-                      {/* Size field - only show for Merchandise Sales */}
-                      {campaignTypeName === "Merchandise Sale" && (
-                        <FormField
-                          control={itemForm.control}
-                          name="size"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Size</FormLabel>
-                              <FormControl>
-                                <Input placeholder="e.g. Small, Medium, Large" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
-
-                      {/* Event dates - only show for Events */}
-                      {campaignTypeName === "Event" && (
-                        <>
-                          <FormField
-                            control={itemForm.control}
-                            name="eventStartDate"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Event Start Date</FormLabel>
-                                <FormControl>
-                                  <Input type="date" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={itemForm.control}
-                            name="eventEndDate"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Event End Date</FormLabel>
-                                <FormControl>
-                                  <Input type="date" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={() => {
-                    itemForm.reset();
-                    setEditingItem(null);
-                  }}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={uploading}>
-                    {uploading ? "Saving..." : (editingItem ? "Update Item" : "Add Item")}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-
+            {/* Existing Campaign Items */}
             {campaignItems.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-4">Campaign Items</h3>
@@ -974,6 +726,265 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                 </Table>
               </div>
             )}
+
+            {/* Add/Edit Item Accordion */}
+            <Accordion type="single" collapsible value={accordionValue} onValueChange={setAccordionValue}>
+              <AccordionItem value="add-item">
+                <AccordionTrigger>
+                  {editingItem ? "Edit Campaign Item" : "Add Campaign Item"}
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Form {...itemForm}>
+                    <form onSubmit={itemForm.handleSubmit(onItemSubmit)} className="space-y-4 border rounded-lg p-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={itemForm.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Item Name *</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter item name" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={itemForm.control}
+                          name="cost"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Cost *</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  step="0.01"
+                                  placeholder="0.00" 
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={itemForm.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Enter item description" 
+                                className="resize-none"
+                                rows={2}
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <FormField
+                          control={itemForm.control}
+                          name="quantityOffered"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Quantity Offered *</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  placeholder="0" 
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={itemForm.control}
+                          name="quantityAvailable"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Quantity Available *</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  placeholder="0" 
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={itemForm.control}
+                          name="maxItemsPurchased"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Max Items per Purchase</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  placeholder="No limit" 
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* Image Upload Field */}
+                      <FormField
+                        control={itemForm.control}
+                        name="image"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Item Image</FormLabel>
+                            <FormControl>
+                              <div className="space-y-2">
+                                {field.value && !imageFile && (
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <span>Current: {field.value.split('/').pop()}</span>
+                                    <Button 
+                                      type="button" 
+                                      variant="link" 
+                                      size="sm" 
+                                      className="h-auto p-0"
+                                      onClick={() => document.getElementById('image-upload')?.click()}
+                                    >
+                                      Replace
+                                    </Button>
+                                  </div>
+                                )}
+                                <div 
+                                  className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                                  onClick={() => document.getElementById('image-upload')?.click()}
+                                >
+                                  <Input
+                                    id="image-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        setImageFile(file);
+                                      }
+                                    }}
+                                  />
+                                  <div className="space-y-2">
+                                    <div className="text-muted-foreground">
+                                      {imageFile ? (
+                                        <span>Selected: {imageFile.name}</span>
+                                      ) : field.value && !imageFile ? (
+                                        <span>Click to replace image</span>
+                                      ) : (
+                                        <span>Click to upload an image or drag and drop</span>
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      PNG, JPG, JPEG up to 10MB
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Conditional fields based on campaign type */}
+                      {(() => {
+                        // Find the campaign type name
+                        const currentCampaignType = campaignTypes.find(type => type.id === campaignTypeId);
+                        const campaignTypeName = currentCampaignType?.name;
+
+                        return (
+                          <div className="grid grid-cols-3 gap-4">
+                            {/* Size field - only show for Merchandise Sales */}
+                            {campaignTypeName === "Merchandise Sale" && (
+                              <FormField
+                                control={itemForm.control}
+                                name="size"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Size</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="e.g. Small, Medium, Large" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            )}
+
+                            {/* Event dates - only show for Events */}
+                            {campaignTypeName === "Event" && (
+                              <>
+                                <FormField
+                                  control={itemForm.control}
+                                  name="eventStartDate"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Event Start Date</FormLabel>
+                                      <FormControl>
+                                        <Input type="date" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+
+                                <FormField
+                                  control={itemForm.control}
+                                  name="eventEndDate"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Event End Date</FormLabel>
+                                      <FormControl>
+                                        <Input type="date" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      <div className="flex gap-2">
+                        <Button type="button" variant="outline" onClick={() => {
+                          itemForm.reset();
+                          setEditingItem(null);
+                          setAccordionValue("");
+                        }}>
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={uploading}>
+                          {uploading ? "Saving..." : (editingItem ? "Update Item" : "Add Item")}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleClose}>
