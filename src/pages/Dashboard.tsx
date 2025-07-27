@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -128,9 +129,24 @@ const Dashboard = () => {
 
   const formatDateRange = (startDate: string | null, endDate: string | null) => {
     if (!startDate && !endDate) return '-';
-    if (!startDate) return endDate ? new Date(endDate).toLocaleDateString() : '-';
-    if (!endDate) return new Date(startDate).toLocaleDateString();
-    return `${new Date(startDate).toLocaleDateString()}-${new Date(endDate).toLocaleDateString()}`;
+    if (!startDate) return endDate ? format(new Date(endDate), 'MMM d, yyyy') : '-';
+    if (!endDate) return format(new Date(startDate), 'MMM d, yyyy');
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Same year and month
+    if (start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth()) {
+      return `${format(start, 'MMM d')}-${format(end, 'd, yyyy')}`;
+    }
+    
+    // Same year, different months
+    if (start.getFullYear() === end.getFullYear()) {
+      return `${format(start, 'MMM d')}-${format(end, 'MMM d, yyyy')}`;
+    }
+    
+    // Different years
+    return `${format(start, 'MMM d, yyyy')}-${format(end, 'MMM d, yyyy')}`;
   };
 
   // Mock data for donors
