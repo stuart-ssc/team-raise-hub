@@ -9,10 +9,14 @@ import DashboardHeader from "@/components/DashboardHeader";
 import { SchoolUserSetupModal } from "@/components/SchoolUserSetupModal";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 const Dashboard = () => {
   const { user } = useAuth();
   const { schoolUser, loading } = useSchoolUser();
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
 
   // Check if user needs to complete school/group setup
   useEffect(() => {
@@ -31,36 +35,86 @@ const Dashboard = () => {
     // This will trigger a refresh in the SchoolUserProvider
   };
 
-  // Dashboard component with reusable header
-  const campaigns = [{
-    name: "VIP Dance 2",
-    schoolGroup: "Tates Creek High School - Lacrosse",
-    goal: "$9,876",
-    startDate: "7/28/25",
-    endDate: "7/30/25",
-    status: "Inactive"
-  }, {
-    name: "VIP Dance 1",
-    schoolGroup: "Tates Creek High School - Football",
-    goal: "$5,432",
-    startDate: "7/27/25",
-    endDate: "8/02/25",
-    status: "Inactive"
-  }, {
-    name: "Test Sponsor-u",
-    schoolGroup: "Tates Creek High School - Baseball",
-    goal: "$11,000",
-    startDate: "7/06/25",
-    endDate: "7/24/25",
-    status: "Active"
-  }, {
-    name: "test dance",
-    schoolGroup: "Tates Creek High School - Men's Lacrosse",
-    goal: "$12,345",
-    startDate: "7/29/25",
-    endDate: "7/31/25",
-    status: "Inactive"
-  }];
+  const fetchCampaigns = async () => {
+    if (!schoolUser?.school_id) return;
+
+    try {
+      let query = supabase
+        .from("campaigns")
+        .select(`
+          *,
+          groups!inner(id, group_name, school_id),
+          campaign_type(id, name)
+        `)
+        .eq("groups.school_id", schoolUser.school_id)
+        .eq("status", true) // Only active campaigns
+        .order("end_date", { ascending: true }); // Sort by end date, soonest first
+
+      // Filter by selected group if one is selected
+      if (selectedGroup && selectedGroup !== "All") {
+        query = query.eq("group_id", selectedGroup);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching campaigns:", error);
+        return;
+      }
+
+      setCampaigns(data || []);
+    } catch (error) {
+      console.error("Error fetching campaigns:", error);
+    }
+  };
+
+  const fetchGroups = async () => {
+    if (!schoolUser) return;
+
+    const userRole = schoolUser.user_type.name;
+    
+    if (userRole === "Principal") {
+      // Principal sees all groups for their school
+      const { data } = await supabase
+        .from("groups")
+        .select("id, group_name")
+        .eq("school_id", schoolUser.school_id);
+      
+      setGroups(data || []);
+    } else if (userRole === "Athletic Director") {
+      // Athletic Director sees all sports teams
+      const { data } = await supabase
+        .from("groups")
+        .select("id, group_name, group_type!inner(name)")
+        .eq("school_id", schoolUser.school_id)
+        .eq("group_type.name", "Sports Team");
+      
+      setGroups(data || []);
+    } else if (["Coach", "Club Sponsor", "Booster Leader", "Team Player", "Club Participant", "Family Member"].includes(userRole)) {
+      // These roles only see groups they're connected to
+      if (schoolUser.groups) {
+        setGroups([schoolUser.groups]);
+      }
+    }
+  };
+
+  const handleGroupClick = (groupId: string | null) => {
+    setSelectedGroup(groupId);
+  };
+
+  // Fetch groups and campaigns when component mounts or dependencies change
+  useEffect(() => {
+    if (schoolUser?.school_id) {
+      fetchGroups();
+      fetchCampaigns();
+    }
+  }, [schoolUser?.school_id]);
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [selectedGroup]);
+
+  const activeGroup = selectedGroup ? groups.find(g => g.id === selectedGroup) : null;
 
   // Mock data for donors
   const donors = [{
@@ -83,7 +137,7 @@ const Dashboard = () => {
       <DashboardSidebar />
       
       <div className="flex-1 flex flex-col">
-        <DashboardHeader />
+        <DashboardHeader onGroupClick={handleGroupClick} activeGroup={activeGroup} />
 
         {/* Main Content */}
         <main className="flex-1 p-6 space-y-6">
@@ -145,17 +199,19 @@ const Dashboard = () => {
                   {campaigns.map((campaign, index) => <TableRow key={index}>
                       <TableCell className="font-medium">{campaign.name}</TableCell>
                       <TableCell>
-                        <div className="text-sm">{campaign.schoolGroup.split(' - ')[0]}</div>
-                        <div className="text-xs text-muted-foreground">{campaign.schoolGroup.split(' - ')[1]}</div>
+                        <div className="text-sm">{schoolUser?.schools?.school_name}</div>
+                        <div className="text-xs text-muted-foreground">{campaign.groups?.group_name}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm">Goal: {campaign.goal}</div>
+                        <div className="text-sm">
+                          ${campaign.amount_raised?.toLocaleString() || 0}/${campaign.goal_amount?.toLocaleString() || 0}
+                        </div>
                       </TableCell>
-                      <TableCell>{campaign.startDate}</TableCell>
-                      <TableCell>{campaign.endDate}</TableCell>
+                      <TableCell>{campaign.start_date ? new Date(campaign.start_date).toLocaleDateString() : '-'}</TableCell>
+                      <TableCell>{campaign.end_date ? new Date(campaign.end_date).toLocaleDateString() : '-'}</TableCell>
                       <TableCell>
-                        <Badge variant={campaign.status === "Active" ? "default" : "secondary"}>
-                          {campaign.status}
+                        <Badge variant={campaign.status ? "default" : "secondary"}>
+                          {campaign.status ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
                       <TableCell>
