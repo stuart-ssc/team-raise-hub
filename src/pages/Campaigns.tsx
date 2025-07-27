@@ -25,6 +25,8 @@ interface Campaign {
   status: boolean;
   group_name: string | null;
   campaign_type_name: string | null;
+  group_id?: string;
+  campaign_type_id?: string;
 }
 
 export default function Campaigns() {
@@ -37,6 +39,7 @@ export default function Campaigns() {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [showAddCampaign, setShowAddCampaign] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const { schoolUser, loading: schoolUserLoading } = useSchoolUser();
   const { toast } = useToast();
 
@@ -113,6 +116,8 @@ export default function Campaigns() {
         status: campaign.status,
         group_name: campaign.groups?.group_name || null,
         campaign_type_name: campaign.campaign_type?.name || null,
+        group_id: campaign.group_id,
+        campaign_type_id: campaign.campaign_type_id,
       }));
 
       console.log("Formatted campaigns:", formattedCampaigns);
@@ -408,7 +413,13 @@ export default function Campaigns() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-background border">
-                              <DropdownMenuItem className="cursor-pointer">
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  setEditingCampaign(campaign);
+                                  setShowAddCampaign(true);
+                                }}
+                              >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Campaign
                               </DropdownMenuItem>
@@ -465,11 +476,26 @@ export default function Campaigns() {
         </main>
       </div>
 
-      <AddCampaignForm 
-        open={showAddCampaign} 
-        onOpenChange={setShowAddCampaign}
-        onCampaignAdded={fetchCampaigns}
-      />
+          {showAddCampaign && (
+            <AddCampaignForm
+              open={showAddCampaign}
+              onOpenChange={(open) => {
+                setShowAddCampaign(open);
+                if (!open) setEditingCampaign(null);
+              }}
+              onCampaignAdded={fetchCampaigns}
+              editCampaign={editingCampaign ? {
+                id: editingCampaign.id,
+                name: editingCampaign.name,
+                description: editingCampaign.description,
+                goal_amount: editingCampaign.goal_amount,
+                start_date: editingCampaign.start_date,
+                end_date: editingCampaign.end_date,
+                group_id: editingCampaign.group_id || '',
+                campaign_type_id: editingCampaign.campaign_type_id || '',
+              } : null}
+            />
+          )}
     </div>
   );
 }

@@ -40,6 +40,16 @@ interface AddCampaignFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCampaignAdded: () => void;
+  editCampaign?: {
+    id: string;
+    name: string;
+    description: string | null;
+    goal_amount: number | null;
+    start_date: string | null;
+    end_date: string | null;
+    group_id: string;
+    campaign_type_id: string;
+  } | null;
 }
 
 interface Group {
@@ -65,7 +75,7 @@ interface CampaignItem {
   eventEndDate?: string;
 }
 
-export function AddCampaignForm({ open, onOpenChange, onCampaignAdded }: AddCampaignFormProps) {
+export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampaign }: AddCampaignFormProps) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [campaignTypes, setCampaignTypes] = useState<CampaignType[]>([]);
   const [loading, setLoading] = useState(false);
@@ -166,8 +176,22 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded }: AddCamp
     if (open) {
       fetchGroups();
       fetchCampaignTypes();
+      
+      // Pre-populate form if editing
+      if (editCampaign) {
+        campaignForm.reset({
+          name: editCampaign.name,
+          description: editCampaign.description || "",
+          goalAmount: editCampaign.goal_amount?.toString() || "",
+          startDate: editCampaign.start_date || "",
+          endDate: editCampaign.end_date || "",
+          groupId: editCampaign.group_id,
+          campaignTypeId: editCampaign.campaign_type_id,
+        });
+        setCreatedCampaignId(editCampaign.id);
+      }
     }
-  }, [open, schoolUser]);
+  }, [open, schoolUser, editCampaign]);
 
   const onCampaignSubmit = async (values: z.infer<typeof campaignSchema>) => {
     if (!schoolUser) return;
@@ -185,33 +209,58 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded }: AddCamp
         status: true,
       };
 
-      const { data, error } = await supabase
-        .from("campaigns")
-        .insert([campaignData])
-        .select()
-        .single();
+      if (editCampaign) {
+        // Update existing campaign
+        const { error } = await supabase
+          .from("campaigns")
+          .update(campaignData)
+          .eq("id", editCampaign.id);
 
-      if (error) {
-        console.error("Error creating campaign:", error);
+        if (error) {
+          console.error("Error updating campaign:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update campaign. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         toast({
-          title: "Error",
-          description: "Failed to create campaign. Please try again.",
-          variant: "destructive",
+          title: "Success",
+          description: "Campaign updated successfully!",
         });
-        return;
-      }
+        handleClose();
+      } else {
+        // Create new campaign
+        const { data, error } = await supabase
+          .from("campaigns")
+          .insert([campaignData])
+          .select()
+          .single();
 
-      setCreatedCampaignId(data.id);
-      setStep(2);
-      toast({
-        title: "Success",
-        description: "Campaign created! Now add campaign items.",
-      });
+        if (error) {
+          console.error("Error creating campaign:", error);
+          toast({
+            title: "Error",
+            description: "Failed to create campaign. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setCreatedCampaignId(data.id);
+        setStep(2);
+        toast({
+          title: "Success",
+          description: "Campaign created! Now add campaign items.",
+        });
+      }
     } catch (error) {
-      console.error("Error creating campaign:", error);
+      console.error("Error with campaign:", error);
       toast({
         title: "Error",
-        description: "Failed to create campaign. Please try again.",
+        description: "Failed to save campaign. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -330,7 +379,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded }: AddCamp
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {step === 1 ? "Add New Campaign" : "Add Campaign Items"}
+            {step === 1 ? (editCampaign ? "Edit Campaign" : "Add New Campaign") : "Add Campaign Items"}
           </DialogTitle>
           <DialogDescription>
             {step === 1 
@@ -482,7 +531,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded }: AddCamp
                   Cancel
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {loading ? "Creating..." : "Next: Add Items"}
+                  {loading ? (editCampaign ? "Updating..." : "Creating...") : (editCampaign ? "Update Campaign" : "Next: Add Items")}
                 </Button>
               </DialogFooter>
             </form>
