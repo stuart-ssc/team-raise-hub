@@ -120,6 +120,12 @@ const Dashboard = () => {
 
   const activeGroup = selectedGroup ? groups.find(g => g.id === selectedGroup) : null;
 
+  // Calculate stats from campaigns data
+  const activeCampaignsCount = campaigns.length;
+  const totalAmountRaised = campaigns.reduce((sum, campaign) => sum + (campaign.amount_raised || 0), 0);
+  const totalGoalAmount = campaigns.reduce((sum, campaign) => sum + (campaign.goal_amount || 0), 0);
+  const leftToRaise = totalGoalAmount - totalAmountRaised;
+
   const formatDateRange = (startDate: string | null, endDate: string | null) => {
     if (!startDate && !endDate) return '-';
     if (!startDate) return endDate ? new Date(endDate).toLocaleDateString() : '-';
@@ -156,14 +162,14 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
               <CardContent className="p-6">
-                <div className="text-2xl font-bold">14</div>
+                <div className="text-2xl font-bold">{activeCampaignsCount}</div>
                 <div className="text-muted-foreground">Active Campaigns</div>
               </CardContent>
             </Card>
             
             <Card>
               <CardContent className="p-6">
-                <div className="text-2xl font-bold">$25K</div>
+                <div className="text-2xl font-bold">${totalAmountRaised.toLocaleString()}</div>
                 <div className="text-muted-foreground">Amount Raised</div>
               </CardContent>
             </Card>
@@ -177,7 +183,7 @@ const Dashboard = () => {
             
             <Card>
               <CardContent className="p-6">
-                <div className="text-2xl font-bold">$15K</div>
+                <div className="text-2xl font-bold">${Math.max(0, leftToRaise).toLocaleString()}</div>
                 <div className="text-muted-foreground">Left to Raise</div>
               </CardContent>
             </Card>
