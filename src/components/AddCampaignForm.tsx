@@ -424,7 +424,18 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
 
       // Refresh items list, clear form, and reset editing state
       await fetchCampaignItems(createdCampaignId);
-      itemForm.reset();
+      itemForm.reset({
+        name: "",
+        description: "",
+        cost: "",
+        quantityOffered: "",
+        quantityAvailable: "",
+        maxItemsPurchased: "",
+        size: "",
+        eventStartDate: "",
+        eventEndDate: "",
+        image: "",
+      });
       setEditingItem(null);
       setImageFile(null);
     } catch (error) {
