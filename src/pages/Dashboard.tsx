@@ -7,16 +7,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { SchoolUserSetupModal } from "@/components/SchoolUserSetupModal";
+import { AddCampaignForm } from "@/components/AddCampaignForm";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 const Dashboard = () => {
   const { user } = useAuth();
   const { schoolUser, loading } = useSchoolUser();
+  const navigate = useNavigate();
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
+  const [showAddCampaignForm, setShowAddCampaignForm] = useState(false);
 
   // Check if user needs to complete school/group setup
   useEffect(() => {
@@ -116,6 +120,13 @@ const Dashboard = () => {
 
   const activeGroup = selectedGroup ? groups.find(g => g.id === selectedGroup) : null;
 
+  const formatDateRange = (startDate: string | null, endDate: string | null) => {
+    if (!startDate && !endDate) return '-';
+    if (!startDate) return endDate ? new Date(endDate).toLocaleDateString() : '-';
+    if (!endDate) return new Date(startDate).toLocaleDateString();
+    return `${new Date(startDate).toLocaleDateString()}-${new Date(endDate).toLocaleDateString()}`;
+  };
+
   // Mock data for donors
   const donors = [{
     name: "Jeff Conner",
@@ -177,9 +188,7 @@ const Dashboard = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Campaigns</CardTitle>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">Sort</Button>
-                <Button variant="outline" size="sm">Filter</Button>
-                <Button size="sm">New</Button>
+                <Button onClick={() => setShowAddCampaignForm(true)} size="sm">Add Campaign</Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -187,11 +196,9 @@ const Dashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Campaign</TableHead>
-                    <TableHead>School Group</TableHead>
+                    <TableHead>Group</TableHead>
                     <TableHead>Amount Raised</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Dates</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -199,7 +206,6 @@ const Dashboard = () => {
                   {campaigns.map((campaign, index) => <TableRow key={index}>
                       <TableCell className="font-medium">{campaign.name}</TableCell>
                       <TableCell>
-                        <div className="text-sm">{schoolUser?.schools?.school_name}</div>
                         <div className="text-xs text-muted-foreground">{campaign.groups?.group_name}</div>
                       </TableCell>
                       <TableCell>
@@ -207,19 +213,21 @@ const Dashboard = () => {
                           ${campaign.amount_raised?.toLocaleString() || 0}/${campaign.goal_amount?.toLocaleString() || 0}
                         </div>
                       </TableCell>
-                      <TableCell>{campaign.start_date ? new Date(campaign.start_date).toLocaleDateString() : '-'}</TableCell>
-                      <TableCell>{campaign.end_date ? new Date(campaign.end_date).toLocaleDateString() : '-'}</TableCell>
-                      <TableCell>
-                        <Badge variant={campaign.status ? "default" : "secondary"}>
-                          {campaign.status ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
+                      <TableCell>{formatDateRange(campaign.start_date, campaign.end_date)}</TableCell>
                       <TableCell>
                         <Button variant="ghost" size="sm">⋮</Button>
                       </TableCell>
                     </TableRow>)}
                 </TableBody>
               </Table>
+              <div className="mt-4 flex justify-center">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/campaigns')}
+                >
+                  Manage All Campaigns
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -278,6 +286,15 @@ const Dashboard = () => {
           userId={user.id}
         />
       )}
+
+      {/* Add Campaign Form */}
+      <AddCampaignForm 
+        open={showAddCampaignForm}
+        onOpenChange={setShowAddCampaignForm}
+        onCampaignAdded={() => {
+          fetchCampaigns();
+        }}
+      />
     </div>;
 };
 export default Dashboard;
