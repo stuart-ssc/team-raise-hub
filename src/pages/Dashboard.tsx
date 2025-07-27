@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { SchoolUserSetupModal } from "@/components/SchoolUserSetupModal";
@@ -22,6 +23,8 @@ const Dashboard = () => {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
   const [showAddCampaignForm, setShowAddCampaignForm] = useState(false);
+  const [editCampaign, setEditCampaign] = useState<any>(null);
+  const [manageCampaignId, setManageCampaignId] = useState<string | null>(null);
 
   // Check if user needs to complete school/group setup
   useEffect(() => {
@@ -243,9 +246,29 @@ const Dashboard = () => {
                         </div>
                       </TableCell>
                       <TableCell>{formatDateRange(campaign.start_date, campaign.end_date)}</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm">⋮</Button>
-                      </TableCell>
+                       <TableCell>
+                         <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                             <Button variant="ghost" size="sm">⋮</Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="end">
+                             <DropdownMenuItem onClick={() => {
+                               setEditCampaign(campaign);
+                               setManageCampaignId(null);
+                               setShowAddCampaignForm(true);
+                             }}>
+                               Update Campaign
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => {
+                               setEditCampaign(null);
+                               setManageCampaignId(campaign.id);
+                               setShowAddCampaignForm(true);
+                             }}>
+                               Manage Items
+                             </DropdownMenuItem>
+                           </DropdownMenuContent>
+                         </DropdownMenu>
+                       </TableCell>
                     </TableRow>)}
                 </TableBody>
               </Table>
@@ -311,10 +334,18 @@ const Dashboard = () => {
       {/* Add Campaign Form */}
       <AddCampaignForm 
         open={showAddCampaignForm}
-        onOpenChange={setShowAddCampaignForm}
+        onOpenChange={(open) => {
+          setShowAddCampaignForm(open);
+          if (!open) {
+            setEditCampaign(null);
+            setManageCampaignId(null);
+          }
+        }}
         onCampaignAdded={() => {
           fetchCampaigns();
         }}
+        editCampaign={editCampaign}
+        manageCampaignId={manageCampaignId}
       />
     </div>;
 };
