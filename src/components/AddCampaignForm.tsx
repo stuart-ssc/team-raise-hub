@@ -230,6 +230,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
           title: "Success",
           description: "Campaign updated successfully!",
         });
+        onCampaignAdded(); // Refresh the campaigns list
         handleClose();
       } else {
         // Create new campaign
