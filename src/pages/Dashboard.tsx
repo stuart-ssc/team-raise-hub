@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Edit, Package } from "lucide-react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { SchoolUserSetupModal } from "@/components/SchoolUserSetupModal";
@@ -249,21 +250,31 @@ const Dashboard = () => {
                        <TableCell>
                          <DropdownMenu>
                            <DropdownMenuTrigger asChild>
-                             <Button variant="ghost" size="sm">⋮</Button>
+                             <Button variant="outline" size="sm">
+                               <MoreHorizontal className="h-4 w-4" />
+                             </Button>
                            </DropdownMenuTrigger>
-                           <DropdownMenuContent align="end">
-                             <DropdownMenuItem onClick={() => {
-                               setEditCampaign(campaign);
-                               setManageCampaignId(null);
-                               setShowAddCampaignForm(true);
-                             }}>
+                           <DropdownMenuContent align="end" className="bg-background border">
+                             <DropdownMenuItem 
+                               className="cursor-pointer"
+                               onClick={() => {
+                                 setEditCampaign(campaign);
+                                 setManageCampaignId(null);
+                                 setShowAddCampaignForm(true);
+                               }}
+                             >
+                               <Edit className="mr-2 h-4 w-4" />
                                Update Campaign
                              </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => {
-                               setEditCampaign(null);
-                               setManageCampaignId(campaign.id);
-                               setShowAddCampaignForm(true);
-                             }}>
+                             <DropdownMenuItem 
+                               className="cursor-pointer"
+                               onClick={() => {
+                                 setEditCampaign(null);
+                                 setManageCampaignId(campaign.id);
+                                 setShowAddCampaignForm(true);
+                               }}
+                             >
+                               <Package className="mr-2 h-4 w-4" />
                                Manage Items
                              </DropdownMenuItem>
                            </DropdownMenuContent>
