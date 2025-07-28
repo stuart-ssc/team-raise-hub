@@ -174,7 +174,7 @@ const CampaignLanding = () => {
   const schoolPrimaryColor = campaign.groups?.schools["Primary Color"];
   const heroStyle = schoolPrimaryColor 
     ? {
-        background: `linear-gradient(to right, ${schoolPrimaryColor}99, ${schoolPrimaryColor}73)`,
+        background: `linear-gradient(to right, ${schoolPrimaryColor}CC, ${schoolPrimaryColor}AD)`,
       }
     : undefined;
 
