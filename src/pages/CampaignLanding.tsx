@@ -21,6 +21,10 @@ interface CampaignData {
   groups: {
     id: string;
     group_name: string;
+    group_type: {
+      id: string;
+      name: string;
+    } | null;
     schools: {
       id: string;
       school_name: string;
@@ -76,6 +80,7 @@ const CampaignLanding = () => {
           groups!inner(
             id,
             group_name,
+            group_type(id, name),
             schools!inner(id, school_name, city, state, "Primary Color")
           ),
           campaign_type(id, name)
@@ -191,6 +196,48 @@ const CampaignLanding = () => {
       }
     : undefined;
 
+  // Get dynamic content based on campaign type
+  const getSectionTitle = () => {
+    const campaignType = campaign.campaign_type?.name?.toLowerCase();
+    switch (campaignType) {
+      case 'sponsorship':
+        return 'Sponsorship Opportunities';
+      case 'donation':
+        return 'Donation Opportunities';
+      case 'merchandise sales':
+        return 'Available Merchandise';
+      case 'event':
+        return 'Event Experience Opportunities';
+      default:
+        return 'Available Items';
+    }
+  };
+
+  const getSectionDescription = () => {
+    const campaignType = campaign.campaign_type?.name?.toLowerCase();
+    const schoolName = campaign.groups?.schools.school_name || '';
+    const groupName = campaign.groups?.group_name || '';
+    const groupType = campaign.groups?.group_type?.name?.toLowerCase() || '';
+    
+    // Determine if it's a sports team (treat as "team") or use full group type
+    const teamText = groupType.includes('sport') ? 'team' : groupType;
+    
+    const supportText = `${schoolName} ${groupName} ${teamText}`;
+    
+    switch (campaignType) {
+      case 'sponsorship':
+        return `Select the sponsorship opportunity and quantity to show your support to the ${supportText}.`;
+      case 'donation':
+        return `Select the donation opportunity and quantity to show your support to the ${supportText}.`;
+      case 'merchandise sales':
+        return `Select the merchandise item and quantity to show your support to the ${supportText}.`;
+      case 'event':
+        return `Select the event experience and quantity to show your support to the ${supportText}.`;
+      default:
+        return 'Select the items and quantities you\'d like to purchase';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -262,9 +309,9 @@ const CampaignLanding = () => {
       {/* Campaign Items */}
       <div className="max-w-6xl mx-auto p-6">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-2">Available Items</h2>
+          <h2 className="text-2xl font-bold mb-2">{getSectionTitle()}</h2>
           <p className="text-muted-foreground">
-            Select the items and quantities you'd like to purchase
+            {getSectionDescription()}
           </p>
         </div>
 
