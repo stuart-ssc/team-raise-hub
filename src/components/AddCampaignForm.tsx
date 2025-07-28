@@ -740,12 +740,16 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                           <FormItem>
                             <FormLabel>Goal Amount</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.01"
-                                placeholder="0.00" 
-                                {...field} 
-                              />
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                                <Input 
+                                  type="number" 
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  className="pl-7"
+                                  {...field} 
+                                />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -788,12 +792,16 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                           <FormItem>
                             <FormLabel>Goal Amount</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.01"
-                                placeholder="0.00" 
-                                {...field} 
-                              />
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                                <Input 
+                                  type="number" 
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  className="pl-7"
+                                  {...field} 
+                                />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
