@@ -32,7 +32,7 @@ const DashboardSidebar = () => {
 
   return (
     <div className={`bg-sidebar text-sidebar-foreground transition-all duration-300 ${
-      isCollapsed ? 'w-24' : 'w-64'
+      isCollapsed ? 'w-16' : 'w-64'
     } flex flex-col h-screen`}>
       {/* Header */}
       <div className={`border-b border-sidebar-border ${isCollapsed ? 'p-1' : 'p-4'}`}>
