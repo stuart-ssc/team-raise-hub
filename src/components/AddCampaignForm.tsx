@@ -667,76 +667,142 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={campaignForm.control}
-                  name="groupId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Group *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select group" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {groups.map((group) => (
-                            <SelectItem key={group.id} value={group.id}>
-                              {group.group_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {(() => {
+                // Check if user should see group dropdown
+                const shouldShowGroupDropdown = !schoolUser || 
+                  groups.length !== 1 || 
+                  !['Coach', 'Club Sponsor', 'Booster Leader'].includes(schoolUser.user_type?.name || '');
 
-                <FormField
-                  control={campaignForm.control}
-                  name="campaignTypeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Campaign Type *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {campaignTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                // Auto-set group value if user only has one group and shouldn't see dropdown
+                if (!shouldShowGroupDropdown && groups.length === 1 && !campaignForm.getValues('groupId')) {
+                  campaignForm.setValue('groupId', groups[0].id);
+                }
 
-              <FormField
-                control={campaignForm.control}
-                name="goalAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Goal Amount</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.01"
-                        placeholder="0.00" 
-                        {...field} 
+                if (shouldShowGroupDropdown) {
+                  return (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={campaignForm.control}
+                          name="groupId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Group *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select group" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {groups.map((group) => (
+                                    <SelectItem key={group.id} value={group.id}>
+                                      {group.group_name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={campaignForm.control}
+                          name="campaignTypeId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Campaign Type *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {campaignTypes.map((type) => (
+                                    <SelectItem key={type.id} value={type.id}>
+                                      {type.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={campaignForm.control}
+                        name="goalAmount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Goal Amount</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.01"
+                                placeholder="0.00" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    </>
+                  );
+                } else {
+                  return (
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={campaignForm.control}
+                        name="campaignTypeId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Campaign Type *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {campaignTypes.map((type) => (
+                                  <SelectItem key={type.id} value={type.id}>
+                                    {type.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={campaignForm.control}
+                        name="goalAmount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Goal Amount</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.01"
+                                placeholder="0.00" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  );
+                }
+              })()}
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField
