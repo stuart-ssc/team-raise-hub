@@ -1,15 +1,13 @@
-import { Shield } from "lucide-react";
+
 
 const SchoolLogo = ({ className = "" }: { className?: string }) => {
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <div className="bg-primary text-primary-foreground p-2 rounded-lg">
-        <Shield className="h-6 w-6" />
-      </div>
-      <div>
-        <div className="font-bold text-lg leading-tight">SCHOOL SPONSOR</div>
-        <div className="font-bold text-lg leading-tight">CONNECT</div>
-      </div>
+    <div className={`flex items-center ${className}`}>
+      <img 
+        src="/lovable-uploads/54b4c57b-1368-44fd-a957-856926bb41dc.png" 
+        alt="School Sponsor Connect Logo" 
+        className="h-8 w-auto"
+      />
     </div>
   );
 };
