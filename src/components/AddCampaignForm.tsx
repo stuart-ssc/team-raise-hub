@@ -24,6 +24,7 @@ const campaignSchema = z.object({
   groupId: z.string().min(1, "Group is required"),
   campaignTypeId: z.string().min(1, "Campaign type is required"),
   slug: z.string().min(1, "URL slug is required"),
+  imageUrl: z.string().optional(),
 });
 
 const campaignItemSchema = z.object({
@@ -53,6 +54,7 @@ interface AddCampaignFormProps {
     group_id: string;
     campaign_type_id: string;
     slug: string | null;
+    image_url: string | null;
   } | null;
   manageCampaignId?: string | null;
 }
@@ -91,6 +93,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
   const [editingItem, setEditingItem] = useState<CampaignItem | null>(null);
   const [campaignTypeId, setCampaignTypeId] = useState<string>("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [campaignImageFile, setCampaignImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [accordionValue, setAccordionValue] = useState<string>("");
   const [slugExists, setSlugExists] = useState(false);
@@ -109,6 +112,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       groupId: "",
       campaignTypeId: "",
       slug: "",
+      imageUrl: "",
     },
   });
 
@@ -295,6 +299,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
           groupId: editCampaign.group_id,
           campaignTypeId: editCampaign.campaign_type_id,
           slug: editCampaign.slug || "",
+          imageUrl: editCampaign.image_url || "",
         });
         setCreatedCampaignId(editCampaign.id);
         setCampaignTypeId(editCampaign.campaign_type_id);
@@ -315,6 +320,36 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
 
     setLoading(true);
     try {
+      // Upload campaign image if selected
+      let imageUrl = values.imageUrl;
+      if (campaignImageFile) {
+        try {
+          const fileExt = campaignImageFile.name.split('.').pop();
+          const fileName = `campaigns/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('campaign-item-images')
+            .upload(fileName, campaignImageFile);
+
+          if (uploadError) {
+            throw uploadError;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('campaign-item-images')
+            .getPublicUrl(fileName);
+
+          imageUrl = publicUrl;
+        } catch (uploadError) {
+          console.error("Error uploading campaign image:", uploadError);
+          toast({
+            title: "Warning",
+            description: "Campaign saved but image upload failed. You can update the image later.",
+            variant: "default",
+          });
+        }
+      }
+
       const campaignData = {
         name: values.name,
         description: values.description || null,
@@ -325,6 +360,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         campaign_type_id: values.campaignTypeId,
         slug: values.slug,
         status: true,
+        image_url: imageUrl || null,
       };
 
       if (editCampaign) {
@@ -560,6 +596,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     setEditingItem(null);
     setCampaignTypeId("");
     setImageFile(null);
+    setCampaignImageFile(null);
     campaignForm.reset();
     itemForm.reset();
     onOpenChange(false);
@@ -661,6 +698,67 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                         rows={3}
                         {...field} 
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Campaign Image Upload Field */}
+              <FormField
+                control={campaignForm.control}
+                name="imageUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Campaign Image</FormLabel>
+                    <FormControl>
+                      <div className="space-y-2">
+                        {field.value && !campaignImageFile && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>Current: {field.value.split('/').pop()}</span>
+                            <Button 
+                              type="button" 
+                              variant="link" 
+                              size="sm" 
+                              className="h-auto p-0"
+                              onClick={() => document.getElementById('campaign-image-upload')?.click()}
+                            >
+                              Replace
+                            </Button>
+                          </div>
+                        )}
+                        <div 
+                          className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                          onClick={() => document.getElementById('campaign-image-upload')?.click()}
+                        >
+                          <Input
+                            id="campaign-image-upload"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setCampaignImageFile(file);
+                              }
+                            }}
+                          />
+                          <div className="space-y-2">
+                            <div className="text-muted-foreground">
+                              {campaignImageFile ? (
+                                <span>Selected: {campaignImageFile.name}</span>
+                              ) : field.value && !campaignImageFile ? (
+                                <span>Click to replace image</span>
+                              ) : (
+                                <span>Click to upload an image or drag and drop</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              This image will be displayed on your campaign landing page. PNG, JPG, JPEG up to 10MB
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

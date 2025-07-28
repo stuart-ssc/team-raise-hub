@@ -107,6 +107,7 @@ export type Database = {
           goal_amount: number | null
           group_id: string | null
           id: string
+          image_url: string | null
           name: string
           slug: string | null
           start_date: string | null
@@ -122,6 +123,7 @@ export type Database = {
           goal_amount?: number | null
           group_id?: string | null
           id?: string
+          image_url?: string | null
           name: string
           slug?: string | null
           start_date?: string | null
@@ -137,6 +139,7 @@ export type Database = {
           goal_amount?: number | null
           group_id?: string | null
           id?: string
+          image_url?: string | null
           name?: string
           slug?: string | null
           start_date?: string | null
@@ -492,11 +495,13 @@ export type Database = {
           low_grade: string | null
           NCES_School_ID: string | null
           phone: string | null
+          "Primary Color": string | null
           reduced_lunch: number | null
           school_district_id: string | null
           school_name: string
           school_type: string | null
           school_type_id: string | null
+          "Secondary Color": string | null
           state: string | null
           state_id: number | null
           state_school_ID: string | null
@@ -526,11 +531,13 @@ export type Database = {
           low_grade?: string | null
           NCES_School_ID?: string | null
           phone?: string | null
+          "Primary Color"?: string | null
           reduced_lunch?: number | null
           school_district_id?: string | null
           school_name: string
           school_type?: string | null
           school_type_id?: string | null
+          "Secondary Color"?: string | null
           state?: string | null
           state_id?: number | null
           state_school_ID?: string | null
@@ -560,11 +567,13 @@ export type Database = {
           low_grade?: string | null
           NCES_School_ID?: string | null
           phone?: string | null
+          "Primary Color"?: string | null
           reduced_lunch?: number | null
           school_district_id?: string | null
           school_name?: string
           school_type?: string | null
           school_type_id?: string | null
+          "Secondary Color"?: string | null
           state?: string | null
           state_id?: number | null
           state_school_ID?: string | null

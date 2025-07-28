@@ -18,6 +18,7 @@ interface CampaignData {
   start_date: string | null;
   end_date: string | null;
   status: boolean | null;
+  image_url: string | null;
   groups: {
     id: string;
     group_name: string;
@@ -244,10 +245,21 @@ const CampaignLanding = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div 
-        className="border-b"
+        className="border-b relative"
         style={heroStyle}
       >
-        <div className="max-w-6xl mx-auto p-6 md:p-8">
+        {/* Campaign Background Image */}
+        {campaign.image_url && (
+          <div className="absolute inset-0">
+            <img 
+              src={campaign.image_url} 
+              alt={campaign.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/50"></div>
+          </div>
+        )}
+        <div className="max-w-6xl mx-auto p-6 md:p-8 relative z-10">
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row md:items-center gap-2">
               <Badge variant="secondary" className="w-fit">
