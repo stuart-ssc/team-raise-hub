@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Groups from "./pages/Groups";
 import Users from "./pages/Users";
 import Campaigns from "./pages/Campaigns";
+import CampaignLanding from "./pages/CampaignLanding";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const AppContent = () => {
         <Route path="/" element={<PublicRoute><Index /></PublicRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+        <Route path="/c/:slug" element={<CampaignLanding />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/dashboard/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
         <Route path="/dashboard/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
