@@ -195,7 +195,7 @@ const CampaignLanding = () => {
         background: `linear-gradient(to right, ${schoolPrimaryColor}CC, ${schoolPrimaryColor}AD)`,
       }
     : {
-        background: `linear-gradient(to right, #3b82f6CC, #3b82f6AD)`, // Blue fallback color
+        background: `linear-gradient(to right, #ADD8E6CC, #ADD8E6AD)`, // Light blue fallback color
       };
 
   // Get dynamic content based on campaign type
