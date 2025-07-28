@@ -241,7 +241,7 @@ const Dashboard = () => {
               <div className="flex items-center gap-2">
                 <Button 
                   variant="outline" 
-                  onClick={() => navigate('/campaigns')}
+                  onClick={() => navigate('/dashboard/campaigns')}
                   size="sm"
                 >
                   Manage All Campaigns
