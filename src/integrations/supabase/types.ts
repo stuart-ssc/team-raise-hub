@@ -108,6 +108,7 @@ export type Database = {
           group_id: string | null
           id: string
           name: string
+          slug: string | null
           start_date: string | null
           status: boolean | null
           updated_at: string
@@ -122,6 +123,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           name: string
+          slug?: string | null
           start_date?: string | null
           status?: boolean | null
           updated_at?: string
@@ -136,6 +138,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           name?: string
+          slug?: string | null
           start_date?: string | null
           status?: boolean | null
           updated_at?: string
