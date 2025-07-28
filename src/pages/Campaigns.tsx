@@ -426,6 +426,16 @@ export default function Campaigns() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Campaign
                               </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  setManagingCampaignId(campaign.id);
+                                  setShowAddCampaign(true);
+                                }}
+                              >
+                                <Package className="mr-2 h-4 w-4" />
+                                Manage Campaign Items
+                              </DropdownMenuItem>
                               {campaign.slug && (
                                 <DropdownMenuItem 
                                   className="cursor-pointer"
@@ -437,16 +447,6 @@ export default function Campaigns() {
                                   Preview Campaign Page
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem 
-                                className="cursor-pointer"
-                                onClick={() => {
-                                  setManagingCampaignId(campaign.id);
-                                  setShowAddCampaign(true);
-                                }}
-                              >
-                                <Package className="mr-2 h-4 w-4" />
-                                Manage Campaign Items
-                              </DropdownMenuItem>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <DropdownMenuItem 
