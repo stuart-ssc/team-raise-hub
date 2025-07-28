@@ -32,11 +32,11 @@ const DashboardSidebar = () => {
 
   return (
     <div className={`bg-sidebar text-sidebar-foreground transition-all duration-300 ${
-      isCollapsed ? 'w-16' : 'w-64'
+      isCollapsed ? 'w-8' : 'w-64'
     } flex flex-col h-screen`}>
       {/* Header */}
-      <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center justify-between">
+      <div className={`border-b border-sidebar-border ${isCollapsed ? 'p-1' : 'p-4'}`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           {!isCollapsed && (
             <SchoolLogo className="text-sidebar-foreground [&>div:first-child]:bg-sidebar-primary [&>div:first-child]:text-sidebar-primary-foreground" />
           )}
@@ -52,7 +52,7 @@ const DashboardSidebar = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className={`flex-1 ${isCollapsed ? 'p-1' : 'p-4'}`}>
         <ul className="space-y-2">
           {sidebarItems.map((item) => {
             const Icon = item.icon;
@@ -67,7 +67,11 @@ const DashboardSidebar = () => {
               <li key={item.title}>
                 <NavLink
                   to={item.url}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                  className={`flex items-center transition-colors rounded-md ${
+                    isCollapsed 
+                      ? 'justify-center p-1' 
+                      : 'gap-3 px-3 py-2'
+                  } ${
                     active
                       ? 'bg-sidebar-primary text-sidebar-primary-foreground'
                       : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
