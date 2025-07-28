@@ -26,6 +26,7 @@ interface CampaignData {
       school_name: string;
       city: string;
       state: string;
+      "Primary Color": string | null;
     };
   } | null;
   campaign_type: {
@@ -75,7 +76,7 @@ const CampaignLanding = () => {
           groups!inner(
             id,
             group_name,
-            schools!inner(id, school_name, city, state)
+            schools!inner(id, school_name, city, state, "Primary Color")
           ),
           campaign_type(id, name)
         `)
@@ -88,7 +89,7 @@ const CampaignLanding = () => {
         return;
       }
 
-      setCampaign(campaignData);
+      setCampaign(campaignData as unknown as CampaignData);
 
       // Fetch campaign items
       const { data: itemsData, error: itemsError } = await supabase
@@ -169,10 +170,21 @@ const CampaignLanding = () => {
     ? Math.min((campaign.amount_raised || 0) / campaign.goal_amount * 100, 100)
     : 0;
 
+  // Get school's primary color or fallback to design system primary
+  const schoolPrimaryColor = campaign.groups?.schools["Primary Color"];
+  const heroStyle = schoolPrimaryColor 
+    ? {
+        background: `linear-gradient(to right, ${schoolPrimaryColor}10, ${schoolPrimaryColor}05)`,
+      }
+    : undefined;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b">
+      <div 
+        className={schoolPrimaryColor ? "border-b" : "bg-gradient-to-r from-primary/10 to-primary/5 border-b"}
+        style={heroStyle}
+      >
         <div className="max-w-6xl mx-auto p-6 md:p-8">
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row md:items-center gap-2">
