@@ -59,7 +59,7 @@ const DashboardSidebar = () => {
       </div>
 
       {/* Navigation */}
-      <nav className={`flex-1 ${isCollapsed ? 'p-1' : 'p-4'}`}>
+      <nav className={`flex-1 h-full ${isCollapsed ? 'p-1' : 'p-4'}`}>
         <ul className="space-y-2">
           {sidebarItems.map((item) => {
             const Icon = item.icon;
