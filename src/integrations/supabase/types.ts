@@ -669,6 +669,10 @@ export type Database = {
         Args: { target_school_user_id: string }
         Returns: boolean
       }
+      generate_campaign_slug: {
+        Args: { campaign_name: string; campaign_id?: string }
+        Returns: string
+      }
       user_belongs_to_school: {
         Args: { user_id: string; school_id: string }
         Returns: boolean
