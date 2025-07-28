@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { AddCampaignForm } from "@/components/AddCampaignForm";
-import { ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Package, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Package, X, ExternalLink } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Campaign {
@@ -426,6 +426,17 @@ export default function Campaigns() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Campaign
                               </DropdownMenuItem>
+                              {campaign.slug && (
+                                <DropdownMenuItem 
+                                  className="cursor-pointer"
+                                  onClick={() => {
+                                    window.open(`/c/${campaign.slug}`, '_blank');
+                                  }}
+                                >
+                                  <ExternalLink className="mr-2 h-4 w-4" />
+                                  Preview Campaign Page
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem 
                                 className="cursor-pointer"
                                 onClick={() => {
