@@ -17,7 +17,10 @@ const sidebarItems = [
 
 const DashboardSidebar = () => {
   const isMobile = useIsMobile();
-  const [isCollapsed, setIsCollapsed] = useState(isMobile);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebar-collapsed');
+    return saved ? JSON.parse(saved) : isMobile;
+  });
   const location = useLocation();
   const { schoolUser } = useSchoolUser();
 
@@ -52,7 +55,11 @@ const DashboardSidebar = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={() => {
+              const newState = !isCollapsed;
+              setIsCollapsed(newState);
+              localStorage.setItem('sidebar-collapsed', JSON.stringify(newState));
+            }}
             className="text-sidebar-foreground hover:bg-sidebar-accent p-2"
           >
             <Menu className="h-4 w-4" />
