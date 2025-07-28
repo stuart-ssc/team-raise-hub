@@ -8,6 +8,7 @@ import { useSchoolUser } from "@/hooks/useSchoolUser";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DashboardHeaderProps {
   activeGroup?: {
@@ -22,6 +23,7 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
   const { signOut } = useAuth();
   const { schoolUser } = useSchoolUser();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
 
   // Fetch groups based on user role
@@ -64,14 +66,14 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
   };
 
   return (
-    <header className="bg-background px-6 py-4 flex items-center justify-between">
+    <header className="bg-background px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div className="flex flex-col gap-1">
-        <h1 id="school-name-title" className="text-3xl font-bold text-foreground">{schoolUser?.schools?.school_name || "School"}</h1>
-         <div className="flex items-center gap-4 mb-3">
-           <span className="text-muted-foreground">Teams/Groups:</span>
+        <h1 id="school-name-title" className="text-xl md:text-3xl font-bold text-foreground">{schoolUser?.schools?.school_name || "School"}</h1>
+         <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-3">
+           <span className="text-muted-foreground text-sm md:text-base">Teams/Groups:</span>
            <Badge 
              variant={!activeGroup ? "default" : "secondary"}
-             className={showRosters ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+             className={`text-xs md:text-sm ${showRosters ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
              onClick={() => {
                if (!showRosters && onGroupClick) {
                  onGroupClick(null);
@@ -86,7 +88,7 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
                <Badge 
                  key={group.id} 
                  variant={activeGroup?.id === group.id ? "default" : "secondary"}
-                 className="cursor-pointer"
+                 className="cursor-pointer text-xs md:text-sm"
                  onClick={() => onGroupClick && onGroupClick(group.id)}
                >
                  {group.group_name}
@@ -95,7 +97,7 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
         </div>
       </div>
       
-      <div className="flex items-start gap-4">
+      <div className="flex items-center gap-2 md:gap-4 self-start md:self-auto">
         <Button variant="ghost" size="sm">
           <Bell className="h-4 w-4" />
         </Button>

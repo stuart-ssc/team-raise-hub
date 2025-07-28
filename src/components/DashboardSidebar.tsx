@@ -4,6 +4,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import SchoolLogo from "@/components/SchoolLogo";
 import { Button } from "@/components/ui/button";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const sidebarItems = [
   { title: "Home", icon: Home, url: "/dashboard", end: true },
@@ -15,7 +16,8 @@ const sidebarItems = [
 ];
 
 const DashboardSidebar = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const isMobile = useIsMobile();
+  const [isCollapsed, setIsCollapsed] = useState(isMobile);
   const location = useLocation();
   const { schoolUser } = useSchoolUser();
 
@@ -33,7 +35,7 @@ const DashboardSidebar = () => {
   return (
     <div className={`bg-sidebar text-sidebar-foreground transition-all duration-300 ${
       isCollapsed ? 'w-16' : 'w-64'
-    } flex flex-col`}>
+    } ${isMobile ? 'fixed inset-y-0 left-0 z-50' : ''} flex flex-col`}>
       {/* Header */}
       <div className={`border-b border-sidebar-border ${isCollapsed ? 'p-1 flex flex-col items-center gap-2' : 'p-4'}`}>
         {isCollapsed && (

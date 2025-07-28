@@ -15,10 +15,12 @@ import { useSchoolUser } from "@/hooks/useSchoolUser";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 const Dashboard = () => {
   const { user } = useAuth();
   const { schoolUser, loading } = useSchoolUser();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [totalCampaigns, setTotalCampaigns] = useState(0);
@@ -198,55 +200,56 @@ const Dashboard = () => {
   return <div className="flex min-h-screen w-full bg-background">
       <DashboardSidebar />
       
-      <div className="flex-1 flex flex-col">
+      <div className={`flex-1 flex flex-col ${isMobile ? 'pl-16' : ''}`}>
         <DashboardHeader onGroupClick={handleGroupClick} activeGroup={activeGroup} />
 
         {/* Main Content */}
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-4 md:p-6 space-y-4 md:space-y-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             <Card>
-              <CardContent className="p-6">
-                <div className="text-2xl font-bold">{activeCampaignsCount}</div>
-                <div className="text-muted-foreground">Active Campaigns</div>
+              <CardContent className="p-4 md:p-6">
+                <div className="text-lg md:text-2xl font-bold">{activeCampaignsCount}</div>
+                <div className="text-xs md:text-sm text-muted-foreground">Active Campaigns</div>
               </CardContent>
             </Card>
             
             <Card>
-              <CardContent className="p-6">
-                <div className="text-2xl font-bold">${totalAmountRaised.toLocaleString()}</div>
-                <div className="text-muted-foreground">Amount Raised</div>
+              <CardContent className="p-4 md:p-6">
+                <div className="text-lg md:text-2xl font-bold">${totalAmountRaised.toLocaleString()}</div>
+                <div className="text-xs md:text-sm text-muted-foreground">Amount Raised</div>
               </CardContent>
             </Card>
             
             <Card>
-              <CardContent className="p-6">
-                <div className="text-2xl font-bold">1,250</div>
-                <div className="text-muted-foreground">2025 Donors</div>
+              <CardContent className="p-4 md:p-6">
+                <div className="text-lg md:text-2xl font-bold">1,250</div>
+                <div className="text-xs md:text-sm text-muted-foreground">2025 Donors</div>
               </CardContent>
             </Card>
             
             <Card>
-              <CardContent className="p-6">
-                <div className="text-2xl font-bold">${Math.max(0, leftToRaise).toLocaleString()}</div>
-                <div className="text-muted-foreground">Left to Raise</div>
+              <CardContent className="p-4 md:p-6">
+                <div className="text-lg md:text-2xl font-bold">${Math.max(0, leftToRaise).toLocaleString()}</div>
+                <div className="text-xs md:text-sm text-muted-foreground">Left to Raise</div>
               </CardContent>
             </Card>
           </div>
 
           {/* Campaigns Table */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <CardTitle>Campaigns</CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
                 <Button 
                   variant="outline" 
                   onClick={() => navigate('/dashboard/campaigns')}
                   size="sm"
+                  className="w-full md:w-auto"
                 >
                   Manage All Campaigns
                 </Button>
-                <Button onClick={() => setShowAddCampaignForm(true)} size="sm">Add Campaign</Button>
+                <Button onClick={() => setShowAddCampaignForm(true)} size="sm" className="w-full md:w-auto">Add Campaign</Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -264,16 +267,17 @@ const Dashboard = () => {
                   <div className="text-muted-foreground">All your campaigns are inactive or ended</div>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Campaign</TableHead>
-                      <TableHead>Group</TableHead>
-                      <TableHead>Amount Raised</TableHead>
-                      <TableHead>Dates</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[150px]">Campaign</TableHead>
+                        <TableHead className="min-w-[100px]">Group</TableHead>
+                        <TableHead className="min-w-[120px]">Amount Raised</TableHead>
+                        <TableHead className="min-w-[120px]">Dates</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
                   <TableBody>
                     {campaigns.map((campaign, index) => <TableRow key={index}>
                         <TableCell className="font-medium">{campaign.name}</TableCell>
@@ -321,16 +325,17 @@ const Dashboard = () => {
                          </TableCell>
                       </TableRow>)}
                   </TableBody>
-                </Table>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
 
           {/* Donors Table */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <CardTitle>Donors</CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-muted-foreground">6 results</span>
                 <Button variant="outline" size="sm">Sort</Button>
                 <Button variant="outline" size="sm">Filter</Button>
@@ -338,16 +343,17 @@ const Dashboard = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[150px]">Name</TableHead>
+                      <TableHead className="min-w-[200px]">Email</TableHead>
+                      <TableHead className="min-w-[150px]">Title</TableHead>
+                      <TableHead className="min-w-[100px]">Role</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {donors.map((donor, index) => <TableRow key={index}>
                       <TableCell className="flex items-center gap-3">
@@ -367,7 +373,8 @@ const Dashboard = () => {
                       </TableCell>
                     </TableRow>)}
                 </TableBody>
-              </Table>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </main>
