@@ -194,7 +194,9 @@ const CampaignLanding = () => {
     ? {
         background: `linear-gradient(to right, ${schoolPrimaryColor}CC, ${schoolPrimaryColor}AD)`,
       }
-    : undefined;
+    : {
+        background: `linear-gradient(to right, #3b82f6CC, #3b82f6AD)`, // Blue fallback color
+      };
 
   // Get dynamic content based on campaign type
   const getSectionTitle = () => {
@@ -242,7 +244,7 @@ const CampaignLanding = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div 
-        className={schoolPrimaryColor ? "border-b" : "bg-gradient-to-r from-primary/10 to-primary/5 border-b"}
+        className="border-b"
         style={heroStyle}
       >
         <div className="max-w-6xl mx-auto p-6 md:p-8">
