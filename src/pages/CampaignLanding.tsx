@@ -172,6 +172,19 @@ const CampaignLanding = () => {
 
   // Get school's primary color or fallback to design system primary
   const schoolPrimaryColor = campaign.groups?.schools["Primary Color"];
+  
+  // Function to determine if a color is dark
+  const isColorDark = (hexColor: string) => {
+    if (!hexColor) return false;
+    const color = hexColor.replace('#', '');
+    const r = parseInt(color.substr(0, 2), 16);
+    const g = parseInt(color.substr(2, 2), 16);
+    const b = parseInt(color.substr(4, 2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness < 128;
+  };
+  
+  const isDarkBackground = schoolPrimaryColor && isColorDark(schoolPrimaryColor);
   const heroStyle = schoolPrimaryColor 
     ? {
         background: `linear-gradient(to right, ${schoolPrimaryColor}CC, ${schoolPrimaryColor}AD)`,
@@ -192,19 +205,19 @@ const CampaignLanding = () => {
                 {campaign.campaign_type?.name || "Fundraiser"}
               </Badge>
               {campaign.groups && (
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <div className={`flex items-center gap-1 text-sm ${isDarkBackground ? 'text-white/80' : 'text-muted-foreground'}`}>
                   <MapPin className="h-4 w-4" />
                   {campaign.groups.group_name} • {campaign.groups.schools.school_name}
                 </div>
               )}
             </div>
             
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+            <h1 className={`text-3xl md:text-4xl font-bold ${isDarkBackground ? 'text-white' : 'text-foreground'}`}>
               {campaign.name}
             </h1>
             
             {campaign.description && (
-              <p className="text-lg text-muted-foreground max-w-3xl">
+              <p className={`text-lg max-w-3xl ${isDarkBackground ? 'text-white/90' : 'text-muted-foreground'}`}>
                 {campaign.description}
               </p>
             )}
@@ -214,17 +227,17 @@ const CampaignLanding = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">
+                    <Target className={`h-5 w-5 ${isDarkBackground ? 'text-white' : 'text-primary'}`} />
+                    <span className={`font-semibold ${isDarkBackground ? 'text-white' : 'text-foreground'}`}>
                       ${(campaign.amount_raised || 0).toLocaleString()} raised
                     </span>
                   </div>
-                  <span className="text-sm text-muted-foreground">
+                  <span className={`text-sm ${isDarkBackground ? 'text-white/70' : 'text-muted-foreground'}`}>
                     Goal: ${campaign.goal_amount.toLocaleString()}
                   </span>
                 </div>
                 <Progress value={progressPercentage} className="h-3" />
-                <p className="text-sm text-muted-foreground">
+                <p className={`text-sm ${isDarkBackground ? 'text-white/70' : 'text-muted-foreground'}`}>
                   {progressPercentage.toFixed(1)}% of goal reached
                 </p>
               </div>
@@ -232,7 +245,7 @@ const CampaignLanding = () => {
 
             {/* Campaign Dates */}
             {(campaign.start_date || campaign.end_date) && (
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className={`flex items-center gap-4 text-sm ${isDarkBackground ? 'text-white/70' : 'text-muted-foreground'}`}>
                 <Calendar className="h-4 w-4" />
                 {campaign.start_date && (
                   <span>Started: {new Date(campaign.start_date).toLocaleDateString()}</span>
