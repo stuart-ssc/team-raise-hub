@@ -639,7 +639,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                       />
                     </FormControl>
                     <div className="text-sm text-muted-foreground">
-                      Must be unique. This will be used in the campaign URL.
+                      Must be unique. This is the unique URL of your campaign landing page.
                       {checkingSlug && <span className="ml-2">Checking...</span>}
                       {slugExists && <span className="ml-2 text-destructive">This slug is already taken</span>}
                     </div>
