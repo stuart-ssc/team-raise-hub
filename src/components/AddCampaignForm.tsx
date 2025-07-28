@@ -23,6 +23,7 @@ const campaignSchema = z.object({
   endDate: z.string().optional(),
   groupId: z.string().min(1, "Group is required"),
   campaignTypeId: z.string().min(1, "Campaign type is required"),
+  slug: z.string().min(1, "URL slug is required"),
 });
 
 const campaignItemSchema = z.object({
@@ -51,6 +52,7 @@ interface AddCampaignFormProps {
     end_date: string | null;
     group_id: string;
     campaign_type_id: string;
+    slug: string | null;
   } | null;
   manageCampaignId?: string | null;
 }
@@ -91,6 +93,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [accordionValue, setAccordionValue] = useState<string>("");
+  const [slugExists, setSlugExists] = useState(false);
+  const [checkingSlug, setCheckingSlug] = useState(false);
   const { schoolUser } = useSchoolUser();
   const { toast } = useToast();
 
@@ -104,6 +108,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       endDate: "",
       groupId: "",
       campaignTypeId: "",
+      slug: "",
     },
   });
 
@@ -233,6 +238,40 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     }
   };
 
+  const generateSlugFromName = (name: string): string => {
+    return name.toLowerCase().trim().replace(/\s+/g, '-');
+  };
+
+  const checkSlugExists = async (slug: string, excludeId?: string): Promise<boolean> => {
+    if (!slug) return false;
+    
+    setCheckingSlug(true);
+    try {
+      let query = supabase
+        .from("campaigns")
+        .select("id")
+        .eq("slug", slug);
+      
+      if (excludeId) {
+        query = query.neq("id", excludeId);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error("Error checking slug:", error);
+        return false;
+      }
+      
+      return (data?.length || 0) > 0;
+    } catch (error) {
+      console.error("Error checking slug:", error);
+      return false;
+    } finally {
+      setCheckingSlug(false);
+    }
+  };
+
   useEffect(() => {
     if (open) {
       fetchGroups();
@@ -255,9 +294,18 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
           endDate: editCampaign.end_date || "",
           groupId: editCampaign.group_id,
           campaignTypeId: editCampaign.campaign_type_id,
+          slug: editCampaign.slug || "",
         });
         setCreatedCampaignId(editCampaign.id);
         setCampaignTypeId(editCampaign.campaign_type_id);
+      }
+      // Pre-populate slug for new campaigns
+      else {
+        const name = campaignForm.watch("name");
+        if (name) {
+          const suggestedSlug = generateSlugFromName(name);
+          campaignForm.setValue("slug", suggestedSlug);
+        }
       }
     }
   }, [open, schoolUser, editCampaign, manageCampaignId]);
@@ -275,6 +323,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         end_date: values.endDate || null,
         group_id: values.groupId,
         campaign_type_id: values.campaignTypeId,
+        slug: values.slug,
         status: true,
       };
 
@@ -544,8 +593,56 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                   <FormItem>
                     <FormLabel>Campaign Name *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter campaign name" {...field} />
+                      <Input 
+                        placeholder="Enter campaign name" 
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          // Auto-generate slug for new campaigns only
+                          if (!editCampaign) {
+                            const suggestedSlug = generateSlugFromName(e.target.value);
+                            campaignForm.setValue("slug", suggestedSlug);
+                            // Check if the generated slug exists
+                            if (suggestedSlug) {
+                              checkSlugExists(suggestedSlug).then(setSlugExists);
+                            }
+                          }
+                        }}
+                      />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={campaignForm.control}
+                name="slug"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>URL Slug *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="campaign-url-slug" 
+                        className={slugExists ? "border-destructive" : ""}
+                        {...field}
+                        onChange={async (e) => {
+                          field.onChange(e);
+                          const slug = e.target.value;
+                          if (slug) {
+                            const exists = await checkSlugExists(slug, editCampaign?.id);
+                            setSlugExists(exists);
+                          } else {
+                            setSlugExists(false);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <div className="text-sm text-muted-foreground">
+                      Must be unique. This will be used in the campaign URL.
+                      {checkingSlug && <span className="ml-2">Checking...</span>}
+                      {slugExists && <span className="ml-2 text-destructive">This slug is already taken</span>}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -675,7 +772,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                 <Button type="button" variant="outline" onClick={handleClose}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading || slugExists || checkingSlug}>
                   {loading ? (editCampaign ? "Updating..." : "Creating...") : (editCampaign ? "Update Campaign" : "Next: Add Items")}
                 </Button>
               </DialogFooter>

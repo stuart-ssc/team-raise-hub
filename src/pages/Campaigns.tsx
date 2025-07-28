@@ -27,6 +27,7 @@ interface Campaign {
   campaign_type_name: string | null;
   group_id?: string;
   campaign_type_id?: string;
+  slug?: string;
 }
 
 export default function Campaigns() {
@@ -119,6 +120,7 @@ export default function Campaigns() {
         campaign_type_name: campaign.campaign_type?.name || null,
         group_id: campaign.group_id,
         campaign_type_id: campaign.campaign_type_id,
+        slug: campaign.slug,
       }));
 
       console.log("Formatted campaigns:", formattedCampaigns);
@@ -503,6 +505,7 @@ export default function Campaigns() {
                 end_date: editingCampaign.end_date,
                 group_id: editingCampaign.group_id || '',
                 campaign_type_id: editingCampaign.campaign_type_id || '',
+                slug: editingCampaign.slug || '',
               } : null}
               manageCampaignId={managingCampaignId}
             />
