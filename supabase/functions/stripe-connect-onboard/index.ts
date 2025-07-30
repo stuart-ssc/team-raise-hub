@@ -49,27 +49,50 @@ serve(async (req) => {
     }
 
     // Verify user has permission to manage this group's Stripe settings
-    const { data: userPermission, error: permissionError } = await supabaseService
+    // First, get the user's role and school association
+    const { data: userInfo, error: userError } = await supabaseService
       .from("school_user")
       .select(`
         id,
+        school_id,
+        group_id,
         user_type:user_type_id (
           name
-        ),
-        group:group_id (
-          id,
-          group_name,
-          stripe_account_id,
-          stripe_account_enabled
         )
       `)
       .eq("user_id", user.id)
-      .eq("group_id", groupId)
       .single();
 
-    if (permissionError || !userPermission) {
+    if (userError || !userInfo) {
+      throw new Error("User not found in any school");
+    }
+
+    // Get the target group information
+    const { data: targetGroup, error: groupError } = await supabaseService
+      .from("groups")
+      .select("id, group_name, stripe_account_id, stripe_account_enabled, school_id")
+      .eq("id", groupId)
+      .single();
+
+    if (groupError || !targetGroup) {
+      throw new Error("Group not found");
+    }
+
+    // Check permissions:
+    // 1. User must be in the same school as the group
+    // 2. User must be either assigned to this specific group OR be a school-level admin
+    const sameSchool = userInfo.school_id === targetGroup.school_id;
+    const assignedToGroup = userInfo.group_id === groupId;
+    const isSchoolAdmin = ['Principal', 'Athletic Director'].includes(userInfo.user_type.name);
+    
+    if (!sameSchool || (!assignedToGroup && !isSchoolAdmin)) {
       throw new Error("You don't have permission to manage Stripe settings for this group");
     }
+
+    const userPermission = {
+      user_type: userInfo.user_type,
+      group: targetGroup
+    };
 
     const allowedRoles = ['Principal', 'Athletic Director', 'Coach', 'Club Sponsor', 'Booster Leader'];
     if (!allowedRoles.includes(userPermission.user_type.name)) {
