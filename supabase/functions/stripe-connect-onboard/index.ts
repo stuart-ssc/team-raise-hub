@@ -50,7 +50,7 @@ serve(async (req) => {
 
     // Verify user has permission to manage this group's Stripe settings
     // First, get the user's role and school association
-    const { data: userInfo, error: userError } = await supabaseService
+    const { data: userInfo, error: userError2 } = await supabaseService
       .from("school_user")
       .select(`
         id,
@@ -63,7 +63,7 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .single();
 
-    if (userError || !userInfo) {
+    if (userError2 || !userInfo) {
       throw new Error("User not found in any school");
     }
 
