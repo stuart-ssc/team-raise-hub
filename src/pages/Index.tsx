@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import SchoolLogo from "@/components/SchoolLogo";
+import { SchoolSelector } from "@/components/SchoolSelector";
 import { 
   FileText, 
   Shield, 
@@ -337,12 +338,10 @@ const Index = () => {
               onChange={(e) => handleInputChange('email', e.target.value)}
               required
             />
-            <Input 
-              placeholder="High School, College, State" 
-              className="bg-background" 
+            <SchoolSelector
               value={formData.schoolInfo}
-              onChange={(e) => handleInputChange('schoolInfo', e.target.value)}
-              required
+              onChange={(value) => handleInputChange('schoolInfo', value)}
+              placeholder="Search for your school..."
             />
             <Button 
               type="submit" 
