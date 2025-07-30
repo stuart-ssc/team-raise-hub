@@ -452,7 +452,7 @@ const CampaignLanding = () => {
 
         {/* Cart Summary */}
         {getSelectedItemsCount() > 0 && (
-          <Card className="mt-8 sticky bottom-4">
+          <Card className="mt-8">
             <CardContent className="p-6">
               <div className="flex items-center gap-2 mb-4">
                 <ShoppingCart className="h-5 w-5" />
