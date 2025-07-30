@@ -20,6 +20,7 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { CreateGroupForm } from "@/components/CreateGroupForm";
 import Rosters from "@/pages/Rosters";
+import { StripeConnectManager } from "@/components/StripeConnectManager";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
 
@@ -29,6 +30,8 @@ interface Group {
   school_name: string;
   group_type_name: string;
   status: boolean;
+  stripe_account_id?: string;
+  stripe_account_enabled?: boolean;
 }
 
 const Groups = () => {
@@ -54,6 +57,8 @@ const Groups = () => {
           id,
           group_name,
           status,
+          stripe_account_id,
+          stripe_account_enabled,
           schools!school_id(school_name),
           group_type!group_type_id(name)
         `);
@@ -92,6 +97,8 @@ const Groups = () => {
         school_name: group.schools.school_name,
         group_type_name: group.group_type.name,
         status: group.status ?? true,
+        stripe_account_id: group.stripe_account_id,
+        stripe_account_enabled: group.stripe_account_enabled,
       }));
 
       setGroups(formattedGroups);
@@ -323,73 +330,82 @@ const Groups = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>
-                            Group Name
-                          </TableHead>
-                          <TableHead>School</TableHead>
-                          <TableHead>Group Type</TableHead>
-                          <TableHead>Manage Roster</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="w-12"></TableHead>
+                           <TableHead>
+                             Group Name
+                           </TableHead>
+                           <TableHead>School</TableHead>
+                           <TableHead>Group Type</TableHead>
+                           <TableHead>Manage Roster</TableHead>
+                           <TableHead>Stripe Connect</TableHead>
+                           <TableHead>Status</TableHead>
+                           <TableHead className="w-12"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {loading ? (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center py-4">
-                              Loading...
-                            </TableCell>
-                          </TableRow>
-                        ) : groups.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                              No groups found
-                            </TableCell>
-                          </TableRow>
-                         ) : (
-                           sortedGroups.map((group) => (
-                            <TableRow key={group.id}>
-                              <TableCell className="font-medium">{group.group_name}</TableCell>
-                              <TableCell>{group.school_name}</TableCell>
-                              <TableCell>{group.group_type_name}</TableCell>
+                         {loading ? (
+                           <TableRow>
+                             <TableCell colSpan={7} className="text-center py-4">
+                               Loading...
+                             </TableCell>
+                           </TableRow>
+                         ) : groups.length === 0 ? (
+                           <TableRow>
+                             <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                               No groups found
+                             </TableCell>
+                           </TableRow>
+                          ) : (
+                            sortedGroups.map((group) => (
+                             <TableRow key={group.id}>
+                               <TableCell className="font-medium">{group.group_name}</TableCell>
+                               <TableCell>{group.school_name}</TableCell>
+                               <TableCell>{group.group_type_name}</TableCell>
+                                <TableCell>
+                                  <Button 
+                                    variant="default" 
+                                    size="sm"
+                                    onClick={() => handleManageRoster(group)}
+                                  >
+                                    Manage
+                                  </Button>
+                                </TableCell>
+                                <TableCell>
+                                  <StripeConnectManager
+                                    groupId={group.id}
+                                    groupName={group.group_name}
+                                    stripeAccountId={group.stripe_account_id}
+                                    stripeAccountEnabled={group.stripe_account_enabled}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <span className={group.status ? "text-green-600" : "text-muted-foreground"}>
+                                    {group.status ? "Active" : "Inactive"}
+                                  </span>
+                                </TableCell>
                                <TableCell>
-                                 <Button 
-                                   variant="default" 
-                                   size="sm"
-                                   onClick={() => handleManageRoster(group)}
-                                 >
-                                   Manage
-                                 </Button>
+                                 <DropdownMenu>
+                                   <DropdownMenuTrigger asChild>
+                                     <Button variant="ghost" size="sm">
+                                       <MoreHorizontal className="h-4 w-4" />
+                                     </Button>
+                                   </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleEditGroup(group)}>Edit</DropdownMenuItem>
+                                      {group.status ? (
+                                        <DropdownMenuItem onClick={() => handleUpdateGroupStatus(group.id, false)}>
+                                          Delete
+                                        </DropdownMenuItem>
+                                      ) : (
+                                        <DropdownMenuItem onClick={() => handleUpdateGroupStatus(group.id, true)}>
+                                          Activate
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                 </DropdownMenu>
                                </TableCell>
-                               <TableCell>
-                                 <span className={group.status ? "text-green-600" : "text-muted-foreground"}>
-                                   {group.status ? "Active" : "Inactive"}
-                                 </span>
-                               </TableCell>
-                              <TableCell>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                   <DropdownMenuContent align="end">
-                                     <DropdownMenuItem onClick={() => handleEditGroup(group)}>Edit</DropdownMenuItem>
-                                     {group.status ? (
-                                       <DropdownMenuItem onClick={() => handleUpdateGroupStatus(group.id, false)}>
-                                         Delete
-                                       </DropdownMenuItem>
-                                     ) : (
-                                       <DropdownMenuItem onClick={() => handleUpdateGroupStatus(group.id, true)}>
-                                         Activate
-                                       </DropdownMenuItem>
-                                     )}
-                                   </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
+                             </TableRow>
+                           ))
+                         )}
                       </TableBody>
                     </Table>
                   </CardContent>
