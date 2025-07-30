@@ -67,62 +67,64 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="flex items-start space-x-4">
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <Zap className="h-6 w-6 text-primary" />
+          <div className="flex items-center gap-12">
+            <div className="w-[35%] grid grid-cols-1 gap-8">
+              <div className="flex items-start space-x-4">
+                <div className="bg-primary/10 p-3 rounded-lg">
+                  <Zap className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Create Campaigns For Your Needs</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Whether you are selling banners at your field, sponsors for your STEM lab, or just fundraising, create the campaign with your goals and needs.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Create Campaigns For Your Needs</h3>
-                <p className="text-sm text-muted-foreground">
-                  Whether you are selling banners at your field, sponsors for your STEM lab, or just fundraising, create the campaign with your goals and needs.
-                </p>
+
+              <div className="flex items-start space-x-4">
+                <div className="bg-primary/10 p-3 rounded-lg">
+                  <Shield className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Collect Money Directly & Immediately</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Connect your existing bank account to the platform and receive funds immediately when payment is taken. The FULL AMOUNT.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="bg-primary/10 p-3 rounded-lg">
+                  <Users className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Sponsors Cover Your Costs</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Our sponsors have chosen to absorb all the fees by adding it to the amount, rather than subtracting. If a sponsor supports you, they can help you too!
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="bg-primary/10 p-3 rounded-lg">
+                  <Mail className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">In-app messenger</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Streamline your communications with your group and your sponsors with our in-app messenger.
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-start space-x-4">
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <Shield className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Collect Money Directly & Immediately</h3>
-                <p className="text-sm text-muted-foreground">
-                  Connect your existing bank account to the platform and receive funds immediately when payment is taken. The FULL AMOUNT.
-                </p>
-              </div>
+            <div className="flex-1">
+              <img 
+                src={teamImage} 
+                alt="Team collaborating on fundraising" 
+                className="w-full h-auto rounded-lg shadow-lg"
+              />
             </div>
-
-            <div className="flex items-start space-x-4">
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <Users className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Sponsors Cover Your Costs</h3>
-                <p className="text-sm text-muted-foreground">
-                  Our sponsors have chosen to absorb all the fees by adding it to the amount, rather than subtracting. If a sponsor supports you, they can help you too!
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4">
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <Mail className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">In-app messenger</h3>
-                <p className="text-sm text-muted-foreground">
-                  Streamline your communications with your group and your sponsors with our in-app messenger.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-16 flex justify-center">
-            <img 
-              src={teamImage} 
-              alt="Team collaborating on fundraising" 
-              className="w-full max-w-3xl h-auto rounded-lg shadow-lg"
-            />
           </div>
         </div>
       </section>
