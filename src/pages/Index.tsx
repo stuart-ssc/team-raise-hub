@@ -356,7 +356,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-8">
+      <footer className="border-t py-4">
         <div className="container mx-auto px-6 flex items-center justify-between">
           <p className="text-sm text-muted-foreground">School Sponsor Connect™</p>
           <div className="flex items-center space-x-6">
