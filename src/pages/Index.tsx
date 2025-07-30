@@ -239,7 +239,7 @@ const Index = () => {
 
       {/* Contact Form Section */}
       <section id="contact-form" className="bg-accent py-16 lg:py-24">
-        <div className="container mx-auto px-6 max-w-2xl text-center">
+        <div className="container mx-auto px-6 max-w-4xl text-center">
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
             Ready For A Better Way To Fundraise?
           </h2>
