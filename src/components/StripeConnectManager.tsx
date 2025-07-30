@@ -97,6 +97,8 @@ export const StripeConnectManager = ({
   const handleOpenDashboard = async () => {
     setLoading(true);
     try {
+      console.log('Attempting to open Stripe dashboard for group:', groupId);
+      
       const { data, error } = await supabase.functions.invoke('stripe-connect-onboard', {
         body: { 
           groupId,
@@ -104,16 +106,30 @@ export const StripeConnectManager = ({
         }
       });
 
-      if (error) throw error;
+      console.log('Dashboard function response:', { data, error });
 
-      if (data.dashboardUrl) {
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Unknown error occurred');
+      }
+
+      if (data?.error) {
+        console.error('Edge function returned error:', data.error);
+        throw new Error(data.error);
+      }
+
+      if (data?.dashboardUrl) {
+        console.log('Opening dashboard URL:', data.dashboardUrl);
         window.open(data.dashboardUrl, '_blank');
+      } else {
+        throw new Error('No dashboard URL received from server');
       }
     } catch (error) {
       console.error('Error opening dashboard:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to open Stripe dashboard";
       toast({
         title: "Dashboard Error",
-        description: error instanceof Error ? error.message : "Failed to open Stripe dashboard",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
