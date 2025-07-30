@@ -49,7 +49,7 @@ serve(async (req) => {
       throw new Error("Missing required fields: campaignSlug, items");
     }
 
-    // Fetch campaign data with group and Stripe Connect info
+    // Fetch campaign data
     const { data: campaignData, error: campaignError } = await supabaseService
       .from("campaigns")
       .select(`
@@ -61,8 +61,6 @@ serve(async (req) => {
           id,
           group_name,
           school_id,
-          stripe_account_id,
-          stripe_account_enabled,
           schools!inner (
             school_name,
             "Primary Color"
@@ -77,11 +75,7 @@ serve(async (req) => {
       throw new Error("Campaign not found or inactive");
     }
 
-    if (!campaignData.groups.stripe_account_enabled || !campaignData.groups.stripe_account_id) {
-      throw new Error("Stripe Connect not enabled for this organization");
-    }
-
-    logStep("Campaign found", { campaignId: campaignData.id, stripeAccountId: campaignData.groups.stripe_account_id });
+    logStep("Campaign found", { campaignId: campaignData.id, groupName: campaignData.groups.group_name });
 
     // Fetch and validate campaign items
     const itemIds = items.map(item => item.id);
@@ -135,15 +129,13 @@ serve(async (req) => {
     // Initialize Stripe
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    // Calculate application fee (2.5% platform fee)
-    const applicationFeeAmount = Math.round(totalAmount * 100 * 0.025); // 2.5% in cents
-
     // Create line items for Stripe
     const lineItems = validatedItems.map(item => ({
       price_data: {
         currency: "usd",
         product_data: {
           name: item.name,
+          description: `${campaignData.groups.group_name} - ${campaignData.name}`,
         },
         unit_amount: Math.round(item.cost * 100), // Convert to cents
       },
@@ -151,12 +143,10 @@ serve(async (req) => {
     }));
 
     logStep("Creating Stripe checkout session", { 
-      connectedAccountId: campaignData.groups.stripe_account_id,
-      applicationFeeAmount,
       totalAmountCents: Math.round(totalAmount * 100)
     });
 
-    // Create checkout session with Stripe Connect
+    // Create standard checkout session
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: lineItems,
@@ -168,11 +158,6 @@ serve(async (req) => {
         user_id: user?.id || "guest",
         items: JSON.stringify(validatedItems)
       },
-      payment_intent_data: {
-        application_fee_amount: applicationFeeAmount,
-      },
-    }, {
-      stripeAccount: campaignData.groups.stripe_account_id,
     });
 
     logStep("Stripe session created", { sessionId: session.id });
@@ -190,7 +175,6 @@ serve(async (req) => {
         customer_email: user?.email || customerInfo?.email || null,
         customer_name: customerInfo?.name || null,
         items: validatedItems,
-        application_fee_amount: applicationFeeAmount / 100, // Store in dollars
       });
 
     if (orderError) {
