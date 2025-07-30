@@ -268,6 +268,36 @@ export type Database = {
           },
         ]
       }
+      launch_interest: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          school_info: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          school_info: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          school_info?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       locale: {
         Row: {
           created_at: string

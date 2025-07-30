@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import SchoolLogo from "@/components/SchoolLogo";
 import { 
   FileText, 
@@ -18,6 +21,67 @@ import heroImage from "@/assets/hero-celebration.jpg";
 import teamImage from "@/assets/team-collaboration.jpg";
 
 const Index = () => {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    schoolInfo: ""
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.schoolInfo) {
+      toast({
+        title: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('launch_interest')
+        .insert({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          school_info: formData.schoolInfo
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Thank you for your interest!",
+        description: "We'll notify you when we launch."
+      });
+
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        schoolInfo: ""
+      });
+
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast({
+        title: "Something went wrong",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -247,17 +311,48 @@ const Index = () => {
             We're busy putting the final touches on a platform to enable your group to raise money quickly and keep it all for your program. We can notify you're the one when launch. Let us know if you give up your information below.
           </p>
 
-          <div className="space-y-4 max-w-md mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto">
             <div className="grid grid-cols-2 gap-4">
-              <Input id="first-name-input" placeholder="First Name" className="bg-background" />
-              <Input placeholder="Last Name" className="bg-background" />
+              <Input 
+                id="first-name-input" 
+                placeholder="First Name" 
+                className="bg-background" 
+                value={formData.firstName}
+                onChange={(e) => handleInputChange('firstName', e.target.value)}
+                required
+              />
+              <Input 
+                placeholder="Last Name" 
+                className="bg-background" 
+                value={formData.lastName}
+                onChange={(e) => handleInputChange('lastName', e.target.value)}
+                required
+              />
             </div>
-            <Input placeholder="Email Address" type="email" className="bg-background" />
-            <Input placeholder="High School, College, State" className="bg-background" />
-            <Button size="lg" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-              Notify Me When You Launch
+            <Input 
+              placeholder="Email Address" 
+              type="email" 
+              className="bg-background" 
+              value={formData.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
+              required
+            />
+            <Input 
+              placeholder="High School, College, State" 
+              className="bg-background" 
+              value={formData.schoolInfo}
+              onChange={(e) => handleInputChange('schoolInfo', e.target.value)}
+              required
+            />
+            <Button 
+              type="submit" 
+              size="lg" 
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Notify Me When You Launch"}
             </Button>
-          </div>
+          </form>
         </div>
       </section>
 
