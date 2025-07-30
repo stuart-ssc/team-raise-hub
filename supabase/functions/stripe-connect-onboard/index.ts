@@ -155,14 +155,21 @@ serve(async (req) => {
     } else if (action === "dashboard") {
       // Create login link for existing account
       if (!userPermission.group.stripe_account_id) {
+        logStep("No Stripe account found", { groupId, groupName: userPermission.group.group_name });
         throw new Error("No Stripe account found for this group");
       }
+
+      logStep("Creating dashboard login link", { 
+        accountId: userPermission.group.stripe_account_id,
+        groupId,
+        groupName: userPermission.group.group_name 
+      });
 
       const loginLink = await stripe.accounts.createLoginLink(
         userPermission.group.stripe_account_id
       );
 
-      logStep("Dashboard link created", { url: loginLink.url });
+      logStep("Dashboard link created successfully", { url: loginLink.url });
 
       return new Response(JSON.stringify({
         dashboardUrl: loginLink.url,
