@@ -170,22 +170,42 @@ serve(async (req) => {
       });
 
       // First verify the account exists
+      let account;
       try {
-        const account = await stripe.accounts.retrieve(userPermission.group.stripe_account_id);
-        logStep("Account retrieved successfully", { accountId: account.id, type: account.type });
-      } catch (stripeError) {
+        logStep("About to retrieve Stripe account", { accountId: userPermission.group.stripe_account_id });
+        account = await stripe.accounts.retrieve(userPermission.group.stripe_account_id);
+        logStep("Account retrieved successfully", { 
+          accountId: account.id, 
+          type: account.type,
+          charges_enabled: account.charges_enabled,
+          details_submitted: account.details_submitted 
+        });
+      } catch (stripeError: any) {
         logStep("Error retrieving Stripe account", { 
           accountId: userPermission.group.stripe_account_id,
-          error: stripeError 
+          error: stripeError.message || stripeError,
+          errorType: stripeError.type,
+          errorCode: stripeError.code
         });
-        throw new Error(`Stripe account ${userPermission.group.stripe_account_id} not found or inaccessible`);
+        throw new Error(`Stripe account error: ${stripeError.message || 'Account not found or inaccessible'}`);
       }
 
-      const loginLink = await stripe.accounts.createLoginLink(
-        userPermission.group.stripe_account_id
-      );
-
-      logStep("Dashboard link created successfully", { url: loginLink.url });
+      let loginLink;
+      try {
+        logStep("About to create login link", { accountId: userPermission.group.stripe_account_id });
+        loginLink = await stripe.accounts.createLoginLink(
+          userPermission.group.stripe_account_id
+        );
+        logStep("Dashboard link created successfully", { url: loginLink.url });
+      } catch (stripeError: any) {
+        logStep("Error creating login link", { 
+          accountId: userPermission.group.stripe_account_id,
+          error: stripeError.message || stripeError,
+          errorType: stripeError.type,
+          errorCode: stripeError.code
+        });
+        throw new Error(`Failed to create dashboard link: ${stripeError.message || 'Unknown error'}`);
+      }
 
       return new Response(JSON.stringify({
         dashboardUrl: loginLink.url,
