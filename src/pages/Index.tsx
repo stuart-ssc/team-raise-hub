@@ -265,20 +265,20 @@ const Index = () => {
       <footer className="border-t py-8">
         <div className="container mx-auto px-6 flex items-center justify-between">
           <p className="text-sm text-muted-foreground">School Sponsor Connect™</p>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
             <a 
               href="#" 
-              className="text-muted-foreground hover:text-primary transition-colors"
+              className="bg-muted-foreground/10 hover:bg-primary hover:text-primary-foreground p-2 rounded-full transition-all duration-200"
               aria-label="Facebook"
             >
-              <Facebook className="h-4 w-4" />
+              <Facebook className="h-4 w-4 fill-current" />
             </a>
             <a 
               href="#" 
-              className="text-muted-foreground hover:text-primary transition-colors"
+              className="bg-muted-foreground/10 hover:bg-primary hover:text-primary-foreground p-2 rounded-full transition-all duration-200"
               aria-label="LinkedIn"
             >
-              <Linkedin className="h-4 w-4" />
+              <Linkedin className="h-4 w-4 fill-current" />
             </a>
           </div>
         </div>
