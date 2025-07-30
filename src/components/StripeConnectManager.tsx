@@ -51,6 +51,8 @@ export const StripeConnectManager = ({
   const handleCreateAccount = async () => {
     setLoading(true);
     try {
+      console.log('Attempting to create Stripe Connect account for group:', groupId);
+      
       const { data, error } = await supabase.functions.invoke('stripe-connect-onboard', {
         body: { 
           groupId,
@@ -58,20 +60,33 @@ export const StripeConnectManager = ({
         }
       });
 
-      if (error) throw error;
+      console.log('Supabase function response:', { data, error });
 
-      if (data.onboardingUrl) {
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Unknown error occurred');
+      }
+
+      if (data?.error) {
+        console.error('Edge function returned error:', data.error);
+        throw new Error(data.error);
+      }
+
+      if (data?.onboardingUrl) {
         window.open(data.onboardingUrl, '_blank');
         toast({
           title: "Stripe Connect Setup",
           description: "Complete the setup in the new tab, then refresh this page.",
         });
+      } else {
+        throw new Error('No onboarding URL received from server');
       }
     } catch (error) {
       console.error('Error creating Stripe account:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to start Stripe Connect setup";
       toast({
         title: "Setup Failed",
-        description: error instanceof Error ? error.message : "Failed to start Stripe Connect setup",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
