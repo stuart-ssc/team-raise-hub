@@ -68,7 +68,7 @@ const Index = () => {
           </div>
 
           <div className="flex items-start gap-12">
-            <div className="w-[35%] grid grid-cols-1 gap-8">
+            <div className="w-[35%] grid grid-cols-1 gap-8 py-4">
               <div className="flex items-start space-x-4">
                 <div className="bg-primary/10 p-3 rounded-lg">
                   <Zap className="h-6 w-6 text-primary" />
