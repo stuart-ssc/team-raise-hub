@@ -10,7 +10,9 @@ import {
   Tag, 
   Users, 
   Key, 
-  BarChart3 
+  BarChart3,
+  Facebook,
+  Linkedin
 } from "lucide-react";
 import heroImage from "@/assets/hero-celebration.jpg";
 import teamImage from "@/assets/team-collaboration.jpg";
@@ -261,8 +263,24 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t py-8">
-        <div className="container mx-auto px-6 text-center">
-          <p className="text-sm text-muted-foreground">School Sponsor Connect</p>
+        <div className="container mx-auto px-6 flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">School Sponsor Connect™</p>
+          <div className="flex items-center space-x-4">
+            <a 
+              href="#" 
+              className="text-muted-foreground hover:text-primary transition-colors"
+              aria-label="Facebook"
+            >
+              <Facebook className="h-4 w-4" />
+            </a>
+            <a 
+              href="#" 
+              className="text-muted-foreground hover:text-primary transition-colors"
+              aria-label="LinkedIn"
+            >
+              <Linkedin className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </footer>
     </div>
