@@ -67,7 +67,7 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-12">
+          <div className="flex items-start gap-12">
             <div className="w-[35%] grid grid-cols-1 gap-8">
               <div className="flex items-start space-x-4">
                 <div className="bg-primary/10 p-3 rounded-lg">
