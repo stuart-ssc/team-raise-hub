@@ -165,6 +165,18 @@ serve(async (req) => {
         groupName: userPermission.group.group_name 
       });
 
+      // First verify the account exists
+      try {
+        const account = await stripe.accounts.retrieve(userPermission.group.stripe_account_id);
+        logStep("Account retrieved successfully", { accountId: account.id, type: account.type });
+      } catch (stripeError) {
+        logStep("Error retrieving Stripe account", { 
+          accountId: userPermission.group.stripe_account_id,
+          error: stripeError 
+        });
+        throw new Error(`Stripe account ${userPermission.group.stripe_account_id} not found or inaccessible`);
+      }
+
       const loginLink = await stripe.accounts.createLoginLink(
         userPermission.group.stripe_account_id
       );
