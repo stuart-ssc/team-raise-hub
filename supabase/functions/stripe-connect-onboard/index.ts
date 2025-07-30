@@ -21,7 +21,11 @@ serve(async (req) => {
     logStep("Function started");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    if (!stripeKey) {
+      logStep("ERROR: STRIPE_SECRET_KEY not configured");
+      throw new Error("Stripe integration not configured. Please contact your administrator to set up the Stripe secret key.");
+    }
+    logStep("Stripe key found and configured");
 
     // Initialize Supabase with service role for database operations
     const supabaseService = createClient(
