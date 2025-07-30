@@ -135,21 +135,53 @@ const CampaignLanding = () => {
     return cart.reduce((count, item) => count + item.selectedQuantity, 0);
   };
 
-  const handleProceedToCheckout = () => {
-    const selectedItems = cart.filter(item => item.selectedQuantity > 0);
-    if (selectedItems.length === 0) {
+  const handleProceedToCheckout = async () => {
+    if (!campaign) return;
+    
+    const items = cart.filter(item => item.selectedQuantity > 0).map(item => ({
+      id: item.id,
+      quantity: item.selectedQuantity
+    }));
+
+    if (items.length === 0) {
       toast({
         title: "No items selected",
-        description: "Please select at least one item to proceed.",
-        variant: "destructive",
+        description: "Please select at least one item to proceed to checkout.",
+        variant: "destructive"
       });
       return;
     }
-    
-    toast({
-      title: "Checkout coming soon!",
-      description: "Payment processing will be available soon.",
-    });
+
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
+        body: {
+          campaignSlug: slug,
+          items: items,
+          customerInfo: null // Will be collected by Stripe Checkout
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.url) {
+        // Open Stripe checkout in a new tab
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('No checkout URL received');
+      }
+
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout Error",
+        description: error.message || "Failed to initiate checkout. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {

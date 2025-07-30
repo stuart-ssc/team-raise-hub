@@ -220,6 +220,8 @@ export type Database = {
           logo_url: string | null
           school_id: string | null
           status: boolean | null
+          stripe_account_enabled: boolean | null
+          stripe_account_id: string | null
           updated_at: string
           website_url: string | null
         }
@@ -231,6 +233,8 @@ export type Database = {
           logo_url?: string | null
           school_id?: string | null
           status?: boolean | null
+          stripe_account_enabled?: boolean | null
+          stripe_account_id?: string | null
           updated_at?: string
           website_url?: string | null
         }
@@ -242,6 +246,8 @@ export type Database = {
           logo_url?: string | null
           school_id?: string | null
           status?: boolean | null
+          stripe_account_enabled?: boolean | null
+          stripe_account_id?: string | null
           updated_at?: string
           website_url?: string | null
         }
@@ -285,6 +291,68 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      orders: {
+        Row: {
+          application_fee_amount: number | null
+          campaign_id: string
+          created_at: string
+          currency: string | null
+          customer_email: string | null
+          customer_name: string | null
+          id: string
+          items: Json
+          shipping_address: Json | null
+          status: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          total_amount: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          application_fee_amount?: number | null
+          campaign_id: string
+          created_at?: string
+          currency?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          items: Json
+          shipping_address?: Json | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          total_amount: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          application_fee_amount?: number | null
+          campaign_id?: string
+          created_at?: string
+          currency?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          items?: Json
+          shipping_address?: Json | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          total_amount?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
