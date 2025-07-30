@@ -125,10 +125,18 @@ const CampaignLanding = () => {
     ));
   };
 
-  const getTotalAmount = () => {
+  const getSubtotal = () => {
     return cart.reduce((total, item) => {
       return total + (item.cost || 0) * item.selectedQuantity;
     }, 0);
+  };
+
+  const getPlatformFee = () => {
+    return getSubtotal() * 0.1; // 10% platform fee
+  };
+
+  const getTotalAmount = () => {
+    return getSubtotal() + getPlatformFee();
   };
 
   const getSelectedItemsCount = () => {
@@ -445,20 +453,42 @@ const CampaignLanding = () => {
         {getSelectedItemsCount() > 0 && (
           <Card className="mt-8 sticky bottom-4">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  <span className="font-semibold">
-                    {getSelectedItemsCount()} item{getSelectedItemsCount() !== 1 ? 's' : ''} selected
-                  </span>
-                </div>
-                <span className="text-2xl font-bold">
-                  ${getTotalAmount().toFixed(2)}
+              <div className="flex items-center gap-2 mb-4">
+                <ShoppingCart className="h-5 w-5" />
+                <span className="font-semibold">
+                  {getSelectedItemsCount()} item{getSelectedItemsCount() !== 1 ? 's' : ''} selected
                 </span>
               </div>
+              
+              {/* Selected Items */}
+              <div className="space-y-2 mb-4">
+                {cart.filter(item => item.selectedQuantity > 0).map(item => (
+                  <div key={item.id} className="flex justify-between text-sm">
+                    <span>{item.name} × {item.selectedQuantity}</span>
+                    <span>${((item.cost || 0) * item.selectedQuantity).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Cost Breakdown */}
+              <div className="space-y-2 border-t pt-4">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span>${getSubtotal().toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Platform Fee (10%)</span>
+                  <span>${getPlatformFee().toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                  <span>Total</span>
+                  <span>${getTotalAmount().toFixed(2)}</span>
+                </div>
+              </div>
+
               <Button 
                 onClick={handleProceedToCheckout}
-                className="w-full"
+                className="w-full mt-4"
                 size="lg"
               >
                 Proceed to Checkout

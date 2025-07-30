@@ -96,7 +96,7 @@ serve(async (req) => {
     }
 
     // Validate items and calculate totals
-    let totalAmount = 0;
+    let subtotalAmount = 0;
     const validatedItems = [];
 
     for (const requestedItem of items) {
@@ -119,7 +119,7 @@ serve(async (req) => {
       }
 
       const itemTotal = parseFloat(campaignItem.cost) * quantity;
-      totalAmount += itemTotal;
+      subtotalAmount += itemTotal;
 
       validatedItems.push({
         id: campaignItem.id,
@@ -130,15 +130,24 @@ serve(async (req) => {
       });
     }
 
-    logStep("Items validated", { totalAmount, itemCount: validatedItems.length });
+    // Calculate platform fee (10%) and total
+    const platformFeeAmount = subtotalAmount * 0.1;
+    const totalAmount = subtotalAmount + platformFeeAmount;
+
+    logStep("Items validated", { 
+      subtotalAmount, 
+      platformFeeAmount, 
+      totalAmount, 
+      itemCount: validatedItems.length 
+    });
 
     // Initialize Stripe
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    // Calculate application fee (2.5% platform fee)
-    const applicationFeeAmount = Math.round(totalAmount * 100 * 0.025); // 2.5% in cents
+    // Calculate application fee (platform fee goes to us)
+    const applicationFeeAmount = Math.round(platformFeeAmount * 100); // Platform fee in cents
 
-    // Create line items for Stripe
+    // Create line items for Stripe (items + platform fee)
     const lineItems = validatedItems.map(item => ({
       price_data: {
         currency: "usd",
@@ -149,6 +158,21 @@ serve(async (req) => {
       },
       quantity: item.quantity,
     }));
+
+    // Add platform fee as a separate line item
+    if (platformFeeAmount > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "Platform Fee",
+            description: "10% platform processing fee",
+          },
+          unit_amount: Math.round(platformFeeAmount * 100), // Convert to cents
+        },
+        quantity: 1,
+      });
+    }
 
     logStep("Creating Stripe checkout session", { 
       connectedAccountId: campaignData.groups.stripe_account_id,
