@@ -50,7 +50,7 @@ const AppContent = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<PublicRoute><Index /></PublicRoute>} />
+        <Route path="/" element={<Index />} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path="/c/:slug" element={<CampaignLanding />} />
