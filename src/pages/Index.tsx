@@ -39,7 +39,16 @@ const Index = () => {
             <p className="text-lg text-muted-foreground max-w-md">
               An all-in-one fundraising platform for school related teams, clubs, and organizations that ensures the FULL donation gets to your group!
             </p>
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button 
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              onClick={() => {
+                document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' });
+                setTimeout(() => {
+                  document.getElementById('first-name-input')?.focus();
+                }, 500);
+              }}
+            >
               Get Started
             </Button>
           </div>
@@ -227,7 +236,7 @@ const Index = () => {
       </section>
 
       {/* Contact Form Section */}
-      <section className="bg-accent py-16 lg:py-24">
+      <section id="contact-form" className="bg-accent py-16 lg:py-24">
         <div className="container mx-auto px-6 max-w-2xl text-center">
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
             Ready For A Better Way To Fundraise?
@@ -238,7 +247,7 @@ const Index = () => {
 
           <div className="space-y-4 max-w-md mx-auto">
             <div className="grid grid-cols-2 gap-4">
-              <Input placeholder="First Name" className="bg-background" />
+              <Input id="first-name-input" placeholder="First Name" className="bg-background" />
               <Input placeholder="Last Name" className="bg-background" />
             </div>
             <Input placeholder="Email Address" type="email" className="bg-background" />
