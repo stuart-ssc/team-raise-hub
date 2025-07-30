@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Minus, Plus, ShoppingCart, Calendar, Target, MapPin } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Calendar, Target, MapPin, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CampaignData {
   id: string;
@@ -477,7 +478,21 @@ const CampaignLanding = () => {
                   <span>${getSubtotal().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Platform Fee (10%)</span>
+                  <div className="flex items-center gap-1">
+                    <span>Platform Fee</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">
+                            The platform fee is your way to further support the group by covering their fees so they can receive your full donation.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <span>${getPlatformFee().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
