@@ -424,8 +424,10 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          email_digest_frequency: string | null
           first_name: string | null
           id: string
+          last_digest_sent_at: string | null
           last_name: string | null
           notify_assignments: boolean | null
           notify_campaigns: boolean | null
@@ -436,8 +438,10 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          email_digest_frequency?: string | null
           first_name?: string | null
           id: string
+          last_digest_sent_at?: string | null
           last_name?: string | null
           notify_assignments?: boolean | null
           notify_campaigns?: boolean | null
@@ -448,8 +452,10 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          email_digest_frequency?: string | null
           first_name?: string | null
           id?: string
+          last_digest_sent_at?: string | null
           last_name?: string | null
           notify_assignments?: boolean | null
           notify_campaigns?: boolean | null
