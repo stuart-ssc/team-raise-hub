@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,6 +45,11 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
   const [schoolUserData, setSchoolUserData] = useState<any[]>([]);
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    notify_campaigns: true,
+    notify_orders: true,
+    notify_assignments: true,
+  });
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -83,6 +89,11 @@ const Profile = () => {
         profileForm.reset({
           first_name: profile.first_name || "",
           last_name: profile.last_name || "",
+        });
+        setNotificationPrefs({
+          notify_campaigns: profile.notify_campaigns ?? true,
+          notify_orders: profile.notify_orders ?? true,
+          notify_assignments: profile.notify_assignments ?? true,
         });
       }
     };
@@ -175,6 +186,35 @@ const Profile = () => {
     }
   };
 
+  const handleNotificationChange = async (key: string, value: boolean) => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ [key]: value })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      setNotificationPrefs((prev) => ({ ...prev, [key]: value }));
+
+      toast({
+        title: "Success",
+        description: "Notification preferences updated",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update preferences",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full bg-muted/40">
       <DashboardSidebar />
@@ -188,6 +228,7 @@ const Profile = () => {
               <TabsList>
                 <TabsTrigger value="personal">Personal Information</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
+                <TabsTrigger value="notifications">Notifications</TabsTrigger>
                 <TabsTrigger value="groups">Groups & Roles</TabsTrigger>
               </TabsList>
 
@@ -323,6 +364,67 @@ const Profile = () => {
                         </Button>
                       </form>
                     </Form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="notifications">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Notification Preferences</CardTitle>
+                    <CardDescription>Choose which notifications you want to receive</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="notify_campaigns" className="text-base">Campaign Notifications</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive notifications about new campaigns and when goals are reached
+                        </p>
+                      </div>
+                      <Switch
+                        id="notify_campaigns"
+                        checked={notificationPrefs.notify_campaigns}
+                        onCheckedChange={(checked) => handleNotificationChange("notify_campaigns", checked)}
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="notify_orders" className="text-base">Order Notifications</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive notifications about new orders and purchases on campaigns
+                        </p>
+                      </div>
+                      <Switch
+                        id="notify_orders"
+                        checked={notificationPrefs.notify_orders}
+                        onCheckedChange={(checked) => handleNotificationChange("notify_orders", checked)}
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="notify_assignments" className="text-base">Assignment Notifications</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive notifications when you're added to groups or rosters
+                        </p>
+                      </div>
+                      <Switch
+                        id="notify_assignments"
+                        checked={notificationPrefs.notify_assignments}
+                        onCheckedChange={(checked) => handleNotificationChange("notify_assignments", checked)}
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        These preferences control in-app notifications. You can toggle each type on or off based on your needs.
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
