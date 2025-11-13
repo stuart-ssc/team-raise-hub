@@ -4,6 +4,7 @@ import { useSchoolUser } from "@/hooks/useSchoolUser";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
+import { AvatarUpload } from "@/components/AvatarUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,13 @@ const Profile = () => {
       confirmPassword: "",
     },
   });
+
+  const getUserInitials = () => {
+    if (profileData?.first_name && profileData?.last_name) {
+      return `${profileData.first_name[0]}${profileData.last_name[0]}`.toUpperCase();
+    }
+    return "U";
+  };
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -189,7 +197,16 @@ const Profile = () => {
                     <CardTitle>Personal Information</CardTitle>
                     <CardDescription>Update your personal details</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-6">
+                    {user && (
+                      <AvatarUpload
+                        userId={user.id}
+                        currentAvatarUrl={profileData?.avatar_url}
+                        userInitials={getUserInitials()}
+                        onAvatarUpdate={(url) => setProfileData({ ...profileData, avatar_url: url })}
+                      />
+                    )}
+
                     <Form {...profileForm}>
                       <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
                         <FormField

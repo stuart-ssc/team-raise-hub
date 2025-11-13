@@ -27,20 +27,23 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
   const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
   const [userInitials, setUserInitials] = useState("U");
 
-  // Fetch user profile for initials
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Fetch user profile for initials and avatar
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("first_name, last_name")
+        .select("first_name, last_name, avatar_url")
         .eq("id", user.id)
         .single();
 
       if (profile) {
         const initials = `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase() || "U";
         setUserInitials(initials);
+        setAvatarUrl(profile.avatar_url);
       }
     };
 
@@ -127,7 +130,7 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder.svg" />
+                <AvatarImage src={avatarUrl || undefined} />
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
               <ChevronDown className="h-4 w-4" />
