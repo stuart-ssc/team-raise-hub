@@ -20,11 +20,32 @@ interface DashboardHeaderProps {
 }
 
 const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHeaderProps) => {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { schoolUser } = useSchoolUser();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
+  const [userInitials, setUserInitials] = useState("U");
+
+  // Fetch user profile for initials
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", user.id)
+        .single();
+
+      if (profile) {
+        const initials = `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase() || "U";
+        setUserInitials(initials);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
 
   // Fetch groups based on user role
   useEffect(() => {
@@ -107,13 +128,13 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
             <Button variant="ghost" className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/placeholder.svg" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
               <ChevronDown className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>Profile</DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
           </DropdownMenuContent>
