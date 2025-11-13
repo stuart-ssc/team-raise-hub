@@ -48,7 +48,7 @@ const Profile = () => {
   const [schoolUserData, setSchoolUserData] = useState<any[]>([]);
   const [notificationPrefs, setNotificationPrefs] = useState({
     notify_campaigns: true,
-    notify_orders: true,
+    notify_donations: true,
     notify_assignments: true,
   });
   const [digestFrequency, setDigestFrequency] = useState<string>("weekly");
@@ -94,7 +94,7 @@ const Profile = () => {
         });
         setNotificationPrefs({
           notify_campaigns: profile.notify_campaigns ?? true,
-          notify_orders: profile.notify_orders ?? true,
+          notify_donations: profile.notify_donations ?? true,
           notify_assignments: profile.notify_assignments ?? true,
         });
         setDigestFrequency(profile.email_digest_frequency || "weekly");
@@ -464,15 +464,15 @@ const Profile = () => {
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
-                        <Label htmlFor="notify_orders" className="text-base">Donation Notifications</Label>
+                        <Label htmlFor="notify_donations" className="text-base">Donation Notifications</Label>
                         <p className="text-sm text-muted-foreground">
                           Receive notifications about new donations and purchases on campaigns
                         </p>
                       </div>
                       <Switch
-                        id="notify_orders"
-                        checked={notificationPrefs.notify_orders}
-                        onCheckedChange={(checked) => handleNotificationChange("notify_orders", checked)}
+                        id="notify_donations"
+                        checked={notificationPrefs.notify_donations}
+                        onCheckedChange={(checked) => handleNotificationChange("notify_donations", checked)}
                         disabled={loading}
                       />
                     </div>

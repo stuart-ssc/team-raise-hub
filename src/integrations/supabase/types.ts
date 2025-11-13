@@ -431,7 +431,7 @@ export type Database = {
           last_name: string | null
           notify_assignments: boolean | null
           notify_campaigns: boolean | null
-          notify_orders: boolean | null
+          notify_donations: boolean | null
           school_id: string | null
           updated_at: string
         }
@@ -445,7 +445,7 @@ export type Database = {
           last_name?: string | null
           notify_assignments?: boolean | null
           notify_campaigns?: boolean | null
-          notify_orders?: boolean | null
+          notify_donations?: boolean | null
           school_id?: string | null
           updated_at?: string
         }
@@ -459,7 +459,7 @@ export type Database = {
           last_name?: string | null
           notify_assignments?: boolean | null
           notify_campaigns?: boolean | null
-          notify_orders?: boolean | null
+          notify_donations?: boolean | null
           school_id?: string | null
           updated_at?: string
         }
