@@ -464,9 +464,9 @@ const Profile = () => {
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
-                        <Label htmlFor="notify_orders" className="text-base">Order Notifications</Label>
+                        <Label htmlFor="notify_orders" className="text-base">Donation Notifications</Label>
                         <p className="text-sm text-muted-foreground">
-                          Receive notifications about new orders and purchases on campaigns
+                          Receive notifications about new donations and purchases on campaigns
                         </p>
                       </div>
                       <Switch
