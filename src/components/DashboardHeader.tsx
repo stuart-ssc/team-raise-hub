@@ -138,7 +138,6 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
