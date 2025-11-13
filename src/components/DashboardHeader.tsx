@@ -1,4 +1,4 @@
-import { Bell, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import NotificationDropdown from "@/components/NotificationDropdown";
 
 interface DashboardHeaderProps {
   activeGroup?: {
@@ -122,9 +123,7 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
       </div>
       
       <div className="flex items-center gap-2 md:gap-4 self-start md:self-auto">
-        <Button variant="ghost" size="sm">
-          <Bell className="h-4 w-4" />
-        </Button>
+        <NotificationDropdown />
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
