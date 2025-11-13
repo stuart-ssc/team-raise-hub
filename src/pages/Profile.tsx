@@ -247,6 +247,46 @@ const Profile = () => {
     }
   };
 
+  const sendTestDigest = async () => {
+    if (!user || digestFrequency === "none") {
+      toast({
+        title: "Cannot send test",
+        description: "Please enable email digests first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Temporarily update the last_digest_sent_at to force a test email
+      await supabase
+        .from("profiles")
+        .update({ last_digest_sent_at: null })
+        .eq("id", user.id);
+
+      const { data, error } = await supabase.functions.invoke("send-notification-digest", {
+        body: { frequency: digestFrequency === "weekly" ? "weekly" : "daily" },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Test email sent!",
+        description: "Check your inbox for the digest email preview",
+      });
+    } catch (error: any) {
+      console.error("Error sending test digest:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send test email",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full bg-muted/40">
       <DashboardSidebar />
@@ -474,12 +514,24 @@ const Profile = () => {
                             <SelectItem value="weekly">Weekly</SelectItem>
                           </SelectContent>
                         </Select>
+                        
+                        {digestFrequency !== "none" && (
+                          <Button
+                            variant="outline"
+                            onClick={sendTestDigest}
+                            disabled={loading}
+                            className="w-full mt-3"
+                          >
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Send Test Email
+                          </Button>
+                        )}
                       </div>
                     </div>
 
                     <div className="p-4 bg-muted rounded-lg">
                       <p className="text-sm text-muted-foreground">
-                        These preferences control in-app notifications. You can toggle each type on or off based on your needs.
+                        These preferences control in-app notifications. Email digests are sent automatically based on your selected frequency.
                       </p>
                     </div>
                   </CardContent>
