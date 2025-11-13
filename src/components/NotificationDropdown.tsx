@@ -160,6 +160,13 @@ const NotificationDropdown = () => {
           )}
         </div>
         <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          className="cursor-pointer justify-center font-medium"
+          onClick={() => navigate("/dashboard/notifications")}
+        >
+          View All Notifications
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <ScrollArea className="h-[400px]">
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center text-muted-foreground text-sm">
