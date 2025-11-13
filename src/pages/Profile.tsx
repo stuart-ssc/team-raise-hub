@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -50,6 +51,7 @@ const Profile = () => {
     notify_orders: true,
     notify_assignments: true,
   });
+  const [digestFrequency, setDigestFrequency] = useState<string>("weekly");
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -95,6 +97,7 @@ const Profile = () => {
           notify_orders: profile.notify_orders ?? true,
           notify_assignments: profile.notify_assignments ?? true,
         });
+        setDigestFrequency(profile.email_digest_frequency || "weekly");
       }
     };
 
@@ -208,6 +211,35 @@ const Profile = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to update preferences",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDigestFrequencyChange = async (value: string) => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ email_digest_frequency: value })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      setDigestFrequency(value);
+
+      toast({
+        title: "Success",
+        description: "Email digest preference updated",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update preference",
         variant: "destructive",
       });
     } finally {
@@ -418,6 +450,31 @@ const Profile = () => {
                         onCheckedChange={(checked) => handleNotificationChange("notify_assignments", checked)}
                         disabled={loading}
                       />
+                    </div>
+
+                    <div className="border-t pt-6">
+                      <div className="space-y-3">
+                        <div>
+                          <Label htmlFor="email_digest" className="text-base">Email Digest</Label>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Receive a summary of unread notifications via email
+                          </p>
+                        </div>
+                        <Select
+                          value={digestFrequency}
+                          onValueChange={handleDigestFrequencyChange}
+                          disabled={loading}
+                        >
+                          <SelectTrigger id="email_digest" className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Never</SelectItem>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
 
                     <div className="p-4 bg-muted rounded-lg">
