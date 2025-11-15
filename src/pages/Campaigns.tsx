@@ -39,6 +39,7 @@ export default function Campaigns() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterBy, setFilterBy] = useState("active");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [showAddCampaign, setShowAddCampaign] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
@@ -48,6 +49,35 @@ export default function Campaigns() {
 
   const authorizedRoles = ['Principal', 'Athletic Director', 'Coach', 'Club Sponsor', 'Booster Leader'];
   const canSeeUsers = schoolUser?.user_type.name && authorizedRoles.includes(schoolUser.user_type.name);
+
+  const handleGroupClick = (groupId: string | null) => {
+    setSelectedGroup(groupId);
+  };
+
+  const fetchGroups = async () => {
+    if (!schoolUser?.school_id) return;
+    
+    const userRole = schoolUser.user_type?.name;
+    
+    if (["Principal", "Athletic Director"].includes(userRole)) {
+      const { data, error } = await supabase
+        .from("groups")
+        .select("id, group_name")
+        .eq("school_id", schoolUser.school_id)
+        .eq("status", true)
+        .order("group_name");
+        
+      if (error) {
+        console.error("Error fetching groups:", error);
+        return;
+      }
+      setGroups(data || []);
+    } else if (["Coach", "Club Sponsor", "Booster Leader", "Team Player", "Club Participant", "Family Member"].includes(userRole)) {
+      if (schoolUser.groups) {
+        setGroups([schoolUser.groups]);
+      }
+    }
+  };
 
   const fetchCampaigns = async () => {
     if (!schoolUser) {
@@ -95,7 +125,8 @@ export default function Campaigns() {
         }
       }
 
-      if (selectedGroup) {
+      // Apply selected group filter if set
+      if (selectedGroup && selectedGroup !== "All") {
         query = query.eq('group_id', selectedGroup);
       }
 
@@ -211,17 +242,26 @@ export default function Campaigns() {
   });
 
   useEffect(() => {
-    if (!schoolUserLoading) {
+    if (!schoolUserLoading && schoolUser) {
+      fetchGroups();
       fetchCampaigns();
     }
-  }, [schoolUser, schoolUserLoading, selectedGroup]);
+  }, [schoolUser, schoolUserLoading]);
+
+  useEffect(() => {
+    if (schoolUser) {
+      fetchCampaigns();
+    }
+  }, [selectedGroup]);
+
+  const activeGroup = selectedGroup ? groups.find(g => g.id === selectedGroup) : null;
 
   if (schoolUserLoading || loading) {
     return (
       <div className="min-h-screen flex bg-background">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col">
-          <DashboardHeader />
+          <DashboardHeader onGroupClick={handleGroupClick} activeGroup={activeGroup} />
           <main className="flex-1 p-8">
             <div>Loading...</div>
           </main>
@@ -235,7 +275,7 @@ export default function Campaigns() {
       <div className="min-h-screen flex bg-background">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col">
-          <DashboardHeader />
+          <DashboardHeader onGroupClick={handleGroupClick} activeGroup={activeGroup} />
           <main className="flex-1 p-8">
             <div className="text-center">
               <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
@@ -251,7 +291,7 @@ export default function Campaigns() {
     <div className="min-h-screen flex bg-background">
       <DashboardSidebar />
       <div className="flex-1 flex flex-col">
-        <DashboardHeader />
+        <DashboardHeader onGroupClick={handleGroupClick} activeGroup={activeGroup} />
         <main className="flex-1 p-8">
           <div className="space-y-8">
             <div>
