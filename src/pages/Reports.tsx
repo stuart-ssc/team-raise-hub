@@ -6,10 +6,11 @@ import DashboardHeader from "@/components/DashboardHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, startOfMonth, startOfYear, subMonths } from "date-fns";
-import { DollarSign, Target, TrendingUp, Users } from "lucide-react";
+import { DollarSign, Target, TrendingUp, Users, Download } from "lucide-react";
 
 interface CampaignReport {
   id: string;
@@ -252,6 +253,55 @@ const Reports = () => {
     return Math.min(Math.round(((raised || 0) / goal) * 100), 100);
   };
 
+  const exportToCSV = () => {
+    // Create header row with statistics summary
+    const summaryRows = [
+      ['CAMPAIGN REPORTS SUMMARY'],
+      [''],
+      ['Period', dateRange === 'month' ? 'This Month' : dateRange === '3months' ? 'Last 3 Months' : dateRange === 'year' ? 'This Year' : 'All Time'],
+      ['Group', selectedGroup && activeGroup ? activeGroup.group_name : 'All Groups'],
+      [''],
+      ['OVERALL STATISTICS'],
+      ['Total Campaigns', stats.totalCampaigns.toString()],
+      ['Active Campaigns', stats.activeCampaigns.toString()],
+      ['Total Raised', formatCurrency(stats.totalRaised)],
+      ['Total Goal', formatCurrency(stats.totalGoal)],
+      ['Total Donations', stats.totalDonations.toString()],
+      ['Average Donation', formatCurrency(stats.avgDonation)],
+      [''],
+      ['CAMPAIGN DETAILS'],
+      ['Campaign Name', 'Group', 'Goal', 'Amount Raised', 'Progress (%)', 'Donations', 'Status', 'Date Range']
+    ];
+
+    // Add campaign data rows
+    const dataRows = campaigns.map(campaign => [
+      campaign.name,
+      campaign.group_name,
+      formatCurrency(campaign.goal_amount),
+      formatCurrency(campaign.amount_raised),
+      calculateProgress(campaign.amount_raised, campaign.goal_amount).toString() + '%',
+      campaign.donation_count.toString(),
+      campaign.status ? 'Active' : 'Inactive',
+      formatDateRange(campaign.start_date, campaign.end_date)
+    ]);
+
+    // Combine all rows
+    const csvContent = [...summaryRows, ...dataRows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `campaign-reports-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const activeGroup = selectedGroup ? groups.find(g => g.id === selectedGroup) : null;
 
   if (schoolUserLoading || loading) {
@@ -294,17 +344,28 @@ const Reports = () => {
           <div className="max-w-7xl mx-auto space-y-6">
             <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold text-foreground">Reports</h1>
-              <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select period" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="month">This Month</SelectItem>
-                  <SelectItem value="3months">Last 3 Months</SelectItem>
-                  <SelectItem value="year">This Year</SelectItem>
-                  <SelectItem value="all">All Time</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="default"
+                  onClick={exportToCSV}
+                  disabled={campaigns.length === 0}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Export CSV
+                </Button>
+                <Select value={dateRange} onValueChange={setDateRange}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="month">This Month</SelectItem>
+                    <SelectItem value="3months">Last 3 Months</SelectItem>
+                    <SelectItem value="year">This Year</SelectItem>
+                    <SelectItem value="all">All Time</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Statistics Cards */}
