@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, startOfMonth, startOfYear, subMonths } from "date-fns";
+import { format, startOfMonth, startOfYear, subMonths, parseISO } from "date-fns";
 import { DollarSign, Target, TrendingUp, Users, Download } from "lucide-react";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface CampaignReport {
   id: string;
@@ -33,6 +34,13 @@ interface ReportStats {
   avgDonation: number;
 }
 
+interface MonthlyData {
+  month: string;
+  donations: number;
+  amount: number;
+  campaigns: number;
+}
+
 const Reports = () => {
   const { schoolUser, loading: schoolUserLoading } = useSchoolUser();
   const [campaigns, setCampaigns] = useState<CampaignReport[]>([]);
@@ -48,6 +56,7 @@ const Reports = () => {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
   const [dateRange, setDateRange] = useState<string>("all");
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
 
   const handleGroupClick = (groupId: string | null) => {
     setSelectedGroup(groupId);
@@ -177,6 +186,64 @@ const Reports = () => {
       );
 
       setCampaigns(campaignReports);
+
+      // Fetch orders with timestamps for chart data
+      let ordersWithDateQuery = supabase
+        .from("orders")
+        .select(`
+          created_at,
+          total_amount,
+          campaign_id,
+          campaigns!inner(
+            id,
+            name,
+            group_id,
+            groups!inner(
+              school_id
+            )
+          )
+        `)
+        .eq("campaigns.groups.school_id", schoolUser.school_id)
+        .in("status", ["succeeded", "completed"])
+        .order("created_at", { ascending: true });
+
+      // Filter by selected group if one is selected
+      if (selectedGroup && selectedGroup !== "All") {
+        ordersWithDateQuery = ordersWithDateQuery.eq("campaigns.group_id", selectedGroup);
+      }
+
+      // Filter by date range
+      if (dateFilter) {
+        ordersWithDateQuery = ordersWithDateQuery.gte("created_at", dateFilter);
+      }
+
+      const { data: ordersWithDate, error: ordersWithDateError } = await ordersWithDateQuery;
+
+      if (ordersWithDateError) throw ordersWithDateError;
+
+      // Process data for charts - group by month
+      const monthlyMap = new Map<string, { donations: number; amount: number; campaigns: Set<string> }>();
+      
+      ordersWithDate?.forEach((order) => {
+        const monthKey = format(parseISO(order.created_at), "MMM yyyy");
+        if (!monthlyMap.has(monthKey)) {
+          monthlyMap.set(monthKey, { donations: 0, amount: 0, campaigns: new Set() });
+        }
+        const monthData = monthlyMap.get(monthKey)!;
+        monthData.donations += 1;
+        monthData.amount += order.total_amount || 0;
+        monthData.campaigns.add(order.campaign_id);
+      });
+
+      // Convert to array for charts
+      const chartData: MonthlyData[] = Array.from(monthlyMap.entries()).map(([month, data]) => ({
+        month,
+        donations: data.donations,
+        amount: data.amount,
+        campaigns: data.campaigns.size,
+      }));
+
+      setMonthlyData(chartData);
 
       // Fetch overall donation statistics
       let ordersQuery = supabase
@@ -324,6 +391,10 @@ const Reports = () => {
                   <Skeleton key={i} className="h-32" />
                 ))}
               </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Skeleton className="h-[350px]" />
+                <Skeleton className="h-[350px]" />
+              </div>
               <Skeleton className="h-96" />
             </div>
           </main>
@@ -426,6 +497,89 @@ const Reports = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Performance Charts */}
+            {monthlyData.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Donations Over Time</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={monthlyData}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="month" 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--foreground))' }}
+                        />
+                        <YAxis 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--foreground))' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '6px',
+                            color: 'hsl(var(--foreground))'
+                          }}
+                        />
+                        <Legend />
+                        <Bar 
+                          dataKey="donations" 
+                          fill="hsl(var(--primary))" 
+                          name="Donations" 
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Revenue Trends</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={monthlyData}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="month" 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--foreground))' }}
+                        />
+                        <YAxis 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--foreground))' }}
+                          tickFormatter={(value) => `$${value.toLocaleString()}`}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '6px',
+                            color: 'hsl(var(--foreground))'
+                          }}
+                          formatter={(value: number) => [`$${value.toFixed(2)}`, 'Amount Raised']}
+                        />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="amount" 
+                          stroke="hsl(var(--primary))" 
+                          strokeWidth={2}
+                          name="Amount Raised"
+                          dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Campaign Performance Table */}
             <Card>
