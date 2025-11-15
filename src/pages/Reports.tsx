@@ -43,12 +43,50 @@ const Reports = () => {
     avgDonation: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
+
+  const handleGroupClick = (groupId: string | null) => {
+    setSelectedGroup(groupId);
+  };
+
+  const fetchGroups = async () => {
+    if (!schoolUser?.school_id) return;
+    
+    const userRole = schoolUser.user_type?.name;
+    
+    if (["Principal", "Athletic Director"].includes(userRole)) {
+      const { data, error } = await supabase
+        .from("groups")
+        .select("id, group_name")
+        .eq("school_id", schoolUser.school_id)
+        .eq("status", true)
+        .order("group_name");
+        
+      if (error) {
+        console.error("Error fetching groups:", error);
+        return;
+      }
+      setGroups(data || []);
+    } else if (["Coach", "Club Sponsor", "Booster Leader", "Team Player", "Club Participant", "Family Member"].includes(userRole)) {
+      if (schoolUser.groups) {
+        setGroups([schoolUser.groups]);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (schoolUser?.school_id) {
+      fetchGroups();
+      fetchReportData();
+    }
+  }, [schoolUser?.school_id]);
 
   useEffect(() => {
     if (schoolUser?.school_id) {
       fetchReportData();
     }
-  }, [schoolUser?.school_id]);
+  }, [selectedGroup]);
 
   const fetchReportData = async () => {
     if (!schoolUser?.school_id) return;
@@ -56,7 +94,7 @@ const Reports = () => {
     setLoading(true);
     try {
       // Fetch campaigns with donation counts
-      const { data: campaignsData, error: campaignsError } = await supabase
+      let campaignsQuery = supabase
         .from("campaigns")
         .select(`
           id,
@@ -66,6 +104,7 @@ const Reports = () => {
           status,
           start_date,
           end_date,
+          group_id,
           groups!inner(
             id,
             group_name,
@@ -74,6 +113,13 @@ const Reports = () => {
         `)
         .eq("groups.school_id", schoolUser.school_id)
         .order("created_at", { ascending: false });
+
+      // Filter by selected group if one is selected
+      if (selectedGroup && selectedGroup !== "All") {
+        campaignsQuery = campaignsQuery.eq("group_id", selectedGroup);
+      }
+
+      const { data: campaignsData, error: campaignsError } = await campaignsQuery;
 
       if (campaignsError) throw campaignsError;
 
@@ -103,11 +149,13 @@ const Reports = () => {
       setCampaigns(campaignReports);
 
       // Fetch overall donation statistics
-      const { data: ordersData, error: ordersError } = await supabase
+      let ordersQuery = supabase
         .from("orders")
         .select(`
           total_amount,
           campaigns!inner(
+            id,
+            group_id,
             groups!inner(
               school_id
             )
@@ -115,6 +163,13 @@ const Reports = () => {
         `)
         .eq("campaigns.groups.school_id", schoolUser.school_id)
         .in("status", ["succeeded", "completed"]);
+
+      // Filter by selected group if one is selected
+      if (selectedGroup && selectedGroup !== "All") {
+        ordersQuery = ordersQuery.eq("campaigns.group_id", selectedGroup);
+      }
+
+      const { data: ordersData, error: ordersError } = await ordersQuery;
 
       if (ordersError) throw ordersError;
 
@@ -168,12 +223,17 @@ const Reports = () => {
     return Math.min(Math.round(((raised || 0) / goal) * 100), 100);
   };
 
+  const activeGroup = selectedGroup ? groups.find(g => g.id === selectedGroup) : null;
+
   if (schoolUserLoading || loading) {
     return (
       <div className="flex h-screen bg-background">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
+          <DashboardHeader 
+            onGroupClick={handleGroupClick} 
+            activeGroup={activeGroup} 
+          />
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
               <Skeleton className="h-8 w-48" />
@@ -194,7 +254,10 @@ const Reports = () => {
     <div className="flex h-screen bg-background">
       <DashboardSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader />
+        <DashboardHeader 
+          onGroupClick={handleGroupClick} 
+          activeGroup={activeGroup} 
+        />
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
             <h1 className="text-3xl font-bold text-foreground">Reports</h1>
