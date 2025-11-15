@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format, startOfMonth, startOfYear, subMonths } from "date-fns";
 import { DollarSign, Target, TrendingUp, Users } from "lucide-react";
 
 interface CampaignReport {
@@ -45,9 +46,25 @@ const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
+  const [dateRange, setDateRange] = useState<string>("all");
 
   const handleGroupClick = (groupId: string | null) => {
     setSelectedGroup(groupId);
+  };
+
+  const getDateRangeFilter = () => {
+    const now = new Date();
+    switch (dateRange) {
+      case "month":
+        return startOfMonth(now).toISOString();
+      case "3months":
+        return subMonths(now, 3).toISOString();
+      case "year":
+        return startOfYear(now).toISOString();
+      case "all":
+      default:
+        return null;
+    }
   };
 
   const fetchGroups = async () => {
@@ -88,6 +105,12 @@ const Reports = () => {
     }
   }, [selectedGroup]);
 
+  useEffect(() => {
+    if (schoolUser?.school_id) {
+      fetchReportData();
+    }
+  }, [dateRange]);
+
   const fetchReportData = async () => {
     if (!schoolUser?.school_id) return;
 
@@ -117,6 +140,12 @@ const Reports = () => {
       // Filter by selected group if one is selected
       if (selectedGroup && selectedGroup !== "All") {
         campaignsQuery = campaignsQuery.eq("group_id", selectedGroup);
+      }
+
+      // Filter by date range
+      const dateFilter = getDateRangeFilter();
+      if (dateFilter) {
+        campaignsQuery = campaignsQuery.gte("start_date", dateFilter);
       }
 
       const { data: campaignsData, error: campaignsError } = await campaignsQuery;
@@ -236,7 +265,10 @@ const Reports = () => {
           />
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-              <Skeleton className="h-8 w-48" />
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-10 w-[180px]" />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[1, 2, 3, 4].map((i) => (
                   <Skeleton key={i} className="h-32" />
@@ -260,7 +292,20 @@ const Reports = () => {
         />
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
-            <h1 className="text-3xl font-bold text-foreground">Reports</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-foreground">Reports</h1>
+              <Select value={dateRange} onValueChange={setDateRange}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="month">This Month</SelectItem>
+                  <SelectItem value="3months">Last 3 Months</SelectItem>
+                  <SelectItem value="year">This Year</SelectItem>
+                  <SelectItem value="all">All Time</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
