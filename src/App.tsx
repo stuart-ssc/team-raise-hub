@@ -30,6 +30,7 @@ import ABTestManagement from "./pages/SystemAdmin/ABTestManagement";
 import DonorSegmentation from "./pages/DonorSegmentation";
 import DonorAnalytics from "./pages/DonorAnalytics";
 import NurtureCampaigns from "./pages/NurtureCampaigns";
+import OutreachQueue from "./pages/OutreachQueue";
 import InstallApp from "./pages/InstallApp";
 import NativeFeatures from "./pages/NativeFeatures";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
@@ -88,6 +89,7 @@ const AppContent = () => {
         <Route path="/dashboard/donors/templates" element={<ProtectedRoute><ThankYouTemplates /></ProtectedRoute>} />
         <Route path="/dashboard/donors/segmentation" element={<ProtectedRoute><DonorSegmentation /></ProtectedRoute>} />
         <Route path="/dashboard/donors/nurture" element={<ProtectedRoute><NurtureCampaigns /></ProtectedRoute>} />
+        <Route path="/dashboard/donors/outreach-queue" element={<ProtectedRoute><OutreachQueue /></ProtectedRoute>} />
         <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/dashboard/notifications" element={<ProtectedRoute><NotificationHistory /></ProtectedRoute>} />
         <Route path="/dashboard/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />

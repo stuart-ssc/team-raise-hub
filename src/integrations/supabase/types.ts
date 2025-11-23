@@ -351,6 +351,63 @@ export type Database = {
           },
         ]
       }
+      donor_insights: {
+        Row: {
+          created_at: string | null
+          donor_id: string
+          generated_at: string | null
+          id: string
+          insights: Json
+          optimal_contact_date: string | null
+          organization_id: string
+          priority_score: number
+          retention_risk_level: string | null
+          suggested_ask_amount: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          donor_id: string
+          generated_at?: string | null
+          id?: string
+          insights?: Json
+          optimal_contact_date?: string | null
+          organization_id: string
+          priority_score?: number
+          retention_risk_level?: string | null
+          suggested_ask_amount?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          donor_id?: string
+          generated_at?: string | null
+          id?: string
+          insights?: Json
+          optimal_contact_date?: string | null
+          organization_id?: string
+          priority_score?: number
+          retention_risk_level?: string | null
+          suggested_ask_amount?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donor_insights_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: true
+            referencedRelation: "donor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_insights_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       donor_profiles: {
         Row: {
           created_at: string | null
