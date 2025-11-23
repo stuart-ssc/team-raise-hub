@@ -16,6 +16,7 @@ import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { EmailEditorDialog } from "@/components/EmailEditor/EmailEditorDialog";
 
 interface NurtureCampaign {
   id: string;
@@ -71,6 +72,7 @@ export default function NurtureCampaigns() {
   });
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [visualEditorOpen, setVisualEditorOpen] = useState(false);
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ["nurture-campaigns", organizationId],
@@ -159,6 +161,16 @@ export default function NurtureCampaigns() {
       delay_hours: 0,
     });
     setSelectedTemplateId("");
+  };
+
+  const handleVisualEditorSave = (subject: string, htmlContent: string) => {
+    setNewSequence({
+      ...newSequence,
+      subject_line: subject,
+      email_content: htmlContent,
+    });
+    setVisualEditorOpen(false);
+    toast.success("Email loaded from visual editor");
   };
 
   const createCampaignMutation = useMutation({
@@ -428,9 +440,26 @@ export default function NurtureCampaigns() {
                     </DialogHeader>
                     <div className="space-y-4">
                       {/* Template Selector */}
+                      {/* Visual Editor Button */}
+                      <div>
+                        <Label>Build Email</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => setVisualEditorOpen(true)}
+                        >
+                          Open Visual Email Editor
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Build your email with drag-and-drop components
+                        </p>
+                      </div>
+
+                      {/* Template Selector */}
                       {emailTemplates && emailTemplates.length > 0 && (
                         <div>
-                          <Label>Choose a Template (Optional)</Label>
+                          <Label>Or Choose a Template</Label>
                           <Select value={selectedTemplateId} onValueChange={handleTemplateSelect}>
                             <SelectTrigger>
                               <SelectValue placeholder="Start from scratch or select a template" />
@@ -578,6 +607,15 @@ export default function NurtureCampaigns() {
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      {/* Visual Email Editor */}
+      <EmailEditorDialog
+        open={visualEditorOpen}
+        onOpenChange={setVisualEditorOpen}
+        initialSubject={newSequence.subject_line}
+        initialContent={newSequence.email_content}
+        onSave={handleVisualEditorSave}
+      />
         </main>
       </div>
     </div>
