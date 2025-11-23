@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.send-campaign-milestone]
 verify_jwt = false
+
+[functions.generate-tax-receipt]
+verify_jwt = false
