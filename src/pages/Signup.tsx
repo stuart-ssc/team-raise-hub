@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import SchoolLogo from "@/components/SchoolLogo";
+import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -112,7 +112,7 @@ const Signup = () => {
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md space-y-8">
           <div>
-            <SchoolLogo theme="light" className="mb-8" />
+            <SponsorlyLogo variant="full" theme="light" className="mb-8" />
             <h1 className="text-3xl font-semibold mb-2">Sign up</h1>
             <p className="text-muted-foreground">Create your account to get started</p>
           </div>
