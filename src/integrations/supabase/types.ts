@@ -298,11 +298,16 @@ export type Database = {
           email_type: string
           error_message: string | null
           id: string
+          last_retry_at: string | null
+          max_retries: number | null
           metadata: Json | null
+          next_retry_at: string | null
           opened_at: string | null
           recipient_email: string
           recipient_name: string | null
           resend_email_id: string | null
+          retry_count: number | null
+          retry_eligible: boolean | null
           sent_at: string | null
           status: string
           updated_at: string | null
@@ -315,11 +320,16 @@ export type Database = {
           email_type: string
           error_message?: string | null
           id?: string
+          last_retry_at?: string | null
+          max_retries?: number | null
           metadata?: Json | null
+          next_retry_at?: string | null
           opened_at?: string | null
           recipient_email: string
           recipient_name?: string | null
           resend_email_id?: string | null
+          retry_count?: number | null
+          retry_eligible?: boolean | null
           sent_at?: string | null
           status?: string
           updated_at?: string | null
@@ -332,11 +342,16 @@ export type Database = {
           email_type?: string
           error_message?: string | null
           id?: string
+          last_retry_at?: string | null
+          max_retries?: number | null
           metadata?: Json | null
+          next_retry_at?: string | null
           opened_at?: string | null
           recipient_email?: string
           recipient_name?: string | null
           resend_email_id?: string | null
+          retry_count?: number | null
+          retry_eligible?: boolean | null
           sent_at?: string | null
           status?: string
           updated_at?: string | null
