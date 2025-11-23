@@ -29,7 +29,9 @@ import EmailManagement from "./pages/SystemAdmin/EmailManagement";
 import ABTestManagement from "./pages/SystemAdmin/ABTestManagement";
 import DonorSegmentation from "./pages/DonorSegmentation";
 import NurtureCampaigns from "./pages/NurtureCampaigns";
+import InstallApp from "./pages/InstallApp";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -64,8 +66,10 @@ const AppContent = () => {
 
   return (
     <BrowserRouter>
+      <PWAInstallPrompt />
       <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/install" element={<InstallApp />} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path="/c/:slug" element={<CampaignLanding />} />
