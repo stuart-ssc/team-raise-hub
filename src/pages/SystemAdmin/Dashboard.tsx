@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, FileCheck, Target, Users } from "lucide-react";
+import { Building2, FileCheck, Target, Users, Mail, FlaskConical } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -107,7 +107,14 @@ const SystemAdminDashboard = () => {
                   </Link>
                   <Link to="/system-admin/emails">
                     <Button className="w-full" variant="outline">
+                      <Mail className="mr-2 h-4 w-4" />
                       Email Management
+                    </Button>
+                  </Link>
+                  <Link to="/system-admin/ab-tests">
+                    <Button className="w-full" variant="outline">
+                      <FlaskConical className="mr-2 h-4 w-4" />
+                      A/B Testing
                     </Button>
                   </Link>
                 </CardContent>

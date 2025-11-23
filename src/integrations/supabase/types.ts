@@ -290,6 +290,138 @@ export type Database = {
           },
         ]
       }
+      email_ab_results: {
+        Row: {
+          created_at: string | null
+          email_log_id: string
+          id: string
+          test_id: string
+          variant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_log_id: string
+          id?: string
+          test_id: string
+          variant_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_log_id?: string
+          id?: string
+          test_id?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_ab_results_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: true
+            referencedRelation: "email_delivery_log"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_ab_results_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "email_ab_tests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_ab_results_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "email_ab_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_ab_tests: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          email_type: string
+          end_date: string | null
+          id: string
+          minimum_sample_size: number
+          name: string
+          start_date: string | null
+          status: string
+          updated_at: string | null
+          winner_variant_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          email_type?: string
+          end_date?: string | null
+          id?: string
+          minimum_sample_size?: number
+          name: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string | null
+          winner_variant_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          email_type?: string
+          end_date?: string | null
+          id?: string
+          minimum_sample_size?: number
+          name?: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string | null
+          winner_variant_id?: string | null
+        }
+        Relationships: []
+      }
+      email_ab_variants: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_control: boolean | null
+          name: string
+          split_percentage: number | null
+          subject_line: string
+          template_data: Json | null
+          test_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_control?: boolean | null
+          name: string
+          split_percentage?: number | null
+          subject_line: string
+          template_data?: Json | null
+          test_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_control?: boolean | null
+          name?: string
+          split_percentage?: number | null
+          subject_line?: string
+          template_data?: Json | null
+          test_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_ab_variants_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "email_ab_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_delivery_log: {
         Row: {
           bounced_at: string | null
@@ -1266,6 +1398,21 @@ export type Database = {
       generate_campaign_slug: {
         Args: { campaign_id?: string; campaign_name: string }
         Returns: string
+      }
+      get_ab_test_results: {
+        Args: { test_uuid: string }
+        Returns: {
+          click_rate: number
+          click_through_rate: number
+          emails_clicked: number
+          emails_opened: number
+          emails_sent: number
+          is_control: boolean
+          open_rate: number
+          subject_line: string
+          variant_id: string
+          variant_name: string
+        }[]
       }
       is_system_admin: { Args: { user_id: string }; Returns: boolean }
       user_belongs_to_organization: {
