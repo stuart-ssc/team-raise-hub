@@ -43,6 +43,7 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
   const [sendTestDialogOpen, setSendTestDialogOpen] = useState(false);
   const [testEmailAddress, setTestEmailAddress] = useState("");
   const [deviceView, setDeviceView] = useState<"desktop" | "mobile">("desktop");
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -56,6 +57,42 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
       setShowLayoutSelection(blocks.length === 0);
     }
   }, [open, blocks.length]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!open || showLayoutSelection) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+        return;
+      }
+
+      // Ctrl/Cmd + D to duplicate selected block
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        if (selectedBlockId) {
+          duplicateBlock(selectedBlockId);
+        } else {
+          toast.error("Please select a block to duplicate");
+        }
+        return;
+      }
+
+      // Delete key to remove selected block
+      if (e.key === 'Delete' && selectedBlockId) {
+        e.preventDefault();
+        deleteBlock(selectedBlockId);
+        setSelectedBlockId(null);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, showLayoutSelection, selectedBlockId, blocks]);
 
   // Fetch custom layouts
   const { data: customLayouts } = useQuery({
@@ -235,6 +272,9 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
 
   const deleteBlock = (id: string) => {
     setBlocks(blocks.filter(block => block.id !== id));
+    if (selectedBlockId === id) {
+      setSelectedBlockId(null);
+    }
   };
 
   const duplicateBlock = (id: string) => {
@@ -250,6 +290,7 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
     const newBlocks = [...blocks];
     newBlocks.splice(blockIndex + 1, 0, duplicatedBlock);
     setBlocks(newBlocks);
+    setSelectedBlockId(duplicatedBlock.id);
     toast.success("Block duplicated");
   };
 
@@ -501,8 +542,25 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
 
               <TabsContent value="editor" className="h-[calc(90vh-350px)]">
                 <div className="grid grid-cols-4 gap-4 h-full">
-                  <div className="col-span-1">
+                  <div className="col-span-1 space-y-4">
                     <BlockToolbar onAddBlock={addBlock} />
+                    <Card className="p-3 bg-muted/50">
+                      <p className="text-xs font-semibold mb-2">Keyboard Shortcuts</p>
+                      <div className="space-y-1.5 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <kbd className="px-1.5 py-0.5 bg-background rounded text-xs border">Ctrl+S</kbd>
+                          <span>Save</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <kbd className="px-1.5 py-0.5 bg-background rounded text-xs border">Ctrl+D</kbd>
+                          <span>Duplicate</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <kbd className="px-1.5 py-0.5 bg-background rounded text-xs border">Delete</kbd>
+                          <span>Remove</span>
+                        </div>
+                      </div>
+                    </Card>
                   </div>
                   <div className="col-span-3">
                     <ScrollArea className="h-full border rounded-lg p-4 bg-muted/20">
@@ -529,6 +587,8 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
                         onDelete={deleteBlock}
                         onDuplicate={duplicateBlock}
                         onUploadImage={uploadImage}
+                        isSelected={selectedBlockId === block.id}
+                        onSelect={(id) => setSelectedBlockId(id)}
                       />
                               ))}
                             </div>
