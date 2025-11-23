@@ -88,7 +88,7 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
         <h1 id="school-name-title" className="text-xl md:text-3xl font-bold text-foreground">
           {organizationUser?.organization?.name || "Organization"}
         </h1>
-         <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-3">
+         <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-1">
            <span className="text-muted-foreground text-sm md:text-base">
              {organizationUser?.organization ? getLabel(organizationUser.organization.organization_type, 'programs') : 'Programs'}:
            </span>
