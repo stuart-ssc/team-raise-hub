@@ -248,10 +248,19 @@ const Donors = () => {
                   Track and engage with your supporters
                 </p>
               </div>
-              <Button onClick={() => navigate("/dashboard/donors/templates")}>
-                <Mail className="mr-2 h-4 w-4" />
-                Manage Templates
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate("/dashboard/donors/segmentation")}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  Donor Segments
+                </Button>
+                <Button onClick={() => navigate("/dashboard/donors/templates")}>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Manage Templates
+                </Button>
+              </div>
             </div>
 
             {/* Stats Cards */}
