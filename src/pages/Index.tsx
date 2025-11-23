@@ -92,7 +92,7 @@ const Index = () => {
       <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center">
-            <SponsorlyLogo variant="full" />
+            <SponsorlyLogo variant="full" theme="light" />
           </a>
           <div className="flex items-center gap-4">
             <Button 
@@ -401,7 +401,7 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="col-span-2 space-y-4">
-              <SponsorlyLogo variant="full" />
+              <SponsorlyLogo variant="full" theme="light" />
               <p className="text-sm text-muted-foreground max-w-sm">
                 Empowering schools and non-profits to raise funds efficiently and transparently.
               </p>
