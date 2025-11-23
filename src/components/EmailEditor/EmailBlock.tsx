@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GripVertical, Trash2, Edit2 } from "lucide-react";
+import { GripVertical, Trash2, Edit2, Copy } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,11 @@ interface EmailBlockProps {
   block: EmailBlockType;
   onUpdate: (id: string, updates: Partial<EmailBlockType>) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
   onUploadImage: (blockId: string, file: File) => Promise<void>;
 }
 
-export function EmailBlock({ block, onUpdate, onDelete, onUploadImage }: EmailBlockProps) {
+export function EmailBlock({ block, onUpdate, onDelete, onDuplicate, onUploadImage }: EmailBlockProps) {
   const [isEditing, setIsEditing] = useState(false);
 
   const {
@@ -333,6 +334,13 @@ export function EmailBlock({ block, onUpdate, onDelete, onUploadImage }: EmailBl
           onClick={() => setIsEditing(!isEditing)}
         >
           <Edit2 className="h-4 w-4" />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => onDuplicate(block.id)}
+        >
+          <Copy className="h-4 w-4" />
         </Button>
         <Button
           size="sm"
