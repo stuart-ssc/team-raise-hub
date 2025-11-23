@@ -120,8 +120,8 @@ serve(async (req: Request) => {
       }
     }
 
-    // Send password reset email which acts as an invitation
-    const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+    // Generate password setup link
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email: email,
       options: {
@@ -129,9 +129,55 @@ serve(async (req: Request) => {
       }
     });
 
-    if (resetError) {
-      console.error("Error sending invitation:", resetError);
-      // Don't fail the whole operation if email sending fails
+    // Fetch organization and user type details for personalized email
+    const { data: orgData } = await supabaseAdmin
+      .from("organizations")
+      .select("name")
+      .eq("id", organizationId)
+      .single();
+
+    const { data: userTypeData } = await supabaseAdmin
+      .from("user_type")
+      .select("name")
+      .eq("id", userTypeId)
+      .single();
+
+    const { data: groupData } = groupId ? await supabaseAdmin
+      .from("groups")
+      .select("group_name")
+      .eq("id", groupId)
+      .single() : { data: null };
+
+    // Send invitation email via Resend
+    if (linkData?.properties?.action_link) {
+      try {
+        const inviteResponse = await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-invitation-email`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
+            },
+            body: JSON.stringify({
+              email,
+              firstName,
+              lastName,
+              organizationName: orgData?.name || "the organization",
+              roleName: userTypeData?.name || "User",
+              groupName: groupData?.group_name,
+              inviteLink: linkData.properties.action_link
+            })
+          }
+        );
+
+        if (!inviteResponse.ok) {
+          console.error("Error sending invitation email:", await inviteResponse.text());
+        }
+      } catch (emailError) {
+        console.error("Failed to send invitation email:", emailError);
+        // Don't fail the whole operation if email sending fails
+      }
     }
 
     return new Response(
