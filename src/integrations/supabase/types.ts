@@ -190,6 +190,50 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_email_layouts: {
+        Row: {
+          blocks: Json
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+          preview_color: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          blocks?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          preview_color?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          blocks?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          preview_color?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_email_layouts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       donor_activity_log: {
         Row: {
           activity_data: Json | null
