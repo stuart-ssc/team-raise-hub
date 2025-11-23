@@ -5,6 +5,10 @@ import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import DonorImportWizard from "@/components/DonorImportWizard";
+import BulkActionToolbar from "@/components/BulkActionToolbar";
+import BulkTagDialog from "@/components/BulkTagDialog";
+import BulkEmailDialog from "@/components/BulkEmailDialog";
+import CsvExportDialog from "@/components/CsvExportDialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +65,10 @@ const Donors = () => {
   const [sortBy, setSortBy] = useState<string>("recent");
   const [filterBy, setFilterBy] = useState<string>("all");
   const [importWizardOpen, setImportWizardOpen] = useState(false);
+  const [selectedDonorIds, setSelectedDonorIds] = useState<string[]>([]);
+  const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
+  const [bulkEmailDialogOpen, setBulkEmailDialogOpen] = useState(false);
+  const [csvExportDialogOpen, setCsvExportDialogOpen] = useState(false);
 
   useEffect(() => {
     if (organizationUser) {
@@ -424,59 +432,126 @@ const Donors = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredDonors.map((donor) => (
-                      <Card
-                        key={donor.id}
-                        className="cursor-pointer hover:shadow-md transition-all hover:border-primary/50"
-                        onClick={() => navigate(`/dashboard/donors/${donor.id}`)}
-                      >
-                        <CardContent className="pt-6">
-                          <div className="space-y-3">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-lg truncate">
-                                  {donor.first_name && donor.last_name
-                                    ? `${donor.first_name} ${donor.last_name}`
-                                    : donor.email}
-                                </h3>
-                                <p className="text-sm text-muted-foreground truncate">
-                                  {donor.email}
-                                </p>
+                    {filteredDonors.map((donor) => {
+                      const isSelected = selectedDonorIds.includes(donor.id);
+                      
+                      return (
+                        <Card
+                          key={donor.id}
+                          className={`cursor-pointer hover:shadow-md transition-all ${
+                            isSelected
+                              ? "border-primary ring-2 ring-primary/20"
+                              : "hover:border-primary/50"
+                          }`}
+                        >
+                          <CardContent className="pt-6">
+                            <div className="space-y-3">
+                              <div className="flex items-start justify-between gap-2">
+                                <div 
+                                  className="flex-1 min-w-0"
+                                  onClick={() => navigate(`/dashboard/donors/${donor.id}`)}
+                                >
+                                  <h3 className="font-semibold text-lg truncate">
+                                    {donor.first_name && donor.last_name
+                                      ? `${donor.first_name} ${donor.last_name}`
+                                      : donor.email}
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground truncate">
+                                    {donor.email}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedDonorIds(prev =>
+                                        isSelected
+                                          ? prev.filter(id => id !== donor.id)
+                                          : [...prev, donor.id]
+                                      );
+                                    }}
+                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                                  />
+                                  <Badge className={getEngagementColor(donor.engagement_score)}>
+                                    {getEngagementLabel(donor.engagement_score)}
+                                  </Badge>
+                                </div>
                               </div>
-                              <Badge className={getEngagementColor(donor.engagement_score)}>
-                                {getEngagementLabel(donor.engagement_score)}
-                              </Badge>
-                            </div>
+                      
+                              <div 
+                                className="flex-1 cursor-pointer"
+                                onClick={() => navigate(`/dashboard/donors/${donor.id}`)}
+                              >
+                                <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Donations</p>
+                                    <p className="font-semibold">{donor.donation_count}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Total Given</p>
+                                    <p className="font-semibold">
+                                      {formatCurrency(donor.lifetime_value)}
+                                    </p>
+                                  </div>
+                                </div>
 
-                            <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                              <div>
-                                <p className="text-xs text-muted-foreground">Donations</p>
-                                <p className="font-semibold">{donor.donation_count}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground">Total Given</p>
-                                <p className="font-semibold">
-                                  {formatCurrency(donor.lifetime_value)}
-                                </p>
+                                {donor.last_donation_date && (
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>
+                                      Last: {format(parseISO(donor.last_donation_date), "MMM d, yyyy")}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
-
-                            {donor.last_donation_date && (
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
-                                <Calendar className="h-3 w-3" />
-                                <span>
-                                  Last: {format(parseISO(donor.last_donation_date), "MMM d, yyyy")}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
             </Card>
+
+        {/* Bulk Action Toolbar */}
+        <BulkActionToolbar
+          selectedCount={selectedDonorIds.length}
+          onClearSelection={() => setSelectedDonorIds([])}
+          onAddTags={() => setBulkTagDialogOpen(true)}
+          onSendEmail={() => setBulkEmailDialogOpen(true)}
+          onExportCsv={() => setCsvExportDialogOpen(true)}
+        />
+
+        {/* Bulk Tag Dialog */}
+        <BulkTagDialog
+          open={bulkTagDialogOpen}
+          onOpenChange={setBulkTagDialogOpen}
+          selectedDonorIds={selectedDonorIds}
+          onComplete={() => {
+            setSelectedDonorIds([]);
+            fetchDonors();
+          }}
+        />
+
+        {/* Bulk Email Dialog */}
+        <BulkEmailDialog
+          open={bulkEmailDialogOpen}
+          onOpenChange={setBulkEmailDialogOpen}
+          selectedDonorIds={selectedDonorIds}
+          onComplete={() => {
+            setSelectedDonorIds([]);
+          }}
+        />
+
+        {/* CSV Export Dialog */}
+        <CsvExportDialog
+          open={csvExportDialogOpen}
+          onOpenChange={setCsvExportDialogOpen}
+          selectedDonorIds={selectedDonorIds}
+        />
 
         {/* Import Wizard */}
         <DonorImportWizard
