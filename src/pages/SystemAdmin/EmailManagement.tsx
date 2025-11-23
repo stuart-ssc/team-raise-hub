@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { 
   Loader2, 
   Send, 
@@ -18,9 +20,12 @@ import {
   Clock,
   MailOpen,
   MousePointerClick,
-  AlertTriangle
+  AlertTriangle,
+  Calendar as CalendarIcon,
+  TrendingUp,
+  BarChart3
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +34,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 interface EmailLog {
   id: string;
@@ -52,8 +74,25 @@ interface DeliveryStats {
   clicked: number;
   bounced: number;
   failed: number;
+  pending: number;
   open_rate: number;
   click_rate: number;
+  delivery_rate: number;
+  bounce_rate: number;
+}
+
+interface DailyMetric {
+  date: string;
+  sent: number;
+  opened: number;
+  clicked: number;
+  bounced: number;
+}
+
+interface StatusDistribution {
+  name: string;
+  value: number;
+  color: string;
 }
 
 const EmailManagement = () => {
@@ -64,6 +103,12 @@ const EmailManagement = () => {
   const [stats, setStats] = useState<DeliveryStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: startOfMonth(subMonths(new Date(), 1)),
+    to: endOfMonth(new Date()),
+  });
+  const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
+  const [statusDistribution, setStatusDistribution] = useState<StatusDistribution[]>([]);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -71,7 +116,8 @@ const EmailManagement = () => {
   useEffect(() => {
     fetchEmailLogs();
     fetchStats();
-  }, []);
+    fetchDailyMetrics();
+  }, [dateRange]);
 
   const fetchEmailLogs = async () => {
     setLoading(true);
@@ -80,6 +126,8 @@ const EmailManagement = () => {
         .from("email_delivery_log")
         .select("*")
         .eq("email_type", "annual_tax_summary")
+        .gte("created_at", dateRange.from.toISOString())
+        .lte("created_at", dateRange.to.toISOString())
         .order("created_at", { ascending: false })
         .limit(100);
 
@@ -102,29 +150,83 @@ const EmailManagement = () => {
       const { data, error } = await supabase
         .from("email_delivery_log")
         .select("status, opened_at, clicked_at, bounced_at")
-        .eq("email_type", "annual_tax_summary");
+        .eq("email_type", "annual_tax_summary")
+        .gte("created_at", dateRange.from.toISOString())
+        .lte("created_at", dateRange.to.toISOString());
 
       if (error) throw error;
 
       const total = data?.length || 0;
       const sent = data?.filter(d => d.status === "sent").length || 0;
+      const pending = data?.filter(d => d.status === "pending").length || 0;
       const opened = data?.filter(d => d.opened_at).length || 0;
       const clicked = data?.filter(d => d.clicked_at).length || 0;
       const bounced = data?.filter(d => d.bounced_at).length || 0;
       const failed = data?.filter(d => d.status === "failed").length || 0;
 
+      const deliveryRate = total > 0 ? (sent / total) * 100 : 0;
+      const bounceRate = total > 0 ? (bounced / total) * 100 : 0;
+
       setStats({
         total,
         sent,
+        pending,
         opened,
         clicked,
         bounced,
         failed,
+        delivery_rate: deliveryRate,
+        bounce_rate: bounceRate,
         open_rate: sent > 0 ? (opened / sent) * 100 : 0,
         click_rate: sent > 0 ? (clicked / sent) * 100 : 0,
       });
+
+      // Calculate status distribution for pie chart
+      setStatusDistribution([
+        { name: "Sent", value: sent, color: "hsl(var(--chart-1))" },
+        { name: "Opened", value: opened, color: "hsl(var(--chart-2))" },
+        { name: "Clicked", value: clicked, color: "hsl(var(--chart-3))" },
+        { name: "Bounced", value: bounced, color: "hsl(var(--chart-4))" },
+        { name: "Failed", value: failed, color: "hsl(var(--chart-5))" },
+        { name: "Pending", value: pending, color: "hsl(var(--muted))" },
+      ].filter(item => item.value > 0));
     } catch (error: any) {
       console.error("Error fetching stats:", error);
+    }
+  };
+
+  const fetchDailyMetrics = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("email_delivery_log")
+        .select("created_at, status, opened_at, clicked_at, bounced_at")
+        .eq("email_type", "annual_tax_summary")
+        .gte("created_at", dateRange.from.toISOString())
+        .lte("created_at", dateRange.to.toISOString())
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      // Group by date
+      const metricsByDate = new Map<string, DailyMetric>();
+
+      data?.forEach((log) => {
+        const date = format(new Date(log.created_at), "MMM dd");
+        
+        if (!metricsByDate.has(date)) {
+          metricsByDate.set(date, { date, sent: 0, opened: 0, clicked: 0, bounced: 0 });
+        }
+
+        const metric = metricsByDate.get(date)!;
+        if (log.status === "sent") metric.sent++;
+        if (log.opened_at) metric.opened++;
+        if (log.clicked_at) metric.clicked++;
+        if (log.bounced_at) metric.bounced++;
+      });
+
+      setDailyMetrics(Array.from(metricsByDate.values()));
+    } catch (error: any) {
+      console.error("Error fetching daily metrics:", error);
     }
   };
 
@@ -194,55 +296,279 @@ const EmailManagement = () => {
               </p>
             </div>
 
-            <Tabs defaultValue="send" className="space-y-6">
+            {/* Date Range Filter */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5" />
+                  Analytics Period
+                </CardTitle>
+                <CardDescription>
+                  Filter analytics data by date range
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-4">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateRange.from ? format(dateRange.from, "MMM dd, yyyy") : "From date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateRange.from}
+                        onSelect={(date) => date && setDateRange({ ...dateRange, from: date })}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateRange.to ? format(dateRange.to, "MMM dd, yyyy") : "To date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateRange.to}
+                        onSelect={(date) => date && setDateRange({ ...dateRange, to: date })}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setDateRange({
+                      from: startOfMonth(subMonths(new Date(), 1)),
+                      to: endOfMonth(new Date()),
+                    })}
+                  >
+                    Reset to Last Month
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Tabs defaultValue="analytics" className="space-y-6">
               <TabsList>
+                <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 <TabsTrigger value="send">Send Emails</TabsTrigger>
                 <TabsTrigger value="tracking">Delivery Tracking</TabsTrigger>
                 <TabsTrigger value="preview">Preview Templates</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="send" className="space-y-6">
+              <TabsContent value="analytics" className="space-y-6">
                 {stats && (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">Total Sent</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{stats.sent}</div>
-                        <p className="text-xs text-muted-foreground">of {stats.total} total</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">Open Rate</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{stats.open_rate.toFixed(1)}%</div>
-                        <p className="text-xs text-muted-foreground">{stats.opened} opened</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">Click Rate</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{stats.click_rate.toFixed(1)}%</div>
-                        <p className="text-xs text-muted-foreground">{stats.clicked} clicked</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">Issues</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold text-destructive">{stats.bounced + stats.failed}</div>
-                        <p className="text-xs text-muted-foreground">{stats.bounced} bounced, {stats.failed} failed</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
+                  <>
+                    {/* Key Metrics */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <Mail className="h-4 w-4" />
+                            Total Emails
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">{stats.total}</div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            Delivery Rate
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">{stats.delivery_rate.toFixed(1)}%</div>
+                          <p className="text-xs text-muted-foreground">{stats.sent} delivered</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <MailOpen className="h-4 w-4" />
+                            Open Rate
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">{stats.open_rate.toFixed(1)}%</div>
+                          <p className="text-xs text-muted-foreground">{stats.opened} opened</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <MousePointerClick className="h-4 w-4" />
+                            Click Rate
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">{stats.click_rate.toFixed(1)}%</div>
+                          <p className="text-xs text-muted-foreground">{stats.clicked} clicked</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            Bounce Rate
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold text-destructive">{stats.bounce_rate.toFixed(1)}%</div>
+                          <p className="text-xs text-muted-foreground">{stats.bounced} bounced</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <XCircle className="h-4 w-4" />
+                            Failed
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold text-destructive">{stats.failed}</div>
+                          <p className="text-xs text-muted-foreground">delivery errors</p>
+                        </CardContent>
+                      </Card>
+                    </div>
 
+                    {/* Charts */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Engagement Trends */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5" />
+                            Engagement Trends
+                          </CardTitle>
+                          <CardDescription>Email opens and clicks over time</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <ResponsiveContainer width="100%" height={300}>
+                            <AreaChart data={dailyMetrics}>
+                              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                              <XAxis dataKey="date" className="text-xs" />
+                              <YAxis className="text-xs" />
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: "hsl(var(--popover))",
+                                  border: "1px solid hsl(var(--border))",
+                                  borderRadius: "6px",
+                                }}
+                              />
+                              <Legend />
+                              <Area
+                                type="monotone"
+                                dataKey="sent"
+                                stackId="1"
+                                stroke="hsl(var(--chart-1))"
+                                fill="hsl(var(--chart-1))"
+                                name="Sent"
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="opened"
+                                stackId="2"
+                                stroke="hsl(var(--chart-2))"
+                                fill="hsl(var(--chart-2))"
+                                name="Opened"
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="clicked"
+                                stackId="3"
+                                stroke="hsl(var(--chart-3))"
+                                fill="hsl(var(--chart-3))"
+                                name="Clicked"
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
+
+                      {/* Status Distribution */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <BarChart3 className="h-5 w-5" />
+                            Status Distribution
+                          </CardTitle>
+                          <CardDescription>Breakdown of email statuses</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                              <Pie
+                                data={statusDistribution}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                outerRadius={80}
+                                fill="hsl(var(--primary))"
+                                dataKey="value"
+                              >
+                                {statusDistribution.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: "hsl(var(--popover))",
+                                  border: "1px solid hsl(var(--border))",
+                                  borderRadius: "6px",
+                                }}
+                              />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
+
+                      {/* Daily Volume */}
+                      <Card className="lg:col-span-2">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <BarChart3 className="h-5 w-5" />
+                            Daily Email Volume
+                          </CardTitle>
+                          <CardDescription>Number of emails sent per day</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={dailyMetrics}>
+                              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                              <XAxis dataKey="date" className="text-xs" />
+                              <YAxis className="text-xs" />
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: "hsl(var(--popover))",
+                                  border: "1px solid hsl(var(--border))",
+                                  borderRadius: "6px",
+                                }}
+                              />
+                              <Legend />
+                              <Bar dataKey="sent" fill="hsl(var(--chart-1))" name="Sent" />
+                              <Bar dataKey="opened" fill="hsl(var(--chart-2))" name="Opened" />
+                              <Bar dataKey="clicked" fill="hsl(var(--chart-3))" name="Clicked" />
+                              <Bar dataKey="bounced" fill="hsl(var(--chart-4))" name="Bounced" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </>
+                )}
+              </TabsContent>
+
+              <TabsContent value="send" className="space-y-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>Send Annual Tax Summaries</CardTitle>
