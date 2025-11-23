@@ -12,9 +12,9 @@ interface InviteUserRequest {
   firstName: string;
   lastName: string;
   userTypeId: string;
-  schoolId: string;
-  groupId: string;
-  rosterId: number;
+  organizationId: string;
+  groupId: string | null;
+  rosterId: number | null;
 }
 
 serve(async (req: Request) => {
@@ -28,7 +28,7 @@ serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { email, firstName, lastName, userTypeId, schoolId, groupId, rosterId }: InviteUserRequest = await req.json();
+    const { email, firstName, lastName, userTypeId, organizationId, groupId, rosterId }: InviteUserRequest = await req.json();
 
     // Check if user already exists in profiles
     const { data: existingProfiles } = await supabaseAdmin
@@ -70,51 +70,51 @@ serve(async (req: Request) => {
       userId = authData.user.id;
     }
 
-    // Check if an inactive school_user record already exists
-    const { data: existingSchoolUser, error: checkError } = await supabaseAdmin
-      .from("school_user")
+    // Check if an inactive organization_user record already exists
+    const { data: existingOrgUser, error: checkError } = await supabaseAdmin
+      .from("organization_user")
       .select("id")
       .eq("user_id", userId)
-      .eq("school_id", schoolId)
-      .eq("group_id", groupId)
+      .eq("organization_id", organizationId)
+      .eq("group_id", groupId || null)
       .eq("active_user", false)
       .single();
 
-    if (existingSchoolUser) {
+    if (existingOrgUser) {
       // Reactivate the existing inactive record
       const { error: updateError } = await supabaseAdmin
-        .from("school_user")
+        .from("organization_user")
         .update({
           user_type_id: userTypeId,
           roster_id: rosterId,
           active_user: true,
           updated_at: new Date().toISOString()
         })
-        .eq("id", existingSchoolUser.id);
+        .eq("id", existingOrgUser.id);
 
       if (updateError) {
-        console.error("Error reactivating school user:", updateError);
+        console.error("Error reactivating organization user:", updateError);
         return new Response(
           JSON.stringify({ error: updateError.message }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
     } else {
-      // Create new school_user record
-      const { error: schoolUserError } = await supabaseAdmin
-        .from("school_user")
+      // Create new organization_user record
+      const { error: orgUserError } = await supabaseAdmin
+        .from("organization_user")
         .insert({
           user_id: userId,
           user_type_id: userTypeId,
-          school_id: schoolId,
+          organization_id: organizationId,
           group_id: groupId,
           roster_id: rosterId
         });
 
-      if (schoolUserError) {
-        console.error("Error creating school user:", schoolUserError);
+      if (orgUserError) {
+        console.error("Error creating organization user:", orgUserError);
         return new Response(
-          JSON.stringify({ error: schoolUserError.message }),
+          JSON.stringify({ error: orgUserError.message }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
