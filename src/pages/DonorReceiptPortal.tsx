@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Download, FileText, Calendar, DollarSign, Building2, ArrowLeft } from "lucide-react";
+import { Loader2, Download, FileText, Calendar, DollarSign, Building2, ArrowLeft, FileSpreadsheet } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
@@ -36,6 +36,7 @@ const DonorReceiptPortal = () => {
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadingAnnual, setDownloadingAnnual] = useState(false);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -122,6 +123,45 @@ const DonorReceiptPortal = () => {
       });
     } finally {
       setDownloadingId(null);
+    }
+  };
+
+  const downloadAnnualSummary = async () => {
+    setDownloadingAnnual(true);
+    try {
+      const email = form.getValues("email");
+      const year = parseInt(form.getValues("year") || currentYear.toString());
+
+      const { data, error } = await supabase.functions.invoke("generate-annual-tax-summary", {
+        body: { email, year },
+      });
+
+      if (error) throw error;
+
+      // Create blob and download
+      const blob = new Blob([data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `annual-tax-summary-${year}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Annual summary downloaded",
+        description: `Your ${year} tax summary is ready for filing`,
+      });
+    } catch (error: any) {
+      console.error("Error downloading annual summary:", error);
+      toast({
+        title: "Download failed",
+        description: error.message || "Failed to generate annual summary. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingAnnual(false);
     }
   };
 
@@ -230,10 +270,32 @@ const DonorReceiptPortal = () => {
         {receipts.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Your Tax Receipts</CardTitle>
-              <CardDescription>
-                {receipts.length} receipt{receipts.length === 1 ? "" : "s"} found for {form.getValues("year")}
-              </CardDescription>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <CardTitle>Your Tax Receipts</CardTitle>
+                  <CardDescription>
+                    {receipts.length} receipt{receipts.length === 1 ? "" : "s"} found for {form.getValues("year")}
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={downloadAnnualSummary}
+                  disabled={downloadingAnnual}
+                  variant="outline"
+                  className="w-full md:w-auto"
+                >
+                  {downloadingAnnual ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Download Annual Summary
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -297,11 +359,27 @@ const DonorReceiptPortal = () => {
                 ))}
               </div>
 
-              <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  <strong>Note:</strong> These receipts are for donations made to 501(c)(3) tax-exempt organizations. 
-                  Please consult your tax advisor for specific guidance regarding the deductibility of charitable contributions.
-                </p>
+              <div className="mt-6 space-y-4">
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <FileSpreadsheet className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">Annual Tax Summary</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Download a consolidated year-end statement showing all your charitable contributions 
+                        for {form.getValues("year")}. This comprehensive report includes totals by organization, 
+                        individual donation details, and IRS-required documentation—perfect for tax filing.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Note:</strong> These receipts are for donations made to 501(c)(3) tax-exempt organizations. 
+                    Please consult your tax advisor for specific guidance regarding the deductibility of charitable contributions.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
