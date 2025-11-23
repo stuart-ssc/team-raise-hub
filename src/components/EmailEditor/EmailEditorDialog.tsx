@@ -237,6 +237,22 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
     setBlocks(blocks.filter(block => block.id !== id));
   };
 
+  const duplicateBlock = (id: string) => {
+    const blockIndex = blocks.findIndex(block => block.id === id);
+    if (blockIndex === -1) return;
+    
+    const blockToDuplicate = blocks[blockIndex];
+    const duplicatedBlock: EmailBlockType = {
+      ...blockToDuplicate,
+      id: `block-${Date.now()}`,
+    };
+    
+    const newBlocks = [...blocks];
+    newBlocks.splice(blockIndex + 1, 0, duplicatedBlock);
+    setBlocks(newBlocks);
+    toast.success("Block duplicated");
+  };
+
   const uploadImage = async (blockId: string, file: File) => {
     try {
       const fileExt = file.name.split('.').pop();
@@ -506,13 +522,14 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
                           <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
                             <div className="space-y-4">
                               {blocks.map(block => (
-                                <EmailBlock
-                                  key={block.id}
-                                  block={block}
-                                  onUpdate={updateBlock}
-                                  onDelete={deleteBlock}
-                                  onUploadImage={uploadImage}
-                                />
+                      <EmailBlock
+                        key={block.id}
+                        block={block}
+                        onUpdate={updateBlock}
+                        onDelete={deleteBlock}
+                        onDuplicate={duplicateBlock}
+                        onUploadImage={uploadImage}
+                      />
                               ))}
                             </div>
                           </SortableContext>
