@@ -18,7 +18,7 @@ import { EmailEditorProps, EmailBlock as EmailBlockType } from "./types";
 import { BlockToolbar } from "./BlockToolbar";
 import { EmailBlock } from "./EmailBlock";
 import { emailLayouts } from "./EmailLayoutTemplates";
-import { Eye, Sparkles, Save, Trash2, Send, Monitor, Smartphone, Download, Upload } from "lucide-react";
+import { Eye, Sparkles, Save, Trash2, Send, Monitor, Smartphone, Download, Upload, Clock, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 
 interface CustomLayout {
   id: string;
@@ -46,6 +46,11 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [history, setHistory] = useState<EmailBlockType[][]>([]);
   const [redoStack, setRedoStack] = useState<EmailBlockType[][]>([]);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [lastAutoSaveTime, setLastAutoSaveTime] = useState<Date | null>(null);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+  const [draftInfo, setDraftInfo] = useState<{timestamp: string, blockCount: number, subject: string} | null>(null);
+  const [lastSavedState, setLastSavedState] = useState<{blocks: EmailBlockType[], subject: string} | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -92,6 +97,96 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
     setRedoStack(prev => prev.slice(0, -1));
     setBlocks(nextState);
     toast.success("Redone");
+  };
+
+  // Autosave functions
+  const getDraftKey = () => {
+    return `email-draft-${organizationId || 'global'}`;
+  };
+
+  const hasUnsavedChanges = () => {
+    if (!lastSavedState) return blocks.length > 0 || subject.length > 0;
+    return JSON.stringify(lastSavedState.blocks) !== JSON.stringify(blocks) ||
+           lastSavedState.subject !== subject;
+  };
+
+  const autoSave = () => {
+    const draftKey = getDraftKey();
+    const draft = {
+      version: "1.0",
+      timestamp: new Date().toISOString(),
+      organizationId: organizationId || null,
+      subject,
+      blocks,
+      metadata: {
+        blockCount: blocks.length,
+        lastModified: new Date().toISOString()
+      }
+    };
+    
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+      setAutoSaveStatus('saved');
+      setLastAutoSaveTime(new Date());
+      setLastSavedState({ blocks: JSON.parse(JSON.stringify(blocks)), subject });
+    } catch (error) {
+      console.error('Autosave failed:', error);
+      toast.error("Unable to save draft. Storage may be full.");
+    }
+  };
+
+  const hasDraft = () => {
+    const draftKey = getDraftKey();
+    const draftStr = localStorage.getItem(draftKey);
+    
+    if (!draftStr) return null;
+    
+    try {
+      const draft = JSON.parse(draftStr);
+      if (draft.version && draft.blocks && draft.subject !== undefined) {
+        return {
+          timestamp: draft.timestamp,
+          blockCount: draft.metadata?.blockCount || 0,
+          subject: draft.subject
+        };
+      }
+    } catch (error) {
+      console.error('Invalid draft data:', error);
+    }
+    
+    return null;
+  };
+
+  const loadDraft = () => {
+    const draftKey = getDraftKey();
+    const draftStr = localStorage.getItem(draftKey);
+    
+    if (!draftStr) return;
+    
+    try {
+      const draft = JSON.parse(draftStr);
+      
+      if (draft.blocks && Array.isArray(draft.blocks)) {
+        saveHistory();
+        setBlocks(draft.blocks);
+        setSubject(draft.subject || '');
+        setShowDraftBanner(false);
+        setLastSavedState({ blocks: JSON.parse(JSON.stringify(draft.blocks)), subject: draft.subject || '' });
+        toast.success("Draft restored");
+      }
+    } catch (error) {
+      console.error('Failed to load draft:', error);
+      toast.error("Unable to restore draft. The data may be corrupted.");
+    }
+  };
+
+  const clearDraft = () => {
+    const draftKey = getDraftKey();
+    localStorage.removeItem(draftKey);
+    setShowDraftBanner(false);
+    setAutoSaveStatus('saved');
+    setLastAutoSaveTime(null);
+    setLastSavedState(null);
   };
 
   // Keyboard shortcuts
@@ -143,6 +238,40 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, showLayoutSelection, selectedBlockId, blocks, history, redoStack]);
+
+  // Draft detection on dialog open
+  useEffect(() => {
+    if (open && !showLayoutSelection) {
+      const draft = hasDraft();
+      if (draft) {
+        setDraftInfo(draft);
+        setShowDraftBanner(true);
+      }
+    }
+  }, [open, showLayoutSelection]);
+
+  // Autosave interval (every 30 seconds)
+  useEffect(() => {
+    if (!open || showLayoutSelection) return;
+
+    const interval = setInterval(() => {
+      if (hasUnsavedChanges()) {
+        setAutoSaveStatus('saving');
+        autoSave();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [open, showLayoutSelection, blocks, subject]);
+
+  // Change detection
+  useEffect(() => {
+    if (!open || showLayoutSelection) return;
+
+    if (hasUnsavedChanges()) {
+      setAutoSaveStatus('unsaved');
+    }
+  }, [blocks, subject, open, showLayoutSelection]);
 
   // Fetch custom layouts
   const { data: customLayouts } = useQuery({
@@ -545,6 +674,7 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
 
     const htmlContent = generateHTML();
     onSave(subject, htmlContent);
+    clearDraft(); // Clear autosave draft after successful save
     onOpenChange(false);
   };
 
@@ -552,14 +682,75 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Visual Email Editor</DialogTitle>
-          <DialogDescription>
-            {showLayoutSelection 
-              ? "Choose a layout template to start with or build from scratch"
-              : "Build your email with drag-and-drop components"
-            }
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle>Visual Email Editor</DialogTitle>
+              <DialogDescription>
+                {showLayoutSelection 
+                  ? "Choose a layout template to start with or build from scratch"
+                  : "Build your email with drag-and-drop components"
+                }
+              </DialogDescription>
+            </div>
+            {!showLayoutSelection && (
+              <div className="flex items-center gap-2 text-sm">
+                {autoSaveStatus === 'saving' && (
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </div>
+                )}
+                {autoSaveStatus === 'saved' && lastAutoSaveTime && (
+                  <div className="flex items-center gap-1.5 text-green-600">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Saved</span>
+                    <span className="text-xs text-muted-foreground">
+                      {Math.floor((Date.now() - lastAutoSaveTime.getTime()) / 60000) || 0}m ago
+                    </span>
+                  </div>
+                )}
+                {autoSaveStatus === 'unsaved' && (
+                  <div className="flex items-center gap-1.5 text-amber-600">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>Unsaved changes</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </DialogHeader>
+
+        {/* Draft Recovery Banner */}
+        {showDraftBanner && draftInfo && !showLayoutSelection && (
+          <div className="mx-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1">
+              <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h4 className="font-medium text-blue-900">Draft Found</h4>
+                <p className="text-sm text-blue-700 mt-1">
+                  Draft from {new Date(draftInfo.timestamp).toLocaleString()} with {draftInfo.blockCount} blocks
+                  {draftInfo.subject && ` - "${draftInfo.subject.substring(0, 50)}${draftInfo.subject.length > 50 ? '...' : ''}"`}
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <Button size="sm" onClick={loadDraft}>
+                    Restore Draft
+                  </Button>
+                  <Button size="sm" onClick={clearDraft} variant="outline">
+                    Discard
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="flex-shrink-0"
+              onClick={() => setShowDraftBanner(false)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
 
         {showLayoutSelection ? (
           <ScrollArea className="max-h-[60vh]">
