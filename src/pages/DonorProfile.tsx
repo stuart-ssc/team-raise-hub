@@ -5,6 +5,7 @@ import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import DonorActivityTimeline from "@/components/DonorActivityTimeline";
 import DonorCommunicationHistory from "@/components/DonorCommunicationHistory";
+import DonorInsightsPanel from "@/components/DonorInsightsPanel";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -293,6 +294,9 @@ const DonorProfile = () => {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* AI Insights Panel */}
+                <DonorInsightsPanel donorId={donor.id} />
 
                 {/* Giving History */}
                 <Card>
