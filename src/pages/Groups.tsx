@@ -226,8 +226,6 @@ const Groups = () => {
   return (
     <DashboardPageLayout 
       segments={[{ label: "Groups" }]}
-      activeGroup={showRosters ? selectedGroup : null}
-      onGroupClick={handleGroupClick}
       showRosters={showRosters}
     >
       {(activeGroup) => (
