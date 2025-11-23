@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,7 +29,6 @@ import {
   Zap
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 interface DonorProfile {
@@ -47,9 +48,10 @@ interface DonorProfile {
 }
 
 const Donors = () => {
-  const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
+  const { activeGroup } = useActiveGroup();
+  const { toast } = useToast();
   const [donors, setDonors] = useState<DonorProfile[]>([]);
   const [filteredDonors, setFilteredDonors] = useState<DonorProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +59,16 @@ const Donors = () => {
   const [sortBy, setSortBy] = useState<string>("recent");
   const [filterBy, setFilterBy] = useState<string>("all");
 
-  // Remove this useEffect - we'll fetch based on activeGroup from DashboardPageLayout
+  useEffect(() => {
+    if (organizationUser) {
+      fetchDonors(activeGroup?.id);
+      setupRealtimeSubscription();
+    }
+
+    return () => {
+      supabase.channel('donors-updates').unsubscribe();
+    };
+  }, [organizationUser, activeGroup?.id]);
 
   useEffect(() => {
     filterAndSortDonors();
@@ -225,7 +236,6 @@ const Donors = () => {
   if (organizationUserLoading || loading) {
     return (
       <DashboardPageLayout segments={[{ label: "Donors" }]} loading={true}>
-        {() => (
         <div className="max-w-7xl mx-auto space-y-6">
           <Skeleton className="h-10 w-64" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -235,27 +245,12 @@ const Donors = () => {
           </div>
           <Skeleton className="h-96" />
         </div>
-        )}
       </DashboardPageLayout>
     );
   }
 
   return (
     <DashboardPageLayout segments={[{ label: "Donors" }]}>
-      {(activeGroup) => {
-        // Fetch donors when activeGroup changes
-        useEffect(() => {
-          if (organizationUser?.organization_id) {
-            fetchDonors(activeGroup?.id);
-            setupRealtimeSubscription();
-          }
-
-          return () => {
-            supabase.channel('donors-updates').unsubscribe();
-          };
-        }, [organizationUser?.organization_id, activeGroup?.id]);
-
-        return (
       <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -472,9 +467,7 @@ const Donors = () => {
                 )}
               </CardContent>
             </Card>
-      </div>
-        );
-      }}
+        </div>
     </DashboardPageLayout>
   );
 };

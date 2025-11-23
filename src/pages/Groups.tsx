@@ -228,7 +228,6 @@ const Groups = () => {
       segments={[{ label: "Groups" }]}
       showRosters={showRosters}
     >
-      {(activeGroup) => (
       <div className="space-y-6">
 
             {showRosters && selectedGroup ? (
@@ -390,11 +389,10 @@ const Groups = () => {
                     </Table>
                   </CardContent>
                 </Card>
-              </div>
-            )}
           </div>
-      )}
-      </DashboardPageLayout>
+        )}
+      </div>
+    </DashboardPageLayout>
   );
 };
 
