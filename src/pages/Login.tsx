@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import SchoolLogo from "@/components/SchoolLogo";
+import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -122,7 +122,7 @@ const Login = () => {
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md space-y-8">
           <div>
-            <SchoolLogo theme="light" className="mb-8" />
+            <SponsorlyLogo variant="full" theme="light" className="mb-8" />
             <h1 className="text-3xl font-semibold mb-2">
               {showForgotPassword ? "Reset Password" : "Log in"}
             </h1>
