@@ -833,6 +833,149 @@ export type Database = {
         }
         Relationships: []
       }
+      nurture_campaigns: {
+        Row: {
+          campaign_type: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+          status: string
+          trigger_config: Json
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_type: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          status?: string
+          trigger_config?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          status?: string
+          trigger_config?: Json
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nurture_campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nurture_campaigns_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nurture_enrollments: {
+        Row: {
+          campaign_id: string
+          completed_at: string | null
+          current_sequence: number | null
+          donor_id: string
+          enrolled_at: string | null
+          id: string
+          next_send_at: string | null
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          completed_at?: string | null
+          current_sequence?: number | null
+          donor_id: string
+          enrolled_at?: string | null
+          id?: string
+          next_send_at?: string | null
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          completed_at?: string | null
+          current_sequence?: number | null
+          donor_id?: string
+          enrolled_at?: string | null
+          id?: string
+          next_send_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nurture_enrollments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "nurture_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nurture_enrollments_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "donor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nurture_sequences: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          delay_hours: number
+          email_content: string
+          id: string
+          sequence_order: number
+          subject_line: string
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          delay_hours?: number
+          email_content: string
+          id?: string
+          sequence_order: number
+          subject_line: string
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          delay_hours?: number
+          email_content?: string
+          id?: string
+          sequence_order?: number
+          subject_line?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nurture_sequences_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "nurture_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           application_fee_amount: number | null

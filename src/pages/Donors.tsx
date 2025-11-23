@@ -24,7 +24,8 @@ import {
   DollarSign,
   Heart,
   Filter,
-  ArrowUpDown
+  ArrowUpDown,
+  Zap
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -253,8 +254,15 @@ const Donors = () => {
                   variant="outline"
                   onClick={() => navigate("/dashboard/donors/segmentation")}
                 >
-                  <Users className="mr-2 h-4 w-4" />
+                  <TrendingUp className="mr-2 h-4 w-4" />
                   Donor Segments
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate("/dashboard/donors/nurture")}
+                >
+                  <Zap className="mr-2 h-4 w-4" />
+                  Nurture Campaigns
                 </Button>
                 <Button onClick={() => navigate("/dashboard/donors/templates")}>
                   <Mail className="mr-2 h-4 w-4" />
