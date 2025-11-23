@@ -16,6 +16,9 @@ import CheckoutSuccess from "./pages/CheckoutSuccess";
 import Profile from "./pages/Profile";
 import NotificationHistory from "./pages/NotificationHistory";
 import Reports from "./pages/Reports";
+import Donors from "./pages/Donors";
+import DonorProfile from "./pages/DonorProfile";
+import ThankYouTemplates from "./pages/ThankYouTemplates";
 import NotFound from "./pages/NotFound";
 import SystemAdminDashboard from "./pages/SystemAdmin/Dashboard";
 import OrganizationsList from "./pages/SystemAdmin/OrganizationsList";
@@ -65,6 +68,9 @@ const AppContent = () => {
         <Route path="/dashboard/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
         <Route path="/dashboard/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
         <Route path="/dashboard/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+        <Route path="/dashboard/donors" element={<ProtectedRoute><Donors /></ProtectedRoute>} />
+        <Route path="/dashboard/donors/:donorId" element={<ProtectedRoute><DonorProfile /></ProtectedRoute>} />
+        <Route path="/dashboard/donors/templates" element={<ProtectedRoute><ThankYouTemplates /></ProtectedRoute>} />
         <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/dashboard/notifications" element={<ProtectedRoute><NotificationHistory /></ProtectedRoute>} />
         <Route path="/dashboard/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
