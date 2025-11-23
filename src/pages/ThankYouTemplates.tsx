@@ -239,7 +239,7 @@ const ThankYouTemplates = () => {
 
   if (organizationUserLoading || loading) {
     return (
-      <DashboardPageLayout segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Templates" }]}>
+      <DashboardPageLayout segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Templates" }]} loading={true}>
         <div className="max-w-5xl mx-auto space-y-6">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-96" />
