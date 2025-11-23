@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +43,13 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
   const [sendTestDialogOpen, setSendTestDialogOpen] = useState(false);
   const [testEmailAddress, setTestEmailAddress] = useState("");
   const [deviceView, setDeviceView] = useState<"desktop" | "mobile">("desktop");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     if (open) {
@@ -149,6 +158,20 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
   const handleDeleteTemplate = (templateId: string) => {
     if (confirm("Are you sure you want to delete this template?")) {
       deleteTemplateMutation.mutate(templateId);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setBlocks((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+      toast.success("Block reordered");
     }
   };
 
@@ -475,17 +498,25 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
                           </div>
                         </div>
                       ) : (
-                        <div className="space-y-4">
-                          {blocks.map(block => (
-                            <EmailBlock
-                              key={block.id}
-                              block={block}
-                              onUpdate={updateBlock}
-                              onDelete={deleteBlock}
-                              onUploadImage={uploadImage}
-                            />
-                          ))}
-                        </div>
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+                            <div className="space-y-4">
+                              {blocks.map(block => (
+                                <EmailBlock
+                                  key={block.id}
+                                  block={block}
+                                  onUpdate={updateBlock}
+                                  onDelete={deleteBlock}
+                                  onUploadImage={uploadImage}
+                                />
+                              ))}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
                       )}
                     </ScrollArea>
                   </div>
