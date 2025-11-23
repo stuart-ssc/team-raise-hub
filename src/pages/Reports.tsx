@@ -3,15 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, startOfMonth, startOfYear, subMonths, parseISO } from "date-fns";
-import { DollarSign, Target, TrendingUp, Users, Download } from "lucide-react";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { DollarSign, Target, TrendingUp, Users, Download, Activity, Heart } from "lucide-react";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { useToast } from "@/hooks/use-toast";
 
 interface CampaignReport {
   id: string;
@@ -41,8 +42,26 @@ interface MonthlyData {
   campaigns: number;
 }
 
+interface TopCampaign {
+  id: string;
+  name: string;
+  group_name: string;
+  amount_raised: number;
+  donation_count: number;
+  goal_amount: number | null;
+}
+
+interface RecentDonation {
+  id: string;
+  customer_name: string | null;
+  total_amount: number;
+  created_at: string;
+  campaign_name: string;
+}
+
 const Reports = () => {
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
+  const { toast } = useToast();
   const [campaigns, setCampaigns] = useState<CampaignReport[]>([]);
   const [stats, setStats] = useState<ReportStats>({
     totalCampaigns: 0,
@@ -57,6 +76,8 @@ const Reports = () => {
   const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
   const [dateRange, setDateRange] = useState<string>("all");
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+  const [topCampaigns, setTopCampaigns] = useState<TopCampaign[]>([]);
+  const [recentDonations, setRecentDonations] = useState<RecentDonation[]>([]);
 
   const handleGroupClick = (groupId: string | null) => {
     setSelectedGroup(groupId);
@@ -106,7 +127,12 @@ const Reports = () => {
     if (organizationUser?.organization_id) {
       fetchGroups();
       fetchReportData();
+      setupRealtimeSubscriptions();
     }
+
+    return () => {
+      supabase.channel('reports-updates').unsubscribe();
+    };
   }, [organizationUser?.organization_id]);
 
   useEffect(() => {
@@ -120,6 +146,44 @@ const Reports = () => {
       fetchReportData();
     }
   }, [dateRange]);
+
+  const setupRealtimeSubscriptions = () => {
+    if (!organizationUser?.organization_id) return;
+
+    const channel = supabase
+      .channel('reports-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+        },
+        () => {
+          console.log('Orders updated, refreshing reports...');
+          fetchReportData();
+          toast({
+            title: "New Activity",
+            description: "Reports updated with new donation data",
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'campaigns',
+        },
+        () => {
+          console.log('Campaign updated, refreshing reports...');
+          fetchReportData();
+        }
+      )
+      .subscribe();
+
+    return channel;
+  };
 
   const fetchReportData = async () => {
     if (!organizationUser?.organization_id) return;
@@ -293,6 +357,59 @@ const Reports = () => {
         totalDonations,
         avgDonation,
       });
+
+      // Fetch top performing campaigns
+      const topPerformers = [...campaignReports]
+        .sort((a, b) => (b.amount_raised || 0) - (a.amount_raised || 0))
+        .slice(0, 5)
+        .map(c => ({
+          id: c.id,
+          name: c.name,
+          group_name: c.group_name,
+          amount_raised: c.amount_raised || 0,
+          donation_count: c.donation_count,
+          goal_amount: c.goal_amount,
+        }));
+      setTopCampaigns(topPerformers);
+
+      // Fetch recent donations
+      let recentQuery = supabase
+        .from("orders")
+        .select(`
+          id,
+          customer_name,
+          total_amount,
+          created_at,
+          campaigns!inner(
+            name,
+            groups!inner(
+              organization_id
+            )
+          )
+        `)
+        .eq("campaigns.groups.organization_id", organizationUser.organization_id)
+        .in("status", ["succeeded", "completed"])
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (selectedGroup && selectedGroup !== "All") {
+        recentQuery = recentQuery.eq("campaigns.group_id", selectedGroup);
+      }
+
+      const { data: recentData } = await recentQuery;
+      
+      if (recentData) {
+        setRecentDonations(
+          recentData.map((order: any) => ({
+            id: order.id,
+            customer_name: order.customer_name,
+            total_amount: order.total_amount,
+            created_at: order.created_at,
+            campaign_name: order.campaigns?.name || 'Unknown Campaign',
+          }))
+        );
+      }
+
     } catch (error) {
       console.error("Error fetching report data:", error);
     } finally {
@@ -413,9 +530,16 @@ const Reports = () => {
         />
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold text-foreground">Reports</h1>
+              <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+                <Activity className="h-8 w-8 text-primary" />
+                Analytics Dashboard
+              </h1>
               <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary/10 border border-primary/20">
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-sm font-medium text-primary">Live</span>
+                </div>
                 <Button
                   variant="outline"
                   size="default"
@@ -441,58 +565,56 @@ const Reports = () => {
 
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
+              <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
-                  <Target className="h-4 w-4 text-muted-foreground" />
+                  <Target className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalCampaigns}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats.activeCampaigns} active
+                  <div className="text-3xl font-bold text-primary">{stats.totalCampaigns}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {stats.activeCampaigns} currently active
                   </p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-gradient-to-br from-success/5 to-success/10 border-success/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Raised</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  <DollarSign className="h-5 w-5 text-success" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(stats.totalRaised)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    of {formatCurrency(stats.totalGoal)} goal
+                  <div className="text-3xl font-bold text-success">{formatCurrency(stats.totalRaised)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    of {formatCurrency(stats.totalGoal)} goal ({calculateProgress(stats.totalRaised, stats.totalGoal)}%)
                   </p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Donations</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <Users className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalDonations}</div>
-                  <p className="text-xs text-muted-foreground">
+                  <div className="text-3xl font-bold text-primary">{stats.totalDonations}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
                     {campaigns.length > 0 
-                      ? `Avg ${(stats.totalDonations / campaigns.length).toFixed(1)} per campaign`
-                      : "No campaigns"}
+                      ? `${(stats.totalDonations / campaigns.length).toFixed(1)} avg per campaign`
+                      : "No campaigns yet"}
                   </p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-gradient-to-br from-warning/5 to-warning/10 border-warning/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Avg Donation</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <TrendingUp className="h-5 w-5 text-warning" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(stats.avgDonation)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats.totalGoal > 0 
-                      ? `${calculateProgress(stats.totalRaised, stats.totalGoal)}% of total goal`
-                      : "No goal set"}
+                  <div className="text-3xl font-bold text-warning">{formatCurrency(stats.avgDonation)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    per supporter contribution
                   </p>
                 </CardContent>
               </Card>
@@ -580,6 +702,116 @@ const Reports = () => {
                 </Card>
               </div>
             )}
+
+            {/* Engagement Metrics */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Top Performing Campaigns */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary" />
+                    Top Performing Campaigns
+                  </CardTitle>
+                  <CardDescription>
+                    Campaigns with the highest donations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {topCampaigns.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-muted-foreground">
+                        No campaign data available yet
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {topCampaigns.map((campaign, index) => (
+                        <div key={campaign.id} className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-sm font-bold text-primary">#{index + 1}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{campaign.name}</p>
+                            <p className="text-xs text-muted-foreground">{campaign.group_name}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-sm font-semibold text-primary">
+                                {formatCurrency(campaign.amount_raised)}
+                              </span>
+                              {campaign.goal_amount && (
+                                <span className="text-xs text-muted-foreground">
+                                  of {formatCurrency(campaign.goal_amount)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-primary to-primary-hover transition-all"
+                                  style={{ 
+                                    width: `${calculateProgress(campaign.amount_raised, campaign.goal_amount)}%` 
+                                  }}
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                {campaign.donation_count} donations
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Recent Donations */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Heart className="h-5 w-5 text-primary" />
+                    Recent Donations
+                  </CardTitle>
+                  <CardDescription>
+                    Latest supporter contributions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {recentDonations.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-muted-foreground">
+                        No recent donations
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {recentDonations.map((donation) => (
+                        <div 
+                          key={donation.id} 
+                          className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm">
+                              {donation.customer_name || 'Anonymous'}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {donation.campaign_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {format(parseISO(donation.created_at), 'MMM d, h:mm a')}
+                            </p>
+                          </div>
+                          <div className="text-right ml-4">
+                            <p className="font-bold text-primary">
+                              {formatCurrency(donation.total_amount)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Campaign Performance Table */}
             <Card>
