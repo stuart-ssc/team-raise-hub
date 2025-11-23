@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { GripVertical, Trash2, Edit2 } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +19,21 @@ interface EmailBlockProps {
 
 export function EmailBlock({ block, onUpdate, onDelete, onUploadImage }: EmailBlockProps) {
   const [isEditing, setIsEditing] = useState(false);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: block.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const renderBlock = () => {
     const { type, content, styles } = block;
@@ -301,8 +318,12 @@ export function EmailBlock({ block, onUpdate, onDelete, onUploadImage }: EmailBl
   };
 
   return (
-    <Card className="relative group">
-      <div className="absolute left-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move">
+    <Card ref={setNodeRef} style={style} className="relative group">
+      <div 
+        className="absolute left-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
         <GripVertical className="h-5 w-5 text-muted-foreground" />
       </div>
       <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
