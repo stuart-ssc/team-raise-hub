@@ -55,6 +55,7 @@ interface AddCampaignFormProps {
     campaign_type_id: string;
     slug: string | null;
     image_url: string | null;
+    publication_status: string;
   } | null;
   manageCampaignId?: string | null;
 }
@@ -361,6 +362,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         campaign_type_id: values.campaignTypeId,
         slug: values.slug,
         status: true,
+        publication_status: editCampaign ? undefined : 'draft', // Set draft for new campaigns only
         image_url: imageUrl || null,
       };
 
