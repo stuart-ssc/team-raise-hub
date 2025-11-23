@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.download-tax-receipt]
 verify_jwt = false
+
+[functions.generate-annual-tax-summary]
+verify_jwt = false
