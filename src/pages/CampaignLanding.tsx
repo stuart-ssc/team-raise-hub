@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useCampaignViewTracking } from "@/hooks/useCampaignViewTracking";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -65,6 +66,22 @@ const CampaignLanding = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | undefined>();
+
+  // Track campaign views for donor engagement analytics
+  useCampaignViewTracking({
+    campaignId: campaign?.id || "",
+    donorEmail: userEmail,
+  });
+
+  // Get current user email for view tracking
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserEmail(user?.email);
+    };
+    getCurrentUser();
+  }, []);
 
   useEffect(() => {
     if (slug) {

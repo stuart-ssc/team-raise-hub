@@ -97,6 +97,44 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_views: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          donor_email: string
+          id: string
+          referrer: string | null
+          user_agent: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          donor_email: string
+          id?: string
+          referrer?: string | null
+          user_agent?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          donor_email?: string
+          id?: string
+          referrer?: string | null
+          user_agent?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_views_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           amount_raised: number | null
