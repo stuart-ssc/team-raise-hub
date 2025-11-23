@@ -3,7 +3,7 @@ import DashboardSidebar from "./DashboardSidebar";
 import DashboardHeader from "./DashboardHeader";
 import DashboardBreadcrumbs from "./DashboardBreadcrumbs";
 import { Skeleton } from "./ui/skeleton";
-import { ActiveGroupProvider, useActiveGroup } from "@/contexts/ActiveGroupContext";
+import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 
 interface BreadcrumbSegment {
   label: string;
@@ -18,7 +18,7 @@ interface DashboardPageLayoutProps {
   children: ReactNode;
 }
 
-const DashboardPageLayoutContent = ({
+const DashboardPageLayout = ({
   segments,
   showBreadcrumbs = true,
   loading = false,
@@ -52,14 +52,6 @@ const DashboardPageLayoutContent = ({
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
-  );
-};
-
-const DashboardPageLayout = (props: DashboardPageLayoutProps) => {
-  return (
-    <ActiveGroupProvider>
-      <DashboardPageLayoutContent {...props} />
-    </ActiveGroupProvider>
   );
 };
 

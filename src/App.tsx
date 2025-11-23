@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { ActiveGroupProvider } from "@/contexts/ActiveGroupContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -44,7 +45,7 @@ const AppContent = () => {
       return <Navigate to="/login" replace />;
     }
     
-    return <>{children}</>;
+    return <ActiveGroupProvider>{children}</ActiveGroupProvider>;
   };
 
   const PublicRoute = ({ children }: { children: React.ReactNode }) => {
