@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { Webhook } from "https://esm.sh/svix@1.15.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,12 +28,53 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const webhookSecret = Deno.env.get("RESEND_WEBHOOK_SECRET");
+    
+    if (!webhookSecret) {
+      console.error("RESEND_WEBHOOK_SECRET is not configured");
+      return new Response(
+        JSON.stringify({ error: "Webhook secret not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Get the webhook signature headers
+    const svixId = req.headers.get("svix-id");
+    const svixTimestamp = req.headers.get("svix-timestamp");
+    const svixSignature = req.headers.get("svix-signature");
+
+    if (!svixId || !svixTimestamp || !svixSignature) {
+      console.error("Missing required Svix headers");
+      return new Response(
+        JSON.stringify({ error: "Missing webhook signature headers" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Get the raw body for signature verification
+    const body = await req.text();
+
+    // Verify the webhook signature
+    const wh = new Webhook(webhookSecret);
+    let event: ResendWebhookEvent;
+
+    try {
+      event = wh.verify(body, {
+        "svix-id": svixId,
+        "svix-timestamp": svixTimestamp,
+        "svix-signature": svixSignature,
+      }) as ResendWebhookEvent;
+    } catch (err) {
+      console.error("Webhook signature verification failed:", err);
+      return new Response(
+        JSON.stringify({ error: "Invalid webhook signature" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Parse webhook payload
-    const event: ResendWebhookEvent = await req.json();
     
     console.log("Received Resend webhook event:", event.type, "for email:", event.data.email_id);
 
