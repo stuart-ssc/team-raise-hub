@@ -238,6 +238,11 @@ export type Database = {
           organization_id: string
           phone: string | null
           preferred_communication: string | null
+          rfm_frequency_score: number | null
+          rfm_monetary_score: number | null
+          rfm_recency_score: number | null
+          rfm_segment: string | null
+          segment_updated_at: string | null
           tags: string[] | null
           total_donations: number | null
           updated_at: string | null
@@ -257,6 +262,11 @@ export type Database = {
           organization_id: string
           phone?: string | null
           preferred_communication?: string | null
+          rfm_frequency_score?: number | null
+          rfm_monetary_score?: number | null
+          rfm_recency_score?: number | null
+          rfm_segment?: string | null
+          segment_updated_at?: string | null
           tags?: string[] | null
           total_donations?: number | null
           updated_at?: string | null
@@ -276,6 +286,11 @@ export type Database = {
           organization_id?: string
           phone?: string | null
           preferred_communication?: string | null
+          rfm_frequency_score?: number | null
+          rfm_monetary_score?: number | null
+          rfm_recency_score?: number | null
+          rfm_segment?: string | null
+          segment_updated_at?: string | null
           tags?: string[] | null
           total_donations?: number | null
           updated_at?: string | null
@@ -283,6 +298,111 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "donor_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donor_segment_campaigns: {
+        Row: {
+          campaign_name: string
+          clicked_count: number | null
+          created_at: string | null
+          created_by: string | null
+          email_content: string
+          id: string
+          opened_count: number | null
+          segment_id: string | null
+          sent_at: string | null
+          sent_count: number | null
+          subject_line: string
+        }
+        Insert: {
+          campaign_name: string
+          clicked_count?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          email_content: string
+          id?: string
+          opened_count?: number | null
+          segment_id?: string | null
+          sent_at?: string | null
+          sent_count?: number | null
+          subject_line: string
+        }
+        Update: {
+          campaign_name?: string
+          clicked_count?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          email_content?: string
+          id?: string
+          opened_count?: number | null
+          segment_id?: string | null
+          sent_at?: string | null
+          sent_count?: number | null
+          subject_line?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donor_segment_campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_segment_campaigns_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "donor_segments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donor_segments: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          filters: Json
+          id: string
+          name: string
+          organization_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          filters?: Json
+          id?: string
+          name: string
+          organization_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          filters?: Json
+          id?: string
+          name?: string
+          organization_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donor_segments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_segments_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -1387,6 +1507,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_rfm_scores: { Args: { org_id: string }; Returns: undefined }
       can_update_organization_user: {
         Args: { target_org_user_id: string }
         Returns: boolean

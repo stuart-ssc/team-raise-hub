@@ -44,3 +44,9 @@ verify_jwt = false
 
 [functions.manage-ab-tests]
 verify_jwt = false
+
+[functions.calculate-rfm-scores]
+verify_jwt = true
+
+[functions.send-segmented-campaign]
+verify_jwt = true
