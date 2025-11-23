@@ -1,10 +1,11 @@
-const SponsorlyLogo = ({ variant = 'full', className = "" }: { 
+const SponsorlyLogo = ({ variant = 'full', theme = 'dark', className = "" }: { 
   variant?: 'full' | 'mark'; 
+  theme?: 'light' | 'dark';
   className?: string 
 }) => {
   const logoSrc = variant === 'full' 
-    ? '/lovable-uploads/Sponsorly-Logo-White.png'
-    : '/lovable-uploads/Sponsorly-Mark-White.png';
+    ? (theme === 'light' ? '/lovable-uploads/Sponsorly-Logo.jpg' : '/lovable-uploads/Sponsorly-Logo-White.png')
+    : (theme === 'light' ? '/lovable-uploads/Sponsorly-Mark.jpg' : '/lovable-uploads/Sponsorly-Mark-White.png');
     
   return (
     <div className={`flex items-center ${className}`}>
