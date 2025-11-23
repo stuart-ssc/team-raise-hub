@@ -296,13 +296,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Annual summary email sent:", emailResult);
 
-    // Update delivery log
+    // Update delivery log with success and reset retry fields
     await supabase
       .from("email_delivery_log")
       .update({
         status: "sent",
         resend_email_id: emailResult.id,
         sent_at: new Date().toISOString(),
+        retry_eligible: false,
+        next_retry_at: null,
+        updated_at: new Date().toISOString(),
       })
       .eq("recipient_email", email.toLowerCase())
       .eq("email_type", "annual_tax_summary")
@@ -314,6 +317,49 @@ const handler = async (req: Request): Promise<Response> => {
     );
   } catch (error: any) {
     console.error("Error in send-annual-tax-summary:", error);
+    
+    // Update delivery log with error and set retry schedule
+    try {
+      const { email, year }: SendAnnualSummaryRequest = await req.json();
+      
+      // Fetch current retry count
+      const { data: logEntry } = await supabase
+        .from("email_delivery_log")
+        .select("retry_count, max_retries")
+        .eq("recipient_email", email.toLowerCase())
+        .eq("email_type", "annual_tax_summary")
+        .eq("year", year)
+        .single();
+      
+      const retryCount = logEntry?.retry_count || 0;
+      const maxRetries = logEntry?.max_retries || 3;
+      const canRetry = retryCount < maxRetries;
+      
+      // Calculate next retry time with exponential backoff (1hr, 4hr, 16hr)
+      let nextRetryAt = null;
+      if (canRetry) {
+        const hoursToWait = Math.pow(4, retryCount);
+        const nextRetry = new Date();
+        nextRetry.setHours(nextRetry.getHours() + hoursToWait);
+        nextRetryAt = nextRetry.toISOString();
+      }
+
+      await supabase
+        .from("email_delivery_log")
+        .update({
+          status: "failed",
+          error_message: error.message,
+          retry_eligible: canRetry,
+          next_retry_at: nextRetryAt,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("recipient_email", email.toLowerCase())
+        .eq("email_type", "annual_tax_summary")
+        .eq("year", year);
+    } catch (updateError) {
+      console.error("Error updating log:", updateError);
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }

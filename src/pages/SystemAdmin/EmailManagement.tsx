@@ -65,6 +65,11 @@ interface EmailLog {
   bounced_at: string | null;
   error_message: string | null;
   created_at: string;
+  retry_count: number;
+  max_retries: number;
+  next_retry_at: string | null;
+  last_retry_at: string | null;
+  retry_eligible: boolean;
 }
 
 interface DeliveryStats {
@@ -109,6 +114,8 @@ const EmailManagement = () => {
   });
   const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
   const [statusDistribution, setStatusDistribution] = useState<StatusDistribution[]>([]);
+  const [retrying, setRetrying] = useState(false);
+  const [selectedForRetry, setSelectedForRetry] = useState<Set<string>>(new Set());
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -263,12 +270,56 @@ const EmailManagement = () => {
     }
   };
 
+  const handleRetryEmails = async (emailIds?: string[]) => {
+    setRetrying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("retry-emails", {
+        body: { emailIds, manual: true },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Retry initiated",
+        description: `Processed ${data.processed} emails. ${data.succeeded} succeeded, ${data.failed} failed.`,
+      });
+
+      setSelectedForRetry(new Set());
+      setTimeout(() => {
+        fetchEmailLogs();
+        fetchStats();
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error retrying emails:", error);
+      toast({
+        title: "Error",
+        description: "Failed to retry emails",
+        variant: "destructive",
+      });
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const toggleRetrySelection = (emailId: string) => {
+    const newSet = new Set(selectedForRetry);
+    if (newSet.has(emailId)) {
+      newSet.delete(emailId);
+    } else {
+      newSet.add(emailId);
+    }
+    setSelectedForRetry(newSet);
+  };
+
   const getStatusBadge = (log: EmailLog) => {
     if (log.bounced_at) {
       return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" /> Bounced</Badge>;
     }
     if (log.status === "failed") {
-      return <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" /> Failed</Badge>;
+      const retryInfo = log.retry_eligible && log.retry_count < log.max_retries
+        ? ` (${log.retry_count}/${log.max_retries})`
+        : "";
+      return <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" /> Failed{retryInfo}</Badge>;
     }
     if (log.clicked_at) {
       return <Badge className="gap-1 bg-green-500"><MousePointerClick className="h-3 w-3" /> Clicked</Badge>;
@@ -627,10 +678,33 @@ const EmailManagement = () => {
               <TabsContent value="tracking" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Email Delivery Log</CardTitle>
-                    <CardDescription>
-                      Track the status of sent annual tax summaries
-                    </CardDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Email Delivery Log</CardTitle>
+                        <CardDescription>
+                          Track the status of sent annual tax summaries
+                        </CardDescription>
+                      </div>
+                      {selectedForRetry.size > 0 && (
+                        <Button
+                          onClick={() => handleRetryEmails(Array.from(selectedForRetry))}
+                          disabled={retrying}
+                          variant="default"
+                        >
+                          {retrying ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Retrying...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="mr-2 h-4 w-4" />
+                              Retry Selected ({selectedForRetry.size})
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {loading ? (
@@ -644,39 +718,73 @@ const EmailManagement = () => {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {logs.map((log) => (
-                          <div
-                            key={log.id}
-                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/5 transition-colors"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-3">
-                                <div>
-                                  <p className="font-medium text-foreground">
-                                    {log.recipient_name || "Unknown"}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground truncate">
-                                    {log.recipient_email}
-                                  </p>
+                        {logs.map((log) => {
+                          const canRetry = log.status === "failed" && log.retry_eligible && log.retry_count < log.max_retries;
+                          return (
+                            <div
+                              key={log.id}
+                              className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/5 transition-colors"
+                            >
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                {canRetry && (
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedForRetry.has(log.id)}
+                                    onChange={() => toggleRetrySelection(log.id)}
+                                    className="h-4 w-4"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-3">
+                                    <div>
+                                      <p className="font-medium text-foreground">
+                                        {log.recipient_name || "Unknown"}
+                                      </p>
+                                      <p className="text-sm text-muted-foreground truncate">
+                                        {log.recipient_email}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  {log.sent_at && (
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                      Sent {format(new Date(log.sent_at), "MMM d, yyyy 'at' h:mm a")}
+                                    </p>
+                                  )}
+                                  {log.last_retry_at && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Last retry: {format(new Date(log.last_retry_at), "MMM d, yyyy 'at' h:mm a")}
+                                    </p>
+                                  )}
+                                  {log.next_retry_at && (
+                                    <p className="text-xs text-blue-600 mt-1">
+                                      Next retry: {format(new Date(log.next_retry_at), "MMM d, yyyy 'at' h:mm a")}
+                                    </p>
+                                  )}
+                                  {log.error_message && (
+                                    <p className="text-xs text-destructive mt-1">{log.error_message}</p>
+                                  )}
                                 </div>
                               </div>
-                              {log.sent_at && (
-                                <p className="text-xs text-muted-foreground mt-2">
-                                  Sent {format(new Date(log.sent_at), "MMM d, yyyy 'at' h:mm a")}
-                                </p>
-                              )}
-                              {log.error_message && (
-                                <p className="text-xs text-destructive mt-1">{log.error_message}</p>
-                              )}
+                              <div className="flex items-center gap-3 ml-4">
+                                {log.year && (
+                                  <Badge variant="outline">{log.year}</Badge>
+                                )}
+                                {getStatusBadge(log)}
+                                {canRetry && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleRetryEmails([log.id])}
+                                    disabled={retrying}
+                                  >
+                                    <Send className="h-3 w-3 mr-1" />
+                                    Retry
+                                  </Button>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-3 ml-4">
-                              {log.year && (
-                                <Badge variant="outline">{log.year}</Badge>
-                              )}
-                              {getStatusBadge(log)}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </CardContent>
