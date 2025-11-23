@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardBreadcrumbs from "@/components/DashboardBreadcrumbs";
-import DonorSubNav from "@/components/DonorSubNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -273,7 +272,6 @@ export default function DonorSegmentation() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <DashboardHeader />
           <DashboardBreadcrumbs segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Segmentation" }]} />
-          <DonorSubNav />
           <main className="flex-1 overflow-y-auto p-6 space-y-6">
             <Skeleton className="h-12 w-64" />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -292,7 +290,6 @@ export default function DonorSegmentation() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <DashboardHeader />
           <DashboardBreadcrumbs segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Segmentation" }]} />
-          <DonorSubNav />
           <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}

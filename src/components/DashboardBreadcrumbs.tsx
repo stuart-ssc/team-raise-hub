@@ -20,7 +20,7 @@ interface DashboardBreadcrumbsProps {
 
 const DashboardBreadcrumbs = ({ segments }: DashboardBreadcrumbsProps) => {
   return (
-    <div className="border-b bg-muted/30 px-6 py-3">
+    <div className="border-b bg-muted/50 px-6 py-2">
       <div className="max-w-7xl mx-auto">
         <Breadcrumb>
           <BreadcrumbList>

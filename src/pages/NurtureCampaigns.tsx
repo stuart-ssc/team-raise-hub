@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardBreadcrumbs from "@/components/DashboardBreadcrumbs";
-import DonorSubNav from "@/components/DonorSubNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -271,7 +270,6 @@ export default function NurtureCampaigns() {
       <div className={`flex-1 flex flex-col overflow-hidden ${isMobile ? 'pl-16' : ''}`}>
         <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
         <DashboardBreadcrumbs segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Nurture Campaigns" }]} />
-        <DonorSubNav />
 
         <main className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="flex justify-between items-center">
