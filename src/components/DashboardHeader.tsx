@@ -83,7 +83,7 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
   };
 
   return (
-    <header className="bg-background px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <header className="bg-background px-4 md:px-6 pt-4 pb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div className="flex flex-col gap-1">
         <h1 id="school-name-title" className="text-xl md:text-3xl font-bold text-foreground">
           {organizationUser?.organization?.name || "Organization"}
