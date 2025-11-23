@@ -16,9 +16,11 @@ interface EmailBlockProps {
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onUploadImage: (blockId: string, file: File) => Promise<void>;
+  isSelected?: boolean;
+  onSelect?: (id: string) => void;
 }
 
-export function EmailBlock({ block, onUpdate, onDelete, onDuplicate, onUploadImage }: EmailBlockProps) {
+export function EmailBlock({ block, onUpdate, onDelete, onDuplicate, onUploadImage, isSelected, onSelect }: EmailBlockProps) {
   const [isEditing, setIsEditing] = useState(false);
 
   const {
@@ -319,7 +321,14 @@ export function EmailBlock({ block, onUpdate, onDelete, onDuplicate, onUploadIma
   };
 
   return (
-    <Card ref={setNodeRef} style={style} className="relative group">
+    <Card 
+      ref={setNodeRef} 
+      style={style} 
+      className={`relative group cursor-pointer transition-all ${
+        isSelected ? 'ring-2 ring-primary' : ''
+      }`}
+      onClick={() => onSelect?.(block.id)}
+    >
       <div 
         className="absolute left-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
         {...attributes}
