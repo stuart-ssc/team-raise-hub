@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Play, Pause, Mail, Users, TrendingUp, Clock } from "lucide-react";
+import { Plus, Play, Pause, Mail, Users, TrendingUp, Clock, Palette, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import DashboardSidebar from "@/components/DashboardSidebar";
@@ -432,55 +432,68 @@ export default function NurtureCampaigns() {
                     </Button>
                   </DialogTrigger>
                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Add Email Sequence</DialogTitle>
-                      <DialogDescription>
-                        Start with a pre-built template or create your own from scratch
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      {/* Template Selector */}
-                      {/* Visual Editor Button */}
-                      <div>
-                        <Label>Build Email</Label>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => setVisualEditorOpen(true)}
-                        >
-                          Open Visual Email Editor
-                        </Button>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Build your email with drag-and-drop components
-                        </p>
-                      </div>
+                     <DialogHeader>
+                       <DialogTitle>Add Email Sequence</DialogTitle>
+                       <DialogDescription>
+                         Choose how you want to create your email
+                       </DialogDescription>
+                     </DialogHeader>
+                     <div className="space-y-6">
+                       {/* Choose Your Starting Point */}
+                       <div>
+                         <Label className="text-base font-semibold mb-3 block">Choose Your Starting Point</Label>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           {/* Visual Editor Option */}
+                           <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setVisualEditorOpen(true)}>
+                             <CardContent className="flex flex-col items-center justify-center text-center p-6 min-h-[140px]">
+                               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                                 <Palette className="h-6 w-6 text-primary" />
+                               </div>
+                               <h4 className="font-semibold mb-1">Visual Editor</h4>
+                               <p className="text-xs text-muted-foreground">
+                                 Drag-and-drop email builder with real-time preview
+                               </p>
+                             </CardContent>
+                           </Card>
 
-                      {/* Template Selector */}
-                      {emailTemplates && emailTemplates.length > 0 && (
-                        <div>
-                          <Label>Or Choose a Template</Label>
-                          <Select value={selectedTemplateId} onValueChange={handleTemplateSelect}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Start from scratch or select a template" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Start from scratch</SelectItem>
-                              {emailTemplates.map((template) => (
-                                <SelectItem key={template.id} value={template.id}>
-                                  {template.name} - {template.description}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {selectedTemplateId && selectedTemplateId !== "none" && (
-                            <p className="text-sm text-muted-foreground mt-2">
-                              Template loaded! You can customize it below before adding.
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      
+                           {/* Template Selector Option */}
+                           {emailTemplates && emailTemplates.length > 0 && (
+                             <Card className="min-h-[140px]">
+                               <CardContent className="flex flex-col p-6">
+                                 <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mb-3 mx-auto">
+                                   <FileText className="h-6 w-6 text-secondary-foreground" />
+                                 </div>
+                                 <h4 className="font-semibold mb-2 text-center">Choose Template</h4>
+                                 <Select value={selectedTemplateId} onValueChange={handleTemplateSelect}>
+                                   <SelectTrigger>
+                                     <SelectValue placeholder="Select a template" />
+                                   </SelectTrigger>
+                                   <SelectContent>
+                                     {emailTemplates.map((template) => (
+                                       <SelectItem key={template.id} value={template.id}>
+                                         {template.name}
+                                       </SelectItem>
+                                     ))}
+                                   </SelectContent>
+                                 </Select>
+                               </CardContent>
+                             </Card>
+                           )}
+                         </div>
+                       </div>
+
+                       {/* Separator */}
+                       <div className="relative">
+                         <div className="absolute inset-0 flex items-center">
+                           <span className="w-full border-t" />
+                         </div>
+                         <div className="relative flex justify-center text-xs uppercase">
+                           <span className="bg-background px-2 text-muted-foreground">
+                             Customize Your Email
+                           </span>
+                         </div>
+                       </div>
+                       
                       <div>
                         <Label>Sequence Order</Label>
                         <Input
