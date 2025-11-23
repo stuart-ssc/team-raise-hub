@@ -1,20 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailEditorProps, EmailBlock as EmailBlockType } from "./types";
 import { BlockToolbar } from "./BlockToolbar";
 import { EmailBlock } from "./EmailBlock";
-import { Eye } from "lucide-react";
+import { emailLayouts } from "./EmailLayoutTemplates";
+import { Eye, Sparkles } from "lucide-react";
 
 export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialContent, onSave }: EmailEditorProps) {
   const [subject, setSubject] = useState(initialSubject || "");
   const [blocks, setBlocks] = useState<EmailBlockType[]>([]);
+  const [showLayoutSelection, setShowLayoutSelection] = useState(true);
+  const [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setShowLayoutSelection(blocks.length === 0);
+    }
+  }, [open, blocks.length]);
+
+  const loadLayout = (layoutId: string) => {
+    const layout = emailLayouts.find(l => l.id === layoutId);
+    if (layout) {
+      setBlocks(layout.blocks);
+      setSelectedLayoutId(layoutId);
+      setShowLayoutSelection(false);
+      toast.success(`${layout.name} layout loaded`);
+    }
+  };
+
+  const startFromScratch = () => {
+    setBlocks([]);
+    setSelectedLayoutId(null);
+    setShowLayoutSelection(false);
+  };
 
   const addBlock = (type: string) => {
     const newBlock: EmailBlockType = {
@@ -160,80 +186,135 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
         <DialogHeader>
           <DialogTitle>Visual Email Editor</DialogTitle>
           <DialogDescription>
-            Build your email with drag-and-drop components
+            {showLayoutSelection 
+              ? "Choose a layout template to start with or build from scratch"
+              : "Build your email with drag-and-drop components"
+            }
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div>
-            <Label>Subject Line</Label>
-            <Input
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Enter email subject"
-            />
-          </div>
-
-          <Tabs defaultValue="editor" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="editor">Editor</TabsTrigger>
-              <TabsTrigger value="preview">
-                <Eye className="mr-2 h-4 w-4" />
-                Preview
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="editor" className="h-[calc(90vh-300px)]">
-              <div className="grid grid-cols-4 gap-4 h-full">
-                <div className="col-span-1">
-                  <BlockToolbar onAddBlock={addBlock} />
-                </div>
-                <div className="col-span-3">
-                  <ScrollArea className="h-full border rounded-lg p-4 bg-muted/20">
-                    {blocks.length === 0 ? (
-                      <div className="flex items-center justify-center h-full text-center text-muted-foreground">
-                        <div>
-                          <p className="mb-2">No components yet</p>
-                          <p className="text-sm">Add components from the toolbar to start building your email</p>
-                        </div>
+        {showLayoutSelection ? (
+          <div className="space-y-6">
+            <div>
+              <Label className="text-base font-semibold mb-3 block">Choose a Layout</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {emailLayouts.map((layout) => (
+                  <Card 
+                    key={layout.id}
+                    className="cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => loadLayout(layout.id)}
+                  >
+                    <CardHeader>
+                      <div className={`h-24 rounded-md mb-3 ${layout.preview} flex items-center justify-center`}>
+                        <Sparkles className="h-8 w-8 text-white/80" />
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {blocks.map(block => (
-                          <EmailBlock
-                            key={block.id}
-                            block={block}
-                            onUpdate={updateBlock}
-                            onDelete={deleteBlock}
-                            onUploadImage={uploadImage}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                </div>
+                      <CardTitle className="text-lg">{layout.name}</CardTitle>
+                      <CardDescription>{layout.description}</CardDescription>
+                    </CardHeader>
+                  </Card>
+                ))}
               </div>
-            </TabsContent>
+            </div>
 
-            <TabsContent value="preview" className="h-[calc(90vh-300px)]">
-              <ScrollArea className="h-full border rounded-lg">
-                <div 
-                  className="bg-white"
-                  dangerouslySetInnerHTML={{ __html: generateHTML() }}
-                />
-              </ScrollArea>
-            </TabsContent>
-          </Tabs>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or</span>
+              </div>
+            </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>
-              Save Email
-            </Button>
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={startFromScratch}>
+                Start from Scratch
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <Label>Subject Line</Label>
+                <Input
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Enter email subject"
+                />
+              </div>
+              {selectedLayoutId && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowLayoutSelection(true)}
+                  className="ml-4"
+                >
+                  Change Layout
+                </Button>
+              )}
+            </div>
+
+            <Tabs defaultValue="editor" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="editor">Editor</TabsTrigger>
+                <TabsTrigger value="preview">
+                  <Eye className="mr-2 h-4 w-4" />
+                  Preview
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="editor" className="h-[calc(90vh-350px)]">
+                <div className="grid grid-cols-4 gap-4 h-full">
+                  <div className="col-span-1">
+                    <BlockToolbar onAddBlock={addBlock} />
+                  </div>
+                  <div className="col-span-3">
+                    <ScrollArea className="h-full border rounded-lg p-4 bg-muted/20">
+                      {blocks.length === 0 ? (
+                        <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                          <div>
+                            <p className="mb-2">No components yet</p>
+                            <p className="text-sm">Add components from the toolbar to start building your email</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {blocks.map(block => (
+                            <EmailBlock
+                              key={block.id}
+                              block={block}
+                              onUpdate={updateBlock}
+                              onDelete={deleteBlock}
+                              onUploadImage={uploadImage}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="preview" className="h-[calc(90vh-350px)]">
+                <ScrollArea className="h-full border rounded-lg">
+                  <div 
+                    className="bg-white"
+                    dangerouslySetInnerHTML={{ __html: generateHTML() }}
+                  />
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave}>
+                Save Email
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
