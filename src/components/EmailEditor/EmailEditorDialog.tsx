@@ -18,7 +18,7 @@ import { EmailEditorProps, EmailBlock as EmailBlockType } from "./types";
 import { BlockToolbar } from "./BlockToolbar";
 import { EmailBlock } from "./EmailBlock";
 import { emailLayouts } from "./EmailLayoutTemplates";
-import { Eye, Sparkles, Save, Trash2, Send, Monitor, Smartphone, Download, Upload, Clock, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { Eye, Sparkles, Save, Trash2, Send, Monitor, Smartphone, Download, Upload, Clock, CheckCircle2, Loader2, AlertCircle, History, RotateCcw } from "lucide-react";
 
 interface CustomLayout {
   id: string;
@@ -51,6 +51,8 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const [draftInfo, setDraftInfo] = useState<{timestamp: string, blockCount: number, subject: string} | null>(null);
   const [lastSavedState, setLastSavedState] = useState<{blocks: EmailBlockType[], subject: string} | null>(null);
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -293,6 +295,23 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
     enabled: !!organizationId && open,
   });
 
+  // Fetch version history for selected template
+  const { data: versionHistory } = useQuery({
+    queryKey: ["custom-email-layout-versions", selectedTemplateId],
+    queryFn: async () => {
+      if (!selectedTemplateId) return [];
+      const { data, error } = await supabase
+        .from("custom_email_layout_versions")
+        .select("*")
+        .eq("layout_id", selectedTemplateId)
+        .order("version_number", { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedTemplateId && versionHistoryOpen,
+  });
+
   // Save template mutation
   const saveTemplateMutation = useMutation({
     mutationFn: async () => {
@@ -343,6 +362,27 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
     },
   });
 
+  // Restore version mutation
+  const restoreVersionMutation = useMutation({
+    mutationFn: async ({ layoutId, versionNumber }: { layoutId: string; versionNumber: number }) => {
+      const { error } = await supabase.rpc("restore_email_layout_version", {
+        p_layout_id: layoutId,
+        p_version_number: versionNumber,
+      });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["custom-email-layouts"] });
+      queryClient.invalidateQueries({ queryKey: ["custom-email-layout-versions"] });
+      setVersionHistoryOpen(false);
+      toast.success("Template restored to selected version");
+    },
+    onError: (error) => {
+      toast.error("Failed to restore version: " + error.message);
+    },
+  });
+
   const loadLayout = (layoutId: string, isCustom = false) => {
     saveHistory();
     if (isCustom) {
@@ -375,6 +415,22 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
   const handleDeleteTemplate = (templateId: string) => {
     if (confirm("Are you sure you want to delete this template?")) {
       deleteTemplateMutation.mutate(templateId);
+    }
+  };
+
+  const handleViewVersionHistory = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    setVersionHistoryOpen(true);
+  };
+
+  const handleRestoreVersion = (versionNumber: number) => {
+    if (!selectedTemplateId) return;
+    
+    if (confirm(`Are you sure you want to restore this template to version ${versionNumber}? This will create a new version with the restored content.`)) {
+      restoreVersionMutation.mutate({
+        layoutId: selectedTemplateId,
+        versionNumber,
+      });
     }
   };
 
@@ -802,17 +858,30 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
                           <CardTitle className="text-lg">{layout.name}</CardTitle>
                           <CardDescription>{layout.description || "Custom template"}</CardDescription>
                         </CardHeader>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteTemplate(layout.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewVersionHistory(layout.id);
+                            }}
+                            title="Version History"
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteTemplate(layout.id);
+                            }}
+                            title="Delete Template"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </Card>
                     ))}
                   </div>
@@ -1128,6 +1197,69 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Version History Dialog */}
+      <Dialog open={versionHistoryOpen} onOpenChange={setVersionHistoryOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Version History</DialogTitle>
+            <DialogDescription>
+              View and restore previous versions of this template
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            {versionHistory && versionHistory.length > 0 ? (
+              <div className="space-y-3">
+                {versionHistory.map((version) => (
+                  <Card key={version.id} className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold">Version {version.version_number}</h4>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(version.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-1">
+                          <strong>Name:</strong> {version.name}
+                        </p>
+                        {version.description && (
+                          <p className="text-sm text-muted-foreground mb-1">
+                            <strong>Description:</strong> {version.description}
+                          </p>
+                        )}
+                        {version.change_description && (
+                          <p className="text-sm text-muted-foreground italic">
+                            {version.change_description}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {(version.blocks as any[])?.length || 0} blocks
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRestoreVersion(version.version_number)}
+                        disabled={restoreVersionMutation.isPending}
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Restore
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No version history available yet</p>
+                <p className="text-sm mt-1">Versions are automatically saved when you update this template</p>
+              </div>
+            )}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </Dialog>

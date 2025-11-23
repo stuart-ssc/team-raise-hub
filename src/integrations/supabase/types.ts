@@ -190,6 +190,53 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_email_layout_versions: {
+        Row: {
+          blocks: Json
+          change_description: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          layout_id: string
+          name: string
+          preview_color: string | null
+          version_number: number
+        }
+        Insert: {
+          blocks?: Json
+          change_description?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          layout_id: string
+          name: string
+          preview_color?: string | null
+          version_number: number
+        }
+        Update: {
+          blocks?: Json
+          change_description?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          layout_id?: string
+          name?: string
+          preview_color?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_email_layout_versions_layout_id_fkey"
+            columns: ["layout_id"]
+            isOneToOne: false
+            referencedRelation: "custom_email_layouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_email_layouts: {
         Row: {
           blocks: Json
@@ -1762,6 +1809,10 @@ export type Database = {
         }[]
       }
       is_system_admin: { Args: { user_id: string }; Returns: boolean }
+      restore_email_layout_version: {
+        Args: { p_layout_id: string; p_version_number: number }
+        Returns: undefined
+      }
       user_belongs_to_organization: {
         Args: { org_id: string; user_id: string }
         Returns: boolean
