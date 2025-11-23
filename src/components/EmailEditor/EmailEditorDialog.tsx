@@ -18,7 +18,7 @@ import { EmailEditorProps, EmailBlock as EmailBlockType } from "./types";
 import { BlockToolbar } from "./BlockToolbar";
 import { EmailBlock } from "./EmailBlock";
 import { emailLayouts } from "./EmailLayoutTemplates";
-import { Eye, Sparkles, Save, Trash2, Send, Monitor, Smartphone } from "lucide-react";
+import { Eye, Sparkles, Save, Trash2, Send, Monitor, Smartphone, Download, Upload } from "lucide-react";
 
 interface CustomLayout {
   id: string;
@@ -247,6 +247,85 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
     if (confirm("Are you sure you want to delete this template?")) {
       deleteTemplateMutation.mutate(templateId);
     }
+  };
+
+  const handleExportTemplate = () => {
+    if (blocks.length === 0) {
+      toast.error("No content to export");
+      return;
+    }
+
+    const exportData = {
+      version: "1.0",
+      subject: subject,
+      blocks: blocks,
+      exportedAt: new Date().toISOString(),
+      metadata: {
+        blockCount: blocks.length,
+        editorVersion: "1.0"
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `email-template-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success("Template exported successfully");
+  };
+
+  const handleImportTemplate = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/json") {
+      toast.error("Please select a valid JSON file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const importedData = JSON.parse(content);
+
+        // Validate structure
+        if (!importedData.blocks || !Array.isArray(importedData.blocks)) {
+          toast.error("Invalid template format: missing blocks array");
+          return;
+        }
+
+        // Validate blocks
+        const validBlocks = importedData.blocks.every((block: any) => 
+          block.id && block.type && typeof block.content !== 'undefined' && block.styles
+        );
+
+        if (!validBlocks) {
+          toast.error("Invalid template format: blocks structure is incorrect");
+          return;
+        }
+
+        saveHistory();
+        setBlocks(importedData.blocks);
+        if (importedData.subject) {
+          setSubject(importedData.subject);
+        }
+        setShowLayoutSelection(false);
+        
+        toast.success("Template imported successfully");
+      } catch (error) {
+        toast.error("Failed to parse template file");
+        console.error("Import error:", error);
+      }
+    };
+
+    reader.readAsText(file);
+    event.target.value = ""; // Reset input
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -558,10 +637,37 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
                 </div>
               </div>
 
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center gap-3">
                 <Button variant="outline" onClick={startFromScratch}>
                   Start from Scratch
                 </Button>
+                
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Import/Export</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('template-import')?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import Template
+                  </Button>
+                  <input
+                    id="template-import"
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={handleImportTemplate}
+                  />
+                </div>
               </div>
             </div>
           </ScrollArea>
@@ -624,6 +730,37 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
                           <kbd className="px-1.5 py-0.5 bg-background rounded text-xs border">Delete</kbd>
                           <span>Remove</span>
                         </div>
+                      </div>
+                    </Card>
+                    <Card className="p-3 bg-muted/50">
+                      <p className="text-xs font-semibold mb-2">Template Tools</p>
+                      <div className="space-y-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={handleExportTemplate}
+                          disabled={blocks.length === 0}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Export as JSON
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={() => document.getElementById('template-import-editor')?.click()}
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Import from JSON
+                        </Button>
+                        <input
+                          id="template-import-editor"
+                          type="file"
+                          accept=".json"
+                          className="hidden"
+                          onChange={handleImportTemplate}
+                        />
                       </div>
                     </Card>
                   </div>
