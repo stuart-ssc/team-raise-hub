@@ -18,6 +18,7 @@ import NotificationHistory from "./pages/NotificationHistory";
 import Reports from "./pages/Reports";
 import Donors from "./pages/Donors";
 import DonorProfile from "./pages/DonorProfile";
+import DonorReceiptPortal from "./pages/DonorReceiptPortal";
 import ThankYouTemplates from "./pages/ThankYouTemplates";
 import NotFound from "./pages/NotFound";
 import SystemAdminDashboard from "./pages/SystemAdmin/Dashboard";
@@ -64,6 +65,7 @@ const AppContent = () => {
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path="/c/:slug" element={<CampaignLanding />} />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
+        <Route path="/donor-receipts" element={<DonorReceiptPortal />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/dashboard/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
         <Route path="/dashboard/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
