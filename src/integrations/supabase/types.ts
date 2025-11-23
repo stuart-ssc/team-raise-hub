@@ -190,6 +190,106 @@ export type Database = {
         }
         Relationships: []
       }
+      donor_activity_log: {
+        Row: {
+          activity_data: Json | null
+          activity_type: string
+          created_at: string | null
+          donor_id: string
+          id: string
+        }
+        Insert: {
+          activity_data?: Json | null
+          activity_type: string
+          created_at?: string | null
+          donor_id: string
+          id?: string
+        }
+        Update: {
+          activity_data?: Json | null
+          activity_type?: string
+          created_at?: string | null
+          donor_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donor_activity_log_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "donor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donor_profiles: {
+        Row: {
+          created_at: string | null
+          donation_count: number | null
+          email: string
+          engagement_score: number | null
+          first_donation_date: string | null
+          first_name: string | null
+          id: string
+          last_donation_date: string | null
+          last_name: string | null
+          lifetime_value: number | null
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          preferred_communication: string | null
+          tags: string[] | null
+          total_donations: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          donation_count?: number | null
+          email: string
+          engagement_score?: number | null
+          first_donation_date?: string | null
+          first_name?: string | null
+          id?: string
+          last_donation_date?: string | null
+          last_name?: string | null
+          lifetime_value?: number | null
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          preferred_communication?: string | null
+          tags?: string[] | null
+          total_donations?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          donation_count?: number | null
+          email?: string
+          engagement_score?: number | null
+          first_donation_date?: string | null
+          first_name?: string | null
+          id?: string
+          last_donation_date?: string | null
+          last_name?: string | null
+          lifetime_value?: number | null
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          preferred_communication?: string | null
+          tags?: string[] | null
+          total_donations?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donor_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_type: {
         Row: {
           created_at: string
@@ -1009,6 +1109,50 @@ export type Database = {
           name?: string | null
         }
         Relationships: []
+      }
+      thank_you_templates: {
+        Row: {
+          body: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          organization_id: string
+          subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          organization_id: string
+          subject: string
+          updated_at?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          organization_id?: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thank_you_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_type: {
         Row: {
