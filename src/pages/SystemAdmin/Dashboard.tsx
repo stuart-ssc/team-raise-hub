@@ -105,6 +105,11 @@ const SystemAdminDashboard = () => {
                       Review Verifications
                     </Button>
                   </Link>
+                  <Link to="/system-admin/emails">
+                    <Button className="w-full" variant="outline">
+                      Email Management
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             </div>
