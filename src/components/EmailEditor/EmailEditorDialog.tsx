@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,19 +7,36 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { EmailEditorProps, EmailBlock as EmailBlockType } from "./types";
 import { BlockToolbar } from "./BlockToolbar";
 import { EmailBlock } from "./EmailBlock";
 import { emailLayouts } from "./EmailLayoutTemplates";
-import { Eye, Sparkles } from "lucide-react";
+import { Eye, Sparkles, Save, Trash2 } from "lucide-react";
+
+interface CustomLayout {
+  id: string;
+  name: string;
+  description: string;
+  blocks: EmailBlockType[];
+  preview_color: string;
+}
 
 export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialContent, onSave }: EmailEditorProps) {
+  const queryClient = useQueryClient();
+  const { organizationUser } = useOrganizationUser();
+  const organizationId = organizationUser?.organization_id;
+
   const [subject, setSubject] = useState(initialSubject || "");
   const [blocks, setBlocks] = useState<EmailBlockType[]>([]);
   const [showLayoutSelection, setShowLayoutSelection] = useState(true);
   const [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(null);
+  const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDescription, setTemplateDescription] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -26,13 +44,107 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
     }
   }, [open, blocks.length]);
 
-  const loadLayout = (layoutId: string) => {
-    const layout = emailLayouts.find(l => l.id === layoutId);
-    if (layout) {
-      setBlocks(layout.blocks);
-      setSelectedLayoutId(layoutId);
-      setShowLayoutSelection(false);
-      toast.success(`${layout.name} layout loaded`);
+  // Fetch custom layouts
+  const { data: customLayouts } = useQuery({
+    queryKey: ["custom-email-layouts", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("custom_email_layouts")
+        .select("*")
+        .eq("organization_id", organizationId)
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      return (data || []).map(layout => ({
+        ...layout,
+        blocks: layout.blocks as unknown as EmailBlockType[]
+      })) as CustomLayout[];
+    },
+    enabled: !!organizationId && open,
+  });
+
+  // Save template mutation
+  const saveTemplateMutation = useMutation({
+    mutationFn: async () => {
+      if (!organizationId) throw new Error("Organization not found");
+      
+      const { data: profile } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from("custom_email_layouts")
+        .insert({
+          organization_id: organizationId,
+          created_by: profile.user?.id,
+          name: templateName,
+          description: templateDescription,
+          blocks: blocks as any,
+        });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["custom-email-layouts"] });
+      setSaveTemplateDialogOpen(false);
+      setTemplateName("");
+      setTemplateDescription("");
+      toast.success("Template saved successfully");
+    },
+    onError: (error) => {
+      toast.error("Failed to save template: " + error.message);
+    },
+  });
+
+  // Delete template mutation
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (templateId: string) => {
+      const { error } = await supabase
+        .from("custom_email_layouts")
+        .delete()
+        .eq("id", templateId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["custom-email-layouts"] });
+      toast.success("Template deleted successfully");
+    },
+    onError: (error) => {
+      toast.error("Failed to delete template: " + error.message);
+    },
+  });
+
+  const loadLayout = (layoutId: string, isCustom = false) => {
+    if (isCustom) {
+      const customLayout = customLayouts?.find(l => l.id === layoutId);
+      if (customLayout) {
+        setBlocks(customLayout.blocks);
+        setSelectedLayoutId(layoutId);
+        setShowLayoutSelection(false);
+        toast.success(`${customLayout.name} layout loaded`);
+      }
+    } else {
+      const layout = emailLayouts.find(l => l.id === layoutId);
+      if (layout) {
+        setBlocks(layout.blocks);
+        setSelectedLayoutId(layoutId);
+        setShowLayoutSelection(false);
+        toast.success(`${layout.name} layout loaded`);
+      }
+    }
+  };
+
+  const handleSaveAsTemplate = () => {
+    if (blocks.length === 0) {
+      toast.error("Please add some components before saving as template");
+      return;
+    }
+    setSaveTemplateDialogOpen(true);
+  };
+
+  const handleDeleteTemplate = (templateId: string) => {
+    if (confirm("Are you sure you want to delete this template?")) {
+      deleteTemplateMutation.mutate(templateId);
     }
   };
 
@@ -194,43 +306,88 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
         </DialogHeader>
 
         {showLayoutSelection ? (
-          <div className="space-y-6">
-            <div>
-              <Label className="text-base font-semibold mb-3 block">Choose a Layout</Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {emailLayouts.map((layout) => (
-                  <Card 
-                    key={layout.id}
-                    className="cursor-pointer hover:border-primary transition-colors"
-                    onClick={() => loadLayout(layout.id)}
-                  >
-                    <CardHeader>
-                      <div className={`h-24 rounded-md mb-3 ${layout.preview} flex items-center justify-center`}>
-                        <Sparkles className="h-8 w-8 text-white/80" />
-                      </div>
-                      <CardTitle className="text-lg">{layout.name}</CardTitle>
-                      <CardDescription>{layout.description}</CardDescription>
-                    </CardHeader>
-                  </Card>
-                ))}
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-6">
+              {/* Pre-designed Layouts */}
+              <div>
+                <Label className="text-base font-semibold mb-3 block">Pre-designed Layouts</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {emailLayouts.map((layout) => (
+                    <Card 
+                      key={layout.id}
+                      className="cursor-pointer hover:border-primary transition-colors"
+                      onClick={() => loadLayout(layout.id, false)}
+                    >
+                      <CardHeader>
+                        <div className={`h-24 rounded-md mb-3 ${layout.preview} flex items-center justify-center`}>
+                          <Sparkles className="h-8 w-8 text-white/80" />
+                        </div>
+                        <CardTitle className="text-lg">{layout.name}</CardTitle>
+                        <CardDescription>{layout.description}</CardDescription>
+                      </CardHeader>
+                    </Card>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or</span>
-              </div>
-            </div>
+              {/* Custom Layouts */}
+              {customLayouts && customLayouts.length > 0 && (
+                <>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">Your Custom Templates</span>
+                    </div>
+                  </div>
 
-            <div className="flex justify-center">
-              <Button variant="outline" onClick={startFromScratch}>
-                Start from Scratch
-              </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {customLayouts.map((layout) => (
+                      <Card 
+                        key={layout.id}
+                        className="cursor-pointer hover:border-primary transition-colors group relative"
+                      >
+                        <CardHeader onClick={() => loadLayout(layout.id, true)}>
+                          <div className={`h-24 rounded-md mb-3 ${layout.preview_color} flex items-center justify-center`}>
+                            <Save className="h-8 w-8 text-white/80" />
+                          </div>
+                          <CardTitle className="text-lg">{layout.name}</CardTitle>
+                          <CardDescription>{layout.description || "Custom template"}</CardDescription>
+                        </CardHeader>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTemplate(layout.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or</span>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
+                <Button variant="outline" onClick={startFromScratch}>
+                  Start from Scratch
+                </Button>
+              </div>
             </div>
-          </div>
+          </ScrollArea>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -305,17 +462,65 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
               </TabsContent>
             </Tabs>
 
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+            <div className="flex justify-between items-center">
+              <Button variant="outline" onClick={handleSaveAsTemplate}>
+                <Save className="mr-2 h-4 w-4" />
+                Save as Template
               </Button>
-              <Button onClick={handleSave}>
-                Save Email
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave}>
+                  Save Email
+                </Button>
+              </div>
             </div>
           </div>
         )}
       </DialogContent>
+
+      {/* Save Template Dialog */}
+      <Dialog open={saveTemplateDialogOpen} onOpenChange={setSaveTemplateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save as Template</DialogTitle>
+            <DialogDescription>
+              Save this email layout as a reusable template for your organization
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Template Name</Label>
+              <Input
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="e.g., Monthly Newsletter"
+              />
+            </div>
+            <div>
+              <Label>Description (Optional)</Label>
+              <Textarea
+                value={templateDescription}
+                onChange={(e) => setTemplateDescription(e.target.value)}
+                placeholder="Describe when to use this template..."
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSaveTemplateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => saveTemplateMutation.mutate()}
+                disabled={!templateName.trim() || saveTemplateMutation.isPending}
+              >
+                {saveTemplateMutation.isPending ? "Saving..." : "Save Template"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
