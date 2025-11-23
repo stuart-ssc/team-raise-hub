@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import DashboardHeader from "@/components/DashboardHeader";
-import DashboardBreadcrumbs from "@/components/DashboardBreadcrumbs";
+import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -267,31 +265,21 @@ export default function DonorSegmentation() {
 
   if (organizationUserLoading || loading) {
     return (
-      <div className="flex h-screen bg-background">
-        <DashboardSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-          <DashboardBreadcrumbs segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Segmentation" }]} />
-          <main className="flex-1 overflow-y-auto p-6 space-y-6">
-            <Skeleton className="h-12 w-64" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
-            </div>
-          </main>
+      <DashboardPageLayout segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Segmentation" }]}>
+        <div className="space-y-6">
+          <Skeleton className="h-12 w-64" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
+          </div>
         </div>
-      </div>
+      </DashboardPageLayout>
     );
   }
 
   return (
     <>
-      <div className="flex h-screen bg-background">
-        <DashboardSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-          <DashboardBreadcrumbs segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Segmentation" }]} />
-          <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
+      <DashboardPageLayout segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Segmentation" }]}>
+      <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex justify-between items-center">
               <div>
@@ -486,12 +474,10 @@ export default function DonorSegmentation() {
               </TabsContent>
             </Tabs>
           </div>
-        </main>
-      </div>
-    </div>
+        </DashboardPageLayout>
 
-      {/* Send Campaign Dialog */}
-      <Dialog open={campaignDialogOpen} onOpenChange={setCampaignDialogOpen}>
+        {/* Send Campaign Dialog */}
+        <Dialog open={campaignDialogOpen} onOpenChange={setCampaignDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Send Segmented Campaign</DialogTitle>

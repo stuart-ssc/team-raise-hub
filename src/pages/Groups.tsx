@@ -2,22 +2,9 @@ import { useState, useEffect } from "react";
 import { MoreHorizontal, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import DashboardHeader from "@/components/DashboardHeader";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { CreateGroupForm } from "@/components/CreateGroupForm";
 import Rosters from "@/pages/Rosters";
 import { supabase } from "@/integrations/supabase/client";
@@ -237,17 +224,13 @@ const Groups = () => {
   });
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader 
-          activeGroup={showRosters ? selectedGroup : null}
-          onGroupClick={handleGroupClick}
-          showRosters={showRosters}
-        />
-        <div className="flex-1 overflow-auto">
-          <div className="p-6 space-y-6">
+    <DashboardPageLayout 
+      segments={[{ label: "Groups" }]}
+      activeGroup={showRosters ? selectedGroup : null}
+      onGroupClick={handleGroupClick}
+      showRosters={showRosters}
+    >
+      <div className="space-y-6">
 
             {showRosters && selectedGroup ? (
               // Show Rosters Page
@@ -411,9 +394,7 @@ const Groups = () => {
               </div>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+      </DashboardPageLayout>
   );
 };
 
