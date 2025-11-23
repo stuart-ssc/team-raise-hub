@@ -277,7 +277,7 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     // Send email with PDF attachment
-    const emailResult = await resend.emails.send({
+    const { data: emailResult, error: emailError } = await resend.emails.send({
       from: "Sponsorly <receipts@sponsorly.io>",
       to: [email],
       subject: `Your ${year} Annual Charitable Giving Summary`,
@@ -290,7 +290,23 @@ const handler = async (req: Request): Promise<Response> => {
       ],
     });
 
+    if (emailError) {
+      throw emailError;
+    }
+
     console.log("Annual summary email sent:", emailResult);
+
+    // Update delivery log
+    await supabase
+      .from("email_delivery_log")
+      .update({
+        status: "sent",
+        resend_email_id: emailResult.id,
+        sent_at: new Date().toISOString(),
+      })
+      .eq("recipient_email", email.toLowerCase())
+      .eq("email_type", "annual_tax_summary")
+      .eq("year", year);
 
     return new Response(
       JSON.stringify({ success: true, emailResult }),

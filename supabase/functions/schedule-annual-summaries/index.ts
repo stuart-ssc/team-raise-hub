@@ -16,17 +16,19 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
+    const { year, manual } = await req.json();
+
     console.log("Starting annual tax summary batch processing...");
 
-    // Get the previous year
+    // Get the year to process
     const currentDate = new Date();
-    const year = currentDate.getFullYear() - 1;
-    const startDate = `${year}-01-01T00:00:00Z`;
-    const endDate = `${year}-12-31T23:59:59Z`;
+    const processYear = year || currentDate.getFullYear() - 1;
+    const startDate = `${processYear}-01-01T00:00:00Z`;
+    const endDate = `${processYear}-12-31T23:59:59Z`;
 
-    console.log(`Processing donations for year: ${year}`);
+    console.log(`Processing donations for year: ${processYear}`);
 
-    // Get all unique donor emails who received tax receipts last year
+    // Get all unique donor emails who received tax receipts
     const { data: orders, error: ordersError } = await supabase
       .from("orders")
       .select(`
@@ -75,6 +77,23 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Create delivery log entries for tracking
+    const logEntries = Array.from(uniqueDonors.entries()).map(([email, name]) => ({
+      email_type: "annual_tax_summary",
+      recipient_email: email,
+      recipient_name: name,
+      year: processYear,
+      status: "pending",
+    }));
+
+    const { error: logError } = await supabase
+      .from("email_delivery_log")
+      .insert(logEntries);
+
+    if (logError) {
+      console.error("Error creating delivery logs:", logError);
+    }
+
     // Process donors in batches
     const batchSize = 50;
     const donorArray = Array.from(uniqueDonors.keys());
@@ -96,12 +115,20 @@ const handler = async (req: Request): Promise<Response> => {
               "Content-Type": "application/json",
               "Authorization": `Bearer ${supabaseServiceRoleKey}`,
             },
-            body: JSON.stringify({ email, year }),
+            body: JSON.stringify({ email, year: processYear }),
           });
 
           if (!response.ok) {
             const error = await response.text();
             console.error(`Failed to send to ${email}:`, error);
+            
+            // Update log with failure
+            await supabase
+              .from("email_delivery_log")
+              .update({ status: "failed", error_message: error })
+              .eq("recipient_email", email)
+              .eq("year", processYear);
+            
             return { success: false, email };
           }
 
@@ -109,6 +136,14 @@ const handler = async (req: Request): Promise<Response> => {
           return { success: true, email };
         } catch (error) {
           console.error(`Error sending to ${email}:`, error);
+          
+          // Update log with failure
+          await supabase
+            .from("email_delivery_log")
+            .update({ status: "failed", error_message: String(error) })
+            .eq("recipient_email", email)
+            .eq("year", processYear);
+          
           return { success: false, email };
         }
       });
@@ -134,11 +169,11 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        year,
+        year: processYear,
         total_donors: uniqueDonors.size,
         processed,
         failed,
-        message: `Annual tax summaries sent to ${processed} donors for year ${year}`
+        message: `Annual tax summaries sent to ${processed} donors for year ${processYear}`
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
