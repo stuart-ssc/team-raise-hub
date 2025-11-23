@@ -1,375 +1,436 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
-import { SchoolSelector } from "@/components/SchoolSelector";
 import { 
-  FileText, 
+  ArrowRight,
   Shield, 
   Zap, 
-  Mail, 
-  Tag, 
-  Users, 
-  Key, 
+  TrendingUp,
+  Heart,
+  Users,
+  CheckCircle,
+  Building2,
+  GraduationCap,
+  Sparkles,
   BarChart3,
-  Facebook,
-  Linkedin
+  DollarSign,
+  Globe,
+  Star
 } from "lucide-react";
 import heroImage from "@/assets/hero-celebration.jpg";
-import teamImage from "@/assets/team-collaboration.jpg";
 
 const Index = () => {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    schoolInfo: ""
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.schoolInfo) {
-      toast({
-        title: "Please fill in all fields",
-        variant: "destructive"
-      });
-      return;
+  const features = [
+    {
+      icon: DollarSign,
+      title: "100% of Donations",
+      description: "Supporters cover platform fees, so your organization receives every dollar donated"
+    },
+    {
+      icon: Zap,
+      title: "Quick Setup",
+      description: "Launch campaigns in minutes with our intuitive campaign builder"
+    },
+    {
+      icon: Shield,
+      title: "Secure & Compliant",
+      description: "Bank-level security with automatic tax receipts for eligible donations"
+    },
+    {
+      icon: Globe,
+      title: "Beautiful Pages",
+      description: "Professional campaign pages that showcase your mission and impact"
+    },
+    {
+      icon: Users,
+      title: "Team Management",
+      description: "Easily manage volunteers, staff, and participants in one platform"
+    },
+    {
+      icon: BarChart3,
+      title: "Real-Time Analytics",
+      description: "Track progress, donor engagement, and campaign performance"
     }
+  ];
 
-    setIsSubmitting(true);
-
-    try {
-      const { error } = await supabase
-        .from('launch_interest')
-        .insert({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          school_info: formData.schoolInfo
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Thank you for your interest!",
-        description: "We'll notify you when we launch."
-      });
-
-      setFormData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        schoolInfo: ""
-      });
-
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      toast({
-        title: "Something went wrong",
-        description: "Please try again later.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
+  const testimonials = [
+    {
+      name: "Sarah Martinez",
+      role: "Athletic Director, Lincoln High School",
+      content: "Sponsorly made our booster club fundraising so much easier. We raised 30% more this year and every dollar went directly to our programs!",
+      initials: "SM"
+    },
+    {
+      name: "David Chen",
+      role: "Executive Director, Community Hope Foundation",
+      content: "The platform is incredibly intuitive. Our donors love the transparency, and the automatic tax receipts save us hours of admin work.",
+      initials: "DC"
+    },
+    {
+      name: "Emily Rodriguez",
+      role: "Band Director, Riverside Academy",
+      content: "We launched our first campaign in under 10 minutes. The results have been amazing - our students reached their goal 2 weeks early!",
+      initials: "ER"
     }
-  };
+  ];
+
+  const stats = [
+    { value: "$2.5M+", label: "Funds Raised" },
+    { value: "500+", label: "Organizations" },
+    { value: "98%", label: "Satisfaction" },
+    { value: "15K+", label: "Supporters" }
+  ];
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="w-full py-4 px-6 flex justify-center">
-        <a href="/" className="flex items-center">
-          <SponsorlyLogo variant="full" />
-        </a>
-      </header>
-
-      {/* Hero Section */}
-      <section className="container mx-auto px-6 py-16 lg:py-24">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-              Fundraising Made Simple for Schools & Non-Profits
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-md">
-              An all-in-one fundraising platform that ensures the FULL donation gets to your organization!
-            </p>
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+          <a href="/" className="flex items-center">
+            <SponsorlyLogo variant="full" />
+          </a>
+          <div className="flex items-center gap-4">
             <Button 
-              size="lg" 
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              onClick={() => {
-                document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' });
-                setTimeout(() => {
-                  document.getElementById('first-name-input')?.focus();
-                }, 500);
-              }}
+              variant="ghost" 
+              onClick={() => navigate('/login')}
+              className="hidden sm:inline-flex"
+            >
+              Sign In
+            </Button>
+            <Button 
+              onClick={() => navigate('/signup')}
+              className="gap-2"
             >
               Get Started
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
-          <div className="relative">
-            <img 
-              src={heroImage} 
-              alt="Students celebrating with high-fives" 
-              className="w-full h-auto rounded-lg shadow-lg"
-            />
-          </div>
         </div>
-      </section>
+      </nav>
 
-      {/* How It Works Section */}
-      <section className="bg-accent py-16 lg:py-24">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <p className="text-sm font-medium text-muted-foreground mb-2">HOW IT WORKS</p>
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-              Reach Fundraising Goals 20% Faster
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              We want every dollar a sponsor gives to go directly to your group.<br />
-              So that's what we do!
-            </p>
-          </div>
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5" />
+        <div className="container mx-auto px-6 py-20 lg:py-32 relative">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8 animate-fade-in">
+              <Badge className="gap-1 w-fit" variant="secondary">
+                <Sparkles className="h-3 w-3" />
+                Fundraising Reimagined
+              </Badge>
+              
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
+                Fundraising That Puts
+                <span className="text-primary"> Your Mission</span> First
+              </h1>
+              
+              <p className="text-lg sm:text-xl text-muted-foreground max-w-xl">
+                The only platform where 100% of donations go directly to your organization. 
+                No hidden fees, no surprises—just simple, powerful fundraising.
+              </p>
 
-          <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-12">
-            <div className="w-full lg:w-[35%] grid grid-cols-1 gap-8 py-4">
-              <div className="flex items-start space-x-4">
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <Zap className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-2">Create Campaigns For Your Needs</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Whether you are selling banners at your field, sponsors for your STEM lab, or just fundraising, create the campaign with your goals and needs.
-                  </p>
-                </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button 
+                  size="lg"
+                  onClick={() => navigate('/signup')}
+                  className="gap-2 text-lg px-8 py-6"
+                >
+                  <GraduationCap className="h-5 w-5" />
+                  For Schools
+                </Button>
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  onClick={() => navigate('/signup')}
+                  className="gap-2 text-lg px-8 py-6"
+                >
+                  <Building2 className="h-5 w-5" />
+                  For Non-Profits
+                </Button>
               </div>
 
-              <div className="flex items-start space-x-4">
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <Shield className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-2">Collect Money Directly & Immediately</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Connect your existing bank account to the platform and receive funds immediately when payment is taken. The FULL AMOUNT.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-2">Sponsors Cover Your Costs</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Our sponsors have chosen to absorb all the fees by adding it to the amount, rather than subtracting. If a sponsor supports you, they can help you too!
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <Mail className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-2">In-app messenger</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Streamline your communications with your group and your sponsors with our in-app messenger.
-                  </p>
-                </div>
+              <div className="flex items-center gap-8 pt-4">
+                {stats.map((stat, index) => (
+                  <div key={index} className="text-center">
+                    <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                    <div className="text-sm text-muted-foreground">{stat.label}</div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="flex-1">
+            <div className="relative animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-secondary/20 blur-3xl" />
               <img 
-                src={teamImage} 
-                alt="Team collaborating on fundraising" 
-                className="w-full h-auto rounded-lg shadow-lg"
+                src={heroImage}
+                alt="Successful fundraising celebration"
+                className="relative w-full h-auto rounded-2xl shadow-2xl"
               />
+              <div className="absolute -bottom-6 -left-6 bg-background border rounded-xl p-4 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="bg-green-500/10 p-2 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">Campaign Success</div>
+                    <div className="text-xs text-muted-foreground">150% of goal reached</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Key Features Section */}
-      <section className="py-16 lg:py-24">
+      {/* Social Proof */}
+      <section className="border-y bg-accent/30 py-8">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <p className="text-sm font-medium text-muted-foreground mb-2">KEY FEATURES</p>
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-              The Only Fundraising Tool You Need
+          <div className="flex flex-col items-center text-center gap-4">
+            <p className="text-sm font-medium text-muted-foreground">TRUSTED BY ORGANIZATIONS NATIONWIDE</p>
+            <div className="flex items-center gap-2">
+              <div className="flex -space-x-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="w-8 h-8 rounded-full bg-primary/20 border-2 border-background" />
+                ))}
+              </div>
+              <p className="text-sm text-foreground font-medium">500+ schools and non-profits raising funds</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 lg:py-32">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16 space-y-4">
+            <Badge variant="outline" className="gap-1">
+              <Heart className="h-3 w-3" />
+              Why Choose Sponsorly
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground">
+              Everything You Need to Succeed
             </h2>
-            <p className="text-lg text-muted-foreground">
-              Every detail is worked out for your students to succeed
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Powerful features designed to maximize your impact and simplify fundraising
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="border-border">
-              <CardContent className="p-6 text-center">
-                <FileText className="h-8 w-8 text-primary mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">Landing Pages</h3>
-                <p className="text-sm text-muted-foreground">
-                  Every campaign has a unique landing page with your details, goals, and opportunities
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border">
-              <CardContent className="p-6 text-center">
-                <Shield className="h-8 w-8 text-primary mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">Secure Payment</h3>
-                <p className="text-sm text-muted-foreground">
-                  Every payment is processed and recorded securely through a certified processor
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border">
-              <CardContent className="p-6 text-center">
-                <Zap className="h-8 w-8 text-primary mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">Campaign Flexibility</h3>
-                <p className="text-sm text-muted-foreground">
-                  Every campaign is unique to your needs and opportunities, set it up how it works for your group
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border">
-              <CardContent className="p-6 text-center">
-                <Mail className="h-8 w-8 text-primary mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">Email Templates</h3>
-                <p className="text-sm text-muted-foreground">
-                  We provide email adaptability to invite sponsors and students to participate
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border">
-              <CardContent className="p-6 text-center">
-                <Tag className="h-8 w-8 text-primary mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">Identity & Branding</h3>
-                <p className="text-sm text-muted-foreground">
-                  Your logo and colors are utilized on your campaign landing page and email messages
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border">
-              <CardContent className="p-6 text-center">
-                <Users className="h-8 w-8 text-primary mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">User Management</h3>
-                <p className="text-sm text-muted-foreground">
-                  Easily invite students, family members, and other staff to help manage or participate in your fundraising
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border">
-              <CardContent className="p-6 text-center">
-                <Key className="h-8 w-8 text-primary mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">Authentication</h3>
-                <p className="text-sm text-muted-foreground">
-                  User and donor accounts require 2-factor authentication to create a secure environment
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border">
-              <CardContent className="p-6 text-center">
-                <BarChart3 className="h-8 w-8 text-primary mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">Data & Analytics</h3>
-                <p className="text-sm text-muted-foreground">
-                  Track campaign progress and keep clear records for bookkeeping and next year's opportunities
-                </p>
-              </CardContent>
-            </Card>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <Card 
+                key={index}
+                className="border-border hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              >
+                <CardContent className="p-6 space-y-4">
+                  <div className="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center">
+                    <feature.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground">
+                    {feature.title}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {feature.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Contact Form Section */}
-      <section id="contact-form" className="bg-accent py-16 lg:py-24">
-        <div className="container mx-auto px-6 max-w-4xl text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-            Ready For A Better Way To Fundraise?
-          </h2>
-          <p className="text-muted-foreground mb-8">
-            We're busy putting the final touches on a platform to enable your group to raise money quickly and keep it all for your program. We can notify you're the one when launch. Let us know if you give up your information below.
-          </p>
+      {/* How It Works */}
+      <section className="bg-accent py-20 lg:py-32">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16 space-y-4">
+            <Badge variant="secondary" className="gap-1">
+              <Zap className="h-3 w-3" />
+              Simple Process
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground">
+              Launch in Minutes, Not Days
+            </h2>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto">
-            <div className="grid grid-cols-2 gap-4">
-              <Input 
-                id="first-name-input" 
-                placeholder="First Name" 
-                className="bg-background" 
-                value={formData.firstName}
-                onChange={(e) => handleInputChange('firstName', e.target.value)}
-                required
-              />
-              <Input 
-                placeholder="Last Name" 
-                className="bg-background" 
-                value={formData.lastName}
-                onChange={(e) => handleInputChange('lastName', e.target.value)}
-                required
-              />
+          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+            <div className="relative">
+              <div className="bg-background rounded-2xl p-8 shadow-lg space-y-4">
+                <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold">
+                  1
+                </div>
+                <h3 className="text-2xl font-semibold text-foreground">Create Your Campaign</h3>
+                <p className="text-muted-foreground">
+                  Set up your fundraising campaign with our easy-to-use builder. Add your story, goals, and campaign items.
+                </p>
+              </div>
+              {/* Connector line */}
+              <div className="hidden md:block absolute top-1/2 -right-6 w-12 h-0.5 bg-border" />
             </div>
-            <Input 
-              placeholder="Email Address" 
-              type="email" 
-              className="bg-background" 
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              required
-            />
-            <SchoolSelector
-              value={formData.schoolInfo}
-              onChange={(value) => handleInputChange('schoolInfo', value)}
-              placeholder="Search for your school..."
-            />
-            <Button 
-              type="submit" 
-              size="lg" 
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Submitting..." : "Notify Me When You Launch"}
-            </Button>
-          </form>
+
+            <div className="relative">
+              <div className="bg-background rounded-2xl p-8 shadow-lg space-y-4">
+                <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold">
+                  2
+                </div>
+                <h3 className="text-2xl font-semibold text-foreground">Share & Promote</h3>
+                <p className="text-muted-foreground">
+                  Get your unique campaign link and share it with supporters via email, social media, or direct outreach.
+                </p>
+              </div>
+              <div className="hidden md:block absolute top-1/2 -right-6 w-12 h-0.5 bg-border" />
+            </div>
+
+            <div className="bg-background rounded-2xl p-8 shadow-lg space-y-4">
+              <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold">
+                3
+              </div>
+              <h3 className="text-2xl font-semibold text-foreground">Receive Full Donations</h3>
+              <p className="text-muted-foreground">
+                Watch donations come in real-time. Receive 100% of funds directly to your account with instant notifications.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 lg:py-32">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16 space-y-4">
+            <Badge variant="outline" className="gap-1">
+              <Star className="h-3 w-3 fill-primary text-primary" />
+              Success Stories
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground">
+              Loved by Fundraisers Everywhere
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="border-border">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star key={star} className="h-4 w-4 fill-primary text-primary" />
+                    ))}
+                  </div>
+                  <p className="text-muted-foreground italic">
+                    "{testimonial.content}"
+                  </p>
+                  <div className="flex items-center gap-3 pt-4">
+                    <Avatar>
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                        {testimonial.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-semibold text-foreground">{testimonial.name}</div>
+                      <div className="text-sm text-muted-foreground">{testimonial.role}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary to-primary/80 py-20 lg:py-32">
+        <div className="absolute inset-0 bg-grid-white/10" />
+        <div className="container mx-auto px-6 relative">
+          <div className="max-w-3xl mx-auto text-center space-y-8">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary-foreground">
+              Ready to Transform Your Fundraising?
+            </h2>
+            <p className="text-xl text-primary-foreground/90">
+              Join hundreds of organizations already using Sponsorly to reach their goals faster
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+              <Button 
+                size="lg"
+                variant="secondary"
+                onClick={() => navigate('/signup')}
+                className="gap-2 text-lg px-8 py-6"
+              >
+                <GraduationCap className="h-5 w-5" />
+                Start as a School
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              <Button 
+                size="lg"
+                variant="outline"
+                onClick={() => navigate('/signup')}
+                className="gap-2 text-lg px-8 py-6 bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+              >
+                <Building2 className="h-5 w-5" />
+                Start as a Non-Profit
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex flex-col items-center gap-4 pt-8">
+              <div className="flex items-center gap-2 text-primary-foreground/90">
+                <CheckCircle className="h-5 w-5" />
+                <span>No credit card required</span>
+              </div>
+              <div className="flex items-center gap-2 text-primary-foreground/90">
+                <CheckCircle className="h-5 w-5" />
+                <span>Set up in under 5 minutes</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-4">
-        <div className="container mx-auto px-6 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Sponsorly™</p>
-          <div className="flex items-center space-x-6">
-            <a 
-              href="#" 
-              className="bg-muted-foreground/10 hover:bg-primary hover:text-primary-foreground p-2 rounded-full transition-all duration-200"
-              aria-label="Facebook"
-            >
-              <Facebook className="h-4 w-4 fill-current" />
-            </a>
-            <a 
-              href="#" 
-              className="bg-muted-foreground/10 hover:bg-primary hover:text-primary-foreground p-2 rounded-full transition-all duration-200"
-              aria-label="LinkedIn"
-            >
-              <Linkedin className="h-4 w-4 fill-current" />
-            </a>
+      <footer className="border-t bg-accent/30 py-12">
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div className="col-span-2 space-y-4">
+              <SponsorlyLogo variant="full" />
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Empowering schools and non-profits to raise funds efficiently and transparently.
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold text-foreground mb-4">Product</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><a href="#" className="hover:text-foreground transition-colors">Features</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">Pricing</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">Security</a></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold text-foreground mb-4">Company</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><a href="#" className="hover:text-foreground transition-colors">About</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">Contact</a></li>
+                <li><a href="#" className="hover:text-foreground transition-colors">Privacy</a></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="border-t pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-muted-foreground">
+              © 2024 Sponsorly™. All rights reserved.
+            </p>
+            <div className="flex items-center gap-4">
+              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Terms
+              </a>
+              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Privacy
+              </a>
+            </div>
           </div>
         </div>
       </footer>
