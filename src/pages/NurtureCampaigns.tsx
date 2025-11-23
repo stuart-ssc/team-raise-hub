@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import DashboardBreadcrumbs from "@/components/DashboardBreadcrumbs";
+import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -14,8 +14,6 @@ import { toast } from "sonner";
 import { Plus, Play, Pause, Mail, Users, TrendingUp, Clock, Palette, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import DashboardHeader from "@/components/DashboardHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EmailEditorDialog } from "@/components/EmailEditor/EmailEditorDialog";
 
@@ -264,14 +262,8 @@ export default function NurtureCampaigns() {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
-      <DashboardSidebar />
-      
-      <div className={`flex-1 flex flex-col overflow-hidden ${isMobile ? 'pl-16' : ''}`}>
-        <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
-        <DashboardBreadcrumbs segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Nurture Campaigns" }]} />
-
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+    <DashboardPageLayout segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Nurture Campaigns" }]}>
+      <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold">Nurture Campaigns</h1>
@@ -631,8 +623,7 @@ export default function NurtureCampaigns() {
         initialContent={newSequence.email_content}
         onSave={handleVisualEditorSave}
       />
-        </main>
       </div>
-    </div>
+    </DashboardPageLayout>
   );
 }

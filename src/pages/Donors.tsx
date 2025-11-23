@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import DashboardHeader from "@/components/DashboardHeader";
-import DashboardBreadcrumbs from "@/components/DashboardBreadcrumbs";
+import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -212,35 +210,23 @@ const Donors = () => {
 
   if (organizationUserLoading || loading) {
     return (
-      <div className="flex h-screen bg-background">
-        <DashboardSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
-          <DashboardBreadcrumbs segments={[{ label: "Donors" }]} />
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-              <Skeleton className="h-10 w-64" />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-32" />
-                ))}
-              </div>
-              <Skeleton className="h-96" />
-            </div>
-          </main>
+      <DashboardPageLayout segments={[{ label: "Donors" }]}>
+        <div className="max-w-7xl mx-auto space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+          <Skeleton className="h-96" />
         </div>
-      </div>
+      </DashboardPageLayout>
     );
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
-        <DashboardBreadcrumbs segments={[{ label: "Donors" }]} />
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
+    <DashboardPageLayout segments={[{ label: "Donors" }]}>
+      <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
@@ -456,10 +442,8 @@ const Donors = () => {
                 )}
               </CardContent>
             </Card>
-          </div>
-        </main>
       </div>
-    </div>
+    </DashboardPageLayout>
   );
 };
 

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import DashboardHeader from "@/components/DashboardHeader";
+import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { Button } from "@/components/ui/button";
@@ -263,42 +262,38 @@ export default function Campaigns() {
 
   if (organizationUserLoading || loading) {
     return (
-      <div className="min-h-screen flex bg-background">
-        <DashboardSidebar />
-        <div className="flex-1 flex flex-col">
-          <DashboardHeader onGroupClick={handleGroupClick} activeGroup={activeGroup} />
-          <main className="flex-1 p-8">
-            <div>Loading...</div>
-          </main>
-        </div>
-      </div>
+      <DashboardPageLayout 
+        segments={[{ label: "Campaigns" }]}
+        activeGroup={activeGroup}
+        onGroupClick={handleGroupClick}
+      >
+        <div>Loading...</div>
+      </DashboardPageLayout>
     );
   }
 
   if (!canSeeUsers) {
     return (
-      <div className="min-h-screen flex bg-background">
-        <DashboardSidebar />
-        <div className="flex-1 flex flex-col">
-          <DashboardHeader onGroupClick={handleGroupClick} activeGroup={activeGroup} />
-          <main className="flex-1 p-8">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
-              <p>You don't have permission to view campaigns.</p>
-            </div>
-          </main>
+      <DashboardPageLayout 
+        segments={[{ label: "Campaigns" }]}
+        activeGroup={activeGroup}
+        onGroupClick={handleGroupClick}
+      >
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          <p>You don't have permission to view campaigns.</p>
         </div>
-      </div>
+      </DashboardPageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
-      <DashboardSidebar />
-      <div className="flex-1 flex flex-col">
-        <DashboardHeader onGroupClick={handleGroupClick} activeGroup={activeGroup} />
-        <main className="flex-1 p-8">
-          <div className="space-y-8">
+    <DashboardPageLayout 
+      segments={[{ label: "Campaigns" }]}
+      activeGroup={activeGroup}
+      onGroupClick={handleGroupClick}
+    >
+      <div className="space-y-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Campaigns</h1>
               <p className="text-muted-foreground">
@@ -544,8 +539,6 @@ export default function Campaigns() {
               </Table>
             </div>
           </div>
-        </main>
-      </div>
 
           {showAddCampaign && (
             <AddCampaignForm
@@ -574,6 +567,6 @@ export default function Campaigns() {
               manageCampaignId={managingCampaignId}
             />
           )}
-    </div>
+      </DashboardPageLayout>
   );
 }

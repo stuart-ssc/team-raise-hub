@@ -2,9 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import DashboardHeader from "@/components/DashboardHeader";
-import DashboardBreadcrumbs from "@/components/DashboardBreadcrumbs";
+import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -241,30 +239,18 @@ const ThankYouTemplates = () => {
 
   if (organizationUserLoading || loading) {
     return (
-      <div className="flex h-screen bg-background">
-        <DashboardSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
-          <DashboardBreadcrumbs segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Templates" }]} />
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-5xl mx-auto space-y-6">
-              <Skeleton className="h-10 w-64" />
-              <Skeleton className="h-96" />
-            </div>
-          </main>
+      <DashboardPageLayout segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Templates" }]}>
+        <div className="max-w-5xl mx-auto space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-96" />
         </div>
-      </div>
+      </DashboardPageLayout>
     );
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
-        <DashboardBreadcrumbs segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Templates" }]} />
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-5xl mx-auto space-y-6">
+    <DashboardPageLayout segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Templates" }]}>
+      <div className="max-w-5xl mx-auto space-y-6">
             {/* Header */}
             <div>
               <Button
@@ -429,9 +415,7 @@ const ThankYouTemplates = () => {
               )}
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+        </DashboardPageLayout>
   );
 };
 

@@ -2,9 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import DashboardHeader from "@/components/DashboardHeader";
-import DashboardBreadcrumbs from "@/components/DashboardBreadcrumbs";
+import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -173,72 +171,53 @@ const DonorProfile = () => {
 
   if (organizationUserLoading || loading) {
     return (
-      <div className="flex h-screen bg-background">
-        <DashboardSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
-          <DashboardBreadcrumbs 
-            segments={[
-              { label: "Donors", path: "/dashboard/donors" }, 
-              { label: "Loading..." }
-            ]} 
-          />
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-5xl mx-auto space-y-6">
-              <Skeleton className="h-10 w-64" />
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Skeleton className="h-96 lg:col-span-2" />
-                <Skeleton className="h-96" />
-              </div>
-            </div>
-          </main>
+      <DashboardPageLayout 
+        segments={[
+          { label: "Donors", path: "/dashboard/donors" }, 
+          { label: "Loading..." }
+        ]}
+      >
+        <div className="max-w-5xl mx-auto space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Skeleton className="h-96 lg:col-span-2" />
+            <Skeleton className="h-96" />
+          </div>
         </div>
-      </div>
+      </DashboardPageLayout>
     );
   }
 
   if (!donor) {
     return (
-      <div className="flex h-screen bg-background">
-        <DashboardSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
-          <DashboardBreadcrumbs 
-            segments={[
-              { label: "Donors", path: "/dashboard/donors" }, 
-              { label: "Not Found" }
-            ]} 
-          />
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-5xl mx-auto">
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">Donor not found</p>
-                  <Button onClick={() => navigate("/dashboard/donors")} className="mt-4">
-                    Back to Donors
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </main>
+      <DashboardPageLayout 
+        segments={[
+          { label: "Donors", path: "/dashboard/donors" }, 
+          { label: "Not Found" }
+        ]}
+      >
+        <div className="max-w-5xl mx-auto">
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">Donor not found</p>
+              <Button onClick={() => navigate("/dashboard/donors")} className="mt-4">
+                Back to Donors
+              </Button>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </DashboardPageLayout>
     );
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <DashboardSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
-        <DashboardBreadcrumbs 
-          segments={[
-            { label: "Donors", path: "/dashboard/donors" }, 
-            { label: donor.first_name && donor.last_name ? `${donor.first_name} ${donor.last_name}` : donor.email }
-          ]} 
-        />
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-5xl mx-auto space-y-6">
+    <DashboardPageLayout 
+      segments={[
+        { label: "Donors", path: "/dashboard/donors" }, 
+        { label: donor.first_name && donor.last_name ? `${donor.first_name} ${donor.last_name}` : donor.email }
+      ]}
+    >
+      <div className="max-w-5xl mx-auto space-y-6">
             {/* Header */}
             <div>
               <Button
@@ -440,11 +419,9 @@ const DonorProfile = () => {
                   </CardContent>
                 </Card>
               </div>
-            </div>
-          </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </DashboardPageLayout>
   );
 };
 
