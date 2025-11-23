@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
+import DashboardBreadcrumbs from "@/components/DashboardBreadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -176,6 +177,12 @@ const DonorProfile = () => {
         <DashboardSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
+          <DashboardBreadcrumbs 
+            segments={[
+              { label: "Donors", path: "/dashboard/donors" }, 
+              { label: "Loading..." }
+            ]} 
+          />
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-5xl mx-auto space-y-6">
               <Skeleton className="h-10 w-64" />
@@ -196,6 +203,12 @@ const DonorProfile = () => {
         <DashboardSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
+          <DashboardBreadcrumbs 
+            segments={[
+              { label: "Donors", path: "/dashboard/donors" }, 
+              { label: "Not Found" }
+            ]} 
+          />
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-5xl mx-auto">
               <Card>
@@ -218,6 +231,12 @@ const DonorProfile = () => {
       <DashboardSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
+        <DashboardBreadcrumbs 
+          segments={[
+            { label: "Donors", path: "/dashboard/donors" }, 
+            { label: donor.first_name && donor.last_name ? `${donor.first_name} ${donor.last_name}` : donor.email }
+          ]} 
+        />
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-5xl mx-auto space-y-6">
             {/* Header */}

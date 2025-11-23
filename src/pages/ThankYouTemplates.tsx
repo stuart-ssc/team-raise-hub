@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
+import DashboardBreadcrumbs from "@/components/DashboardBreadcrumbs";
+import DonorSubNav from "@/components/DonorSubNav";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -244,6 +246,8 @@ const ThankYouTemplates = () => {
         <DashboardSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
+          <DashboardBreadcrumbs segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Templates" }]} />
+          <DonorSubNav />
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-5xl mx-auto space-y-6">
               <Skeleton className="h-10 w-64" />
@@ -260,6 +264,8 @@ const ThankYouTemplates = () => {
       <DashboardSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
+        <DashboardBreadcrumbs segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Templates" }]} />
+        <DonorSubNav />
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-5xl mx-auto space-y-6">
             {/* Header */}
