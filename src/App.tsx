@@ -30,6 +30,7 @@ import ABTestManagement from "./pages/SystemAdmin/ABTestManagement";
 import DonorSegmentation from "./pages/DonorSegmentation";
 import NurtureCampaigns from "./pages/NurtureCampaigns";
 import InstallApp from "./pages/InstallApp";
+import NativeFeatures from "./pages/NativeFeatures";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
@@ -70,6 +71,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/install" element={<InstallApp />} />
+        <Route path="/native-features" element={<ProtectedRoute><NativeFeatures /></ProtectedRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path="/c/:slug" element={<CampaignLanding />} />
