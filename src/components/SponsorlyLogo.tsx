@@ -3,8 +3,8 @@ const SponsorlyLogo = ({ variant = 'full', className = "" }: {
   className?: string 
 }) => {
   const logoSrc = variant === 'full' 
-    ? '/lovable-uploads/Sponsorly-Logo.jpg'
-    : '/lovable-uploads/Sponsorly-Mark.jpg';
+    ? '/lovable-uploads/Sponsorly-Logo-White.png'
+    : '/lovable-uploads/Sponsorly-Mark-White.png';
     
   return (
     <div className={`flex items-center ${className}`}>
