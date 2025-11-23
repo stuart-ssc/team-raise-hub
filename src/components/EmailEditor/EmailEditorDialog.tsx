@@ -44,6 +44,8 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
   const [testEmailAddress, setTestEmailAddress] = useState("");
   const [deviceView, setDeviceView] = useState<"desktop" | "mobile">("desktop");
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [history, setHistory] = useState<EmailBlockType[][]>([]);
+  const [redoStack, setRedoStack] = useState<EmailBlockType[][]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -58,11 +60,59 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
     }
   }, [open, blocks.length]);
 
+  // Save to history before changes
+  const saveHistory = () => {
+    setHistory(prev => [...prev, JSON.parse(JSON.stringify(blocks))]);
+    setRedoStack([]);
+  };
+
+  // Undo function
+  const undo = () => {
+    if (history.length === 0) {
+      toast.error("Nothing to undo");
+      return;
+    }
+
+    const previousState = history[history.length - 1];
+    setRedoStack(prev => [...prev, JSON.parse(JSON.stringify(blocks))]);
+    setHistory(prev => prev.slice(0, -1));
+    setBlocks(previousState);
+    toast.success("Undone");
+  };
+
+  // Redo function
+  const redo = () => {
+    if (redoStack.length === 0) {
+      toast.error("Nothing to redo");
+      return;
+    }
+
+    const nextState = redoStack[redoStack.length - 1];
+    setHistory(prev => [...prev, JSON.parse(JSON.stringify(blocks))]);
+    setRedoStack(prev => prev.slice(0, -1));
+    setBlocks(nextState);
+    toast.success("Redone");
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     if (!open || showLayoutSelection) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + Z to undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+
+      // Ctrl/Cmd + Shift + Z to redo
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
       // Ctrl/Cmd + S to save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
@@ -92,7 +142,7 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, showLayoutSelection, selectedBlockId, blocks]);
+  }, [open, showLayoutSelection, selectedBlockId, blocks, history, redoStack]);
 
   // Fetch custom layouts
   const { data: customLayouts } = useQuery({
@@ -165,6 +215,7 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
   });
 
   const loadLayout = (layoutId: string, isCustom = false) => {
+    saveHistory();
     if (isCustom) {
       const customLayout = customLayouts?.find(l => l.id === layoutId);
       if (customLayout) {
@@ -202,6 +253,7 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
+      saveHistory();
       setBlocks((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
@@ -249,12 +301,14 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
   });
 
   const startFromScratch = () => {
+    saveHistory();
     setBlocks([]);
     setSelectedLayoutId(null);
     setShowLayoutSelection(false);
   };
 
   const addBlock = (type: string) => {
+    saveHistory();
     const newBlock: EmailBlockType = {
       id: `block-${Date.now()}`,
       type: type as any,
@@ -265,12 +319,14 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
   };
 
   const updateBlock = (id: string, updates: Partial<EmailBlockType>) => {
+    saveHistory();
     setBlocks(blocks.map(block => 
       block.id === id ? { ...block, ...updates } : block
     ));
   };
 
   const deleteBlock = (id: string) => {
+    saveHistory();
     setBlocks(blocks.filter(block => block.id !== id));
     if (selectedBlockId === id) {
       setSelectedBlockId(null);
@@ -281,6 +337,7 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
     const blockIndex = blocks.findIndex(block => block.id === id);
     if (blockIndex === -1) return;
     
+    saveHistory();
     const blockToDuplicate = blocks[blockIndex];
     const duplicatedBlock: EmailBlockType = {
       ...blockToDuplicate,
@@ -547,6 +604,14 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
                     <Card className="p-3 bg-muted/50">
                       <p className="text-xs font-semibold mb-2">Keyboard Shortcuts</p>
                       <div className="space-y-1.5 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <kbd className="px-1.5 py-0.5 bg-background rounded text-xs border">Ctrl+Z</kbd>
+                          <span>Undo</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <kbd className="px-1.5 py-0.5 bg-background rounded text-xs border">Ctrl+Shift+Z</kbd>
+                          <span>Redo</span>
+                        </div>
                         <div className="flex items-center gap-2">
                           <kbd className="px-1.5 py-0.5 bg-background rounded text-xs border">Ctrl+S</kbd>
                           <span>Save</span>
