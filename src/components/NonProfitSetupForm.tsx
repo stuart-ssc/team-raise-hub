@@ -25,6 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { DocumentUpload } from "@/components/DocumentUpload";
 
 const nonprofitSchema = z.object({
   name: z.string()
@@ -78,6 +79,7 @@ interface NonProfitSetupFormProps {
 
 export const NonProfitSetupForm = ({ userId, onComplete, onBack }: NonProfitSetupFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verificationDocUrl, setVerificationDocUrl] = useState<string>("");
   const { toast } = useToast();
 
   const form = useForm<NonProfitFormData>({
@@ -112,6 +114,12 @@ export const NonProfitSetupForm = ({ userId, onComplete, onBack }: NonProfitSetu
           email: data.email,
           requires_verification: data.tax_deductible,
           verification_status: data.tax_deductible ? 'pending' : 'approved',
+          verification_documents: data.tax_deductible && verificationDocUrl 
+            ? [{ url: verificationDocUrl, uploaded_at: new Date().toISOString() }] 
+            : null,
+          verification_submitted_at: data.tax_deductible && verificationDocUrl 
+            ? new Date().toISOString() 
+            : null,
         })
         .select()
         .single();
@@ -366,6 +374,25 @@ export const NonProfitSetupForm = ({ userId, onComplete, onBack }: NonProfitSetu
               </FormItem>
             )}
           />
+
+          {/* Verification Document Upload */}
+          {form.watch("tax_deductible") && (
+            <div className="space-y-2">
+              <DocumentUpload
+                userId={userId}
+                onUploadComplete={(url) => {
+                  setVerificationDocUrl(url);
+                }}
+                label="501(c)(3) Status Document *"
+                description="Upload your IRS 501(c)(3) determination letter (PDF, max 10MB)"
+              />
+              {!verificationDocUrl && (
+                <p className="text-sm text-destructive">
+                  Required for tax-deductible donations
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex gap-4">
@@ -380,7 +407,7 @@ export const NonProfitSetupForm = ({ userId, onComplete, onBack }: NonProfitSetu
           </Button>
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || (form.watch("tax_deductible") && !verificationDocUrl)}
             className="flex-1"
           >
             {isSubmitting ? (
