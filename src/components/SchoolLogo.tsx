@@ -1,12 +1,19 @@
 
 
-const SchoolLogo = ({ className = "" }: { className?: string }) => {
+const SchoolLogo = ({ theme = 'dark', className = "" }: { 
+  theme?: 'light' | 'dark';
+  className?: string 
+}) => {
+  const logoSrc = theme === 'light' 
+    ? '/lovable-uploads/Sponsorly-Logo.jpg' 
+    : '/lovable-uploads/Sponsorly-Logo-White.png';
+    
   return (
     <div className={`flex items-center ${className}`}>
       <img 
-        src="/lovable-uploads/54b4c57b-1368-44fd-a957-856926bb41dc.png" 
-        alt="School Sponsor Connect Logo" 
-        className="h-8 w-auto"
+        src={logoSrc} 
+        alt="Sponsorly Logo" 
+        className="h-10 w-auto"
       />
     </div>
   );
