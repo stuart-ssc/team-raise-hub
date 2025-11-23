@@ -264,6 +264,7 @@ export default function Campaigns() {
     return (
       <DashboardPageLayout 
         segments={[{ label: "Campaigns" }]}
+        loading={true}
         activeGroup={activeGroup}
         onGroupClick={handleGroupClick}
       >
