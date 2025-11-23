@@ -32,7 +32,7 @@ import {
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { supabase } from "@/integrations/supabase/client";
-import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { AddUserForm } from "@/components/AddUserForm";
 
 interface User {
@@ -55,62 +55,64 @@ const Users = () => {
   const [selectedGroup, setSelectedGroup] = useState<{id: string, group_name: string} | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddUserForm, setShowAddUserForm] = useState(false);
-  const { schoolUser } = useSchoolUser();
+  const { organizationUser } = useOrganizationUser();
   const navigate = useNavigate();
 
   // Check if user has permission to access this page
-  const authorizedRoles = ["Principal", "Athletic Director", "Coach", "Club Sponsor", "Booster Leader"];
-  const hasAccess = schoolUser?.user_type?.name && authorizedRoles.includes(schoolUser.user_type.name);
+  const permissionLevel = organizationUser?.user_type.permission_level;
+  const hasAccess = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
 
   // Redirect unauthorized users
   useEffect(() => {
-    if (schoolUser && !hasAccess) {
+    if (organizationUser && !hasAccess) {
       navigate("/dashboard");
     }
-  }, [schoolUser, hasAccess, navigate]);
+  }, [organizationUser, hasAccess, navigate]);
 
   // Don't render anything for unauthorized users
-  if (schoolUser && !hasAccess) {
+  if (organizationUser && !hasAccess) {
     return null;
   }
 
   const fetchUsers = async () => {
-    if (!schoolUser) return;
+    if (!organizationUser) return;
 
     try {
       setLoading(true);
       
       // Build the base query with proper joins
       let query = supabase
-        .from("school_user")
+        .from("organization_user")
         .select(`
           id,
           user_id,
           active_user,
-          user_type!inner(name),
-          groups(group_name, group_type!inner(name)),
+          user_type!inner(name, permission_level),
+          groups(group_name),
           rosters(roster_year)
         `);
 
       // Apply role-based filtering
-      if (schoolUser.user_type.name === "Principal") {
-        // Principals see all users for their school
-        query = query.eq("school_id", schoolUser.school_id);
-      } else if (schoolUser.user_type.name === "Athletic Director") {
-        // Athletic Directors see users in sports groups at their school
-        query = query
-          .eq("school_id", schoolUser.school_id)
-          .eq("groups.group_type.name", "Sports Team");
-      } else if (["Coach", "Club Sponsor", "Booster Leader"].includes(schoolUser.user_type.name)) {
-        // These roles see only users in groups they are connected to
-        if (schoolUser.group_id) {
-          query = query.eq("group_id", schoolUser.group_id);
+      const permissionLevel = organizationUser.user_type.permission_level;
+      
+      if (permissionLevel === 'organization_admin') {
+        // Organization admins see all users in their organization
+        query = query.eq("organization_id", organizationUser.organization_id);
+      } else if (permissionLevel === 'program_manager') {
+        // Program managers see only users in groups they are connected to
+        if (organizationUser.group_id) {
+          query = query.eq("group_id", organizationUser.group_id);
         } else {
           // If no group assigned, show empty results
           setUsers([]);
           setLoading(false);
           return;
         }
+      } else {
+        // Other roles don't manage users
+        setUsers([]);
+        setLoading(false);
+        return;
       }
 
       const { data, error } = await query;
@@ -163,10 +165,10 @@ const Users = () => {
   };
 
   useEffect(() => {
-    if (schoolUser) {
+    if (organizationUser) {
       fetchUsers();
     }
-  }, [schoolUser, selectedGroup]);
+  }, [organizationUser, selectedGroup]);
 
   const handleGroupClick = async (groupId: string | null) => {
     if (groupId) {
@@ -185,12 +187,12 @@ const Users = () => {
     }
   };
 
-  const handleUpdateUserStatus = async (schoolUserId: string, newStatus: boolean) => {
+  const handleUpdateUserStatus = async (organizationUserId: string, newStatus: boolean) => {
     try {
       const { error } = await supabase
-        .from("school_user")
+        .from("organization_user")
         .update({ active_user: newStatus })
-        .eq("id", schoolUserId);
+        .eq("id", organizationUserId);
 
       if (error) {
         console.error("Error updating user status:", error);
@@ -444,7 +446,7 @@ const Users = () => {
       <AddUserForm
         open={showAddUserForm}
         onOpenChange={setShowAddUserForm}
-        schoolId={schoolUser?.school_id || ""}
+        organizationId={organizationUser?.organization_id || ""}
         onSuccess={fetchUsers}
       />
     </div>

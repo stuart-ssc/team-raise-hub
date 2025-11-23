@@ -11,7 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Edit } from "lucide-react";
 
@@ -98,7 +98,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
   const [accordionValue, setAccordionValue] = useState<string>("");
   const [slugExists, setSlugExists] = useState(false);
   const [checkingSlug, setCheckingSlug] = useState(false);
-  const { schoolUser } = useSchoolUser();
+  const { organizationUser } = useOrganizationUser();
   const { toast } = useToast();
 
   const campaignForm = useForm<z.infer<typeof campaignSchema>>({
@@ -133,31 +133,32 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
   });
 
   const fetchGroups = async () => {
-    if (!schoolUser) return;
+    if (!organizationUser) return;
 
     try {
       let query = supabase
         .from("groups")
-        .select("id, group_name, school_id")
+        .select("id, group_name, organization_id")
         .eq("status", true);
 
-      // Filter groups based on user role
-      if (schoolUser.user_type.name === 'Principal') {
-        // Principal can see all groups in their school
-        query = query.eq('school_id', schoolUser.school_id);
-      } else if (schoolUser.user_type.name === 'Athletic Director') {
-        // Athletic Director can see sports teams only
-        query = query
-          .eq('school_id', schoolUser.school_id)
-          .in('group_type_id', [/* Add sports group type IDs here */]);
-      } else {
-        // Coach, Club Sponsor, Booster Leader can only create campaigns for their groups
-        if (schoolUser.group_id) {
-          query = query.eq('id', schoolUser.group_id);
+      // Filter groups based on user permission level
+      const permissionLevel = organizationUser.user_type.permission_level;
+      
+      if (permissionLevel === 'organization_admin') {
+        // Organization admins can see all groups in their organization
+        query = query.eq('organization_id', organizationUser.organization_id);
+      } else if (permissionLevel === 'program_manager') {
+        // Program managers can only create campaigns for their groups
+        if (organizationUser.group_id) {
+          query = query.eq('id', organizationUser.group_id);
         } else {
           setGroups([]);
           return;
         }
+      } else {
+        // Other roles cannot create campaigns
+        setGroups([]);
+        return;
       }
 
       const { data, error } = await query;
@@ -313,10 +314,10 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         }
       }
     }
-  }, [open, schoolUser, editCampaign, manageCampaignId]);
+  }, [open, organizationUser, editCampaign, manageCampaignId]);
 
   const onCampaignSubmit = async (values: z.infer<typeof campaignSchema>) => {
-    if (!schoolUser) return;
+    if (!organizationUser) return;
 
     setLoading(true);
     try {
@@ -767,9 +768,9 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
 
               {(() => {
                 // Check if user should see group dropdown
-                const shouldShowGroupDropdown = !schoolUser || 
+                const shouldShowGroupDropdown = !organizationUser || 
                   groups.length !== 1 || 
-                  !['Coach', 'Club Sponsor', 'Booster Leader'].includes(schoolUser.user_type?.name || '');
+                  organizationUser.user_type?.permission_level !== 'program_manager';
 
                 // Auto-set group value if user only has one group and shouldn't see dropdown
                 if (!shouldShowGroupDropdown && groups.length === 1 && !campaignForm.getValues('groupId')) {

@@ -21,7 +21,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import { CreateGroupForm } from "@/components/CreateGroupForm";
 import Rosters from "@/pages/Rosters";
 import { supabase } from "@/integrations/supabase/client";
-import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 
 interface Group {
   id: string;
@@ -43,10 +43,10 @@ const Groups = () => {
   const [showRosters, setShowRosters] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
-  const { schoolUser } = useSchoolUser();
+  const { organizationUser } = useOrganizationUser();
 
   const fetchGroups = async () => {
-    if (!schoolUser) return;
+    if (!organizationUser) return;
 
     try {
       setLoading(true);
@@ -56,31 +56,31 @@ const Groups = () => {
           id,
           group_name,
           status,
-          stripe_account_id,
-          stripe_account_enabled,
-          schools!school_id(school_name),
+          organizations!organization_id(name),
           group_type!group_type_id(name)
         `);
 
       // Apply role-based filtering
-      if (schoolUser.user_type.name === "Principal") {
-        // Principals see all groups for their school
-        query = query.eq("school_id", schoolUser.school_id);
-      } else if (schoolUser.user_type.name === "Athletic Director") {
-        // Athletic Directors see all sports teams at their school
-        query = query
-          .eq("school_id", schoolUser.school_id)
-          .eq("group_type.name", "Sport");
-      } else if (["Coach", "Club Sponsor", "Booster Leader"].includes(schoolUser.user_type.name)) {
-        // These roles see only groups they are connected to
-        if (schoolUser.group_id) {
-          query = query.eq("id", schoolUser.group_id);
+      const permissionLevel = organizationUser.user_type.permission_level;
+      
+      if (permissionLevel === 'organization_admin') {
+        // Organization admins see all groups for their organization
+        query = query.eq("organization_id", organizationUser.organization_id);
+      } else if (permissionLevel === 'program_manager') {
+        // Program managers see only groups they are connected to
+        if (organizationUser.group_id) {
+          query = query.eq("id", organizationUser.group_id);
         } else {
           // If no group assigned, show empty results
           setGroups([]);
           setLoading(false);
           return;
         }
+      } else {
+        // Other roles don't manage groups
+        setGroups([]);
+        setLoading(false);
+        return;
       }
 
       const { data, error } = await query;
@@ -93,11 +93,9 @@ const Groups = () => {
       const formattedGroups: Group[] = (data || []).map((group: any) => ({
         id: group.id,
         group_name: group.group_name,
-        school_name: group.schools.school_name,
+        school_name: group.organizations.name,
         group_type_name: group.group_type.name,
         status: group.status ?? true,
-        stripe_account_id: group.stripe_account_id,
-        stripe_account_enabled: group.stripe_account_enabled,
       }));
 
       setGroups(formattedGroups);
@@ -109,11 +107,11 @@ const Groups = () => {
   };
 
   useEffect(() => {
-    if (schoolUser) {
+    if (organizationUser) {
       fetchGroups();
       createMissingRosters();
     }
-  }, [schoolUser]);
+  }, [organizationUser]);
 
   const createMissingRosters = async () => {
     try {
@@ -332,10 +330,10 @@ const Groups = () => {
                            <TableHead>
                              Group Name
                            </TableHead>
-                           <TableHead>School</TableHead>
+                           <TableHead>Organization</TableHead>
                            <TableHead>Group Type</TableHead>
                            <TableHead>Manage Roster</TableHead>
-                           <TableHead>Stripe Connect</TableHead>
+                           <TableHead>Payment Setup</TableHead>
                            <TableHead>Status</TableHead>
                            <TableHead className="w-12"></TableHead>
                         </TableRow>

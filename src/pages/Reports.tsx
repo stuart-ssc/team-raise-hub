@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,7 +42,7 @@ interface MonthlyData {
 }
 
 const Reports = () => {
-  const { schoolUser, loading: schoolUserLoading } = useSchoolUser();
+  const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const [campaigns, setCampaigns] = useState<CampaignReport[]>([]);
   const [stats, setStats] = useState<ReportStats>({
     totalCampaigns: 0,
@@ -78,15 +78,15 @@ const Reports = () => {
   };
 
   const fetchGroups = async () => {
-    if (!schoolUser?.school_id) return;
+    if (!organizationUser?.organization_id) return;
     
-    const userRole = schoolUser.user_type?.name;
+    const permissionLevel = organizationUser.user_type?.permission_level;
     
-    if (["Principal", "Athletic Director"].includes(userRole)) {
+    if (permissionLevel === 'organization_admin' || permissionLevel === 'program_manager') {
       const { data, error } = await supabase
         .from("groups")
         .select("id, group_name")
-        .eq("school_id", schoolUser.school_id)
+        .eq("organization_id", organizationUser.organization_id)
         .eq("status", true)
         .order("group_name");
         
@@ -95,34 +95,34 @@ const Reports = () => {
         return;
       }
       setGroups(data || []);
-    } else if (["Coach", "Club Sponsor", "Booster Leader", "Team Player", "Club Participant", "Family Member"].includes(userRole)) {
-      if (schoolUser.groups) {
-        setGroups([schoolUser.groups]);
+    } else if (permissionLevel === 'participant' || permissionLevel === 'supporter') {
+      if (organizationUser.groups) {
+        setGroups([organizationUser.groups]);
       }
     }
   };
 
   useEffect(() => {
-    if (schoolUser?.school_id) {
+    if (organizationUser?.organization_id) {
       fetchGroups();
       fetchReportData();
     }
-  }, [schoolUser?.school_id]);
+  }, [organizationUser?.organization_id]);
 
   useEffect(() => {
-    if (schoolUser?.school_id) {
+    if (organizationUser?.organization_id) {
       fetchReportData();
     }
   }, [selectedGroup]);
 
   useEffect(() => {
-    if (schoolUser?.school_id) {
+    if (organizationUser?.organization_id) {
       fetchReportData();
     }
   }, [dateRange]);
 
   const fetchReportData = async () => {
-    if (!schoolUser?.school_id) return;
+    if (!organizationUser?.organization_id) return;
 
     setLoading(true);
     try {
@@ -141,10 +141,10 @@ const Reports = () => {
           groups!inner(
             id,
             group_name,
-            school_id
+            organization_id
           )
         `)
-        .eq("groups.school_id", schoolUser.school_id)
+        .eq("groups.organization_id", organizationUser.organization_id)
         .order("created_at", { ascending: false });
 
       // Filter by selected group if one is selected
@@ -203,7 +203,7 @@ const Reports = () => {
             )
           )
         `)
-        .eq("campaigns.groups.school_id", schoolUser.school_id)
+        .eq("campaigns.groups.organization_id", organizationUser.organization_id)
         .in("status", ["succeeded", "completed"])
         .order("created_at", { ascending: true });
 
@@ -258,7 +258,7 @@ const Reports = () => {
             )
           )
         `)
-        .eq("campaigns.groups.school_id", schoolUser.school_id)
+        .eq("campaigns.groups.organization_id", organizationUser.organization_id)
         .in("status", ["succeeded", "completed"]);
 
       // Filter by selected group if one is selected
@@ -371,7 +371,7 @@ const Reports = () => {
 
   const activeGroup = selectedGroup ? groups.find(g => g.id === selectedGroup) : null;
 
-  if (schoolUserLoading || loading) {
+  if (organizationUserLoading || loading) {
     return (
       <div className="flex h-screen bg-background">
         <DashboardSidebar />

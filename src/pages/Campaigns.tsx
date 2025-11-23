@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { supabase } from "@/integrations/supabase/client";
-import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,26 +44,26 @@ export default function Campaigns() {
   const [showAddCampaign, setShowAddCampaign] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [managingCampaignId, setManagingCampaignId] = useState<string | null>(null);
-  const { schoolUser, loading: schoolUserLoading } = useSchoolUser();
+  const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { toast } = useToast();
 
-  const authorizedRoles = ['Principal', 'Athletic Director', 'Coach', 'Club Sponsor', 'Booster Leader'];
-  const canSeeUsers = schoolUser?.user_type.name && authorizedRoles.includes(schoolUser.user_type.name);
+  const permissionLevel = organizationUser?.user_type.permission_level;
+  const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
 
   const handleGroupClick = (groupId: string | null) => {
     setSelectedGroup(groupId);
   };
 
   const fetchGroups = async () => {
-    if (!schoolUser?.school_id) return;
+    if (!organizationUser?.organization_id) return;
     
-    const userRole = schoolUser.user_type?.name;
+    const permissionLevel = organizationUser.user_type?.permission_level;
     
-    if (["Principal", "Athletic Director"].includes(userRole)) {
+    if (permissionLevel === 'organization_admin') {
       const { data, error } = await supabase
         .from("groups")
         .select("id, group_name")
-        .eq("school_id", schoolUser.school_id)
+        .eq("organization_id", organizationUser.organization_id)
         .eq("status", true)
         .order("group_name");
         
@@ -72,21 +72,21 @@ export default function Campaigns() {
         return;
       }
       setGroups(data || []);
-    } else if (["Coach", "Club Sponsor", "Booster Leader", "Team Player", "Club Participant", "Family Member"].includes(userRole)) {
-      if (schoolUser.groups) {
-        setGroups([schoolUser.groups]);
+    } else if (permissionLevel === 'program_manager' || permissionLevel === 'participant' || permissionLevel === 'supporter') {
+      if (organizationUser.groups) {
+        setGroups([organizationUser.groups]);
       }
     }
   };
 
   const fetchCampaigns = async () => {
-    if (!schoolUser) {
-      console.log("No school user found");
+    if (!organizationUser) {
+      console.log("No organization user found");
       setLoading(false);
       return;
     }
 
-    console.log("Fetching campaigns for school user:", schoolUser);
+    console.log("Fetching campaigns for organization user:", organizationUser);
 
     try {
       let query = supabase
@@ -96,7 +96,7 @@ export default function Campaigns() {
           groups!inner(
             id,
             group_name,
-            school_id
+            organization_id
           ),
           campaign_type(
             id,
@@ -105,24 +105,26 @@ export default function Campaigns() {
         `);
 
       // Apply role-based filtering
-      if (schoolUser.user_type.name === 'Principal') {
-        // Principal can see all campaigns for their school
-        query = query.eq('groups.school_id', schoolUser.school_id);
-      } else if (schoolUser.user_type.name === 'Athletic Director') {
-        // Athletic Director can see campaigns for sports teams only
-        query = query
-          .eq('groups.school_id', schoolUser.school_id)
-          .in('groups.group_type_id', [/* Add sports group type IDs here */]);
-      } else {
-        // Coach, Club Sponsor, Booster Leader can see campaigns for their groups only
-        if (schoolUser.group_id) {
-          query = query.eq('group_id', schoolUser.group_id);
+      const permissionLevel = organizationUser.user_type.permission_level;
+      
+      if (permissionLevel === 'organization_admin') {
+        // Organization admins can see all campaigns for their organization
+        query = query.eq('groups.organization_id', organizationUser.organization_id);
+      } else if (permissionLevel === 'program_manager') {
+        // Program managers can see campaigns for their groups only
+        if (organizationUser.group_id) {
+          query = query.eq('group_id', organizationUser.group_id);
         } else {
           // If no group assigned, show no campaigns
           setCampaigns([]);
           setLoading(false);
           return;
         }
+      } else {
+        // Other roles don't manage campaigns
+        setCampaigns([]);
+        setLoading(false);
+        return;
       }
 
       // Apply selected group filter if set
@@ -242,21 +244,21 @@ export default function Campaigns() {
   });
 
   useEffect(() => {
-    if (!schoolUserLoading && schoolUser) {
+    if (!organizationUserLoading && organizationUser) {
       fetchGroups();
       fetchCampaigns();
     }
-  }, [schoolUser, schoolUserLoading]);
+  }, [organizationUser, organizationUserLoading]);
 
   useEffect(() => {
-    if (schoolUser) {
+    if (organizationUser) {
       fetchCampaigns();
     }
   }, [selectedGroup]);
 
   const activeGroup = selectedGroup ? groups.find(g => g.id === selectedGroup) : null;
 
-  if (schoolUserLoading || loading) {
+  if (organizationUserLoading || loading) {
     return (
       <div className="min-h-screen flex bg-background">
         <DashboardSidebar />

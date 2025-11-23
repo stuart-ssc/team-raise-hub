@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
-import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useNavigate } from "react-router-dom";
+import { getLabel } from "@/lib/terminology";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -22,7 +23,7 @@ interface DashboardHeaderProps {
 
 const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHeaderProps) => {
   const { signOut, user } = useAuth();
-  const { schoolUser } = useSchoolUser();
+  const { organizationUser } = useOrganizationUser();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
@@ -51,40 +52,31 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
     fetchProfile();
   }, [user]);
 
-  // Fetch groups based on user role
+  // Fetch groups based on user permission level
   useEffect(() => {
     const fetchGroups = async () => {
-      if (!schoolUser) return;
+      if (!organizationUser) return;
 
-      const userRole = schoolUser.user_type.name;
+      const permissionLevel = organizationUser.user_type.permission_level;
       
-      if (userRole === "Principal") {
-        // Principal sees all groups for their school
+      if (permissionLevel === 'organization_admin') {
+        // Organization admins see all groups in their organization
         const { data } = await supabase
           .from("groups")
           .select("id, group_name")
-          .eq("school_id", schoolUser.school_id);
+          .eq("organization_id", organizationUser.organization_id);
         
         setGroups(data || []);
-      } else if (userRole === "Athletic Director") {
-        // Athletic Director sees all sports teams
-        const { data } = await supabase
-          .from("groups")
-          .select("id, group_name, group_type!inner(name)")
-          .eq("school_id", schoolUser.school_id)
-          .eq("group_type.name", "Sports Team");
-        
-        setGroups(data || []);
-      } else if (["Coach", "Club Sponsor", "Booster Leader", "Team Player", "Club Participant", "Family Member"].includes(userRole)) {
+      } else if (permissionLevel === 'program_manager' || permissionLevel === 'participant' || permissionLevel === 'supporter') {
         // These roles only see groups they're connected to
-        if (schoolUser.groups) {
-          setGroups([schoolUser.groups]);
+        if (organizationUser.groups) {
+          setGroups([organizationUser.groups]);
         }
       }
     };
 
     fetchGroups();
-  }, [schoolUser]);
+  }, [organizationUser]);
 
   const handleLogout = async () => {
     await signOut();
@@ -93,9 +85,13 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
   return (
     <header className="bg-background px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div className="flex flex-col gap-1">
-        <h1 id="school-name-title" className="text-xl md:text-3xl font-bold text-foreground">{schoolUser?.schools?.school_name || "School"}</h1>
+        <h1 id="school-name-title" className="text-xl md:text-3xl font-bold text-foreground">
+          {organizationUser?.organization?.name || "Organization"}
+        </h1>
          <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-3">
-           <span className="text-muted-foreground text-sm md:text-base">Teams/Groups:</span>
+           <span className="text-muted-foreground text-sm md:text-base">
+             {organizationUser?.organization ? getLabel(organizationUser.organization.organization_type, 'programs') : 'Programs'}:
+           </span>
            <Badge 
              variant={!activeGroup ? "default" : "secondary"}
              className={`text-xs md:text-sm ${showRosters ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}

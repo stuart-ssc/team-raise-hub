@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 
 const createGroupSchema = z.object({
   groupName: z.string().min(1, "Group name is required"),
@@ -58,7 +58,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { schoolUser } = useSchoolUser();
+  const { organizationUser } = useOrganizationUser();
 
   const form = useForm<CreateGroupFormData>({
     resolver: zodResolver(createGroupSchema),
@@ -147,10 +147,10 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
   };
 
   const onSubmit = async (data: CreateGroupFormData) => {
-    if (!schoolUser) {
+    if (!organizationUser) {
       toast({
         title: "Error",
-        description: "School user information not found",
+        description: "Organization user information not found",
         variant: "destructive",
       });
       return;
@@ -216,7 +216,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
             group_name: data.groupName,
             website_url: data.websiteAddress || null,
             group_type_id: data.groupTypeId,
-            school_id: schoolUser.school_id,
+            organization_id: organizationUser.organization_id,
             logo_url: logoUrl,
           });
 
