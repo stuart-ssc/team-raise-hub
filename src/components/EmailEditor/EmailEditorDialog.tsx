@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -15,7 +16,7 @@ import { EmailEditorProps, EmailBlock as EmailBlockType } from "./types";
 import { BlockToolbar } from "./BlockToolbar";
 import { EmailBlock } from "./EmailBlock";
 import { emailLayouts } from "./EmailLayoutTemplates";
-import { Eye, Sparkles, Save, Trash2 } from "lucide-react";
+import { Eye, Sparkles, Save, Trash2, Send, Monitor, Smartphone } from "lucide-react";
 
 interface CustomLayout {
   id: string;
@@ -37,6 +38,9 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
   const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
+  const [sendTestDialogOpen, setSendTestDialogOpen] = useState(false);
+  const [testEmailAddress, setTestEmailAddress] = useState("");
+  const [deviceView, setDeviceView] = useState<"desktop" | "mobile">("desktop");
 
   useEffect(() => {
     if (open) {
@@ -147,6 +151,42 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
       deleteTemplateMutation.mutate(templateId);
     }
   };
+
+  // Send test email mutation
+  const sendTestEmailMutation = useMutation({
+    mutationFn: async () => {
+      if (!testEmailAddress.trim()) {
+        throw new Error("Please enter an email address");
+      }
+
+      if (!subject.trim()) {
+        throw new Error("Please enter a subject line");
+      }
+
+      if (blocks.length === 0) {
+        throw new Error("Please add some email content");
+      }
+
+      const htmlContent = generateHTML();
+      
+      const { error } = await supabase.functions.invoke("send-test-email", {
+        body: {
+          recipientEmail: testEmailAddress,
+          subject: subject,
+          htmlContent: htmlContent,
+        },
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setSendTestDialogOpen(false);
+      toast.success("Test email sent successfully!");
+    },
+    onError: (error) => {
+      toast.error("Failed to send test email: " + error.message);
+    },
+  });
 
   const startFromScratch = () => {
     setBlocks([]);
@@ -452,14 +492,44 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
                 </div>
               </TabsContent>
 
-              <TabsContent value="preview" className="h-[calc(90vh-350px)]">
-                <ScrollArea className="h-full border rounded-lg">
+            <TabsContent value="preview" className="h-[calc(90vh-350px)]">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm">Device Preview:</Label>
+                  <ToggleGroup type="single" value={deviceView} onValueChange={(value) => value && setDeviceView(value as "desktop" | "mobile")}>
+                    <ToggleGroupItem value="desktop" aria-label="Desktop view">
+                      <Monitor className="h-4 w-4 mr-2" />
+                      Desktop
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="mobile" aria-label="Mobile view">
+                      <Smartphone className="h-4 w-4 mr-2" />
+                      Mobile
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setSendTestDialogOpen(true)}
+                  disabled={blocks.length === 0 || !subject.trim()}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Test Email
+                </Button>
+              </div>
+              <ScrollArea className="h-[calc(100%-60px)] border rounded-lg">
+                <div 
+                  className="bg-muted/30 flex items-center justify-center p-8"
+                  style={{ minHeight: "100%" }}
+                >
                   <div 
-                    className="bg-white"
+                    className={`bg-white shadow-lg transition-all ${
+                      deviceView === "mobile" ? "max-w-[375px]" : "max-w-[600px]"
+                    } w-full`}
                     dangerouslySetInnerHTML={{ __html: generateHTML() }}
                   />
-                </ScrollArea>
-              </TabsContent>
+                </div>
+              </ScrollArea>
+            </TabsContent>
             </Tabs>
 
             <div className="flex justify-between items-center">
@@ -516,6 +586,44 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
                 disabled={!templateName.trim() || saveTemplateMutation.isPending}
               >
                 {saveTemplateMutation.isPending ? "Saving..." : "Save Template"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Test Email Dialog */}
+      <Dialog open={sendTestDialogOpen} onOpenChange={setSendTestDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Test Email</DialogTitle>
+            <DialogDescription>
+              Send a test email to preview how it will look in your inbox
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Recipient Email Address</Label>
+              <Input
+                type="email"
+                value={testEmailAddress}
+                onChange={(e) => setTestEmailAddress(e.target.value)}
+                placeholder="your.email@example.com"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                The subject will be prefixed with [TEST]
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSendTestDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => sendTestEmailMutation.mutate()}
+                disabled={!testEmailAddress.trim() || sendTestEmailMutation.isPending}
+              >
+                <Send className="mr-2 h-4 w-4" />
+                {sendTestEmailMutation.isPending ? "Sending..." : "Send Test"}
               </Button>
             </div>
           </div>
