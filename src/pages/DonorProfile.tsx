@@ -218,6 +218,7 @@ const DonorProfile = () => {
         { label: donor.first_name && donor.last_name ? `${donor.first_name} ${donor.last_name}` : donor.email }
       ]}
     >
+      {(activeGroup) => (
       <div className="max-w-5xl mx-auto space-y-6">
             {/* Header */}
             <div>
@@ -422,6 +423,7 @@ const DonorProfile = () => {
               </div>
         </div>
       </div>
+      )}
     </DashboardPageLayout>
   );
 };

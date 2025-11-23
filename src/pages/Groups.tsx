@@ -230,6 +230,7 @@ const Groups = () => {
       onGroupClick={handleGroupClick}
       showRosters={showRosters}
     >
+      {(activeGroup) => (
       <div className="space-y-6">
 
             {showRosters && selectedGroup ? (
@@ -394,6 +395,7 @@ const Groups = () => {
               </div>
             )}
           </div>
+      )}
       </DashboardPageLayout>
   );
 };

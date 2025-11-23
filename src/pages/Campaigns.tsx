@@ -291,9 +291,8 @@ export default function Campaigns() {
   return (
     <DashboardPageLayout 
       segments={[{ label: "Campaigns" }]}
-      activeGroup={activeGroup}
-      onGroupClick={handleGroupClick}
     >
+      {(activeGroup) => (
       <div className="space-y-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Campaigns</h1>
@@ -568,6 +567,8 @@ export default function Campaigns() {
               manageCampaignId={managingCampaignId}
             />
           )}
-      </DashboardPageLayout>
+      </div>
+      )}
+    </DashboardPageLayout>
   );
 }

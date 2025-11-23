@@ -263,6 +263,7 @@ export default function NurtureCampaigns() {
 
   return (
     <DashboardPageLayout segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Nurture Campaigns" }]}>
+      {(activeGroup) => (
       <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
@@ -624,6 +625,7 @@ export default function NurtureCampaigns() {
         onSave={handleVisualEditorSave}
       />
       </div>
+      )}
     </DashboardPageLayout>
   );
 }
