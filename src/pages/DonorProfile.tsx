@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
+import DonorActivityTimeline from "@/components/DonorActivityTimeline";
+import DonorCommunicationHistory from "@/components/DonorCommunicationHistory";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -331,6 +333,12 @@ const DonorProfile = () => {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Activity Timeline */}
+                <DonorActivityTimeline donorId={donor.id} />
+
+                {/* Communication History */}
+                <DonorCommunicationHistory donorEmail={donor.email} />
               </div>
 
               {/* Sidebar */}
