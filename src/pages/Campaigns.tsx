@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { AddCampaignForm } from "@/components/AddCampaignForm";
+import { CampaignPublicationControl } from "@/components/CampaignPublicationControl";
 import { ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Package, X, ExternalLink } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -23,6 +24,7 @@ interface Campaign {
   start_date: string | null;
   end_date: string | null;
   status: boolean;
+  publication_status: string;
   group_name: string | null;
   campaign_type_name: string | null;
   group_id?: string;
@@ -150,6 +152,7 @@ export default function Campaigns() {
         start_date: campaign.start_date,
         end_date: campaign.end_date,
         status: campaign.status,
+        publication_status: campaign.publication_status || 'draft',
         group_name: campaign.groups?.group_name || null,
         campaign_type_name: campaign.campaign_type?.name || null,
         group_id: campaign.group_id,
@@ -406,7 +409,7 @@ export default function Campaigns() {
                         )}
                       </div>
                     </TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Publication Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -448,9 +451,13 @@ export default function Campaigns() {
                           }
                         </TableCell>
                         <TableCell>
-                          <Badge variant={campaign.status ? "default" : "secondary"}>
-                            {campaign.status ? "Active" : "Inactive"}
-                          </Badge>
+                          <CampaignPublicationControl
+                            campaignId={campaign.id}
+                            campaignName={campaign.name}
+                            groupId={campaign.group_id || ""}
+                            currentStatus={campaign.publication_status}
+                            onStatusChange={fetchCampaigns}
+                          />
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -562,6 +569,7 @@ export default function Campaigns() {
                 campaign_type_id: editingCampaign.campaign_type_id || '',
                 slug: editingCampaign.slug || '',
                 image_url: editingCampaign.image_url || null,
+                publication_status: editingCampaign.publication_status || 'draft',
               } : null}
               manageCampaignId={managingCampaignId}
             />
