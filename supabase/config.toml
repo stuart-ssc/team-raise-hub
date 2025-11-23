@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.retry-emails]
 verify_jwt = false
+
+[functions.manage-ab-tests]
+verify_jwt = false
