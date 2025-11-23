@@ -53,3 +53,33 @@ verify_jwt = true
 
 [functions.process-nurture-campaigns]
 verify_jwt = false
+
+[functions.send-verification-email]
+verify_jwt = false
+
+[functions.send-donation-notification]
+verify_jwt = false
+
+[functions.send-test-email]
+verify_jwt = false
+
+[functions.send-notification-digest]
+verify_jwt = false
+
+[functions.track-campaign-view]
+verify_jwt = false
+
+[functions.import-donors]
+verify_jwt = true
+
+[functions.bulk-tag-donors]
+verify_jwt = true
+
+[functions.bulk-email-donors]
+verify_jwt = true
+
+[functions.export-donors-csv]
+verify_jwt = true
+
+[functions.generate-donor-insights]
+verify_jwt = true
