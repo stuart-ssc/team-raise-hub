@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.generate-tax-receipt]
 verify_jwt = false
+
+[functions.get-donor-receipts]
+verify_jwt = false
+
+[functions.download-tax-receipt]
+verify_jwt = false
