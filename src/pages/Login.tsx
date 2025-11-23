@@ -122,7 +122,7 @@ const Login = () => {
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md space-y-8">
           <div>
-            <SchoolLogo className="mb-8" />
+            <SchoolLogo theme="light" className="mb-8" />
             <h1 className="text-3xl font-semibold mb-2">
               {showForgotPassword ? "Reset Password" : "Log in"}
             </h1>
