@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -14,6 +17,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -21,14 +26,35 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, XCircle } from "lucide-react";
+import { 
+  CheckCircle, 
+  XCircle, 
+  FileText, 
+  ExternalLink, 
+  AlertCircle,
+  Clock,
+  Building2,
+  Mail,
+  Phone,
+  MapPin,
+  FileCheck
+} from "lucide-react";
 
 interface PendingOrganization {
   id: string;
   name: string;
   organization_type: 'school' | 'nonprofit';
   email: string;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
   verification_submitted_at: string;
+  verification_documents: any;
+  nonprofits?: {
+    ein: string | null;
+    mission_statement: string | null;
+  };
 }
 
 const VerificationQueue = () => {
@@ -47,8 +73,12 @@ const VerificationQueue = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('organizations')
-      .select('*')
-      .eq('verification_status', 'in_review')
+      .select(`
+        *,
+        nonprofits(ein, mission_statement)
+      `)
+      .eq('verification_status', 'pending')
+      .not('verification_submitted_at', 'is', null)
       .order('verification_submitted_at', { ascending: true });
 
     if (error) {
@@ -67,13 +97,22 @@ const VerificationQueue = () => {
   const handleVerificationAction = async (status: 'approved' | 'rejected') => {
     if (!selectedOrg) return;
 
+    if (status === 'rejected' && !notes.trim()) {
+      toast({
+        title: "Notes required",
+        description: "Please provide notes explaining why the verification was rejected",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setActionLoading(true);
     try {
       const { error } = await supabase.functions.invoke('send-verification-email', {
         body: {
           organizationId: selectedOrg.id,
           status,
-          notes
+          notes: notes.trim() || undefined
         }
       });
 
@@ -81,22 +120,37 @@ const VerificationQueue = () => {
 
       toast({
         title: "Success",
-        description: `Organization ${status === 'approved' ? 'approved' : 'rejected'} successfully`
+        description: `Organization ${status === 'approved' ? 'approved' : 'rejected'} successfully. Email notification sent.`
       });
 
       setSelectedOrg(null);
       setNotes("");
       fetchPendingOrganizations();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing verification:', error);
       toast({
         title: "Error",
-        description: "Failed to process verification",
+        description: error.message || "Failed to process verification",
         variant: "destructive"
       });
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const getDocumentUrl = (documents: any): string | null => {
+    if (!documents) return null;
+    if (Array.isArray(documents) && documents.length > 0) {
+      return documents[0].url;
+    }
+    return null;
+  };
+
+  const getDaysSinceSubmission = (date: string): number => {
+    const submitted = new Date(date);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - submitted.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   return (
@@ -111,53 +165,116 @@ const VerificationQueue = () => {
               <p className="text-muted-foreground">Review and approve organization verifications</p>
             </div>
 
+            {organizations.length > 0 && (
+              <Alert>
+                <Clock className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>{organizations.length}</strong> organization{organizations.length !== 1 ? 's' : ''} pending verification
+                </AlertDescription>
+              </Alert>
+            )}
+
             <Card>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Organization Name</TableHead>
+                      <TableHead>Organization</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Email</TableHead>
+                      <TableHead>Contact</TableHead>
                       <TableHead>Submitted</TableHead>
+                      <TableHead>Documents</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loading ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-4">
-                          Loading...
+                        <TableCell colSpan={6} className="text-center py-8">
+                          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                            <Clock className="h-4 w-4 animate-spin" />
+                            Loading verifications...
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : organizations.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
-                          No pending verifications
+                        <TableCell colSpan={6} className="text-center py-12">
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <FileCheck className="h-12 w-12 opacity-50" />
+                            <p className="font-medium">No pending verifications</p>
+                            <p className="text-sm">All organizations are verified</p>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
-                      organizations.map((org) => (
-                        <TableRow key={org.id}>
-                          <TableCell className="font-medium">{org.name}</TableCell>
-                          <TableCell>
-                            <Badge>{org.organization_type}</Badge>
-                          </TableCell>
-                          <TableCell>{org.email}</TableCell>
-                          <TableCell>
-                            {new Date(org.verification_submitted_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setSelectedOrg(org)}
-                            >
-                              Review
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      organizations.map((org) => {
+                        const daysSince = getDaysSinceSubmission(org.verification_submitted_at);
+                        const hasDocuments = !!getDocumentUrl(org.verification_documents);
+                        
+                        return (
+                          <TableRow key={org.id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{org.name}</div>
+                                {org.city && org.state && (
+                                  <div className="text-sm text-muted-foreground">
+                                    {org.city}, {org.state}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={org.organization_type === 'nonprofit' ? 'default' : 'secondary'}>
+                                {org.organization_type === 'nonprofit' ? 'Non-Profit' : 'School'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div className="flex items-center gap-1">
+                                  <Mail className="h-3 w-3" />
+                                  {org.email}
+                                </div>
+                                {org.phone && (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <Phone className="h-3 w-3" />
+                                    {org.phone}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div>{new Date(org.verification_submitted_at).toLocaleDateString()}</div>
+                                <div className="text-muted-foreground">
+                                  {daysSince} day{daysSince !== 1 ? 's' : ''} ago
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {hasDocuments ? (
+                                <Badge variant="outline" className="gap-1">
+                                  <FileText className="h-3 w-3" />
+                                  Available
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="gap-1">
+                                  <AlertCircle className="h-3 w-3" />
+                                  None
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                onClick={() => setSelectedOrg(org)}
+                              >
+                                Review
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -167,41 +284,195 @@ const VerificationQueue = () => {
         </main>
       </div>
 
-      <Dialog open={!!selectedOrg} onOpenChange={() => setSelectedOrg(null)}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={!!selectedOrg} onOpenChange={() => { setSelectedOrg(null); setNotes(""); }}>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Review Verification: {selectedOrg?.name}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Review: {selectedOrg?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Review organization details and verification documents
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Notes (optional)</label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add notes about this verification..."
-                rows={4}
-              />
+          
+          <ScrollArea className="max-h-[calc(90vh-200px)]">
+            <div className="space-y-6 pr-4">
+              {/* Organization Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Organization Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">Type</div>
+                      <Badge className="mt-1">
+                        {selectedOrg?.organization_type === 'nonprofit' ? 'Non-Profit' : 'School'}
+                      </Badge>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Submitted</div>
+                      <div className="mt-1">
+                        {selectedOrg?.verification_submitted_at 
+                          ? new Date(selectedOrg.verification_submitted_at).toLocaleDateString()
+                          : '—'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <Mail className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                      <div>
+                        <div className="text-muted-foreground">Email</div>
+                        <div>{selectedOrg?.email}</div>
+                      </div>
+                    </div>
+                    
+                    {selectedOrg?.phone && (
+                      <div className="flex items-start gap-2">
+                        <Phone className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                        <div>
+                          <div className="text-muted-foreground">Phone</div>
+                          <div>{selectedOrg.phone}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {(selectedOrg?.city || selectedOrg?.state) && (
+                      <div className="flex items-start gap-2">
+                        <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                        <div>
+                          <div className="text-muted-foreground">Location</div>
+                          <div>
+                            {selectedOrg.city && selectedOrg.city}
+                            {selectedOrg.city && selectedOrg.state && ', '}
+                            {selectedOrg.state && selectedOrg.state}
+                            {selectedOrg.zip && ` ${selectedOrg.zip}`}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Non-Profit Specific Details */}
+              {selectedOrg?.organization_type === 'nonprofit' && selectedOrg.nonprofits && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Non-Profit Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    {selectedOrg.nonprofits.ein && (
+                      <div>
+                        <div className="text-muted-foreground">EIN</div>
+                        <div className="font-mono mt-1">{selectedOrg.nonprofits.ein}</div>
+                      </div>
+                    )}
+                    
+                    {selectedOrg.nonprofits.mission_statement && (
+                      <div>
+                        <div className="text-muted-foreground">Mission Statement</div>
+                        <div className="mt-1 text-foreground/90">
+                          {selectedOrg.nonprofits.mission_statement}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Verification Documents */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Verification Documents</CardTitle>
+                  <CardDescription>
+                    Review uploaded documents to verify organization status
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {getDocumentUrl(selectedOrg?.verification_documents) ? (
+                    <div className="space-y-3">
+                      <Alert>
+                        <FileText className="h-4 w-4" />
+                        <AlertDescription>
+                          501(c)(3) determination letter or equivalent verification document
+                        </AlertDescription>
+                      </Alert>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => {
+                          const url = getDocumentUrl(selectedOrg?.verification_documents);
+                          if (url) window.open(url, '_blank');
+                        }}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        View Verification Document
+                      </Button>
+                    </div>
+                  ) : (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        No verification documents have been uploaded
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Admin Notes */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Reviewer Notes</CardTitle>
+                  <CardDescription>
+                    Add notes about the verification (required for rejection)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Enter notes about this verification review..."
+                    rows={4}
+                    className="resize-none"
+                  />
+                </CardContent>
+              </Card>
             </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => handleVerificationAction('approved')}
-                disabled={actionLoading}
-                className="flex-1"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Approve
-              </Button>
-              <Button
-                onClick={() => handleVerificationAction('rejected')}
-                disabled={actionLoading}
-                variant="destructive"
-                className="flex-1"
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Reject
-              </Button>
-            </div>
-          </div>
+          </ScrollArea>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { setSelectedOrg(null); setNotes(""); }}
+              disabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleVerificationAction('rejected')}
+              disabled={actionLoading}
+              variant="destructive"
+              className="gap-2"
+            >
+              <XCircle className="h-4 w-4" />
+              {actionLoading ? 'Rejecting...' : 'Reject'}
+            </Button>
+            <Button
+              onClick={() => handleVerificationAction('approved')}
+              disabled={actionLoading}
+              className="gap-2"
+            >
+              <CheckCircle className="h-4 w-4" />
+              {actionLoading ? 'Approving...' : 'Approve'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
