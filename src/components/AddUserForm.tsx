@@ -38,11 +38,11 @@ interface Roster {
 interface AddUserFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  schoolId: string;
+  organizationId: string;
   onSuccess: () => void;
 }
 
-export const AddUserForm = ({ open, onOpenChange, schoolId, onSuccess }: AddUserFormProps) => {
+export const AddUserForm = ({ open, onOpenChange, organizationId, onSuccess }: AddUserFormProps) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -60,7 +60,7 @@ export const AddUserForm = ({ open, onOpenChange, schoolId, onSuccess }: AddUser
       fetchUserTypes();
       fetchGroups();
     }
-  }, [open, schoolId]);
+  }, [open, organizationId]);
 
   useEffect(() => {
     if (selectedGroup) {
@@ -86,7 +86,7 @@ export const AddUserForm = ({ open, onOpenChange, schoolId, onSuccess }: AddUser
     const { data, error } = await supabase
       .from("groups")
       .select("id, group_name")
-      .eq("school_id", schoolId)
+      .eq("organization_id", organizationId)
       .eq("status", true)
       .order("group_name");
 
@@ -162,7 +162,7 @@ export const AddUserForm = ({ open, onOpenChange, schoolId, onSuccess }: AddUser
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           userTypeId: selectedUserType,
-          schoolId,
+          organizationId,
           groupId: requiresGroup ? selectedGroup : null,
           rosterId: requiresRoster ? parseInt(selectedRoster) : null
         }

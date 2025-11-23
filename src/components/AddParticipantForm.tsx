@@ -27,13 +27,13 @@ interface Roster {
 interface AddParticipantFormProps {
   groupId: string;
   groupName: string;
-  schoolId: string;
+  organizationId: string;
   rosters: Roster[];
   onBack: () => void;
   onSuccess: () => void;
 }
 
-export const AddParticipantForm = ({ groupId, groupName, schoolId, rosters, onBack, onSuccess }: AddParticipantFormProps) => {
+export const AddParticipantForm = ({ groupId, groupName, organizationId, rosters, onBack, onSuccess }: AddParticipantFormProps) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -85,7 +85,7 @@ export const AddParticipantForm = ({ groupId, groupName, schoolId, rosters, onBa
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           userTypeId: selectedUserType,
-          schoolId,
+          organizationId,
           groupId,
           rosterId: parseInt(selectedRoster)
         }

@@ -11,14 +11,14 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
 import { AddCampaignForm } from "@/components/AddCampaignForm";
-import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 const Dashboard = () => {
   const { user } = useAuth();
-  const { schoolUser, loading } = useSchoolUser();
+  const { organizationUser, loading } = useOrganizationUser();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [showSetupModal, setShowSetupModal] = useState(false);
@@ -32,33 +32,33 @@ const Dashboard = () => {
 
   // Check if user needs to complete organization setup
   useEffect(() => {
-    console.log("Dashboard useEffect - user:", !!user, "loading:", loading, "schoolUser:", !!schoolUser);
-    if (user && !loading && !schoolUser) {
-      console.log("Showing setup modal because no schoolUser found");
+    console.log("Dashboard useEffect - user:", !!user, "loading:", loading, "organizationUser:", !!organizationUser);
+    if (user && !loading && !organizationUser) {
+      console.log("Showing setup modal because no organizationUser found");
       setShowSetupModal(true);
     } else {
       console.log("Not showing setup modal");
       setShowSetupModal(false);
     }
-  }, [user, loading, schoolUser]);
+  }, [user, loading, organizationUser]);
 
-  const handleSetupComplete = (schoolUserData: any) => {
+  const handleSetupComplete = (organizationUserData: any) => {
     setShowSetupModal(false);
-    // This will trigger a refresh in the SchoolUserProvider
+    // This will trigger a refresh in the useOrganizationUser hook
   };
 
   const fetchCampaigns = async () => {
-    if (!schoolUser?.school_id) return;
+    if (!organizationUser?.organization_id) return;
 
     try {
-      // First, get total campaigns (all campaigns) for this school/group to check if any exist
+      // First, get total campaigns (all campaigns) for this organization/group to check if any exist
       let totalQuery = supabase
         .from("campaigns")
         .select(`
           *,
-          groups!inner(id, group_name, school_id)
+          groups!inner(id, group_name, organization_id)
         `)
-        .eq("groups.school_id", schoolUser.school_id);
+        .eq("groups.organization_id", organizationUser.organization_id);
 
       // Filter by selected group if one is selected
       if (selectedGroup && selectedGroup !== "All") {
@@ -79,10 +79,10 @@ const Dashboard = () => {
         .from("campaigns")
         .select(`
           *,
-          groups!inner(id, group_name, school_id),
+          groups!inner(id, group_name, organization_id),
           campaign_type(id, name)
         `)
-        .eq("groups.school_id", schoolUser.school_id)
+        .eq("groups.organization_id", organizationUser.organization_id)
         .eq("status", true) // Only active campaigns
         .order("end_date", { ascending: true }); // Sort by end date, soonest first
 
@@ -105,31 +105,22 @@ const Dashboard = () => {
   };
 
   const fetchGroups = async () => {
-    if (!schoolUser) return;
+    if (!organizationUser) return;
 
-    const userRole = schoolUser.user_type.name;
+    const permissionLevel = organizationUser.user_type.permission_level;
     
-    if (userRole === "Principal") {
-      // Principal sees all groups for their school
+    if (permissionLevel === 'organization_admin') {
+      // Organization admins see all groups for their organization
       const { data } = await supabase
         .from("groups")
         .select("id, group_name")
-        .eq("school_id", schoolUser.school_id);
+        .eq("organization_id", organizationUser.organization_id);
       
       setGroups(data || []);
-    } else if (userRole === "Athletic Director") {
-      // Athletic Director sees all sports teams
-      const { data } = await supabase
-        .from("groups")
-        .select("id, group_name, group_type!inner(name)")
-        .eq("school_id", schoolUser.school_id)
-        .eq("group_type.name", "Sports Team");
-      
-      setGroups(data || []);
-    } else if (["Coach", "Club Sponsor", "Booster Leader", "Team Player", "Club Participant", "Family Member"].includes(userRole)) {
+    } else if (permissionLevel === 'program_manager' || permissionLevel === 'participant' || permissionLevel === 'supporter') {
       // These roles only see groups they're connected to
-      if (schoolUser.groups) {
-        setGroups([schoolUser.groups]);
+      if (organizationUser.groups) {
+        setGroups([organizationUser.groups]);
       }
     }
   };
@@ -140,11 +131,11 @@ const Dashboard = () => {
 
   // Fetch groups and campaigns when component mounts or dependencies change
   useEffect(() => {
-    if (schoolUser?.school_id) {
+    if (organizationUser?.organization_id) {
       fetchGroups();
       fetchCampaigns();
     }
-  }, [schoolUser?.school_id]);
+  }, [organizationUser?.organization_id]);
 
   useEffect(() => {
     fetchCampaigns();

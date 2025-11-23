@@ -3,8 +3,9 @@ import { Home, Users, DollarSign, Target, BarChart3, Menu } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { Button } from "@/components/ui/button";
-import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getLabel } from "@/lib/terminology";
 
 const sidebarItems = [
   { title: "Home", icon: Home, url: "/dashboard", end: true },
@@ -22,11 +23,11 @@ const DashboardSidebar = () => {
     return saved ? JSON.parse(saved) : isMobile;
   });
   const location = useLocation();
-  const { schoolUser } = useSchoolUser();
+  const { organizationUser } = useOrganizationUser();
 
   // Check if user has permission to see Users menu item
-  const authorizedRoles = ["Principal", "Athletic Director", "Coach", "Club Sponsor", "Booster Leader"];
-  const canSeeUsers = schoolUser?.user_type?.name && authorizedRoles.includes(schoolUser.user_type.name);
+  const permissionLevel = organizationUser?.user_type.permission_level;
+  const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
 
   const isActive = (path: string, end?: boolean) => {
     if (end) {
@@ -88,9 +89,18 @@ const DashboardSidebar = () => {
                       ? 'bg-sidebar-primary text-sidebar-primary-foreground'
                       : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                   }`}
+                  title={organizationUser?.organization && item.title === 'Groups' 
+                    ? getLabel(organizationUser.organization.organization_type, 'programs')
+                    : item.title}
                 >
                   <Icon className="h-5 w-5 flex-shrink-0" />
-                  {!isCollapsed && <span className="font-medium">{item.title}</span>}
+                  {!isCollapsed && (
+                    <span className="font-medium">
+                      {organizationUser?.organization && item.title === 'Groups'
+                        ? getLabel(organizationUser.organization.organization_type, 'programs')
+                        : item.title}
+                    </span>
+                  )}
                 </NavLink>
               </li>
             );

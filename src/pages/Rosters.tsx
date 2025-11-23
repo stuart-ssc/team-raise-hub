@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { toast } from "@/hooks/use-toast";
 
 interface SchoolUser {
@@ -79,7 +79,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
   const [loading, setLoading] = useState(true);
   const [showNewRosterForm, setShowNewRosterForm] = useState(false);
   const [showAddParticipantForm, setShowAddParticipantForm] = useState(false);
-  const { schoolUser } = useSchoolUser();
+  const { organizationUser } = useOrganizationUser();
 
   const fetchRosters = async () => {
     if (!selectedGroup) return;
@@ -353,7 +353,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
           <AddParticipantForm
             groupId={selectedGroup.id}
             groupName={selectedGroup.group_name}
-            schoolId={schoolUser?.school_id || ""}
+            organizationId={organizationUser?.organization_id || ""}
             rosters={rosters}
            onBack={() => setShowAddParticipantForm(false)}
            onSuccess={() => {

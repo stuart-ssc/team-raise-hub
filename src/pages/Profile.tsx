@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useSchoolUser } from "@/hooks/useSchoolUser";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -41,7 +41,7 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 const Profile = () => {
   const { user, updatePassword } = useAuth();
-  const { schoolUser } = useSchoolUser();
+  const { organizationUser } = useOrganizationUser();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
@@ -105,10 +105,10 @@ const Profile = () => {
       if (!user) return;
 
       const { data } = await supabase
-        .from("school_user")
+        .from("organization_user")
         .select(`
           *,
-          schools(school_name),
+          organization:organization_id(name),
           groups(group_name, group_type(name)),
           user_type(name),
           rosters(roster_year)
@@ -357,13 +357,13 @@ const Profile = () => {
                         </div>
 
                         <div className="space-y-2">
-                          <Label>School</Label>
-                          <Input value={schoolUser?.schools?.school_name || ""} disabled />
+                          <Label>Organization</Label>
+                          <Input value={organizationUser?.organization?.name || ""} disabled />
                         </div>
 
                         <div className="space-y-2">
                           <Label>Role</Label>
-                          <Input value={schoolUser?.user_type?.name || ""} disabled />
+                          <Input value={organizationUser?.user_type?.name || ""} disabled />
                         </div>
 
                         <div className="space-y-2">
