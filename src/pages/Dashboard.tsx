@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Edit, Package } from "lucide-react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
-import { SchoolUserSetupModal } from "@/components/SchoolUserSetupModal";
+import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
 import { AddCampaignForm } from "@/components/AddCampaignForm";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,7 +30,7 @@ const Dashboard = () => {
   const [editCampaign, setEditCampaign] = useState<any>(null);
   const [manageCampaignId, setManageCampaignId] = useState<string | null>(null);
 
-  // Check if user needs to complete school/group setup
+  // Check if user needs to complete organization setup
   useEffect(() => {
     console.log("Dashboard useEffect - user:", !!user, "loading:", loading, "schoolUser:", !!schoolUser);
     if (user && !loading && !schoolUser) {
@@ -380,9 +380,9 @@ const Dashboard = () => {
         </main>
       </div>
 
-      {/* School User Setup Modal */}
+      {/* Organization Setup Modal */}
       {user && (
-        <SchoolUserSetupModal 
+        <OrganizationSetupModal 
           open={showSetupModal}
           onComplete={handleSetupComplete}
           userId={user.id}
