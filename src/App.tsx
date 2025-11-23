@@ -27,6 +27,7 @@ import VerificationQueue from "./pages/SystemAdmin/VerificationQueue";
 import EmailManagement from "./pages/SystemAdmin/EmailManagement";
 import ABTestManagement from "./pages/SystemAdmin/ABTestManagement";
 import DonorSegmentation from "./pages/DonorSegmentation";
+import NurtureCampaigns from "./pages/NurtureCampaigns";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const AppContent = () => {
         <Route path="/dashboard/donors/:donorId" element={<ProtectedRoute><DonorProfile /></ProtectedRoute>} />
         <Route path="/dashboard/donors/templates" element={<ProtectedRoute><ThankYouTemplates /></ProtectedRoute>} />
         <Route path="/dashboard/donors/segmentation" element={<ProtectedRoute><DonorSegmentation /></ProtectedRoute>} />
+        <Route path="/dashboard/donors/nurture" element={<ProtectedRoute><NurtureCampaigns /></ProtectedRoute>} />
         <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/dashboard/notifications" element={<ProtectedRoute><NotificationHistory /></ProtectedRoute>} />
         <Route path="/dashboard/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
