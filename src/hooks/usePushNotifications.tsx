@@ -5,11 +5,39 @@ import {
   PushNotificationSchema,
   ActionPerformed 
 } from '@capacitor/push-notifications';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 export const usePushNotifications = () => {
   const [token, setToken] = useState<string | null>(null);
   const [isSupported, setIsSupported] = useState(false);
+
+  const registerTokenWithBackend = async (deviceToken: string, platform: 'ios' | 'android') => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.error('No active session');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('register-device-token', {
+        body: {
+          deviceToken,
+          platform,
+          deviceInfo: {
+            appVersion: '1.0.0' // Get from app config
+          }
+        }
+      });
+
+      if (error) throw error;
+      
+      console.log('Device token registered with backend:', data);
+    } catch (error) {
+      console.error('Error registering token with backend:', error);
+    }
+  };
 
   useEffect(() => {
     const initPushNotifications = async () => {
@@ -39,10 +67,16 @@ export const usePushNotifications = () => {
       await PushNotifications.register();
 
       // On success, we should be able to receive notifications
-      PushNotifications.addListener('registration', (token: Token) => {
+      PushNotifications.addListener('registration', async (token: Token) => {
         console.log('Push registration success, token: ' + token.value);
         setToken(token.value);
-        // TODO: Send token to your backend server
+        
+        // Determine platform (iOS or Android)
+        const platform = (navigator.userAgent.toLowerCase().includes('iphone') || 
+                         navigator.userAgent.toLowerCase().includes('ipad')) ? 'ios' : 'android';
+        
+        // Register token with backend
+        await registerTokenWithBackend(token.value, platform);
       });
 
       // Some issue with your setup and push will not work
@@ -70,9 +104,9 @@ export const usePushNotifications = () => {
         console.log('Push notification action performed', notification);
         
         // Handle navigation based on notification data
-        if (notification.notification.data?.route) {
-          // TODO: Navigate to specific route
-          console.log('Navigate to:', notification.notification.data.route);
+        const route = notification.notification.data?.route;
+        if (route) {
+          window.location.href = route;
         }
       });
     };
