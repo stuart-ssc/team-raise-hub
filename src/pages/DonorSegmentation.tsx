@@ -74,16 +74,12 @@ export default function DonorSegmentation() {
   const [emailContent, setEmailContent] = useState("");
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    if (organizationUser?.organization_id) {
-      fetchData();
-    }
-  }, [organizationUser?.organization_id]);
+  // Remove this - will be called from render with activeGroup
 
-  const fetchData = async () => {
+  const fetchData = async (groupId?: string | null) => {
     try {
       setLoading(true);
-      await Promise.all([fetchSegments(), fetchSegmentStats()]);
+      await Promise.all([fetchSegments(), fetchSegmentStats(groupId)]);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -107,16 +103,44 @@ export default function DonorSegmentation() {
     setSegments(data || []);
   };
 
-  const fetchSegmentStats = async () => {
-    const { data, error } = await supabase
-      .from("donor_profiles")
-      .select("rfm_segment, lifetime_value, donation_count")
-      .eq("organization_id", organizationUser?.organization_id);
+  const fetchSegmentStats = async (groupId?: string | null) => {
+    let donorData;
 
-    if (error) throw error;
+    if (groupId) {
+      // Filter donors by group
+      const { data: donorEmails } = await supabase
+        .from("orders")
+        .select("customer_email, campaigns!inner(group_id)")
+        .eq("campaigns.group_id", groupId)
+        .not("customer_email", "is", null);
+
+      const uniqueEmails = [...new Set(donorEmails?.map(o => o.customer_email) || [])];
+      
+      if (uniqueEmails.length === 0) {
+        setSegmentStats([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("donor_profiles")
+        .select("rfm_segment, lifetime_value, donation_count")
+        .eq("organization_id", organizationUser?.organization_id)
+        .in("email", uniqueEmails);
+
+      if (error) throw error;
+      donorData = data;
+    } else {
+      const { data, error } = await supabase
+        .from("donor_profiles")
+        .select("rfm_segment, lifetime_value, donation_count")
+        .eq("organization_id", organizationUser?.organization_id);
+
+      if (error) throw error;
+      donorData = data;
+    }
 
     const stats = Object.keys(SEGMENT_INFO).map(segment => {
-      const donors = data.filter(d => d.rfm_segment === segment);
+      const donors = donorData.filter(d => d.rfm_segment === segment);
       const info = SEGMENT_INFO[segment];
       
       return {
@@ -266,12 +290,14 @@ export default function DonorSegmentation() {
   if (organizationUserLoading || loading) {
     return (
       <DashboardPageLayout segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Segmentation" }]} loading={true}>
+        {() => (
         <div className="space-y-6">
           <Skeleton className="h-12 w-64" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
           </div>
         </div>
+        )}
       </DashboardPageLayout>
     );
   }
@@ -279,6 +305,14 @@ export default function DonorSegmentation() {
   return (
     <>
       <DashboardPageLayout segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Segmentation" }]}>
+      {(activeGroup) => {
+        useEffect(() => {
+          if (organizationUser?.organization_id) {
+            fetchData(activeGroup?.id);
+          }
+        }, [organizationUser?.organization_id, activeGroup?.id]);
+
+        return (
       <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex justify-between items-center">
@@ -473,8 +507,10 @@ export default function DonorSegmentation() {
                 )}
               </TabsContent>
             </Tabs>
-          </div>
-        </DashboardPageLayout>
+      </div>
+        );
+      }}
+      </DashboardPageLayout>
 
         {/* Send Campaign Dialog */}
         <Dialog open={campaignDialogOpen} onOpenChange={setCampaignDialogOpen}>

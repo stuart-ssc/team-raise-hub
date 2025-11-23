@@ -57,16 +57,7 @@ const Donors = () => {
   const [sortBy, setSortBy] = useState<string>("recent");
   const [filterBy, setFilterBy] = useState<string>("all");
 
-  useEffect(() => {
-    if (organizationUser?.organization_id) {
-      fetchDonors();
-      setupRealtimeSubscription();
-    }
-
-    return () => {
-      supabase.channel('donors-updates').unsubscribe();
-    };
-  }, [organizationUser?.organization_id]);
+  // Remove this useEffect - we'll fetch based on activeGroup from DashboardPageLayout
 
   useEffect(() => {
     filterAndSortDonors();
@@ -99,16 +90,39 @@ const Donors = () => {
     return channel;
   };
 
-  const fetchDonors = async () => {
+  const fetchDonors = async (groupId?: string | null) => {
     if (!organizationUser?.organization_id) return;
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("donor_profiles")
         .select("*")
-        .eq("organization_id", organizationUser.organization_id)
-        .order("last_donation_date", { ascending: false, nullsFirst: false });
+        .eq("organization_id", organizationUser.organization_id);
+
+      // If a specific group is selected, filter donors by group
+      if (groupId) {
+        // Subquery to get donor emails who have donated to campaigns in this group
+        const { data: donorEmails, error: emailError } = await supabase
+          .from("orders")
+          .select("customer_email, campaigns!inner(group_id)")
+          .eq("campaigns.group_id", groupId)
+          .not("customer_email", "is", null);
+
+        if (emailError) throw emailError;
+
+        const uniqueEmails = [...new Set(donorEmails?.map(o => o.customer_email) || [])];
+        
+        if (uniqueEmails.length === 0) {
+          setDonors([]);
+          setLoading(false);
+          return;
+        }
+
+        query = query.in("email", uniqueEmails);
+      }
+
+      const { data, error } = await query.order("last_donation_date", { ascending: false, nullsFirst: false });
 
       if (error) throw error;
       setDonors(data || []);
@@ -211,6 +225,7 @@ const Donors = () => {
   if (organizationUserLoading || loading) {
     return (
       <DashboardPageLayout segments={[{ label: "Donors" }]} loading={true}>
+        {() => (
         <div className="max-w-7xl mx-auto space-y-6">
           <Skeleton className="h-10 w-64" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -220,12 +235,27 @@ const Donors = () => {
           </div>
           <Skeleton className="h-96" />
         </div>
+        )}
       </DashboardPageLayout>
     );
   }
 
   return (
     <DashboardPageLayout segments={[{ label: "Donors" }]}>
+      {(activeGroup) => {
+        // Fetch donors when activeGroup changes
+        useEffect(() => {
+          if (organizationUser?.organization_id) {
+            fetchDonors(activeGroup?.id);
+            setupRealtimeSubscription();
+          }
+
+          return () => {
+            supabase.channel('donors-updates').unsubscribe();
+          };
+        }, [organizationUser?.organization_id, activeGroup?.id]);
+
+        return (
       <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -443,6 +473,8 @@ const Donors = () => {
               </CardContent>
             </Card>
       </div>
+        );
+      }}
     </DashboardPageLayout>
   );
 };
