@@ -611,6 +611,45 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          campaign_type: string
+          created_at: string | null
+          description: string | null
+          email_content: string
+          id: string
+          name: string
+          recommended_delay_hours: number
+          sequence_order: number
+          subject_line: string
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_type: string
+          created_at?: string | null
+          description?: string | null
+          email_content: string
+          id?: string
+          name: string
+          recommended_delay_hours?: number
+          sequence_order?: number
+          subject_line: string
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_type?: string
+          created_at?: string | null
+          description?: string | null
+          email_content?: string
+          id?: string
+          name?: string
+          recommended_delay_hours?: number
+          sequence_order?: number
+          subject_line?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       group_type: {
         Row: {
           created_at: string

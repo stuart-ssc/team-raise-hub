@@ -36,6 +36,17 @@ interface NurtureSequence {
   delay_hours: number;
 }
 
+interface EmailTemplate {
+  id: string;
+  name: string;
+  description: string;
+  campaign_type: string;
+  sequence_order: number;
+  subject_line: string;
+  email_content: string;
+  recommended_delay_hours: number;
+}
+
 export default function NurtureCampaigns() {
   const queryClient = useQueryClient();
   const { organizationUser } = useOrganizationUser();
@@ -58,6 +69,8 @@ export default function NurtureCampaigns() {
     email_content: "",
     delay_hours: 0,
   });
+
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ["nurture-campaigns", organizationId],
@@ -110,6 +123,44 @@ export default function NurtureCampaigns() {
     enabled: !!selectedCampaign,
   });
 
+  const { data: emailTemplates } = useQuery({
+    queryKey: ["email-templates", selectedCampaign?.campaign_type],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("email_templates")
+        .select("*")
+        .eq("campaign_type", selectedCampaign?.campaign_type || "custom")
+        .order("sequence_order", { ascending: true });
+      
+      if (error) throw error;
+      return data as EmailTemplate[];
+    },
+    enabled: !!selectedCampaign && sequenceDialogOpen,
+  });
+
+  const handleTemplateSelect = (templateId: string) => {
+    const template = emailTemplates?.find(t => t.id === templateId);
+    if (template) {
+      setNewSequence({
+        sequence_order: sequences ? sequences.length + 1 : 1,
+        subject_line: template.subject_line,
+        email_content: template.email_content,
+        delay_hours: template.recommended_delay_hours,
+      });
+      setSelectedTemplateId(templateId);
+    }
+  };
+
+  const handleResetSequenceForm = () => {
+    setNewSequence({
+      sequence_order: sequences ? sequences.length + 1 : 1,
+      subject_line: "",
+      email_content: "",
+      delay_hours: 0,
+    });
+    setSelectedTemplateId("");
+  };
+
   const createCampaignMutation = useMutation({
     mutationFn: async () => {
       const { data: profile } = await supabase.auth.getUser();
@@ -156,7 +207,7 @@ export default function NurtureCampaigns() {
       queryClient.invalidateQueries({ queryKey: ["nurture-sequences"] });
       setSequenceDialogOpen(false);
       toast.success("Email sequence added");
-      setNewSequence({ sequence_order: 1, subject_line: "", email_content: "", delay_hours: 0 });
+      handleResetSequenceForm();
     },
     onError: (error) => {
       toast.error("Failed to add sequence: " + error.message);
@@ -358,18 +409,49 @@ export default function NurtureCampaigns() {
             <TabsContent value="sequences" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Email Sequences</h3>
-                <Dialog open={sequenceDialogOpen} onOpenChange={setSequenceDialogOpen}>
+                <Dialog open={sequenceDialogOpen} onOpenChange={(open) => {
+                  setSequenceDialogOpen(open);
+                  if (!open) handleResetSequenceForm();
+                }}>
                   <DialogTrigger asChild>
                     <Button size="sm">
                       <Plus className="mr-2 h-4 w-4" />
                       Add Email
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                   <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Add Email Sequence</DialogTitle>
+                      <DialogDescription>
+                        Start with a pre-built template or create your own from scratch
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
+                      {/* Template Selector */}
+                      {emailTemplates && emailTemplates.length > 0 && (
+                        <div>
+                          <Label>Choose a Template (Optional)</Label>
+                          <Select value={selectedTemplateId} onValueChange={handleTemplateSelect}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Start from scratch or select a template" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Start from scratch</SelectItem>
+                              {emailTemplates.map((template) => (
+                                <SelectItem key={template.id} value={template.id}>
+                                  {template.name} - {template.description}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {selectedTemplateId && selectedTemplateId !== "none" && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              Template loaded! You can customize it below before adding.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      
                       <div>
                         <Label>Sequence Order</Label>
                         <Input
@@ -391,9 +473,13 @@ export default function NurtureCampaigns() {
                         <Textarea
                           value={newSequence.email_content}
                           onChange={(e) => setNewSequence({ ...newSequence, email_content: e.target.value })}
-                          placeholder="Use {firstName}, {lifetimeValue}, etc."
-                          rows={6}
+                          placeholder="Use placeholders: {firstName}, {lastName}, {lifetimeValue}, {donationCount}, {donationAmount}, {organizationName}, {campaignName}"
+                          rows={10}
+                          className="font-mono text-sm"
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Available placeholders: {"{firstName}"}, {"{lastName}"}, {"{lifetimeValue}"}, {"{donationCount}"}, {"{donationAmount}"}, {"{organizationName}"}, {"{campaignName}"}
+                        </p>
                       </div>
                       <div>
                         <Label>Delay (hours)</Label>
@@ -402,10 +488,26 @@ export default function NurtureCampaigns() {
                           value={newSequence.delay_hours}
                           onChange={(e) => setNewSequence({ ...newSequence, delay_hours: parseInt(e.target.value) })}
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          0 = immediate, 24 = 1 day, 72 = 3 days, 168 = 1 week
+                        </p>
                       </div>
-                      <Button onClick={() => addSequenceMutation.mutate()} className="w-full">
-                        Add Sequence
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => addSequenceMutation.mutate()} 
+                          className="flex-1"
+                          disabled={!newSequence.subject_line || !newSequence.email_content}
+                        >
+                          Add Sequence
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={handleResetSequenceForm}
+                          type="button"
+                        >
+                          Reset
+                        </Button>
+                      </div>
                     </div>
                   </DialogContent>
                 </Dialog>
