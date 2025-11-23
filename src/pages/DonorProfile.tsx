@@ -178,13 +178,15 @@ const DonorProfile = () => {
         ]}
         loading={true}
       >
-        <div className="max-w-5xl mx-auto space-y-6">
-          <Skeleton className="h-10 w-64" />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Skeleton className="h-96 lg:col-span-2" />
-            <Skeleton className="h-96" />
+        {() => (
+          <div className="max-w-5xl mx-auto space-y-6">
+            <Skeleton className="h-10 w-64" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Skeleton className="h-96 lg:col-span-2" />
+              <Skeleton className="h-96" />
+            </div>
           </div>
-        </div>
+        )}
       </DashboardPageLayout>
     );
   }
@@ -197,16 +199,18 @@ const DonorProfile = () => {
           { label: "Not Found" }
         ]}
       >
-        <div className="max-w-5xl mx-auto">
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">Donor not found</p>
-              <Button onClick={() => navigate("/dashboard/donors")} className="mt-4">
-                Back to Donors
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        {() => (
+          <div className="max-w-5xl mx-auto">
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">Donor not found</p>
+                <Button onClick={() => navigate("/dashboard/donors")} className="mt-4">
+                  Back to Donors
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </DashboardPageLayout>
     );
   }
