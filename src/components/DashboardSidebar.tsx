@@ -43,11 +43,11 @@ const DashboardSidebar = () => {
       {/* Header */}
       <div className={`border-b border-sidebar-border ${isCollapsed ? 'p-1 flex flex-col items-center gap-2' : 'p-4'}`}>
         {isCollapsed && (
-          <SponsorlyLogo variant="mark" />
+          <SponsorlyLogo variant="mark" theme="dark" />
         )}
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           {!isCollapsed && (
-            <SponsorlyLogo variant="full" className="text-sidebar-foreground" />
+            <SponsorlyLogo variant="full" theme="dark" className="text-sidebar-foreground" />
           )}
           <Button
             variant="ghost"
