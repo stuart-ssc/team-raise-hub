@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -50,6 +51,7 @@ export default function DonorSegmentation() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
+  const { activeGroup } = useActiveGroup();
   
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
@@ -74,7 +76,11 @@ export default function DonorSegmentation() {
   const [emailContent, setEmailContent] = useState("");
   const [sending, setSending] = useState(false);
 
-  // Remove this - will be called from render with activeGroup
+  useEffect(() => {
+    if (organizationUser?.organization_id) {
+      fetchData(activeGroup?.id);
+    }
+  }, [organizationUser?.organization_id, activeGroup?.id]);
 
   const fetchData = async (groupId?: string | null) => {
     try {
@@ -290,14 +296,12 @@ export default function DonorSegmentation() {
   if (organizationUserLoading || loading) {
     return (
       <DashboardPageLayout segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Segmentation" }]} loading={true}>
-        {() => (
         <div className="space-y-6">
           <Skeleton className="h-12 w-64" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
           </div>
         </div>
-        )}
       </DashboardPageLayout>
     );
   }
@@ -305,15 +309,7 @@ export default function DonorSegmentation() {
   return (
     <>
       <DashboardPageLayout segments={[{ label: "Donors", path: "/dashboard/donors" }, { label: "Segmentation" }]}>
-      {(activeGroup) => {
-        useEffect(() => {
-          if (organizationUser?.organization_id) {
-            fetchData(activeGroup?.id);
-          }
-        }, [organizationUser?.organization_id, activeGroup?.id]);
-
-        return (
-      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex justify-between items-center">
               <div>
@@ -507,9 +503,7 @@ export default function DonorSegmentation() {
                 )}
               </TabsContent>
             </Tabs>
-      </div>
-        );
-      }}
+        </div>
       </DashboardPageLayout>
 
         {/* Send Campaign Dialog */}

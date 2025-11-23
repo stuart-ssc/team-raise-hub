@@ -266,7 +266,7 @@ export default function Campaigns() {
         segments={[{ label: "Campaigns" }]}
         loading={true}
       >
-        {() => <div>Loading...</div>}
+        <div>Loading...</div>
       </DashboardPageLayout>
     );
   }
@@ -276,12 +276,10 @@ export default function Campaigns() {
       <DashboardPageLayout 
         segments={[{ label: "Campaigns" }]}
       >
-        {() => (
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
-            <p>You don't have permission to view campaigns.</p>
-          </div>
-        )}
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          <p>You don't have permission to view campaigns.</p>
+        </div>
       </DashboardPageLayout>
     );
   }
@@ -290,7 +288,6 @@ export default function Campaigns() {
     <DashboardPageLayout 
       segments={[{ label: "Campaigns" }]}
     >
-      {(activeGroup) => (
       <div className="space-y-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Campaigns</h1>
@@ -564,8 +561,7 @@ export default function Campaigns() {
               manageCampaignId={managingCampaignId}
             />
           )}
-      </div>
-      )}
+        </div>
     </DashboardPageLayout>
   );
 }
