@@ -20,7 +20,6 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { CreateGroupForm } from "@/components/CreateGroupForm";
 import Rosters from "@/pages/Rosters";
-import { StripeConnectManager } from "@/components/StripeConnectManager";
 import { supabase } from "@/integrations/supabase/client";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
 
@@ -370,12 +369,13 @@ const Groups = () => {
                                   </Button>
                                 </TableCell>
                                 <TableCell>
-                                  <StripeConnectManager
-                                    groupId={group.id}
-                                    groupName={group.group_name}
-                                    stripeAccountId={group.stripe_account_id}
-                                    stripeAccountEnabled={group.stripe_account_enabled}
-                                  />
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    disabled
+                                  >
+                                    Coming Soon
+                                  </Button>
                                 </TableCell>
                                 <TableCell>
                                   <span className={group.status ? "text-green-600" : "text-muted-foreground"}>
