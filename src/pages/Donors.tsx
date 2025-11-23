@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
+import DonorImportWizard from "@/components/DonorImportWizard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,8 @@ import {
   Heart,
   Filter,
   ArrowUpDown,
-  Zap
+  Zap,
+  Upload
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -58,6 +60,7 @@ const Donors = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<string>("recent");
   const [filterBy, setFilterBy] = useState<string>("all");
+  const [importWizardOpen, setImportWizardOpen] = useState(false);
 
   useEffect(() => {
     if (organizationUser) {
@@ -266,21 +269,28 @@ const Donors = () => {
               <div className="flex gap-2">
                 <Button 
                   variant="outline"
+                  onClick={() => setImportWizardOpen(true)}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Import CSV
+                </Button>
+                <Button 
+                  variant="outline"
                   onClick={() => navigate("/dashboard/donors/segmentation")}
                 >
                   <TrendingUp className="mr-2 h-4 w-4" />
-                  Donor Segments
+                  Segments
                 </Button>
                 <Button 
                   variant="outline"
                   onClick={() => navigate("/dashboard/donors/nurture")}
                 >
                   <Zap className="mr-2 h-4 w-4" />
-                  Nurture Campaigns
+                  Nurture
                 </Button>
                 <Button onClick={() => navigate("/dashboard/donors/templates")}>
                   <Mail className="mr-2 h-4 w-4" />
-                  Manage Templates
+                  Templates
                 </Button>
               </div>
             </div>
@@ -467,6 +477,19 @@ const Donors = () => {
                 )}
               </CardContent>
             </Card>
+
+        {/* Import Wizard */}
+        <DonorImportWizard
+          open={importWizardOpen}
+          onOpenChange={setImportWizardOpen}
+          onImportComplete={() => {
+            fetchDonors();
+            toast({
+              title: "Import Complete",
+              description: "Donor data has been refreshed",
+            });
+          }}
+        />
         </div>
     </DashboardPageLayout>
   );
