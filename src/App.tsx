@@ -28,6 +28,7 @@ import VerificationQueue from "./pages/SystemAdmin/VerificationQueue";
 import EmailManagement from "./pages/SystemAdmin/EmailManagement";
 import ABTestManagement from "./pages/SystemAdmin/ABTestManagement";
 import DonorSegmentation from "./pages/DonorSegmentation";
+import DonorAnalytics from "./pages/DonorAnalytics";
 import NurtureCampaigns from "./pages/NurtureCampaigns";
 import InstallApp from "./pages/InstallApp";
 import NativeFeatures from "./pages/NativeFeatures";
@@ -83,6 +84,7 @@ const AppContent = () => {
         <Route path="/dashboard/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
         <Route path="/dashboard/donors" element={<ProtectedRoute><Donors /></ProtectedRoute>} />
         <Route path="/dashboard/donors/:donorId" element={<ProtectedRoute><DonorProfile /></ProtectedRoute>} />
+        <Route path="/dashboard/donors/analytics" element={<ProtectedRoute><DonorAnalytics /></ProtectedRoute>} />
         <Route path="/dashboard/donors/templates" element={<ProtectedRoute><ThankYouTemplates /></ProtectedRoute>} />
         <Route path="/dashboard/donors/segmentation" element={<ProtectedRoute><DonorSegmentation /></ProtectedRoute>} />
         <Route path="/dashboard/donors/nurture" element={<ProtectedRoute><NurtureCampaigns /></ProtectedRoute>} />
