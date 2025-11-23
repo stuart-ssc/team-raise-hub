@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Users, TrendingUp, Zap, Mail, BarChart3 } from "lucide-react";
+import { Users, TrendingUp, Zap, Mail, BarChart3, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const subNavItems = [
@@ -8,6 +8,7 @@ const subNavItems = [
   { label: "Segmentation", path: "/dashboard/donors/segmentation", icon: TrendingUp },
   { label: "Nurture", path: "/dashboard/donors/nurture", icon: Zap },
   { label: "Templates", path: "/dashboard/donors/templates", icon: Mail },
+  { label: "Outreach Queue", path: "/dashboard/donors/outreach-queue", icon: Sparkles },
 ];
 
 const DonorSubNav = () => {

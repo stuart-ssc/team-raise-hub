@@ -83,3 +83,6 @@ verify_jwt = true
 
 [functions.generate-donor-insights]
 verify_jwt = true
+
+[functions.generate-batch-insights]
+verify_jwt = true
