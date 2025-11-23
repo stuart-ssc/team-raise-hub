@@ -13,6 +13,9 @@ import { toast } from "sonner";
 import { Plus, Play, Pause, Mail, Users, TrendingUp, Clock } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardHeader from "@/components/DashboardHeader";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface NurtureCampaign {
   id: string;
@@ -37,6 +40,7 @@ export default function NurtureCampaigns() {
   const queryClient = useQueryClient();
   const { organizationUser } = useOrganizationUser();
   const organizationId = organizationUser?.organization_id;
+  const isMobile = useIsMobile();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<NurtureCampaign | null>(null);
   const [sequenceDialogOpen, setSequenceDialogOpen] = useState(false);
@@ -196,15 +200,21 @@ export default function NurtureCampaigns() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Nurture Campaigns</h1>
-          <p className="text-muted-foreground">
-            Automate donor engagement with email sequences
-          </p>
-        </div>
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+    <div className="flex min-h-screen w-full bg-background">
+      <DashboardSidebar />
+      
+      <div className={`flex-1 flex flex-col ${isMobile ? 'pl-16' : ''}`}>
+        <DashboardHeader onGroupClick={() => {}} activeGroup={null} />
+
+        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">Nurture Campaigns</h1>
+              <p className="text-muted-foreground">
+                Automate donor engagement with email sequences
+              </p>
+            </div>
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -272,10 +282,10 @@ export default function NurtureCampaigns() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+            </Dialog>
+          </div>
 
-      {isLoading ? (
+          {isLoading ? (
         <div className="text-center py-12">Loading campaigns...</div>
       ) : campaigns && campaigns.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -466,6 +476,8 @@ export default function NurtureCampaigns() {
           </Tabs>
         </DialogContent>
       </Dialog>
+        </main>
+      </div>
     </div>
   );
 }
