@@ -109,6 +109,7 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          publication_status: string | null
           slug: string | null
           start_date: string | null
           status: boolean | null
@@ -125,6 +126,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          publication_status?: string | null
           slug?: string | null
           start_date?: string | null
           status?: boolean | null
@@ -141,6 +143,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          publication_status?: string | null
           slug?: string | null
           start_date?: string | null
           status?: boolean | null
@@ -218,11 +221,12 @@ export type Database = {
           group_type_id: string | null
           id: string
           logo_url: string | null
+          organization_id: string | null
+          payment_processor_config: Json | null
           school_id: string | null
           status: boolean | null
-          stripe_account_enabled: boolean | null
-          stripe_account_id: string | null
           updated_at: string
+          use_org_payment_account: boolean | null
           website_url: string | null
         }
         Insert: {
@@ -231,11 +235,12 @@ export type Database = {
           group_type_id?: string | null
           id?: string
           logo_url?: string | null
+          organization_id?: string | null
+          payment_processor_config?: Json | null
           school_id?: string | null
           status?: boolean | null
-          stripe_account_enabled?: boolean | null
-          stripe_account_id?: string | null
           updated_at?: string
+          use_org_payment_account?: boolean | null
           website_url?: string | null
         }
         Update: {
@@ -244,11 +249,12 @@ export type Database = {
           group_type_id?: string | null
           id?: string
           logo_url?: string | null
+          organization_id?: string | null
+          payment_processor_config?: Json | null
           school_id?: string | null
           status?: boolean | null
-          stripe_account_enabled?: boolean | null
-          stripe_account_id?: string | null
           updated_at?: string
+          use_org_payment_account?: boolean | null
           website_url?: string | null
         }
         Relationships: [
@@ -257,6 +263,13 @@ export type Database = {
             columns: ["group_type_id"]
             isOneToOne: false
             referencedRelation: "group_type"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -322,6 +335,47 @@ export type Database = {
         }
         Relationships: []
       }
+      nonprofits: {
+        Row: {
+          c3_status_document_url: string | null
+          created_at: string | null
+          ein: string | null
+          id: string
+          mission_statement: string | null
+          organization_id: string
+          updated_at: string | null
+          verification_notes: string | null
+        }
+        Insert: {
+          c3_status_document_url?: string | null
+          created_at?: string | null
+          ein?: string | null
+          id?: string
+          mission_statement?: string | null
+          organization_id: string
+          updated_at?: string | null
+          verification_notes?: string | null
+        }
+        Update: {
+          c3_status_document_url?: string | null
+          created_at?: string | null
+          ein?: string | null
+          id?: string
+          mission_statement?: string | null
+          organization_id?: string
+          updated_at?: string | null
+          verification_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nonprofits_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -368,10 +422,13 @@ export type Database = {
           customer_name: string | null
           id: string
           items: Json
+          payment_processor: string | null
+          processor_session_id: string | null
+          processor_transaction_id: string | null
           shipping_address: Json | null
           status: string | null
-          stripe_payment_intent_id: string | null
-          stripe_session_id: string | null
+          tax_receipt_issued: boolean | null
+          tax_receipt_sent_at: string | null
           total_amount: number
           updated_at: string
           user_id: string | null
@@ -385,10 +442,13 @@ export type Database = {
           customer_name?: string | null
           id?: string
           items: Json
+          payment_processor?: string | null
+          processor_session_id?: string | null
+          processor_transaction_id?: string | null
           shipping_address?: Json | null
           status?: string | null
-          stripe_payment_intent_id?: string | null
-          stripe_session_id?: string | null
+          tax_receipt_issued?: boolean | null
+          tax_receipt_sent_at?: string | null
           total_amount: number
           updated_at?: string
           user_id?: string | null
@@ -402,10 +462,13 @@ export type Database = {
           customer_name?: string | null
           id?: string
           items?: Json
+          payment_processor?: string | null
+          processor_session_id?: string | null
+          processor_transaction_id?: string | null
           shipping_address?: Json | null
           status?: string | null
-          stripe_payment_intent_id?: string | null
-          stripe_session_id?: string | null
+          tax_receipt_issued?: boolean | null
+          tax_receipt_sent_at?: string | null
           total_amount?: number
           updated_at?: string
           user_id?: string | null
@@ -420,6 +483,140 @@ export type Database = {
           },
         ]
       }
+      organization_user: {
+        Row: {
+          active_user: boolean | null
+          created_at: string | null
+          group_id: string | null
+          id: string
+          organization_id: string
+          roster_id: number | null
+          updated_at: string | null
+          user_id: string
+          user_type_id: string
+        }
+        Insert: {
+          active_user?: boolean | null
+          created_at?: string | null
+          group_id?: string | null
+          id?: string
+          organization_id: string
+          roster_id?: number | null
+          updated_at?: string | null
+          user_id: string
+          user_type_id: string
+        }
+        Update: {
+          active_user?: boolean | null
+          created_at?: string | null
+          group_id?: string | null
+          id?: string
+          organization_id?: string
+          roster_id?: number | null
+          updated_at?: string | null
+          user_id?: string
+          user_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_user_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_user_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_user_roster_id_fkey"
+            columns: ["roster_id"]
+            isOneToOne: false
+            referencedRelation: "rosters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_user_user_type_id_fkey"
+            columns: ["user_type_id"]
+            isOneToOne: false
+            referencedRelation: "user_type"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          organization_type: Database["public"]["Enums"]["organization_type"]
+          payment_processor_config: Json | null
+          phone: string | null
+          primary_color: string | null
+          requires_verification: boolean | null
+          secondary_color: string | null
+          state: string | null
+          updated_at: string | null
+          verification_approved_at: string | null
+          verification_documents: Json | null
+          verification_status: string | null
+          verification_submitted_at: string | null
+          website_url: string | null
+          zip: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          organization_type: Database["public"]["Enums"]["organization_type"]
+          payment_processor_config?: Json | null
+          phone?: string | null
+          primary_color?: string | null
+          requires_verification?: boolean | null
+          secondary_color?: string | null
+          state?: string | null
+          updated_at?: string | null
+          verification_approved_at?: string | null
+          verification_documents?: Json | null
+          verification_status?: string | null
+          verification_submitted_at?: string | null
+          website_url?: string | null
+          zip?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          organization_type?: Database["public"]["Enums"]["organization_type"]
+          payment_processor_config?: Json | null
+          phone?: string | null
+          primary_color?: string | null
+          requires_verification?: boolean | null
+          secondary_color?: string | null
+          state?: string | null
+          updated_at?: string | null
+          verification_approved_at?: string | null
+          verification_documents?: Json | null
+          verification_status?: string | null
+          verification_submitted_at?: string | null
+          website_url?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -433,6 +630,7 @@ export type Database = {
           notify_campaigns: boolean | null
           notify_donations: boolean | null
           school_id: string | null
+          system_admin: boolean | null
           updated_at: string
         }
         Insert: {
@@ -447,6 +645,7 @@ export type Database = {
           notify_campaigns?: boolean | null
           notify_donations?: boolean | null
           school_id?: string | null
+          system_admin?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -461,6 +660,7 @@ export type Database = {
           notify_campaigns?: boolean | null
           notify_donations?: boolean | null
           school_id?: string | null
+          system_admin?: boolean | null
           updated_at?: string
         }
         Relationships: [
@@ -646,11 +846,13 @@ export type Database = {
           logo_file: string | null
           low_grade: string | null
           NCES_School_ID: string | null
+          organization_id: string | null
           phone: string | null
           "Primary Color": string | null
           reduced_lunch: number | null
           school_district_id: string | null
           school_name: string
+          school_subtype: Database["public"]["Enums"]["school_subtype"] | null
           school_type: string | null
           school_type_id: string | null
           "Secondary Color": string | null
@@ -682,11 +884,13 @@ export type Database = {
           logo_file?: string | null
           low_grade?: string | null
           NCES_School_ID?: string | null
+          organization_id?: string | null
           phone?: string | null
           "Primary Color"?: string | null
           reduced_lunch?: number | null
           school_district_id?: string | null
           school_name: string
+          school_subtype?: Database["public"]["Enums"]["school_subtype"] | null
           school_type?: string | null
           school_type_id?: string | null
           "Secondary Color"?: string | null
@@ -718,11 +922,13 @@ export type Database = {
           logo_file?: string | null
           low_grade?: string | null
           NCES_School_ID?: string | null
+          organization_id?: string | null
           phone?: string | null
           "Primary Color"?: string | null
           reduced_lunch?: number | null
           school_district_id?: string | null
           school_name?: string
+          school_subtype?: Database["public"]["Enums"]["school_subtype"] | null
           school_type?: string | null
           school_type_id?: string | null
           "Secondary Color"?: string | null
@@ -751,6 +957,13 @@ export type Database = {
             columns: ["locale_id"]
             isOneToOne: false
             referencedRelation: "locale"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schools_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -803,6 +1016,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          permission_level: string | null
           updated_at: string
         }
         Insert: {
@@ -810,6 +1024,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          permission_level?: string | null
           updated_at?: string
         }
         Update: {
@@ -817,6 +1032,7 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          permission_level?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -826,6 +1042,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_update_organization_user: {
+        Args: { target_org_user_id: string }
+        Returns: boolean
+      }
       can_update_school_user: {
         Args: { target_school_user_id: string }
         Returns: boolean
@@ -834,13 +1054,19 @@ export type Database = {
         Args: { campaign_id?: string; campaign_name: string }
         Returns: string
       }
+      is_system_admin: { Args: { user_id: string }; Returns: boolean }
+      user_belongs_to_organization: {
+        Args: { org_id: string; user_id: string }
+        Returns: boolean
+      }
       user_belongs_to_school: {
         Args: { school_id: string; user_id: string }
         Returns: boolean
       }
     }
     Enums: {
-      [_ in never]: never
+      organization_type: "school" | "nonprofit"
+      school_subtype: "public" | "charter" | "private"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -967,6 +1193,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      organization_type: ["school", "nonprofit"],
+      school_subtype: ["public", "charter", "private"],
+    },
   },
 } as const

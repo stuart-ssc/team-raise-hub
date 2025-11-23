@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import SchoolLogo from "@/components/SchoolLogo";
+import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { SchoolSelector } from "@/components/SchoolSelector";
 import { 
   FileText, 
@@ -88,11 +88,7 @@ const Index = () => {
       {/* Header */}
       <header className="w-full py-4 px-6 flex justify-center">
         <a href="/" className="flex items-center">
-          <img 
-            src="/lovable-uploads/106766f6-f0e0-4d2e-8783-0d12dee9cd20.png" 
-            alt="School Sponsor Connect" 
-            className="h-16 w-auto"
-          />
+          <SponsorlyLogo variant="full" />
         </a>
       </header>
 
@@ -101,10 +97,10 @@ const Index = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-              Raising Money Has Never Been So Easy
+              Fundraising Made Simple for Schools & Non-Profits
             </h1>
             <p className="text-lg text-muted-foreground max-w-md">
-              An all-in-one fundraising platform for school related teams, clubs, and organizations that ensures the FULL donation gets to your group!
+              An all-in-one fundraising platform that ensures the FULL donation gets to your organization!
             </p>
             <Button 
               size="lg" 

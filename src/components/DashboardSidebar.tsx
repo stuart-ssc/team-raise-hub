@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Home, Users, DollarSign, Target, BarChart3, Menu } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
-import SchoolLogo from "@/components/SchoolLogo";
+import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { Button } from "@/components/ui/button";
 import { useSchoolUser } from "@/hooks/useSchoolUser";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -42,15 +42,11 @@ const DashboardSidebar = () => {
       {/* Header */}
       <div className={`border-b border-sidebar-border ${isCollapsed ? 'p-1 flex flex-col items-center gap-2' : 'p-4'}`}>
         {isCollapsed && (
-          <img 
-            src="/lovable-uploads/18f62908-d8b7-4131-8934-c7e40541f122.png" 
-            alt="School Logo" 
-            className="h-8 w-auto"
-          />
+          <SponsorlyLogo variant="mark" />
         )}
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           {!isCollapsed && (
-            <SchoolLogo className="text-sidebar-foreground [&>div:first-child]:bg-sidebar-primary [&>div:first-child]:text-sidebar-primary-foreground" />
+            <SponsorlyLogo variant="full" className="text-sidebar-foreground" />
           )}
           <Button
             variant="ghost"

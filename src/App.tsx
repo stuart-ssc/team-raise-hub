@@ -18,6 +18,10 @@ import Profile from "./pages/Profile";
 import NotificationHistory from "./pages/NotificationHistory";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
+import SystemAdminDashboard from "./pages/SystemAdmin/Dashboard";
+import OrganizationsList from "./pages/SystemAdmin/OrganizationsList";
+import VerificationQueue from "./pages/SystemAdmin/VerificationQueue";
+import { SystemAdminGuard } from "./components/SystemAdminGuard";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +69,9 @@ const AppContent = () => {
         <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/dashboard/notifications" element={<ProtectedRoute><NotificationHistory /></ProtectedRoute>} />
         <Route path="/dashboard/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/system-admin" element={<ProtectedRoute><SystemAdminGuard><SystemAdminDashboard /></SystemAdminGuard></ProtectedRoute>} />
+        <Route path="/system-admin/organizations" element={<ProtectedRoute><SystemAdminGuard><OrganizationsList /></SystemAdminGuard></ProtectedRoute>} />
+        <Route path="/system-admin/verification" element={<ProtectedRoute><SystemAdminGuard><VerificationQueue /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
