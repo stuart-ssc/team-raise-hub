@@ -96,27 +96,6 @@ const Index = () => {
           </a>
           <div className="flex items-center gap-4">
             <Button 
-              variant="ghost" 
-              onClick={() => navigate('/install')}
-              className="hidden md:inline-flex"
-            >
-              Install App
-            </Button>
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/donor-receipts')}
-              className="hidden md:inline-flex"
-            >
-              Tax Receipts
-            </Button>
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/login')}
-              className="hidden sm:inline-flex"
-            >
-              Sign In
-            </Button>
-            <Button 
               onClick={() => navigate('/signup')}
               className="gap-2"
             >
@@ -420,6 +399,14 @@ const Index = () => {
                 <li><a href="#" className="hover:text-foreground transition-colors">Features</a></li>
                 <li><a href="#" className="hover:text-foreground transition-colors">Pricing</a></li>
                 <li><a href="#" className="hover:text-foreground transition-colors">Security</a></li>
+                <li>
+                  <button 
+                    onClick={() => navigate('/donor-receipts')}
+                    className="hover:text-foreground transition-colors text-left"
+                  >
+                    Tax Receipts
+                  </button>
+                </li>
               </ul>
             </div>
             
