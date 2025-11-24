@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Play, Pause, Mail, Users, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
+import BusinessSubNav from "@/components/BusinessSubNav";
 import { BusinessCampaignDialog } from "@/components/BusinessCampaignDialog";
 
 interface Campaign {
@@ -124,6 +125,7 @@ export default function BusinessNurtureCampaigns() {
   if (loading) {
     return (
       <DashboardPageLayout>
+        <BusinessSubNav />
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Business Nurture Campaigns</h1>
           <p className="text-muted-foreground">Automated email campaigns for business outreach</p>
@@ -139,6 +141,7 @@ export default function BusinessNurtureCampaigns() {
 
   return (
     <DashboardPageLayout>
+      <BusinessSubNav />
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Business Nurture Campaigns</h1>

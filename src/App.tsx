@@ -39,6 +39,7 @@ import Businesses from "./pages/Businesses";
 import BusinessProfile from "./pages/BusinessProfile";
 import BusinessAnalytics from "./pages/BusinessAnalytics";
 import BusinessOutreachQueue from "./pages/BusinessOutreachQueue";
+import BusinessNurtureCampaigns from "./pages/BusinessNurtureCampaigns";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
@@ -101,6 +102,7 @@ const AppContent = () => {
         <Route path="/dashboard/donors/outreach-queue" element={<ProtectedRoute><OutreachQueue /></ProtectedRoute>} />
         <Route path="/dashboard/businesses" element={<ProtectedRoute><Businesses /></ProtectedRoute>} />
         <Route path="/dashboard/businesses/outreach-queue" element={<ProtectedRoute><BusinessOutreachQueue /></ProtectedRoute>} />
+        <Route path="/dashboard/businesses/nurture" element={<ProtectedRoute><BusinessNurtureCampaigns /></ProtectedRoute>} />
         <Route path="/dashboard/businesses/:businessId" element={<ProtectedRoute><BusinessProfile /></ProtectedRoute>} />
         <Route path="/dashboard/businesses/analytics" element={<ProtectedRoute><BusinessAnalytics /></ProtectedRoute>} />
         <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

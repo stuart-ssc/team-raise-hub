@@ -13,10 +13,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Target, TrendingUp, AlertTriangle, DollarSign, Calendar, Users } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Target, TrendingUp, AlertTriangle, DollarSign, Calendar, Users, Mail, SendHorizonal } from "lucide-react";
 import { toast } from "sonner";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { BusinessContactsList } from "@/components/BusinessContactsList";
+import BusinessSubNav from "@/components/BusinessSubNav";
 import {
   BusinessOutreachQueueItem,
   getHealthStatusInfo,
@@ -36,12 +44,34 @@ export default function BusinessOutreachQueue() {
   const [sortBy, setSortBy] = useState<string>("priority");
   const [filterHealth, setFilterHealth] = useState<string>("all");
   const [filterPotential, setFilterPotential] = useState<string>("all");
+  const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
+  const [selectedBusiness, setSelectedBusiness] = useState<any>(null);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
+  const [enrolling, setEnrolling] = useState(false);
 
   useEffect(() => {
     if (organizationId) {
       fetchQueue();
+      fetchCampaigns();
     }
   }, [organizationId]);
+
+  const fetchCampaigns = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("business_nurture_campaigns")
+        .select("id, name, status, campaign_type")
+        .eq("organization_id", organizationId)
+        .eq("status", "active")
+        .order("name");
+
+      if (error) throw error;
+      setCampaigns(data || []);
+    } catch (error) {
+      console.error("Error fetching campaigns:", error);
+    }
+  };
 
   const fetchQueue = async () => {
     try {
@@ -79,9 +109,18 @@ export default function BusinessOutreachQueue() {
             .eq('business_id', item.businesses.id)
             .is('blocked_at', null);
 
+          // Fetch enrollment status
+          const { data: enrollment } = await supabase
+            .from('business_nurture_enrollments')
+            .select('id, status, campaign_id, business_nurture_campaigns!inner(name)')
+            .eq('business_id', item.businesses.id)
+            .in('status', ['active', 'completed'])
+            .single();
+
           return {
             ...item,
-            contacts: contacts || []
+            contacts: contacts || [],
+            enrollment: enrollment || null
           };
         })
       );
@@ -135,6 +174,38 @@ export default function BusinessOutreachQueue() {
     }
   };
 
+  const handleEnrollInCampaign = (item: any) => {
+    setSelectedBusiness(item);
+    setSelectedCampaignId("");
+    setEnrollDialogOpen(true);
+  };
+
+  const handleEnrollSubmit = async () => {
+    if (!selectedCampaignId || !selectedBusiness) return;
+
+    try {
+      setEnrolling(true);
+      const { data, error } = await supabase.functions.invoke("trigger-business-campaign", {
+        body: {
+          businessId: selectedBusiness.businesses.id,
+          campaignId: selectedCampaignId,
+          queueItemId: selectedBusiness.id,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success("Business enrolled in campaign successfully");
+      setEnrollDialogOpen(false);
+      fetchQueue();
+    } catch (error: any) {
+      console.error("Error enrolling business:", error);
+      toast.error(error.message || "Failed to enroll business");
+    } finally {
+      setEnrolling(false);
+    }
+  };
+
   // Apply filters and sorting
   const filteredItems = queueItems
     .filter(item => {
@@ -172,6 +243,7 @@ export default function BusinessOutreachQueue() {
         { label: 'Outreach Queue' }
       ]}
     >
+      <BusinessSubNav />
       <div className="space-y-6">
         {/* Page Header */}
         <div className="flex items-center justify-between">
@@ -325,6 +397,12 @@ export default function BusinessOutreachQueue() {
                         <Badge className={getPriorityBadgeColor(item.priority_score)}>
                           Priority: {item.priority_score}
                         </Badge>
+                        {item.enrollment && (
+                          <Badge variant="secondary" className="bg-blue-500/10 text-blue-700 border-blue-500/20">
+                            <Mail className="w-3 h-3 mr-1" />
+                            {item.enrollment.status === "active" ? "In Campaign" : "Completed"}
+                          </Badge>
+                        )}
                       </div>
                     </div>
 
@@ -404,15 +482,35 @@ export default function BusinessOutreachQueue() {
                       <span>•</span>
                       <span>Breadth: {metrics.engagement_breadth_score || 0}/5</span>
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMarkContacted(item.id, item.businesses.id);
-                      }}
-                    >
-                      Mark as Contacted
-                    </Button>
+                    <div className="flex gap-2">
+                      {!item.enrollment && campaigns.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEnrollInCampaign(item);
+                          }}
+                        >
+                          <SendHorizonal className="w-4 h-4 mr-1" />
+                          Enroll in Campaign
+                        </Button>
+                      )}
+                      {item.enrollment && (
+                        <Badge variant="outline" className="text-xs">
+                          Enrolled in: {item.enrollment.business_nurture_campaigns?.name}
+                        </Badge>
+                      )}
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMarkContacted(item.id, item.businesses.id);
+                        }}
+                      >
+                        Mark as Contacted
+                      </Button>
+                    </div>
                   </div>
                   </div>
                 </Card>
@@ -421,6 +519,43 @@ export default function BusinessOutreachQueue() {
           </div>
         )}
       </div>
+
+      {/* Enroll in Campaign Dialog */}
+      <Dialog open={enrollDialogOpen} onOpenChange={setEnrollDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enroll in Campaign</DialogTitle>
+            <DialogDescription>
+              Select a campaign to automatically enroll {selectedBusiness?.businesses?.business_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Campaign</label>
+              <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a campaign" />
+                </SelectTrigger>
+                <SelectContent>
+                  {campaigns.map((campaign) => (
+                    <SelectItem key={campaign.id} value={campaign.id}>
+                      {campaign.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEnrollDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEnrollSubmit} disabled={enrolling || !selectedCampaignId}>
+                {enrolling ? "Enrolling..." : "Enroll"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardPageLayout>
   );
 }
