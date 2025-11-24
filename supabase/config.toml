@@ -6,6 +6,9 @@ verify_jwt = true
 [functions.bulk-tag-businesses]
 verify_jwt = true
 
+[functions.bulk-email-businesses]
+verify_jwt = true
+
 [functions.stripe-connect-onboard]
 verify_jwt = true
 

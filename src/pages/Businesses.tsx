@@ -42,6 +42,7 @@ import { EditBusinessDialog } from "@/components/EditBusinessDialog";
 import { ImportBusinessesDialog } from "@/components/ImportBusinessesDialog";
 import BulkActionToolbarBusiness from "@/components/BulkActionToolbarBusiness";
 import BulkTagDialogBusiness from "@/components/BulkTagDialogBusiness";
+import BulkEmailDialogBusiness from "@/components/BulkEmailDialogBusiness";
 
 interface BusinessProfile {
   id: string;
@@ -80,6 +81,7 @@ const Businesses = () => {
   const [showBulkArchiveDialog, setShowBulkArchiveDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
+  const [showBulkEmailDialog, setShowBulkEmailDialog] = useState(false);
   const [tagFilter, setTagFilter] = useState<string>("all");
 
   const canManageBusinesses = 
@@ -305,6 +307,28 @@ const Businesses = () => {
 
   const handleBulkTag = () => {
     setShowBulkTagDialog(true);
+  };
+
+  const handleBulkEmail = () => {
+    // Filter out businesses without email addresses
+    const businessesWithEmail = businesses.filter(
+      b => selectedBusinessIds.includes(b.id) && b.business_email
+    );
+    
+    const businessesWithoutEmail = selectedBusinessIds.length - businessesWithEmail.length;
+    
+    if (businessesWithoutEmail > 0) {
+      toast.warning(
+        `${businessesWithoutEmail} business${businessesWithoutEmail === 1 ? '' : 'es'} without email ${businessesWithoutEmail === 1 ? 'address will' : 'addresses will'} be skipped`
+      );
+    }
+
+    if (businessesWithEmail.length === 0) {
+      toast.error("None of the selected businesses have email addresses");
+      return;
+    }
+
+    setShowBulkEmailDialog(true);
   };
 
   // Get all unique tags from all businesses
@@ -672,6 +696,7 @@ const Businesses = () => {
           onDelete={() => setShowBulkDeleteDialog(true)}
           onExportCsv={handleBulkExport}
           onAddTags={handleBulkTag}
+          onSendEmail={handleBulkEmail}
         />
 
       <AlertDialog open={showBulkArchiveDialog} onOpenChange={setShowBulkArchiveDialog}>
@@ -718,6 +743,15 @@ const Businesses = () => {
         selectedBusinessIds={selectedBusinessIds}
         onComplete={() => {
           fetchBusinesses();
+          setSelectedBusinessIds([]);
+        }}
+      />
+
+      <BulkEmailDialogBusiness
+        open={showBulkEmailDialog}
+        onOpenChange={setShowBulkEmailDialog}
+        selectedBusinessIds={selectedBusinessIds}
+        onComplete={() => {
           setSelectedBusinessIds([]);
         }}
       />
