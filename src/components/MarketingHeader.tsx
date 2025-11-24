@@ -19,7 +19,7 @@ const MarketingHeader = () => {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <SponsorlyLogo variant="full" theme="dark" className="h-8" />
+            <SponsorlyLogo variant="full" theme="light" className="h-8" />
           </Link>
 
           {/* Desktop Navigation */}
