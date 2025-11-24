@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { getTagColor, getTagBgColor } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -645,7 +646,16 @@ const BusinessProfile = () => {
                   <div className="flex flex-wrap gap-2">
                     {business.tags && business.tags.length > 0 ? (
                       business.tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="gap-1">
+                        <Badge 
+                          key={tag} 
+                          variant="secondary" 
+                          className="gap-1 border"
+                          style={{
+                            backgroundColor: getTagBgColor(tag),
+                            color: getTagColor(tag),
+                            borderColor: getTagColor(tag)
+                          }}
+                        >
                           {tag}
                           <button
                             onClick={() => removeTag(tag)}
