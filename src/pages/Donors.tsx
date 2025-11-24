@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import DonorImportWizard from "@/components/DonorImportWizard";
 import BulkActionToolbar from "@/components/BulkActionToolbar";
@@ -81,6 +82,7 @@ interface DonorProfile {
 
 const Donors = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup } = useActiveGroup();
   const { toast } = useToast();
@@ -337,43 +339,79 @@ const Donors = () => {
     <DashboardPageLayout segments={[{ label: "Donors" }]}>
       <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                  <Users className="h-8 w-8 text-primary" />
-                  Donor Management
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  Track and engage with your supporters
-                </p>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+                    <Users className="h-8 w-8 text-primary" />
+                    Donor Management
+                  </h1>
+                  <p className="text-muted-foreground mt-1">
+                    Track and engage with your supporters
+                  </p>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline"
-                  onClick={() => setImportWizardOpen(true)}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  Import CSV
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => navigate("/dashboard/donors/segmentation")}
-                >
-                  <TrendingUp className="mr-2 h-4 w-4" />
-                  Segments
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => navigate("/dashboard/donors/nurture")}
-                >
-                  <Zap className="mr-2 h-4 w-4" />
-                  Nurture
-                </Button>
-                <Button onClick={() => navigate("/dashboard/donors/templates")}>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Templates
-                </Button>
-              </div>
+              
+              {/* Mobile: Dropdown */}
+              {isMobile && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      <MoreHorizontal className="mr-2 h-4 w-4" />
+                      Quick Actions
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuItem onClick={() => setImportWizardOpen(true)}>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Import CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/dashboard/donors/segmentation")}>
+                      <TrendingUp className="mr-2 h-4 w-4" />
+                      Segments
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/dashboard/donors/nurture")}>
+                      <Zap className="mr-2 h-4 w-4" />
+                      Nurture
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/dashboard/donors/templates")}>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Templates
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              
+              {/* Desktop: Individual Buttons */}
+              {!isMobile && (
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setImportWizardOpen(true)}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import CSV
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate("/dashboard/donors/segmentation")}
+                  >
+                    <TrendingUp className="mr-2 h-4 w-4" />
+                    Segments
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate("/dashboard/donors/nurture")}
+                  >
+                    <Zap className="mr-2 h-4 w-4" />
+                    Nurture
+                  </Button>
+                  <Button onClick={() => navigate("/dashboard/donors/templates")}>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Templates
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Stats Cards */}
