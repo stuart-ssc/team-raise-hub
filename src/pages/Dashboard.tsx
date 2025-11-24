@@ -162,7 +162,6 @@ const Dashboard = () => {
   return (
     <DashboardPageLayout
       showBreadcrumbs={false}
-      showRosters={true}
     >
       <div className="space-y-4 md:space-y-6">
           {/* Stats Cards */}
