@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3, Activity } from "lucide-react";
+import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3, Activity, Target } from "lucide-react";
 import { getSegmentInfo } from "@/lib/businessEngagement";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -88,6 +88,7 @@ const Businesses = () => {
   const [showBulkEmailDialog, setShowBulkEmailDialog] = useState(false);
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [segmentFilter, setSegmentFilter] = useState<string>("all");
+  const [highPriorityCount, setHighPriorityCount] = useState<number>(0);
 
   const canManageBusinesses = 
     organizationUser?.user_type?.permission_level === 'organization_admin' ||
@@ -96,8 +97,23 @@ const Businesses = () => {
   useEffect(() => {
     if (organizationUser?.organization_id) {
       fetchBusinesses();
+      fetchHighPriorityCount();
     }
   }, [organizationUser?.organization_id]);
+
+  const fetchHighPriorityCount = async () => {
+    if (!organizationUser?.organization_id) return;
+    
+    const { count, error } = await supabase
+      .from('business_outreach_queue')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationUser.organization_id)
+      .gte('priority_score', 80);
+      
+    if (!error && count !== null) {
+      setHighPriorityCount(count);
+    }
+  };
 
   const fetchBusinesses = async () => {
     try {
@@ -446,6 +462,23 @@ const Businesses = () => {
                 Add Business
               </Button>
             )}
+            
+            <Button 
+              variant="outline"
+              onClick={() => navigate('/dashboard/businesses/outreach-queue')}
+              className="relative"
+            >
+              <Target className="h-4 w-4 mr-2" />
+              Outreach Queue
+              {highPriorityCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="ml-2 px-1.5 py-0.5 text-xs"
+                >
+                  {highPriorityCount}
+                </Badge>
+              )}
+            </Button>
             
             <Button 
               variant="outline"
