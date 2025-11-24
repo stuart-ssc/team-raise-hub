@@ -25,6 +25,7 @@ serve(async (req) => {
           user_id,
           customer_name,
           customer_email,
+          access_token,
           campaigns (
             id,
             name
@@ -127,7 +128,7 @@ serve(async (req) => {
               <strong>Deadline:</strong> ${deadlineDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </p>
             <p>
-              <a href="${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/dashboard/orders/${order.id}/files" 
+              <a href="${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/orders/${order.id}?token=${order.access_token}" 
                  style="background-color: ${urgencyColor}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 10px;">
                 Upload Files Now
               </a>

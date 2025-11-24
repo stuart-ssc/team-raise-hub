@@ -1515,6 +1515,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          access_token: string | null
           application_fee_amount: number | null
           business_id: string | null
           business_purchase: boolean | null
@@ -1533,11 +1534,13 @@ export type Database = {
           status: string | null
           tax_receipt_issued: boolean | null
           tax_receipt_sent_at: string | null
+          token_expires_at: string | null
           total_amount: number
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          access_token?: string | null
           application_fee_amount?: number | null
           business_id?: string | null
           business_purchase?: boolean | null
@@ -1556,11 +1559,13 @@ export type Database = {
           status?: string | null
           tax_receipt_issued?: boolean | null
           tax_receipt_sent_at?: string | null
+          token_expires_at?: string | null
           total_amount: number
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          access_token?: string | null
           application_fee_amount?: number | null
           business_id?: string | null
           business_purchase?: boolean | null
@@ -1579,6 +1584,7 @@ export type Database = {
           status?: string | null
           tax_receipt_issued?: boolean | null
           tax_receipt_sent_at?: string | null
+          token_expires_at?: string | null
           total_amount?: number
           updated_at?: string
           user_id?: string | null

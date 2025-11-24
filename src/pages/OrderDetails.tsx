@@ -20,6 +20,9 @@ interface OrderDetails {
   total_amount: number;
   status: string;
   files_complete: boolean;
+  user_id: string | null;
+  access_token: string | null;
+  token_expires_at: string | null;
   campaign: {
     id: string;
     name: string;
@@ -73,6 +76,8 @@ const OrderDetails = () => {
             status,
             files_complete,
             user_id,
+            access_token,
+            token_expires_at,
             campaign:campaigns (
               id,
               name,
@@ -96,8 +101,29 @@ const OrderDetails = () => {
           return;
         }
 
-        // Check authorization - either logged in as order owner or has valid token
-        if (user && orderData.user_id !== user.id && !token) {
+        // Check authorization
+        if (token) {
+          // Public access with token - validate against database
+          if (orderData.access_token !== token) {
+            console.error("Invalid access token");
+            setUnauthorized(true);
+            return;
+          }
+          
+          // Check if token is expired
+          if (orderData.token_expires_at && new Date(orderData.token_expires_at) < new Date()) {
+            toast({
+              title: "Link Expired",
+              description: "This access link has expired. Please log in to continue.",
+              variant: "destructive",
+            });
+            setUnauthorized(true);
+            return;
+          }
+          
+          console.log("Public access with valid token");
+        } else if (!user || orderData.user_id !== user.id) {
+          // No token and not logged in as owner
           setUnauthorized(true);
           return;
         }
