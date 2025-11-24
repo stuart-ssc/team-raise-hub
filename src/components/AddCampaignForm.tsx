@@ -13,7 +13,8 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2, Edit, Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
@@ -244,7 +245,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     try {
       const { data, error } = await supabase
         .from("campaigns")
-        .select("campaign_type_id")
+        .select("campaign_type_id, requires_business_info, file_upload_deadline_days")
         .eq("id", campaignId)
         .single();
 
@@ -254,8 +255,104 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       }
 
       setCampaignTypeId(data.campaign_type_id);
+      
+      // Set business info fields if editing
+      if (data.requires_business_info !== undefined) {
+        campaignForm.setValue("requiresBusinessInfo", data.requires_business_info);
+      }
+      if (data.file_upload_deadline_days) {
+        campaignForm.setValue("fileUploadDeadlineDays", data.file_upload_deadline_days.toString());
+      }
     } catch (error) {
       console.error("Error fetching campaign type:", error);
+    }
+  };
+
+  const fetchCustomFields = async (campaignId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("campaign_custom_fields")
+        .select("*")
+        .eq("campaign_id", campaignId)
+        .order("display_order");
+
+      if (error) {
+        console.error("Error fetching custom fields:", error);
+        return;
+      }
+
+      const formattedFields: CustomField[] = (data || []).map((field: any) => ({
+        id: field.id,
+        field_name: field.field_name,
+        field_type: field.field_type as CustomField['field_type'],
+        field_options: Array.isArray(field.field_options) ? field.field_options : [],
+        is_required: field.is_required,
+        help_text: field.help_text || "",
+        display_order: field.display_order,
+      }));
+
+      setCustomFields(formattedFields);
+    } catch (error) {
+      console.error("Error fetching custom fields:", error);
+    }
+  };
+
+  const addCustomField = () => {
+    setCustomFields([
+      ...customFields,
+      {
+        field_name: "",
+        field_type: "text",
+        field_options: [],
+        is_required: false,
+        help_text: "",
+        display_order: customFields.length,
+      },
+    ]);
+  };
+
+  const updateCustomField = (index: number, key: string, value: any) => {
+    const updated = [...customFields];
+    updated[index] = { ...updated[index], [key]: value };
+    setCustomFields(updated);
+  };
+
+  const removeCustomField = (index: number) => {
+    setCustomFields(customFields.filter((_, i) => i !== index));
+  };
+
+  const saveCustomFields = async (campaignId: string) => {
+    try {
+      // Delete existing custom fields
+      await supabase
+        .from("campaign_custom_fields")
+        .delete()
+        .eq("campaign_id", campaignId);
+
+      // Insert new custom fields
+      if (customFields.length > 0) {
+        const fieldsToInsert = customFields.map((field, index) => ({
+          campaign_id: campaignId,
+          field_name: field.field_name,
+          field_type: field.field_type,
+          field_options: field.field_options || null,
+          is_required: field.is_required,
+          help_text: field.help_text || null,
+          display_order: index,
+        }));
+
+        const { error } = await supabase
+          .from("campaign_custom_fields")
+          .insert(fieldsToInsert);
+
+        if (error) {
+          console.error("Error saving custom fields:", error);
+          throw error;
+        }
+      }
+    } catch (error) {
+      console.error("Error saving custom fields:", error);
+      throw error;
     }
   };
 
@@ -304,6 +401,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         setStep(2);
         fetchCampaignItems(manageCampaignId);
         fetchCampaignType(manageCampaignId);
+        fetchCustomFields(manageCampaignId);
       }
       // Pre-populate form if editing
       else if (editCampaign) {
@@ -320,6 +418,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         });
         setCreatedCampaignId(editCampaign.id);
         setCampaignTypeId(editCampaign.campaign_type_id);
+        fetchCustomFields(editCampaign.id);
       }
       // Pre-populate slug for new campaigns
       else {
@@ -379,6 +478,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         status: true,
         publication_status: editCampaign ? undefined : 'draft', // Set draft for new campaigns only
         image_url: imageUrl || null,
+        requires_business_info: values.requiresBusinessInfo || false,
+        file_upload_deadline_days: values.fileUploadDeadlineDays ? parseInt(values.fileUploadDeadlineDays) : null,
       };
 
       if (editCampaign) {
@@ -397,6 +498,9 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
           });
           return;
         }
+
+        // Save custom fields
+        await saveCustomFields(editCampaign.id);
 
         toast({
           title: "Success",
@@ -422,9 +526,12 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
           return;
         }
 
-      setCreatedCampaignId(data.id);
-      setCampaignTypeId(values.campaignTypeId);
-      setStep(2);
+        // Save custom fields for new campaign
+        await saveCustomFields(data.id);
+
+        setCreatedCampaignId(data.id);
+        setCampaignTypeId(values.campaignTypeId);
+        setStep(2);
         toast({
           title: "Success",
           description: "Campaign created! Now add campaign items.",
@@ -615,6 +722,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     setCampaignTypeId("");
     setImageFile(null);
     setCampaignImageFile(null);
+    setCustomFields([]);
     campaignForm.reset();
     itemForm.reset();
     onOpenChange(false);
@@ -956,6 +1064,140 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                     </FormItem>
                   )}
                 />
+              </div>
+
+              {/* Business Information Section */}
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="font-semibold text-lg">Business/Sponsor Information</h3>
+                
+                <FormField
+                  control={campaignForm.control}
+                  name="requiresBusinessInfo"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Require business information</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Collect business details during checkout for sponsorship campaigns
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {campaignForm.watch("requiresBusinessInfo") && (
+                  <FormField
+                    control={campaignForm.control}
+                    name="fileUploadDeadlineDays"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>File upload deadline (days after purchase)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="e.g., 14" 
+                            {...field}
+                          />
+                        </FormControl>
+                        <div className="text-sm text-muted-foreground">
+                          Donors will be reminded to upload required files before this deadline
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+
+              {/* Custom Fields Section */}
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg">Custom Fields</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Add custom fields to collect additional information during checkout
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={addCustomField}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Field
+                  </Button>
+                </div>
+
+                {customFields.map((field, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Field Name"
+                        value={field.field_name}
+                        onChange={(e) => updateCustomField(index, 'field_name', e.target.value)}
+                        className="flex-1"
+                      />
+                      <Select
+                        value={field.field_type}
+                        onValueChange={(v) => updateCustomField(index, 'field_type', v)}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="text">Text</SelectItem>
+                          <SelectItem value="textarea">Long Text</SelectItem>
+                          <SelectItem value="number">Number</SelectItem>
+                          <SelectItem value="date">Date</SelectItem>
+                          <SelectItem value="url">URL</SelectItem>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="phone">Phone</SelectItem>
+                          <SelectItem value="file">File Upload</SelectItem>
+                          <SelectItem value="checkbox">Checkbox</SelectItem>
+                          <SelectItem value="select">Dropdown</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center gap-2 px-3 border rounded-md">
+                        <Switch
+                          checked={field.is_required}
+                          onCheckedChange={(v) => updateCustomField(index, 'is_required', v)}
+                        />
+                        <span className="text-sm whitespace-nowrap">Required</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeCustomField(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {field.field_type === 'select' && (
+                      <Textarea
+                        placeholder="Options (one per line)"
+                        value={field.field_options?.join('\n') || ''}
+                        onChange={(e) => updateCustomField(index, 'field_options', e.target.value.split('\n').filter(o => o.trim()))}
+                        rows={3}
+                      />
+                    )}
+
+                    <Input
+                      placeholder="Help text (optional)"
+                      value={field.help_text || ''}
+                      onChange={(e) => updateCustomField(index, 'help_text', e.target.value)}
+                    />
+                  </div>
+                ))}
+
+                {customFields.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No custom fields added yet. Click "Add Field" to create one.
+                  </div>
+                )}
               </div>
 
               <DialogFooter>
