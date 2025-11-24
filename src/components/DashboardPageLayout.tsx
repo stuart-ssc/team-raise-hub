@@ -1,5 +1,6 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import DashboardSidebar from "./DashboardSidebar";
+import DashboardSidebarSheet from "./DashboardSidebarSheet";
 import DashboardHeader from "./DashboardHeader";
 import DashboardBreadcrumbs from "./DashboardBreadcrumbs";
 import { Skeleton } from "./ui/skeleton";
@@ -26,15 +27,19 @@ const DashboardPageLayout = ({
   children,
 }: DashboardPageLayoutProps) => {
   const { activeGroup, handleGroupClick } = useActiveGroup();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background w-full">
       <DashboardSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <DashboardSidebarSheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} />
+      
+      <div className="flex-1 flex flex-col overflow-hidden ml-0 md:ml-16 lg:ml-64">
         <DashboardHeader
           onGroupClick={handleGroupClick}
           activeGroup={activeGroup}
           showRosters={showRosters}
+          onMobileMenuClick={() => setMobileMenuOpen(true)}
         />
         {showBreadcrumbs && (
           loading ? (

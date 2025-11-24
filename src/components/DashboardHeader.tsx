@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -9,7 +9,6 @@ import { useNavigate } from "react-router-dom";
 import { getLabel } from "@/lib/terminology";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsMobile } from "@/hooks/use-mobile";
 import NotificationDropdown from "@/components/NotificationDropdown";
 
 interface DashboardHeaderProps {
@@ -19,16 +18,15 @@ interface DashboardHeaderProps {
   } | null;
   onGroupClick?: (groupId: string | null) => void;
   showRosters?: boolean;
+  onMobileMenuClick?: () => void;
 }
 
-const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHeaderProps) => {
+const DashboardHeader = ({ activeGroup, onGroupClick, showRosters, onMobileMenuClick }: DashboardHeaderProps) => {
   const { signOut, user } = useAuth();
   const { organizationUser } = useOrganizationUser();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
   const [userInitials, setUserInitials] = useState("U");
-
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   // Fetch user profile for initials and avatar
@@ -84,7 +82,17 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
 
   return (
     <header className="bg-background px-4 md:px-6 pt-4 pb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-4 w-full md:w-auto">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          onClick={onMobileMenuClick}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        
+        <div className="flex flex-col gap-1 flex-1">
         <h1 id="school-name-title" className="text-xl md:text-3xl font-bold text-foreground">
           {organizationUser?.organization?.name || "Organization"}
         </h1>
@@ -115,6 +123,7 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters }: DashboardHe
                  {group.group_name}
                </Badge>
              ))}
+         </div>
         </div>
       </div>
       
