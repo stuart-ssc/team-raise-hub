@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3, Activity, Target, MoreHorizontal, Mail } from "lucide-react";
+import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3, Activity, Target, MoreHorizontal, Mail, Tag, RotateCcw } from "lucide-react";
 import { getSegmentInfo } from "@/lib/businessEngagement";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +91,15 @@ const Businesses = () => {
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [segmentFilter, setSegmentFilter] = useState<string>("all");
   const [highPriorityCount, setHighPriorityCount] = useState<number>(0);
+  
+  // Single business action states
+  const [menuBusinessId, setMenuBusinessId] = useState<string | null>(null);
+  const [showSingleEmailDialog, setShowSingleEmailDialog] = useState(false);
+  const [showSingleTagDialog, setShowSingleTagDialog] = useState(false);
+  const [showSingleEnrollDialog, setShowSingleEnrollDialog] = useState(false);
+  const [showSingleArchiveDialog, setShowSingleArchiveDialog] = useState(false);
+  const [showSingleRestoreDialog, setShowSingleRestoreDialog] = useState(false);
+  const [showSingleDeleteDialog, setShowSingleDeleteDialog] = useState(false);
 
   const canManageBusinesses = 
     organizationUser?.user_type?.permission_level === 'organization_admin' ||
@@ -396,6 +405,70 @@ const Businesses = () => {
     if (hasArchived && hasActive) return 'mixed';
     if (hasArchived) return 'archived';
     return 'active';
+  };
+
+  // Single business action handlers
+  const handleSingleArchive = async () => {
+    if (!menuBusinessId) return;
+    
+    try {
+      const { error } = await supabase
+        .from("businesses")
+        .update({ archived_at: new Date().toISOString() })
+        .eq("id", menuBusinessId);
+
+      if (error) throw error;
+      
+      toast.success("Business archived successfully");
+      fetchBusinesses();
+      setShowSingleArchiveDialog(false);
+      setMenuBusinessId(null);
+    } catch (error: any) {
+      console.error("Error archiving business:", error);
+      toast.error("Failed to archive business");
+    }
+  };
+
+  const handleSingleRestore = async () => {
+    if (!menuBusinessId) return;
+    
+    try {
+      const { error } = await supabase
+        .from("businesses")
+        .update({ archived_at: null, archived_by: null })
+        .eq("id", menuBusinessId);
+
+      if (error) throw error;
+      
+      toast.success("Business restored successfully");
+      fetchBusinesses();
+      setShowSingleRestoreDialog(false);
+      setMenuBusinessId(null);
+    } catch (error: any) {
+      console.error("Error restoring business:", error);
+      toast.error("Failed to restore business");
+    }
+  };
+
+  const handleSingleDelete = async () => {
+    if (!menuBusinessId) return;
+    
+    try {
+      const { error } = await supabase
+        .from("businesses")
+        .delete()
+        .eq("id", menuBusinessId);
+
+      if (error) throw error;
+      
+      toast.success("Business deleted successfully");
+      fetchBusinesses();
+      setShowSingleDeleteDialog(false);
+      setMenuBusinessId(null);
+    } catch (error: any) {
+      console.error("Error deleting business:", error);
+      toast.error("Failed to delete business");
+    }
   };
 
   // Get all unique tags from all businesses
@@ -729,17 +802,100 @@ const Businesses = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {canManageBusinesses && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingBusiness(business);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMenuBusinessId(business.id);
+                                setShowSingleEmailDialog(true);
+                              }}
+                            >
+                              <Mail className="h-4 w-4 mr-2" />
+                              Send Email
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMenuBusinessId(business.id);
+                                setShowSingleEnrollDialog(true);
+                              }}
+                            >
+                              <Target className="h-4 w-4 mr-2" />
+                              Enroll in Campaign
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMenuBusinessId(business.id);
+                                setShowSingleTagDialog(true);
+                              }}
+                            >
+                              <Tag className="h-4 w-4 mr-2" />
+                              Add Tags
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingBusiness(business);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit Details
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuSeparator />
+                            
+                            {!business.archived_at ? (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMenuBusinessId(business.id);
+                                  setShowSingleArchiveDialog(true);
+                                }}
+                              >
+                                <Archive className="h-4 w-4 mr-2" />
+                                Archive
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMenuBusinessId(business.id);
+                                  setShowSingleRestoreDialog(true);
+                                }}
+                              >
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                                Restore
+                              </DropdownMenuItem>
+                            )}
+                            
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMenuBusinessId(business.id);
+                                setShowSingleDeleteDialog(true);
+                              }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                       {getVerificationBadge(business.verification_status)}
                     </div>
@@ -921,6 +1077,105 @@ const Businesses = () => {
           fetchBusinesses();
         }}
       />
+
+      {/* Single Business Action Dialogs */}
+      {menuBusinessId && (
+        <>
+          <BulkEmailDialogBusiness
+            open={showSingleEmailDialog}
+            onOpenChange={setShowSingleEmailDialog}
+            selectedBusinessIds={[menuBusinessId]}
+            onComplete={() => {
+              setShowSingleEmailDialog(false);
+              setMenuBusinessId(null);
+            }}
+          />
+
+          <BulkTagDialogBusiness
+            open={showSingleTagDialog}
+            onOpenChange={setShowSingleTagDialog}
+            selectedBusinessIds={[menuBusinessId]}
+            onComplete={() => {
+              setShowSingleTagDialog(false);
+              setMenuBusinessId(null);
+              fetchBusinesses();
+            }}
+          />
+
+          <ManualEnrollmentDialog
+            open={showSingleEnrollDialog}
+            onOpenChange={setShowSingleEnrollDialog}
+            organizationId={organizationUser.organization_id}
+            preSelectedBusinessIds={[menuBusinessId]}
+            onSuccess={() => {
+              setShowSingleEnrollDialog(false);
+              setMenuBusinessId(null);
+              toast.success("Business enrolled in campaign");
+            }}
+          />
+        </>
+      )}
+
+      {/* Single Business Archive Dialog */}
+      <AlertDialog open={showSingleArchiveDialog} onOpenChange={setShowSingleArchiveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Business</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to archive this business? It will be moved to the archived section and can be restored later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setMenuBusinessId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSingleArchive}>
+              <Archive className="h-4 w-4 mr-2" />
+              Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Single Business Restore Dialog */}
+      <AlertDialog open={showSingleRestoreDialog} onOpenChange={setShowSingleRestoreDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore Business</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to restore this business? It will be moved back to the active businesses list.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setMenuBusinessId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSingleRestore}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Restore
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Single Business Delete Dialog */}
+      <AlertDialog open={showSingleDeleteDialog} onOpenChange={setShowSingleDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Business</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete this business? This action cannot be undone.
+              All linked donors and donation history will be preserved but the business profile will be removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setMenuBusinessId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleSingleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardPageLayout>
   );
 };
