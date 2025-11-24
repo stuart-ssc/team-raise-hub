@@ -44,6 +44,7 @@ import { ImportBusinessesDialog } from "@/components/ImportBusinessesDialog";
 import BulkActionToolbarBusiness from "@/components/BulkActionToolbarBusiness";
 import BulkTagDialogBusiness from "@/components/BulkTagDialogBusiness";
 import BulkEmailDialogBusiness from "@/components/BulkEmailDialogBusiness";
+import BusinessSubNav from "@/components/BusinessSubNav";
 
 interface BusinessProfile {
   id: string;
@@ -439,6 +440,7 @@ const Businesses = () => {
 
   return (
     <DashboardPageLayout segments={[{ label: "Businesses" }]}>
+      <BusinessSubNav />
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
