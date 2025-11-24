@@ -7,8 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Edit, Package } from "lucide-react";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import DashboardHeader from "@/components/DashboardHeader";
+import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
 import { AddCampaignForm } from "@/components/AddCampaignForm";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -188,14 +187,12 @@ const Dashboard = () => {
     title: "rmishra@testemail.com",
     role: "Standard"
   }];
-  return <div className="flex min-h-screen w-full bg-background">
-      <DashboardSidebar />
-      
-      <div className={`flex-1 flex flex-col ${isMobile ? 'pl-16' : ''}`}>
-        <DashboardHeader onGroupClick={handleGroupClick} activeGroup={activeGroup} />
-
-        {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 space-y-4 md:space-y-6">
+  return (
+    <DashboardPageLayout
+      showBreadcrumbs={false}
+      showRosters={true}
+    >
+      <div className="space-y-4 md:space-y-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             <Card>
@@ -457,34 +454,35 @@ const Dashboard = () => {
               )}
             </CardContent>
           </Card>
-        </main>
-      </div>
+        </div>
 
-      {/* Organization Setup Modal */}
-      {user && (
-        <OrganizationSetupModal 
-          open={showSetupModal}
-          onComplete={handleSetupComplete}
-          userId={user.id}
+        {/* Organization Setup Modal */}
+        {user && (
+          <OrganizationSetupModal 
+            open={showSetupModal}
+            onComplete={handleSetupComplete}
+            userId={user.id}
+          />
+        )}
+
+        {/* Add Campaign Form */}
+        <AddCampaignForm 
+          open={showAddCampaignForm}
+          onOpenChange={(open) => {
+            setShowAddCampaignForm(open);
+            if (!open) {
+              setEditCampaign(null);
+              setManageCampaignId(null);
+            }
+          }}
+          onCampaignAdded={() => {
+            fetchCampaigns();
+          }}
+          editCampaign={editCampaign}
+          manageCampaignId={manageCampaignId}
         />
-      )}
+      </DashboardPageLayout>
+    );
+  };
 
-      {/* Add Campaign Form */}
-      <AddCampaignForm 
-        open={showAddCampaignForm}
-        onOpenChange={(open) => {
-          setShowAddCampaignForm(open);
-          if (!open) {
-            setEditCampaign(null);
-            setManageCampaignId(null);
-          }
-        }}
-        onCampaignAdded={() => {
-          fetchCampaigns();
-        }}
-        editCampaign={editCampaign}
-        manageCampaignId={manageCampaignId}
-      />
-    </div>;
-};
 export default Dashboard;
