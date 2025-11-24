@@ -37,6 +37,7 @@ import OrderDetails from "./pages/OrderDetails";
 import MyOrders from "./pages/MyOrders";
 import Businesses from "./pages/Businesses";
 import BusinessProfile from "./pages/BusinessProfile";
+import BusinessAnalytics from "./pages/BusinessAnalytics";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
@@ -99,6 +100,7 @@ const AppContent = () => {
         <Route path="/dashboard/donors/outreach-queue" element={<ProtectedRoute><OutreachQueue /></ProtectedRoute>} />
         <Route path="/dashboard/businesses" element={<ProtectedRoute><Businesses /></ProtectedRoute>} />
         <Route path="/dashboard/businesses/:businessId" element={<ProtectedRoute><BusinessProfile /></ProtectedRoute>} />
+        <Route path="/dashboard/businesses/analytics" element={<ProtectedRoute><BusinessAnalytics /></ProtectedRoute>} />
         <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/dashboard/notifications" element={<ProtectedRoute><NotificationHistory /></ProtectedRoute>} />
         <Route path="/dashboard/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />

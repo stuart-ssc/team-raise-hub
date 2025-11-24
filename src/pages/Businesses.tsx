@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2 } from "lucide-react";
+import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { getTagColor, getTagBgColor } from "@/lib/utils";
@@ -397,6 +397,14 @@ const Businesses = () => {
                 Add Business
               </Button>
             )}
+            
+            <Button 
+              variant="outline"
+              onClick={() => navigate('/dashboard/businesses/analytics')}
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              View Analytics
+            </Button>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
