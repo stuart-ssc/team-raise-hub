@@ -17,6 +17,7 @@ import { Building2, DollarSign, Users, Handshake, Search, Download } from "lucid
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { CsvExportBusinessDialog } from "@/components/CsvExportBusinessDialog";
 
 interface BusinessProfile {
   id: string;
@@ -44,6 +45,7 @@ const Businesses = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [verificationFilter, setVerificationFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name");
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   useEffect(() => {
     if (organizationUser?.organization_id) {
@@ -228,7 +230,12 @@ const Businesses = () => {
             <h1 className="text-3xl font-bold text-foreground">Business Partnerships</h1>
             <p className="text-muted-foreground">Manage corporate relationships and donations</p>
           </div>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowExportDialog(true)}
+            disabled={filteredAndSortedBusinesses.length === 0}
+          >
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
@@ -393,6 +400,12 @@ const Businesses = () => {
           </div>
         )}
       </div>
+
+      <CsvExportBusinessDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        selectedBusinessIds={filteredAndSortedBusinesses.map(b => b.id)}
+      />
     </DashboardPageLayout>
   );
 };
