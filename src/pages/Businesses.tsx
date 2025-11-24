@@ -20,14 +20,26 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { CsvExportBusinessDialog } from "@/components/CsvExportBusinessDialog";
 import { AddBusinessDialog } from "@/components/AddBusinessDialog";
 import { EditBusinessDialog } from "@/components/EditBusinessDialog";
 import { ImportBusinessesDialog } from "@/components/ImportBusinessesDialog";
+import BulkActionToolbarBusiness from "@/components/BulkActionToolbarBusiness";
 
 interface BusinessProfile {
   id: string;
@@ -61,6 +73,9 @@ const Businesses = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState<BusinessProfile | null>(null);
+  const [selectedBusinessIds, setSelectedBusinessIds] = useState<string[]>([]);
+  const [showBulkArchiveDialog, setShowBulkArchiveDialog] = useState(false);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
   const canManageBusinesses = 
     organizationUser?.user_type?.permission_level === 'organization_admin' ||
@@ -213,6 +228,72 @@ const Businesses = () => {
       : 0,
   };
 
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedBusinessIds(filteredAndSortedBusinesses.map(b => b.id));
+    } else {
+      setSelectedBusinessIds([]);
+    }
+  };
+
+  const handleSelectBusiness = (businessId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBusinessIds(prev => [...prev, businessId]);
+    } else {
+      setSelectedBusinessIds(prev => prev.filter(id => id !== businessId));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedBusinessIds([]);
+  };
+
+  // Bulk operations
+  const handleBulkArchive = async () => {
+    try {
+      const { error } = await supabase
+        .from('businesses')
+        .update({ 
+          archived_at: new Date().toISOString()
+        })
+        .in('id', selectedBusinessIds);
+
+      if (error) throw error;
+
+      toast.success(`Archived ${selectedBusinessIds.length} business${selectedBusinessIds.length === 1 ? '' : 'es'}`);
+      setSelectedBusinessIds([]);
+      setShowBulkArchiveDialog(false);
+      fetchBusinesses();
+    } catch (error) {
+      console.error('Error archiving businesses:', error);
+      toast.error('Failed to archive businesses');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from('businesses')
+        .delete()
+        .in('id', selectedBusinessIds);
+
+      if (error) throw error;
+
+      toast.success(`Deleted ${selectedBusinessIds.length} business${selectedBusinessIds.length === 1 ? '' : 'es'}`);
+      setSelectedBusinessIds([]);
+      setShowBulkDeleteDialog(false);
+      fetchBusinesses();
+    } catch (error) {
+      console.error('Error deleting businesses:', error);
+      toast.error('Failed to delete businesses');
+    }
+  };
+
+  const handleBulkExport = () => {
+    setShowExportDialog(true);
+  };
+
   const getVerificationBadge = (status: string) => {
     switch (status) {
       case "verified":
@@ -250,9 +331,18 @@ const Businesses = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Business Partnerships</h1>
-            <p className="text-muted-foreground">Manage corporate relationships and donations</p>
+          <div className="flex items-center gap-4">
+            {canManageBusinesses && filteredAndSortedBusinesses.length > 0 && (
+              <Checkbox
+                checked={selectedBusinessIds.length === filteredAndSortedBusinesses.length && filteredAndSortedBusinesses.length > 0}
+                onCheckedChange={handleSelectAll}
+                aria-label="Select all businesses"
+              />
+            )}
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Business Partnerships</h1>
+              <p className="text-muted-foreground">Manage corporate relationships and donations</p>
+            </div>
           </div>
           <div className="flex gap-2">
             {canManageBusinesses && (
@@ -408,43 +498,55 @@ const Businesses = () => {
             {filteredAndSortedBusinesses.map((business) => (
               <Card
                 key={business.id}
-                className="relative cursor-pointer hover:shadow-lg transition-shadow group"
-                onClick={() => navigate(`/dashboard/businesses/${business.id}`)}
+                className="relative hover:shadow-lg transition-shadow group"
               >
-                {canManageBusinesses && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingBusiness(business);
-                    }}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                )}
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      {business.logo_url ? (
-                        <img
-                          src={business.logo_url}
-                          alt={business.business_name}
-                          className="h-10 w-10 rounded-lg object-cover"
+                    <div className="flex items-center gap-3 flex-1">
+                      {canManageBusinesses && (
+                        <Checkbox
+                          checked={selectedBusinessIds.includes(business.id)}
+                          onCheckedChange={(checked) => handleSelectBusiness(business.id, checked as boolean)}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Select ${business.business_name}`}
                         />
-                      ) : (
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Building2 className="h-5 w-5 text-primary" />
-                        </div>
                       )}
-                      <div>
-                        <CardTitle className="text-base">{business.business_name}</CardTitle>
-                        {business.industry && (
-                          <Badge variant="outline" className="mt-1">{business.industry}</Badge>
+                      <div 
+                        className="flex items-center gap-3 flex-1 cursor-pointer"
+                        onClick={() => navigate(`/dashboard/businesses/${business.id}`)}
+                      >
+                        {business.logo_url ? (
+                          <img
+                            src={business.logo_url}
+                            alt={business.business_name}
+                            className="h-10 w-10 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Building2 className="h-5 w-5 text-primary" />
+                          </div>
                         )}
+                        <div>
+                          <CardTitle className="text-base">{business.business_name}</CardTitle>
+                          {business.industry && (
+                            <Badge variant="outline" className="mt-1">{business.industry}</Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    {canManageBusinesses && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingBusiness(business);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
                     {getVerificationBadge(business.verification_status)}
                   </div>
                 </CardHeader>
@@ -477,7 +579,7 @@ const Businesses = () => {
       <CsvExportBusinessDialog
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
-        selectedBusinessIds={filteredAndSortedBusinesses.map(b => b.id)}
+        selectedBusinessIds={selectedBusinessIds.length > 0 ? selectedBusinessIds : filteredAndSortedBusinesses.map(b => b.id)}
       />
 
       <AddBusinessDialog
@@ -500,6 +602,52 @@ const Businesses = () => {
           onSuccess={fetchBusinesses}
         />
       )}
+
+      <BulkActionToolbarBusiness
+        selectedCount={selectedBusinessIds.length}
+        onClearSelection={handleClearSelection}
+        onArchive={() => setShowBulkArchiveDialog(true)}
+        onDelete={() => setShowBulkDeleteDialog(true)}
+        onExportCsv={handleBulkExport}
+      />
+
+      <AlertDialog open={showBulkArchiveDialog} onOpenChange={setShowBulkArchiveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Businesses</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to archive {selectedBusinessIds.length} business{selectedBusinessIds.length === 1 ? '' : 'es'}? 
+              They will be moved to the archived section and can be restored later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkArchive}>
+              <Archive className="h-4 w-4 mr-2" />
+              Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Businesses</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete {selectedBusinessIds.length} business{selectedBusinessIds.length === 1 ? '' : 'es'}? 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardPageLayout>
   );
 };
