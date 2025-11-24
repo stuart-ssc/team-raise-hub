@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3, Activity, Target, MoreHorizontal, Mail, Tag, RotateCcw } from "lucide-react";
+import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3, Activity, Target, MoreHorizontal, Mail, Tag, RotateCcw, CheckSquare, Square } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getSegmentInfo } from "@/lib/businessEngagement";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -520,18 +520,9 @@ const Businesses = () => {
         {/* Header */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {canManageBusinesses && filteredAndSortedBusinesses.length > 0 && (
-                <Checkbox
-                  checked={selectedBusinessIds.length === filteredAndSortedBusinesses.length && filteredAndSortedBusinesses.length > 0}
-                  onCheckedChange={handleSelectAll}
-                  aria-label="Select all businesses"
-                />
-              )}
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">Business Partnerships</h1>
-                <p className="text-muted-foreground">Manage corporate relationships and donations</p>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Business Partnerships</h1>
+              <p className="text-muted-foreground">Manage corporate relationships and donations</p>
             </div>
             
             {/* Desktop: Individual Buttons */}
@@ -792,6 +783,26 @@ const Businesses = () => {
                   <SelectItem value="new">New</SelectItem>
                 </SelectContent>
               </Select>
+
+              {canManageBusinesses && filteredAndSortedBusinesses.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => handleSelectAll(selectedBusinessIds.length !== filteredAndSortedBusinesses.length)}
+                  className="w-full md:w-auto"
+                >
+                  {selectedBusinessIds.length === filteredAndSortedBusinesses.length && filteredAndSortedBusinesses.length > 0 ? (
+                    <>
+                      <CheckSquare className="h-4 w-4 mr-2" />
+                      Deselect All
+                    </>
+                  ) : (
+                    <>
+                      <Square className="h-4 w-4 mr-2" />
+                      Select All
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
