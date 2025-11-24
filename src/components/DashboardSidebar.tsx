@@ -35,6 +35,15 @@ const DashboardSidebar = () => {
     if (end) {
       return location.pathname === path;
     }
+    // Special handling for nested routes
+    if (path === '/dashboard/businesses') {
+      return location.pathname === '/dashboard/businesses' || 
+             location.pathname.startsWith('/dashboard/businesses/');
+    }
+    if (path === '/dashboard/donors') {
+      return location.pathname === '/dashboard/donors' || 
+             location.pathname.startsWith('/dashboard/donors/');
+    }
     return location.pathname.startsWith(path);
   };
 
