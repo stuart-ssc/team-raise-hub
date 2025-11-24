@@ -44,6 +44,7 @@ import { ImportBusinessesDialog } from "@/components/ImportBusinessesDialog";
 import BulkActionToolbarBusiness from "@/components/BulkActionToolbarBusiness";
 import BulkTagDialogBusiness from "@/components/BulkTagDialogBusiness";
 import BulkEmailDialogBusiness from "@/components/BulkEmailDialogBusiness";
+import { ManualEnrollmentDialog } from "@/components/ManualEnrollmentDialog";
 
 interface BusinessProfile {
   id: string;
@@ -86,6 +87,7 @@ const Businesses = () => {
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
   const [showBulkEmailDialog, setShowBulkEmailDialog] = useState(false);
+  const [showEnrollmentDialog, setShowEnrollmentDialog] = useState(false);
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [segmentFilter, setSegmentFilter] = useState<string>("all");
   const [highPriorityCount, setHighPriorityCount] = useState<number>(0);
@@ -829,6 +831,7 @@ const Businesses = () => {
           onExportCsv={handleBulkExport}
           onAddTags={handleBulkTag}
           onSendEmail={handleBulkEmail}
+          onEnrollInCampaign={() => setShowEnrollmentDialog(true)}
           selectedBusinessesStatus={getSelectedBusinessesStatus()}
         />
 
@@ -905,6 +908,17 @@ const Businesses = () => {
         selectedBusinessIds={selectedBusinessIds}
         onComplete={() => {
           setSelectedBusinessIds([]);
+        }}
+      />
+
+      <ManualEnrollmentDialog
+        open={showEnrollmentDialog}
+        onOpenChange={setShowEnrollmentDialog}
+        organizationId={organizationUser.organization_id}
+        preSelectedBusinessIds={selectedBusinessIds}
+        onSuccess={() => {
+          setSelectedBusinessIds([]);
+          fetchBusinesses();
         }}
       />
     </DashboardPageLayout>

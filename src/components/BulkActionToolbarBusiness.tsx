@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Archive, Trash2, Download, X, Tag, Mail, ArchiveRestore } from "lucide-react";
+import { Archive, Trash2, Download, X, Tag, Mail, ArchiveRestore, UserPlus } from "lucide-react";
 
 interface BulkActionToolbarBusinessProps {
   selectedCount: number;
@@ -11,6 +11,7 @@ interface BulkActionToolbarBusinessProps {
   onExportCsv: () => void;
   onAddTags: () => void;
   onSendEmail: () => void;
+  onEnrollInCampaign?: () => void;
   selectedBusinessesStatus: 'active' | 'archived' | 'mixed';
 }
 
@@ -23,6 +24,7 @@ const BulkActionToolbarBusiness = ({
   onExportCsv,
   onAddTags,
   onSendEmail,
+  onEnrollInCampaign,
   selectedBusinessesStatus,
 }: BulkActionToolbarBusinessProps) => {
   if (selectedCount === 0) return null;
@@ -61,6 +63,18 @@ const BulkActionToolbarBusiness = ({
             <Mail className="h-4 w-4" />
             Send Email
           </Button>
+
+          {onEnrollInCampaign && selectedBusinessesStatus === 'active' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onEnrollInCampaign}
+              className="gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Enroll
+            </Button>
+          )}
 
           {selectedBusinessesStatus === 'active' && (
             <Button

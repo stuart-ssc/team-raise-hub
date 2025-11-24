@@ -9,6 +9,7 @@ import { Plus, Play, Pause, Mail, Users, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { BusinessCampaignDialog } from "@/components/BusinessCampaignDialog";
+import { ManualEnrollmentDialog } from "@/components/ManualEnrollmentDialog";
 
 interface Campaign {
   id: string;
@@ -27,6 +28,8 @@ export default function BusinessNurtureCampaigns() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [stats, setStats] = useState<Record<string, any>>({});
+  const [enrollmentOpen, setEnrollmentOpen] = useState(false);
+  const [enrollmentCampaignId, setEnrollmentCampaignId] = useState<string>("");
 
   useEffect(() => {
     if (organizationId) {
@@ -214,35 +217,51 @@ export default function BusinessNurtureCampaigns() {
               </div>
 
               {stats[campaign.id] && (
-                <div className="grid grid-cols-3 gap-4 pt-4 border-t">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Users className="w-4 h-4 text-primary" />
+                <>
+                  <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Users className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{stats[campaign.id].total}</p>
+                        <p className="text-xs text-muted-foreground">Total Enrolled</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-2xl font-bold">{stats[campaign.id].total}</p>
-                      <p className="text-xs text-muted-foreground">Total Enrolled</p>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-500/10 rounded-lg">
+                        <TrendingUp className="w-4 h-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{stats[campaign.id].active}</p>
+                        <p className="text-xs text-muted-foreground">Active</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-500/10 rounded-lg">
+                        <Mail className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{stats[campaign.id].completed}</p>
+                        <p className="text-xs text-muted-foreground">Completed</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-500/10 rounded-lg">
-                      <TrendingUp className="w-4 h-4 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">{stats[campaign.id].active}</p>
-                      <p className="text-xs text-muted-foreground">Active</p>
-                    </div>
+                  <div className="mt-4 pt-4 border-t border-border flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setEnrollmentCampaignId(campaign.id);
+                        setEnrollmentOpen(true);
+                      }}
+                      className="flex-1"
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      View Matching
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/10 rounded-lg">
-                      <Mail className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">{stats[campaign.id].completed}</p>
-                      <p className="text-xs text-muted-foreground">Completed</p>
-                    </div>
-                  </div>
-                </div>
+                </>
               )}
             </Card>
           ))}
@@ -257,6 +276,16 @@ export default function BusinessNurtureCampaigns() {
         onSuccess={() => {
           fetchCampaigns();
           setDialogOpen(false);
+        }}
+      />
+
+      <ManualEnrollmentDialog
+        open={enrollmentOpen}
+        onOpenChange={setEnrollmentOpen}
+        organizationId={organizationId}
+        preSelectedBusinessIds={[]}
+        onSuccess={() => {
+          fetchCampaigns();
         }}
       />
     </DashboardPageLayout>
