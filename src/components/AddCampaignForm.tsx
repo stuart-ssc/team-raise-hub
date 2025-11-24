@@ -25,6 +25,8 @@ const campaignSchema = z.object({
   campaignTypeId: z.string().min(1, "Campaign type is required"),
   slug: z.string().min(1, "URL slug is required"),
   imageUrl: z.string().optional(),
+  requiresBusinessInfo: z.boolean().optional(),
+  fileUploadDeadlineDays: z.string().optional(),
 });
 
 const campaignItemSchema = z.object({
@@ -84,6 +86,16 @@ interface CampaignItem {
   image?: string;
 }
 
+interface CustomField {
+  id?: string;
+  field_name: string;
+  field_type: 'text' | 'textarea' | 'number' | 'date' | 'url' | 'email' | 'phone' | 'file' | 'checkbox' | 'select';
+  field_options?: string[];
+  is_required: boolean;
+  help_text?: string;
+  display_order: number;
+}
+
 export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampaign, manageCampaignId }: AddCampaignFormProps) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [campaignTypes, setCampaignTypes] = useState<CampaignType[]>([]);
@@ -99,6 +111,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
   const [accordionValue, setAccordionValue] = useState<string>("");
   const [slugExists, setSlugExists] = useState(false);
   const [checkingSlug, setCheckingSlug] = useState(false);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const { organizationUser } = useOrganizationUser();
   const { toast } = useToast();
 
@@ -114,6 +127,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       campaignTypeId: "",
       slug: "",
       imageUrl: "",
+      requiresBusinessInfo: false,
+      fileUploadDeadlineDays: "",
     },
   });
 

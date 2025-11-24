@@ -14,6 +14,211 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_donors: {
+        Row: {
+          auto_linked: boolean | null
+          blocked_at: string | null
+          blocked_by: string | null
+          business_id: string
+          created_at: string | null
+          donor_id: string
+          id: string
+          is_primary_contact: boolean | null
+          linked_at: string | null
+          organization_id: string
+          role: string | null
+        }
+        Insert: {
+          auto_linked?: boolean | null
+          blocked_at?: string | null
+          blocked_by?: string | null
+          business_id: string
+          created_at?: string | null
+          donor_id: string
+          id?: string
+          is_primary_contact?: boolean | null
+          linked_at?: string | null
+          organization_id: string
+          role?: string | null
+        }
+        Update: {
+          auto_linked?: boolean | null
+          blocked_at?: string | null
+          blocked_by?: string | null
+          business_id?: string
+          created_at?: string | null
+          donor_id?: string
+          id?: string
+          is_primary_contact?: boolean | null
+          linked_at?: string | null
+          organization_id?: string
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_donors_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_donors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_update_notifications: {
+        Row: {
+          business_id: string
+          changes: Json
+          created_at: string | null
+          id: string
+          notification_sent: boolean | null
+          updated_by: string
+        }
+        Insert: {
+          business_id: string
+          changes: Json
+          created_at?: string | null
+          id?: string
+          notification_sent?: boolean | null
+          updated_by: string
+        }
+        Update: {
+          business_id?: string
+          changes?: Json
+          created_at?: string | null
+          id?: string
+          notification_sent?: boolean | null
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_update_notifications_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      businesses: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          business_email: string | null
+          business_name: string
+          business_phone: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          ein: string | null
+          id: string
+          industry: string | null
+          logo_url: string | null
+          state: string | null
+          updated_at: string | null
+          verification_status: string | null
+          verification_submitted_at: string | null
+          verified_at: string | null
+          website_url: string | null
+          zip: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          business_email?: string | null
+          business_name: string
+          business_phone?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          ein?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          state?: string | null
+          updated_at?: string | null
+          verification_status?: string | null
+          verification_submitted_at?: string | null
+          verified_at?: string | null
+          website_url?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          business_email?: string | null
+          business_name?: string
+          business_phone?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          ein?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          state?: string | null
+          updated_at?: string | null
+          verification_status?: string | null
+          verification_submitted_at?: string | null
+          verified_at?: string | null
+          website_url?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
+      campaign_custom_fields: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          display_order: number | null
+          field_name: string
+          field_options: Json | null
+          field_type: string
+          help_text: string | null
+          id: string
+          is_required: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          display_order?: number | null
+          field_name: string
+          field_options?: Json | null
+          field_type: string
+          help_text?: string | null
+          id?: string
+          is_required?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          display_order?: number | null
+          field_name?: string
+          field_options?: Json | null
+          field_type?: string
+          help_text?: string | null
+          id?: string
+          is_required?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_custom_fields_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_items: {
         Row: {
           campaign_id: string
@@ -142,12 +347,14 @@ export type Database = {
           created_at: string
           description: string | null
           end_date: string | null
+          file_upload_deadline_days: number | null
           goal_amount: number | null
           group_id: string | null
           id: string
           image_url: string | null
           name: string
           publication_status: string | null
+          requires_business_info: boolean | null
           slug: string | null
           start_date: string | null
           status: boolean | null
@@ -159,12 +366,14 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
+          file_upload_deadline_days?: number | null
           goal_amount?: number | null
           group_id?: string | null
           id?: string
           image_url?: string | null
           name: string
           publication_status?: string | null
+          requires_business_info?: boolean | null
           slug?: string | null
           start_date?: string | null
           status?: boolean | null
@@ -176,12 +385,14 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
+          file_upload_deadline_days?: number | null
           goal_amount?: number | null
           group_id?: string | null
           id?: string
           image_url?: string | null
           name?: string
           publication_status?: string | null
+          requires_business_info?: boolean | null
           slug?: string | null
           start_date?: string | null
           status?: boolean | null
@@ -836,6 +1047,44 @@ export type Database = {
         }
         Relationships: []
       }
+      file_upload_reminders: {
+        Row: {
+          created_at: string | null
+          deadline_date: string
+          files_completed: boolean | null
+          id: string
+          last_reminder_sent_at: string | null
+          order_id: string
+          reminder_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          deadline_date: string
+          files_completed?: boolean | null
+          id?: string
+          last_reminder_sent_at?: string | null
+          order_id: string
+          reminder_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          deadline_date?: string
+          files_completed?: boolean | null
+          id?: string
+          last_reminder_sent_at?: string | null
+          order_id?: string
+          reminder_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_upload_reminders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_type: {
         Row: {
           created_at: string
@@ -1024,10 +1273,13 @@ export type Database = {
       }
       notifications: {
         Row: {
+          action_url: string | null
+          business_id: string | null
           created_at: string
           id: string
           link: string | null
           message: string
+          order_id: string | null
           read: boolean
           title: string
           type: string
@@ -1035,10 +1287,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          action_url?: string | null
+          business_id?: string | null
           created_at?: string
           id?: string
           link?: string | null
           message: string
+          order_id?: string | null
           read?: boolean
           title: string
           type?: string
@@ -1046,17 +1301,35 @@ export type Database = {
           user_id: string
         }
         Update: {
+          action_url?: string | null
+          business_id?: string | null
           created_at?: string
           id?: string
           link?: string | null
           message?: string
+          order_id?: string | null
           read?: boolean
           title?: string
           type?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nurture_campaigns: {
         Row: {
@@ -1201,14 +1474,56 @@ export type Database = {
           },
         ]
       }
+      order_custom_field_values: {
+        Row: {
+          created_at: string | null
+          field_id: string
+          field_value: string | null
+          id: string
+          order_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          field_id: string
+          field_value?: string | null
+          id?: string
+          order_id: string
+        }
+        Update: {
+          created_at?: string | null
+          field_id?: string
+          field_value?: string | null
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_custom_field_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_custom_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_custom_field_values_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           application_fee_amount: number | null
+          business_id: string | null
+          business_purchase: boolean | null
           campaign_id: string
           created_at: string
           currency: string | null
           customer_email: string | null
           customer_name: string | null
+          files_complete: boolean | null
           id: string
           items: Json
           payment_processor: string | null
@@ -1224,11 +1539,14 @@ export type Database = {
         }
         Insert: {
           application_fee_amount?: number | null
+          business_id?: string | null
+          business_purchase?: boolean | null
           campaign_id: string
           created_at?: string
           currency?: string | null
           customer_email?: string | null
           customer_name?: string | null
+          files_complete?: boolean | null
           id?: string
           items: Json
           payment_processor?: string | null
@@ -1244,11 +1562,14 @@ export type Database = {
         }
         Update: {
           application_fee_amount?: number | null
+          business_id?: string | null
+          business_purchase?: boolean | null
           campaign_id?: string
           created_at?: string
           currency?: string | null
           customer_email?: string | null
           customer_name?: string | null
+          files_complete?: boolean | null
           id?: string
           items?: Json
           payment_processor?: string | null
@@ -1264,10 +1585,65 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "orders_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_businesses: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          custom_data: Json | null
+          id: string
+          notes: string | null
+          organization_id: string
+          relationship_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          custom_data?: Json | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          relationship_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          custom_data?: Json | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          relationship_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_businesses_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_businesses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1774,6 +2150,66 @@ export type Database = {
             columns: ["state_id"]
             isOneToOne: false
             referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sponsorship_files: {
+        Row: {
+          created_at: string | null
+          custom_field_id: string | null
+          file_name: string
+          file_path: string
+          file_size_bytes: number | null
+          file_type: string
+          file_url: string | null
+          id: string
+          mime_type: string | null
+          order_id: string
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_field_id?: string | null
+          file_name: string
+          file_path: string
+          file_size_bytes?: number | null
+          file_type: string
+          file_url?: string | null
+          id?: string
+          mime_type?: string | null
+          order_id: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_field_id?: string | null
+          file_name?: string
+          file_path?: string
+          file_size_bytes?: number | null
+          file_type?: string
+          file_url?: string | null
+          id?: string
+          mime_type?: string | null
+          order_id?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsorship_files_custom_field_id_fkey"
+            columns: ["custom_field_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_custom_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsorship_files_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
