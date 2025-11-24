@@ -1,5 +1,8 @@
 project_id = "tfrebmhionpuowpzedvz"
 
+[functions.import-businesses]
+verify_jwt = true
+
 [functions.stripe-connect-onboard]
 verify_jwt = true
 

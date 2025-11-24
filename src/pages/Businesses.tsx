@@ -13,13 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil } from "lucide-react";
+import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { CsvExportBusinessDialog } from "@/components/CsvExportBusinessDialog";
 import { AddBusinessDialog } from "@/components/AddBusinessDialog";
 import { EditBusinessDialog } from "@/components/EditBusinessDialog";
+import { ImportBusinessesDialog } from "@/components/ImportBusinessesDialog";
 
 interface BusinessProfile {
   id: string;
@@ -51,6 +52,7 @@ const Businesses = () => {
   const [sortBy, setSortBy] = useState<string>("name");
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState<BusinessProfile | null>(null);
 
   const canManageBusinesses = 
@@ -247,10 +249,19 @@ const Businesses = () => {
           </div>
           <div className="flex gap-2">
             {canManageBusinesses && (
-              <Button onClick={() => setShowAddDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Business
-              </Button>
+              <>
+                <Button onClick={() => setShowAddDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Business
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowImportDialog(true)}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import CSV
+                </Button>
+              </>
             )}
             <Button 
               variant="outline" 
@@ -457,6 +468,12 @@ const Businesses = () => {
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSuccess={fetchBusinesses}
+      />
+
+      <ImportBusinessesDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        onImportComplete={fetchBusinesses}
       />
 
       {editingBusiness && (
