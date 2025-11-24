@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_activity_log: {
+        Row: {
+          activity_data: Json | null
+          activity_type: string
+          business_id: string
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          activity_data?: Json | null
+          activity_type: string
+          business_id: string
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          activity_data?: Json | null
+          activity_type?: string
+          business_id?: string
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_activity_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_donors: {
         Row: {
           auto_linked: boolean | null
@@ -64,6 +96,66 @@ export type Database = {
           },
           {
             foreignKeyName: "business_donors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_insights: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          expansion_potential: string | null
+          generated_at: string | null
+          id: string
+          insights: Json
+          optimal_outreach_date: string | null
+          organization_id: string
+          partnership_health_score: number | null
+          priority_score: number | null
+          risk_level: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          expansion_potential?: string | null
+          generated_at?: string | null
+          id?: string
+          insights?: Json
+          optimal_outreach_date?: string | null
+          organization_id: string
+          partnership_health_score?: number | null
+          priority_score?: number | null
+          risk_level?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          expansion_potential?: string | null
+          generated_at?: string | null
+          id?: string
+          insights?: Json
+          optimal_outreach_date?: string | null
+          organization_id?: string
+          partnership_health_score?: number | null
+          priority_score?: number | null
+          risk_level?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_insights_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_insights_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
