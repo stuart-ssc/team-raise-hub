@@ -1,25 +1,29 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Archive, Trash2, Download, X, Tag, Mail } from "lucide-react";
+import { Archive, Trash2, Download, X, Tag, Mail, ArchiveRestore } from "lucide-react";
 
 interface BulkActionToolbarBusinessProps {
   selectedCount: number;
   onClearSelection: () => void;
   onArchive: () => void;
+  onRestore: () => void;
   onDelete: () => void;
   onExportCsv: () => void;
   onAddTags: () => void;
   onSendEmail: () => void;
+  selectedBusinessesStatus: 'active' | 'archived' | 'mixed';
 }
 
 const BulkActionToolbarBusiness = ({
   selectedCount,
   onClearSelection,
   onArchive,
+  onRestore,
   onDelete,
   onExportCsv,
   onAddTags,
   onSendEmail,
+  selectedBusinessesStatus,
 }: BulkActionToolbarBusinessProps) => {
   if (selectedCount === 0) return null;
 
@@ -58,15 +62,29 @@ const BulkActionToolbarBusiness = ({
             Send Email
           </Button>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onArchive}
-            className="gap-2"
-          >
-            <Archive className="h-4 w-4" />
-            Archive
-          </Button>
+          {selectedBusinessesStatus === 'active' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onArchive}
+              className="gap-2"
+            >
+              <Archive className="h-4 w-4" />
+              Archive
+            </Button>
+          )}
+
+          {selectedBusinessesStatus === 'archived' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onRestore}
+              className="gap-2"
+            >
+              <ArchiveRestore className="h-4 w-4" />
+              Restore
+            </Button>
+          )}
 
           <Button
             variant="secondary"
