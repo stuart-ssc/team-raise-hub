@@ -22,15 +22,27 @@ serve(async (req) => {
       }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      throw new Error('Unauthorized');
+    console.log('Authenticating user...');
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError) {
+      console.error('Auth error:', authError);
+      throw new Error(`Authentication failed: ${authError.message}`);
     }
+    
+    if (!user) {
+      console.error('No user found in session');
+      throw new Error('Unauthorized - No user session found');
+    }
+
+    console.log('User authenticated:', user.id);
 
     const { organizationId } = await req.json();
     if (!organizationId) {
       throw new Error('organizationId is required');
     }
+
+    console.log('Verifying permissions for organization:', organizationId);
 
     // Verify user belongs to organization and has permission
     const { data: orgUser } = await supabaseClient
@@ -336,13 +348,22 @@ Questions:
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in generate-business-outreach-queue:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || 'An unexpected error occurred',
+        details: error.stack?.split('\n')[0] || 'No additional details'
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: error.message?.includes('Unauthorized') || error.message?.includes('permissions') ? 401 : 400,
       }
     );
   }

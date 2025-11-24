@@ -98,17 +98,28 @@ export default function BusinessOutreachQueue() {
   const generateQueue = async () => {
     try {
       setGenerating(true);
+
+      // Verify user is authenticated
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        toast.error('Please log in to generate the queue');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-business-outreach-queue', {
-        body: { organizationId }
+        body: { organizationId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) throw error;
 
       toast.success(`Queue generated: ${data.summary.processed} businesses processed`);
       fetchQueue();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating queue:', error);
-      toast.error('Failed to generate queue');
+      toast.error(error?.message || 'Failed to generate queue');
     } finally {
       setGenerating(false);
     }
