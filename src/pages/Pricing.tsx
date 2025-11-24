@@ -191,7 +191,7 @@ const Pricing = () => {
                       <li className="flex items-start gap-2">
                         <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                         <span className="text-muted-foreground">
-                          Donors choose to cover the fee during checkout
+                          The fee is automatically added at checkout
                         </span>
                       </li>
                       <li className="flex items-start gap-2">
@@ -474,7 +474,7 @@ const Pricing = () => {
                   Is it really free for my organization?
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Yes, absolutely! There are no monthly fees, setup costs, or charges to your organization. You can create unlimited campaigns and add unlimited users at no cost. The only fee is a 10% platform fee that donors can choose to cover, ensuring your organization receives 100% of every donation.
+                  Yes, absolutely! There are no monthly fees, setup costs, or charges to your organization. You can create unlimited campaigns and add unlimited users at no cost. The only fee is a 10% platform fee that is automatically added to the donation amount, ensuring your organization receives 100% of every donation.
                 </AccordionContent>
               </AccordionItem>
               
@@ -483,16 +483,16 @@ const Pricing = () => {
                   How does the 10% fee work exactly?
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  When a donor wants to give $100, they're presented with the option to cover the platform fee at checkout. If they choose to cover it, they pay $110 total, and your organization receives the full $100. The 10% fee includes all payment processing costs, so there are no additional charges or surprises.
+                  When a donor wants to give $100 to your organization, the 10% platform fee is automatically added at checkout. The donor pays $110 total, and your organization receives the full $100 donation. The platform fee covers payment processing, secure hosting, support, and ongoing development.
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="item-3" className="border rounded-lg px-6">
                 <AccordionTrigger className="text-left hover:no-underline">
-                  Do donors have to cover the fee?
+                  How is the platform fee charged?
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Yes, covering the platform fee is the default option during checkout. Most donors are happy to help ensure their full intended donation goes to your cause. This model allows us to keep the platform completely free for organizations while maintaining a sustainable service.
+                  The 10% platform fee is automatically added to all donations at checkout. This ensures that 100% of the intended donation amount goes directly to your organization, while the platform fee covers payment processing and platform costs. This model allows us to keep Sponsorly completely free for organizations while maintaining a sustainable, high-quality service.
                 </AccordionContent>
               </AccordionItem>
               
