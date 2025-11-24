@@ -26,6 +26,7 @@ import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialo
 import { EditBusinessDialog } from "@/components/EditBusinessDialog";
 import { BusinessActivityTimeline } from "@/components/BusinessActivityTimeline";
 import { BusinessInsightsPanel } from "@/components/BusinessInsightsPanel";
+import { ManualEnrollmentDialog } from "@/components/ManualEnrollmentDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -105,6 +106,7 @@ const BusinessProfile = () => {
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [unlinkingDonor, setUnlinkingDonor] = useState<LinkedDonor | null>(null);
+  const [showEnrollmentDialog, setShowEnrollmentDialog] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [savingTags, setSavingTags] = useState(false);
 
@@ -472,6 +474,12 @@ const BusinessProfile = () => {
                   <UserPlus className="h-4 w-4 mr-2" />
                   Link Employee
                 </Button>
+                {!business.archived_at && (
+                  <Button variant="outline" onClick={() => setShowEnrollmentDialog(true)}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Enroll in Campaign
+                  </Button>
+                )}
                 {organizationUser?.user_type?.permission_level === 'organization_admin' && (
                   business?.archived_at ? (
                     <Button variant="outline" onClick={() => setShowRestoreDialog(true)}>
@@ -928,6 +936,16 @@ const BusinessProfile = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ManualEnrollmentDialog
+        open={showEnrollmentDialog}
+        onOpenChange={setShowEnrollmentDialog}
+        organizationId={organizationUser.organization_id}
+        preSelectedBusinessIds={businessId ? [businessId] : []}
+        onSuccess={() => {
+          fetchBusinessDetails();
+        }}
+      />
     </DashboardPageLayout>
   );
 };
