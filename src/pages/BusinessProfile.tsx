@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag } from "lucide-react";
+import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
@@ -90,6 +90,8 @@ const BusinessProfile = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [unlinkingDonor, setUnlinkingDonor] = useState<LinkedDonor | null>(null);
   const [newTag, setNewTag] = useState("");
   const [savingTags, setSavingTags] = useState(false);
@@ -252,6 +254,30 @@ const BusinessProfile = () => {
     }
   };
 
+  const handleRestore = async () => {
+    setIsRestoring(true);
+    try {
+      const { error } = await supabase
+        .from("businesses")
+        .update({
+          archived_at: null,
+          archived_by: null,
+        })
+        .eq("id", businessId);
+
+      if (error) throw error;
+
+      toast.success("Business restored successfully");
+      setShowRestoreDialog(false);
+      fetchBusinessDetails();
+    } catch (error: any) {
+      console.error("Error restoring business:", error);
+      toast.error("Failed to restore business");
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
   const addTag = async (tagToAdd: string) => {
     if (!tagToAdd.trim() || !business) return;
     
@@ -377,6 +403,23 @@ const BusinessProfile = () => {
           Back to Businesses
         </Button>
 
+        {/* Archived Warning Banner */}
+        {business.archived_at && (
+          <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                <Archive className="h-5 w-5" />
+                <div>
+                  <p className="font-semibold">This business is archived</p>
+                  <p className="text-sm text-orange-600 dark:text-orange-500">
+                    Archived on {new Date(business.archived_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
@@ -392,7 +435,14 @@ const BusinessProfile = () => {
               </div>
             )}
             <div>
-              <h1 className="text-3xl font-bold text-foreground">{business.business_name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold text-foreground">{business.business_name}</h1>
+                {business.archived_at && (
+                  <Badge variant="secondary" className="bg-orange-500/10 text-orange-700 dark:text-orange-400">
+                    Archived
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-2">
                 {getVerificationBadge(business.verification_status)}
                 {business.industry && <Badge variant="outline">{business.industry}</Badge>}
@@ -410,11 +460,18 @@ const BusinessProfile = () => {
                   <UserPlus className="h-4 w-4 mr-2" />
                   Link Employee
                 </Button>
-                {organizationUser?.user_type?.permission_level === 'organization_admin' && !business?.archived_at && (
-                  <Button variant="outline" onClick={() => setShowArchiveDialog(true)}>
-                    <Archive className="h-4 w-4 mr-2" />
-                    Archive
-                  </Button>
+                {organizationUser?.user_type?.permission_level === 'organization_admin' && (
+                  business?.archived_at ? (
+                    <Button variant="outline" onClick={() => setShowRestoreDialog(true)}>
+                      <ArchiveRestore className="h-4 w-4 mr-2" />
+                      Restore
+                    </Button>
+                  ) : (
+                    <Button variant="outline" onClick={() => setShowArchiveDialog(true)}>
+                      <Archive className="h-4 w-4 mr-2" />
+                      Archive
+                    </Button>
+                  )
                 )}
               </div>
             )}
@@ -752,6 +809,24 @@ const BusinessProfile = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleArchive} disabled={isArchiving}>
               {isArchiving ? "Archiving..." : "Archive Business"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore Business</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to restore <strong>{business?.business_name}</strong>? 
+              It will be moved back to active status and will appear in your active businesses list.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRestore} disabled={isRestoring}>
+              {isRestoring ? "Restoring..." : "Restore Business"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

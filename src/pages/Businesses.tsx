@@ -79,6 +79,7 @@ const Businesses = () => {
   const [editingBusiness, setEditingBusiness] = useState<BusinessProfile | null>(null);
   const [selectedBusinessIds, setSelectedBusinessIds] = useState<string[]>([]);
   const [showBulkArchiveDialog, setShowBulkArchiveDialog] = useState(false);
+  const [showBulkRestoreDialog, setShowBulkRestoreDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
   const [showBulkEmailDialog, setShowBulkEmailDialog] = useState(false);
@@ -331,6 +332,44 @@ const Businesses = () => {
     setShowBulkEmailDialog(true);
   };
 
+  const handleBulkRestore = async () => {
+    try {
+      const { error } = await supabase
+        .from('businesses')
+        .update({ 
+          archived_at: null,
+          archived_by: null
+        })
+        .in('id', selectedBusinessIds);
+
+      if (error) throw error;
+
+      toast.success(`Restored ${selectedBusinessIds.length} business${selectedBusinessIds.length === 1 ? '' : 'es'}`);
+      setSelectedBusinessIds([]);
+      setShowBulkRestoreDialog(false);
+      fetchBusinesses();
+    } catch (error) {
+      console.error('Error restoring businesses:', error);
+      toast.error('Failed to restore businesses');
+    }
+  };
+
+  // Helper to determine selection status
+  const getSelectedBusinessesStatus = (): 'active' | 'archived' | 'mixed' => {
+    const selectedBusinesses = businesses.filter(b => 
+      selectedBusinessIds.includes(b.id)
+    );
+    
+    if (selectedBusinesses.length === 0) return 'active';
+    
+    const hasArchived = selectedBusinesses.some(b => b.archived_at);
+    const hasActive = selectedBusinesses.some(b => !b.archived_at);
+    
+    if (hasArchived && hasActive) return 'mixed';
+    if (hasArchived) return 'archived';
+    return 'active';
+  };
+
   // Get all unique tags from all businesses
   const allTags = Array.from(
     new Set(
@@ -568,7 +607,7 @@ const Businesses = () => {
             {filteredAndSortedBusinesses.map((business) => (
               <Card
                 key={business.id}
-                className="relative hover:shadow-lg transition-shadow group"
+                className={`relative hover:shadow-lg transition-shadow group ${business.archived_at ? 'opacity-60' : ''}`}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -596,28 +635,37 @@ const Businesses = () => {
                             <Building2 className="h-5 w-5 text-primary" />
                           </div>
                         )}
-                        <div>
-                          <CardTitle className="text-base">{business.business_name}</CardTitle>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-base">{business.business_name}</CardTitle>
+                            {business.archived_at && (
+                              <Badge variant="secondary" className="bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
+                                Archived
+                              </Badge>
+                            )}
+                          </div>
                           {business.industry && (
                             <Badge variant="outline" className="mt-1">{business.industry}</Badge>
                           )}
                         </div>
                       </div>
                     </div>
-                    {canManageBusinesses && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingBusiness(business);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {getVerificationBadge(business.verification_status)}
+                    <div className="flex items-center gap-2">
+                      {canManageBusinesses && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingBusiness(business);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {getVerificationBadge(business.verification_status)}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -701,10 +749,12 @@ const Businesses = () => {
           selectedCount={selectedBusinessIds.length}
           onClearSelection={handleClearSelection}
           onArchive={() => setShowBulkArchiveDialog(true)}
+          onRestore={() => setShowBulkRestoreDialog(true)}
           onDelete={() => setShowBulkDeleteDialog(true)}
           onExportCsv={handleBulkExport}
           onAddTags={handleBulkTag}
           onSendEmail={handleBulkEmail}
+          selectedBusinessesStatus={getSelectedBusinessesStatus()}
         />
 
       <AlertDialog open={showBulkArchiveDialog} onOpenChange={setShowBulkArchiveDialog}>
@@ -721,6 +771,25 @@ const Businesses = () => {
             <AlertDialogAction onClick={handleBulkArchive}>
               <Archive className="h-4 w-4 mr-2" />
               Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBulkRestoreDialog} onOpenChange={setShowBulkRestoreDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore Businesses</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to restore {selectedBusinessIds.length} business{selectedBusinessIds.length === 1 ? '' : 'es'}? 
+              They will be moved back to active status and will appear in your active businesses list.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkRestore}>
+              <Archive className="h-4 w-4 mr-2" />
+              Restore
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
