@@ -15,9 +15,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X } from "lucide-react";
+import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit } from "lucide-react";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
+import { EditBusinessDialog } from "@/components/EditBusinessDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
@@ -70,6 +71,7 @@ const BusinessProfile = () => {
   const [loading, setLoading] = useState(true);
   const [savingNotes, setSavingNotes] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [unlinkingDonor, setUnlinkingDonor] = useState<LinkedDonor | null>(null);
 
   useEffect(() => {
@@ -290,10 +292,16 @@ const BusinessProfile = () => {
           </div>
           {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
             organizationUser?.user_type?.permission_level === 'program_manager') && (
-            <Button onClick={() => setShowLinkDialog(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Link Employee
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowEditDialog(true)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+              <Button onClick={() => setShowLinkDialog(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Link Employee
+              </Button>
+            </div>
           )}
         </div>
 
@@ -549,6 +557,15 @@ const BusinessProfile = () => {
         isPrimaryContact={unlinkingDonor?.is_primary_contact || false}
         onSuccess={fetchBusinessDetails}
       />
+
+      {business && (
+        <EditBusinessDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          business={business}
+          onSuccess={fetchBusinessDetails}
+        />
+      )}
     </DashboardPageLayout>
   );
 };
