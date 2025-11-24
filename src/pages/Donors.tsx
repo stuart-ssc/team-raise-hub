@@ -32,8 +32,33 @@ import {
   Filter,
   ArrowUpDown,
   Zap,
-  Upload
+  Upload,
+  MoreHorizontal,
+  Tag,
+  Pencil,
+  Building2,
+  Trash2
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import EditDonorDialog from "@/components/EditDonorDialog";
+import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
+import { getPermissionLevel, PermissionLevel } from "@/lib/permissions";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -51,6 +76,7 @@ interface DonorProfile {
   lifetime_value: number;
   tags: string[] | null;
   preferred_communication: string;
+  notes: string | null;
 }
 
 const Donors = () => {
@@ -69,6 +95,15 @@ const Donors = () => {
   const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
   const [bulkEmailDialogOpen, setBulkEmailDialogOpen] = useState(false);
   const [csvExportDialogOpen, setCsvExportDialogOpen] = useState(false);
+  
+  // Single donor action states
+  const [menuDonorId, setMenuDonorId] = useState<string | null>(null);
+  const [menuDonor, setMenuDonor] = useState<DonorProfile | null>(null);
+  const [showSingleEmailDialog, setShowSingleEmailDialog] = useState(false);
+  const [showSingleTagDialog, setShowSingleTagDialog] = useState(false);
+  const [showLinkBusinessDialog, setShowLinkBusinessDialog] = useState(false);
+  const [showEditDonorDialog, setShowEditDonorDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     if (organizationUser) {
@@ -233,6 +268,44 @@ const Donors = () => {
     if (score >= 70) return "High";
     if (score >= 40) return "Medium";
     return "Low";
+  };
+
+  const canManageDonors = () => {
+    if (!organizationUser?.user_type?.name) return false;
+    const permissionLevel = getPermissionLevel(organizationUser.user_type.name);
+    return (
+      permissionLevel === PermissionLevel.ORGANIZATION_ADMIN ||
+      permissionLevel === PermissionLevel.PROGRAM_MANAGER
+    );
+  };
+
+  const handleDeleteDonor = async () => {
+    if (!menuDonor) return;
+
+    try {
+      const { error } = await supabase
+        .from("donor_profiles")
+        .delete()
+        .eq("id", menuDonor.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Donor deleted successfully",
+      });
+
+      fetchDonors();
+      setShowDeleteDialog(false);
+      setMenuDonor(null);
+    } catch (error: any) {
+      console.error("Error deleting donor:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete donor",
+        variant: "destructive",
+      });
+    }
   };
 
   const stats = {
@@ -438,7 +511,7 @@ const Donors = () => {
                       return (
                         <Card
                           key={donor.id}
-                          className={`cursor-pointer hover:shadow-md transition-all ${
+                          className={`group cursor-pointer hover:shadow-md transition-all ${
                             isSelected
                               ? "border-primary ring-2 ring-primary/20"
                               : "hover:border-primary/50"
@@ -460,7 +533,7 @@ const Donors = () => {
                                     {donor.email}
                                   </p>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
                                   <input
                                     type="checkbox"
                                     checked={isSelected}
@@ -477,6 +550,76 @@ const Donors = () => {
                                   <Badge className={getEngagementColor(donor.engagement_score)}>
                                     {getEngagementLabel(donor.engagement_score)}
                                   </Badge>
+                                  {canManageDonors() && (
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 w-8 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                        >
+                                          <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="w-52">
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMenuDonor(donor);
+                                            setMenuDonorId(donor.id);
+                                            setShowSingleEmailDialog(true);
+                                          }}
+                                        >
+                                          <Mail className="mr-2 h-4 w-4" />
+                                          Send Email
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMenuDonor(donor);
+                                            setMenuDonorId(donor.id);
+                                            setShowSingleTagDialog(true);
+                                          }}
+                                        >
+                                          <Tag className="mr-2 h-4 w-4" />
+                                          Add Tags
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMenuDonor(donor);
+                                            setMenuDonorId(donor.id);
+                                            setShowLinkBusinessDialog(true);
+                                          }}
+                                        >
+                                          <Building2 className="mr-2 h-4 w-4" />
+                                          Link to Business
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMenuDonor(donor);
+                                            setShowEditDonorDialog(true);
+                                          }}
+                                        >
+                                          <Pencil className="mr-2 h-4 w-4" />
+                                          Edit Details
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMenuDonor(donor);
+                                            setShowDeleteDialog(true);
+                                          }}
+                                          className="text-destructive focus:text-destructive"
+                                        >
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  )}
                                 </div>
                               </div>
                       
@@ -565,6 +708,93 @@ const Donors = () => {
             });
           }}
         />
+
+        {/* Single Donor Email Dialog */}
+        {menuDonorId && (
+          <BulkEmailDialog
+            open={showSingleEmailDialog}
+            onOpenChange={setShowSingleEmailDialog}
+            selectedDonorIds={[menuDonorId]}
+            onComplete={() => {
+              setMenuDonorId(null);
+              setMenuDonor(null);
+            }}
+          />
+        )}
+
+        {/* Single Donor Tag Dialog */}
+        {menuDonorId && (
+          <BulkTagDialog
+            open={showSingleTagDialog}
+            onOpenChange={setShowSingleTagDialog}
+            selectedDonorIds={[menuDonorId]}
+            onComplete={() => {
+              setMenuDonorId(null);
+              setMenuDonor(null);
+              fetchDonors();
+            }}
+          />
+        )}
+
+        {/* Link to Business Dialog */}
+        {menuDonorId && organizationUser?.organization_id && (
+          <LinkDonorToBusinessDialog
+            open={showLinkBusinessDialog}
+            onOpenChange={setShowLinkBusinessDialog}
+            donorId={menuDonorId}
+            organizationId={organizationUser.organization_id}
+            onSuccess={() => {
+              setMenuDonorId(null);
+              setMenuDonor(null);
+              toast({
+                title: "Success",
+                description: "Donor linked to business successfully",
+              });
+            }}
+          />
+        )}
+
+        {/* Edit Donor Dialog */}
+        {menuDonor && (
+          <EditDonorDialog
+            open={showEditDonorDialog}
+            onOpenChange={setShowEditDonorDialog}
+            donor={menuDonor}
+            onComplete={() => {
+              setMenuDonor(null);
+              fetchDonors();
+            }}
+          />
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete{" "}
+                <strong>
+                  {menuDonor?.first_name && menuDonor?.last_name
+                    ? `${menuDonor.first_name} ${menuDonor.last_name}`
+                    : menuDonor?.email}
+                </strong>
+                . This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setMenuDonor(null)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteDonor}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         </div>
     </DashboardPageLayout>
   );
