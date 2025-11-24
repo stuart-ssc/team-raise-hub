@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { supabase } from "@/integrations/supabase/client";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import DashboardHeader from "@/components/DashboardHeader";
+import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -288,13 +287,12 @@ const Profile = () => {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-muted/40">
-      <DashboardSidebar />
-      <div className="flex-1 flex flex-col">
-        <DashboardHeader />
-        <main className="flex-1 p-6">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold mb-6">Profile Settings</h1>
+    <DashboardPageLayout
+      showBreadcrumbs={false}
+      hideGroupsFilter={true}
+    >
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6">Profile Settings</h1>
             
             <Tabs defaultValue="personal" className="space-y-6">
               <TabsList>
@@ -609,9 +607,7 @@ const Profile = () => {
               </TabsContent>
             </Tabs>
           </div>
-        </main>
-      </div>
-    </div>
+    </DashboardPageLayout>
   );
 };
 
