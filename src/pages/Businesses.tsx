@@ -518,20 +518,90 @@ const Businesses = () => {
     <DashboardPageLayout segments={[{ label: "Businesses" }]}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {canManageBusinesses && filteredAndSortedBusinesses.length > 0 && (
-              <Checkbox
-                checked={selectedBusinessIds.length === filteredAndSortedBusinesses.length && filteredAndSortedBusinesses.length > 0}
-                onCheckedChange={handleSelectAll}
-                aria-label="Select all businesses"
-              />
-            )}
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Business Partnerships</h1>
-              <p className="text-muted-foreground">Manage corporate relationships and donations</p>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {canManageBusinesses && filteredAndSortedBusinesses.length > 0 && (
+                <Checkbox
+                  checked={selectedBusinessIds.length === filteredAndSortedBusinesses.length && filteredAndSortedBusinesses.length > 0}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all businesses"
+                />
+              )}
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Business Partnerships</h1>
+                <p className="text-muted-foreground">Manage corporate relationships and donations</p>
+              </div>
             </div>
+            
+            {/* Desktop: Individual Buttons */}
+            {!isMobile && (
+              <div className="flex gap-2">
+                {canManageBusinesses && (
+                  <Button onClick={() => setShowAddDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Business
+                  </Button>
+                )}
+                
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/dashboard/businesses/analytics')}
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  View Analytics
+                </Button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <MoreHorizontal className="h-4 w-4 mr-2" />
+                      More
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate('/dashboard/businesses/nurture')}>
+                      <Mail className="h-4 w-4 mr-2" />
+                      Nurture Campaigns
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => navigate('/dashboard/businesses/outreach-queue')}
+                    >
+                      <Target className="h-4 w-4 mr-2" />
+                      Outreach Queue
+                      {highPriorityCount > 0 && (
+                        <Badge 
+                          variant="destructive" 
+                          className="ml-2 px-1.5 py-0.5 text-xs"
+                        >
+                          {highPriorityCount}
+                        </Badge>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/dashboard/businesses/campaign-analytics')}>
+                      <Activity className="h-4 w-4 mr-2" />
+                      Campaign Analytics
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {canManageBusinesses && (
+                      <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Import
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem 
+                      onClick={() => setShowExportDialog(true)}
+                      disabled={filteredAndSortedBusinesses.length === 0}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Export
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
           </div>
+
           {/* Mobile: Consolidated Dropdown */}
           {isMobile && (
             <DropdownMenu>
@@ -585,73 +655,6 @@ const Businesses = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
-
-          {/* Desktop: Individual Buttons */}
-          {!isMobile && (
-            <div className="flex gap-2">
-              {canManageBusinesses && (
-                <Button onClick={() => setShowAddDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Business
-                </Button>
-              )}
-              
-              <Button 
-                variant="outline"
-                onClick={() => navigate('/dashboard/businesses/analytics')}
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                View Analytics
-              </Button>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <MoreHorizontal className="h-4 w-4 mr-2" />
-                    More
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate('/dashboard/businesses/nurture')}>
-                    <Mail className="h-4 w-4 mr-2" />
-                    Nurture Campaigns
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => navigate('/dashboard/businesses/outreach-queue')}
-                  >
-                    <Target className="h-4 w-4 mr-2" />
-                    Outreach Queue
-                    {highPriorityCount > 0 && (
-                      <Badge 
-                        variant="destructive" 
-                        className="ml-2 px-1.5 py-0.5 text-xs"
-                      >
-                        {highPriorityCount}
-                      </Badge>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/dashboard/businesses/campaign-analytics')}>
-                    <Activity className="h-4 w-4 mr-2" />
-                    Campaign Analytics
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {canManageBusinesses && (
-                    <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Import
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem 
-                    onClick={() => setShowExportDialog(true)}
-                    disabled={filteredAndSortedBusinesses.length === 0}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
           )}
         </div>
 
