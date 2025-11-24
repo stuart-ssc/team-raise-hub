@@ -106,15 +106,18 @@ export default function BusinessOutreachQueue() {
         return;
       }
 
+      console.log('Calling edge function with org ID:', organizationId);
+
       const { data, error } = await supabase.functions.invoke('generate-business-outreach-queue', {
-        body: { organizationId },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
+        body: { organizationId }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
+      console.log('Queue generation response:', data);
       toast.success(`Queue generated: ${data.summary.processed} businesses processed`);
       fetchQueue();
     } catch (error: any) {
