@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
-import BusinessSubNav from "@/components/BusinessSubNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -409,7 +408,6 @@ const BusinessProfile = () => {
         { label: business.business_name },
       ]}
     >
-      <BusinessSubNav />
       <div className="space-y-6">
         {/* Back Button */}
         <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard/businesses")}>
