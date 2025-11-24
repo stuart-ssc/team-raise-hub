@@ -40,6 +40,7 @@ import { AddBusinessDialog } from "@/components/AddBusinessDialog";
 import { EditBusinessDialog } from "@/components/EditBusinessDialog";
 import { ImportBusinessesDialog } from "@/components/ImportBusinessesDialog";
 import BulkActionToolbarBusiness from "@/components/BulkActionToolbarBusiness";
+import BulkTagDialogBusiness from "@/components/BulkTagDialogBusiness";
 
 interface BusinessProfile {
   id: string;
@@ -58,6 +59,7 @@ interface BusinessProfile {
   linked_donors_count: number;
   total_donations: number;
   last_donation_date: string | null;
+  tags: string[] | null;
 }
 
 const Businesses = () => {
@@ -76,6 +78,8 @@ const Businesses = () => {
   const [selectedBusinessIds, setSelectedBusinessIds] = useState<string[]>([]);
   const [showBulkArchiveDialog, setShowBulkArchiveDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
+  const [tagFilter, setTagFilter] = useState<string>("all");
 
   const canManageBusinesses = 
     organizationUser?.user_type?.permission_level === 'organization_admin' ||
@@ -196,7 +200,11 @@ const Businesses = () => {
         (archiveFilter === "active" && !business.archived_at) ||
         (archiveFilter === "archived" && business.archived_at);
 
-      return matchesSearch && matchesVerification && matchesArchive;
+      const matchesTag =
+        tagFilter === "all" ||
+        (business.tags && business.tags.includes(tagFilter));
+
+      return matchesSearch && matchesVerification && matchesArchive && matchesTag;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -293,6 +301,19 @@ const Businesses = () => {
   const handleBulkExport = () => {
     setShowExportDialog(true);
   };
+
+  const handleBulkTag = () => {
+    setShowBulkTagDialog(true);
+  };
+
+  // Get all unique tags from all businesses
+  const allTags = Array.from(
+    new Set(
+      businesses
+        .flatMap(b => b.tags || [])
+        .filter(tag => tag && tag.trim())
+    )
+  ).sort();
 
   const getVerificationBadge = (status: string) => {
     switch (status) {
@@ -481,6 +502,22 @@ const Businesses = () => {
                   <SelectItem value="recent">Recent Activity</SelectItem>
                 </SelectContent>
               </Select>
+
+              {allTags.length > 0 && (
+                <Select value={tagFilter} onValueChange={setTagFilter}>
+                  <SelectTrigger className="w-full md:w-[200px]">
+                    <SelectValue placeholder="Filter by Tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Tags</SelectItem>
+                    {allTags.map(tag => (
+                      <SelectItem key={tag} value={tag}>
+                        {tag}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -569,6 +606,25 @@ const Businesses = () => {
                       </div>
                     )}
                   </div>
+
+                  {business.tags && business.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-border">
+                      {business.tags.slice(0, 3).map((tag, idx) => (
+                        <Badge 
+                          key={idx} 
+                          variant="secondary" 
+                          className="text-xs"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                      {business.tags.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{business.tags.length - 3} more
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -603,13 +659,14 @@ const Businesses = () => {
         />
       )}
 
-      <BulkActionToolbarBusiness
-        selectedCount={selectedBusinessIds.length}
-        onClearSelection={handleClearSelection}
-        onArchive={() => setShowBulkArchiveDialog(true)}
-        onDelete={() => setShowBulkDeleteDialog(true)}
-        onExportCsv={handleBulkExport}
-      />
+        <BulkActionToolbarBusiness
+          selectedCount={selectedBusinessIds.length}
+          onClearSelection={handleClearSelection}
+          onArchive={() => setShowBulkArchiveDialog(true)}
+          onDelete={() => setShowBulkDeleteDialog(true)}
+          onExportCsv={handleBulkExport}
+          onAddTags={handleBulkTag}
+        />
 
       <AlertDialog open={showBulkArchiveDialog} onOpenChange={setShowBulkArchiveDialog}>
         <AlertDialogContent>
@@ -648,6 +705,16 @@ const Businesses = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkTagDialogBusiness
+        open={showBulkTagDialog}
+        onOpenChange={setShowBulkTagDialog}
+        selectedBusinessIds={selectedBusinessIds}
+        onComplete={() => {
+          fetchBusinesses();
+          setSelectedBusinessIds([]);
+        }}
+      />
     </DashboardPageLayout>
   );
 };

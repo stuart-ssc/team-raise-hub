@@ -123,6 +123,7 @@ export type Database = {
           industry: string | null
           logo_url: string | null
           state: string | null
+          tags: string[] | null
           updated_at: string | null
           verification_status: string | null
           verification_submitted_at: string | null
@@ -146,6 +147,7 @@ export type Database = {
           industry?: string | null
           logo_url?: string | null
           state?: string | null
+          tags?: string[] | null
           updated_at?: string | null
           verification_status?: string | null
           verification_submitted_at?: string | null
@@ -169,6 +171,7 @@ export type Database = {
           industry?: string | null
           logo_url?: string | null
           state?: string | null
+          tags?: string[] | null
           updated_at?: string | null
           verification_status?: string | null
           verification_submitted_at?: string | null
