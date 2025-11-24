@@ -104,3 +104,12 @@ verify_jwt = true
 
 [functions.generate-business-insights]
 verify_jwt = true
+
+[functions.send-business-outreach-email]
+verify_jwt = false
+
+[functions.process-business-nurture-campaigns]
+verify_jwt = false
+
+[functions.trigger-business-campaign]
+verify_jwt = true

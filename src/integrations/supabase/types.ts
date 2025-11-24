@@ -163,6 +163,165 @@ export type Database = {
           },
         ]
       }
+      business_nurture_campaigns: {
+        Row: {
+          campaign_type: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          name: string
+          organization_id: string
+          status: string
+          trigger_config: Json
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_type: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          status?: string
+          trigger_config?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          status?: string
+          trigger_config?: Json
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_nurture_campaigns_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_nurture_enrollments: {
+        Row: {
+          business_id: string
+          campaign_id: string
+          completed_at: string | null
+          created_at: string | null
+          current_sequence_id: string | null
+          enrolled_at: string | null
+          id: string
+          next_send_at: string | null
+          queue_item_id: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          campaign_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          current_sequence_id?: string | null
+          enrolled_at?: string | null
+          id?: string
+          next_send_at?: string | null
+          queue_item_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          campaign_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          current_sequence_id?: string | null
+          enrolled_at?: string | null
+          id?: string
+          next_send_at?: string | null
+          queue_item_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_nurture_enrollments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_nurture_enrollments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "business_nurture_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_nurture_enrollments_current_sequence_id_fkey"
+            columns: ["current_sequence_id"]
+            isOneToOne: false
+            referencedRelation: "business_nurture_sequences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_nurture_enrollments_queue_item_id_fkey"
+            columns: ["queue_item_id"]
+            isOneToOne: false
+            referencedRelation: "business_outreach_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_nurture_sequences: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          email_body: string
+          email_template_key: string
+          id: string
+          send_delay_days: number
+          sequence_order: number
+          subject_line: string
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          email_body: string
+          email_template_key: string
+          id?: string
+          send_delay_days?: number
+          sequence_order: number
+          subject_line: string
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          email_body?: string
+          email_template_key?: string
+          id?: string
+          send_delay_days?: number
+          sequence_order?: number
+          subject_line?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_nurture_sequences_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "business_nurture_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_outreach_queue: {
         Row: {
           actioned_at: string | null
