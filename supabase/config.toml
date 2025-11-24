@@ -1,5 +1,8 @@
 project_id = "tfrebmhionpuowpzedvz"
 
+[functions.generate-business-outreach-queue]
+verify_jwt = true
+
 [functions.calculate-business-engagement]
 verify_jwt = true
 

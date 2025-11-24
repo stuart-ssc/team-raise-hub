@@ -163,6 +163,89 @@ export type Database = {
           },
         ]
       }
+      business_outreach_queue: {
+        Row: {
+          actioned_at: string | null
+          actioned_by: string | null
+          business_id: string
+          created_at: string | null
+          expansion_potential_level: string
+          generated_at: string | null
+          id: string
+          organization_id: string
+          partnership_health_status: string
+          priority_score: number
+          queue_insights: Json
+          recommended_outreach_date: string
+          recommended_outreach_target: string
+          specific_contact_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actioned_at?: string | null
+          actioned_by?: string | null
+          business_id: string
+          created_at?: string | null
+          expansion_potential_level?: string
+          generated_at?: string | null
+          id?: string
+          organization_id: string
+          partnership_health_status?: string
+          priority_score?: number
+          queue_insights?: Json
+          recommended_outreach_date: string
+          recommended_outreach_target: string
+          specific_contact_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actioned_at?: string | null
+          actioned_by?: string | null
+          business_id?: string
+          created_at?: string | null
+          expansion_potential_level?: string
+          generated_at?: string | null
+          id?: string
+          organization_id?: string
+          partnership_health_status?: string
+          priority_score?: number
+          queue_insights?: Json
+          recommended_outreach_date?: string
+          recommended_outreach_target?: string
+          specific_contact_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_outreach_queue_actioned_by_fkey"
+            columns: ["actioned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_outreach_queue_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_outreach_queue_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_outreach_queue_specific_contact_id_fkey"
+            columns: ["specific_contact_id"]
+            isOneToOne: false
+            referencedRelation: "donor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_update_notifications: {
         Row: {
           business_id: string
