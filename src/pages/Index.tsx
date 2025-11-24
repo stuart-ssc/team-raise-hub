@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
-import SponsorlyLogo from "@/components/SponsorlyLogo";
+import MarketingHeader from "@/components/MarketingHeader";
+import MarketingFooter from "@/components/MarketingFooter";
 import { 
   ArrowRight,
   Shield, 
@@ -88,23 +89,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <a href="/" className="flex items-center">
-            <SponsorlyLogo variant="full" theme="light" />
-          </a>
-          <div className="flex items-center gap-4">
-            <Button 
-              onClick={() => navigate('/signup')}
-              className="gap-2"
-            >
-              Get Started
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <MarketingHeader />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">
@@ -382,59 +367,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t bg-accent/30 py-12">
-        <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div className="col-span-2 space-y-4">
-              <SponsorlyLogo variant="full" theme="light" />
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Empowering schools and non-profits to raise funds efficiently and transparently.
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold text-foreground mb-4">Product</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Security</a></li>
-                <li>
-                  <button 
-                    onClick={() => navigate('/donor-receipts')}
-                    className="hover:text-foreground transition-colors text-left"
-                  >
-                    Tax Receipts
-                  </button>
-                </li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold text-foreground mb-4">Company</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">About</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Privacy</a></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Sponsorly™. All rights reserved.
-            </p>
-            <div className="flex items-center gap-4">
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Terms
-              </a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Privacy
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 };

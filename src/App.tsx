@@ -6,6 +6,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ActiveGroupProvider } from "@/contexts/ActiveGroupContext";
 import Index from "./pages/Index";
+import Platform from "./pages/Platform";
+import Features from "./pages/Features";
+import Pricing from "./pages/Pricing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
@@ -80,6 +83,9 @@ const AppContent = () => {
       <PWAInstallPrompt />
       <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/platform" element={<Platform />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/pricing" element={<Pricing />} />
         <Route path="/install" element={<InstallApp />} />
         <Route path="/native-features" element={<ProtectedRoute><NativeFeatures /></ProtectedRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
