@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Users, Heart, Target, BarChart3, Menu, Package } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Menu, Package, Building2 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ const sidebarItems = [
   { title: "Groups", icon: Users, url: "/dashboard/groups" },
   { title: "Campaigns", icon: Target, url: "/dashboard/campaigns" },
   { title: "Donors", icon: Heart, url: "/dashboard/donors" },
+  { title: "Businesses", icon: Building2, url: "/dashboard/businesses" },
   { title: "Users", icon: Users, url: "/dashboard/users" },
   { title: "Reports", icon: BarChart3, url: "/dashboard/reports" },
 ];
@@ -72,8 +73,8 @@ const DashboardSidebar = () => {
             const Icon = item.icon;
             const active = isActive(item.url, item.end);
             
-            // Hide Users, Campaigns, and Donors menu items for unauthorized roles
-            if ((item.title === "Users" || item.title === "Campaigns" || item.title === "Donors") && !canSeeUsers) {
+            // Hide Users, Campaigns, Donors, and Businesses menu items for unauthorized roles
+            if ((item.title === "Users" || item.title === "Campaigns" || item.title === "Donors" || item.title === "Businesses") && !canSeeUsers) {
               return null;
             }
             
