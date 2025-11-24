@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Users, Heart, Target, BarChart3, Menu } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Menu, Package } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { getLabel } from "@/lib/terminology";
 
 const sidebarItems = [
   { title: "Home", icon: Home, url: "/dashboard", end: true },
+  { title: "My Orders", icon: Package, url: "/dashboard/orders" },
   { title: "Groups", icon: Users, url: "/dashboard/groups" },
   { title: "Campaigns", icon: Target, url: "/dashboard/campaigns" },
   { title: "Donors", icon: Heart, url: "/dashboard/donors" },
