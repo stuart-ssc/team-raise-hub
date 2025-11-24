@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore, TrendingUp, Activity } from "lucide-react";
+import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore, TrendingUp, Activity, Play, Pause, XCircle } from "lucide-react";
 import { getSegmentInfo } from "@/lib/businessEngagement";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -88,6 +88,23 @@ interface DonationHistory {
   campaign_name: string;
 }
 
+interface CampaignEnrollment {
+  id: string;
+  campaign_id: string;
+  campaign_name: string;
+  campaign_type: string;
+  status: 'active' | 'paused' | 'completed' | 'cancelled';
+  enrolled_at: string;
+  completed_at: string | null;
+  next_send_at: string | null;
+  current_sequence_id: string | null;
+  current_sequence_order: number;
+  total_sequences: number;
+  emails_sent: number;
+  emails_opened: number;
+  emails_clicked: number;
+}
+
 const BusinessProfile = () => {
   const { businessId } = useParams();
   const navigate = useNavigate();
@@ -109,10 +126,18 @@ const BusinessProfile = () => {
   const [showEnrollmentDialog, setShowEnrollmentDialog] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [savingTags, setSavingTags] = useState(false);
+  const [enrollments, setEnrollments] = useState<CampaignEnrollment[]>([]);
+  const [loadingEnrollments, setLoadingEnrollments] = useState(true);
+  const [pausingId, setPausingId] = useState<string | null>(null);
+  const [resumingId, setResumingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [enrollmentToCancel, setEnrollmentToCancel] = useState<CampaignEnrollment | null>(null);
 
   useEffect(() => {
     if (businessId && organizationUser?.organization_id) {
       fetchBusinessDetails();
+      fetchEnrollments();
     }
   }, [businessId, organizationUser?.organization_id]);
 
@@ -351,6 +376,260 @@ const BusinessProfile = () => {
       addTag(newTag);
     }
   };
+
+  const fetchEnrollments = async () => {
+    if (!businessId || !organizationUser?.organization_id) return;
+    
+    try {
+      setLoadingEnrollments(true);
+      
+      const { data: enrollmentData, error: enrollmentError } = await supabase
+        .from("business_nurture_enrollments")
+        .select(`
+          id,
+          campaign_id,
+          status,
+          enrolled_at,
+          completed_at,
+          next_send_at,
+          current_sequence_id,
+          business_nurture_campaigns!inner(name, campaign_type),
+          business_nurture_sequences(sequence_order)
+        `)
+        .eq("business_id", businessId)
+        .order("enrolled_at", { ascending: false });
+      
+      if (enrollmentError) throw enrollmentError;
+      
+      const enrichedEnrollments = await Promise.all(
+        (enrollmentData || []).map(async (enrollment: any) => {
+          const { data: sequences } = await supabase
+            .from("business_nurture_sequences")
+            .select("id")
+            .eq("campaign_id", enrollment.campaign_id);
+            
+          const { data: emailStats } = await supabase
+            .from("email_delivery_log")
+            .select("status, opened_at, clicked_at")
+            .eq("email_type", "business_outreach_automated")
+            .filter("metadata->>enrollment_id", "eq", enrollment.id);
+          
+          const emailsSent = emailStats?.length || 0;
+          const emailsOpened = emailStats?.filter(e => e.opened_at).length || 0;
+          const emailsClicked = emailStats?.filter(e => e.clicked_at).length || 0;
+          
+          return {
+            ...enrollment,
+            campaign_name: enrollment.business_nurture_campaigns.name,
+            campaign_type: enrollment.business_nurture_campaigns.campaign_type,
+            current_sequence_order: enrollment.business_nurture_sequences?.sequence_order || 0,
+            total_sequences: sequences?.length || 0,
+            emails_sent: emailsSent,
+            emails_opened: emailsOpened,
+            emails_clicked: emailsClicked,
+          };
+        })
+      );
+      
+      setEnrollments(enrichedEnrollments);
+    } catch (error: any) {
+      console.error("Error fetching enrollments:", error);
+      toast.error("Failed to load campaign enrollments");
+    } finally {
+      setLoadingEnrollments(false);
+    }
+  };
+
+  const handlePauseEnrollment = async (enrollment: CampaignEnrollment) => {
+    try {
+      setPausingId(enrollment.id);
+      const { error } = await supabase
+        .from("business_nurture_enrollments")
+        .update({ status: "paused" })
+        .eq("id", enrollment.id);
+        
+      if (error) throw error;
+      
+      await supabase.from("business_activity_log").insert({
+        business_id: businessId,
+        activity_type: "campaign_paused",
+        activity_data: {
+          enrollment_id: enrollment.id,
+          campaign_name: enrollment.campaign_name,
+          action_by: user?.id,
+        },
+      });
+      
+      toast.success("Campaign enrollment paused");
+      fetchEnrollments();
+    } catch (error: any) {
+      console.error("Error pausing enrollment:", error);
+      toast.error("Failed to pause enrollment");
+    } finally {
+      setPausingId(null);
+    }
+  };
+
+  const handleResumeEnrollment = async (enrollment: CampaignEnrollment) => {
+    try {
+      setResumingId(enrollment.id);
+      
+      if (enrollment.current_sequence_id) {
+        const { data: sequence } = await supabase
+          .from("business_nurture_sequences")
+          .select("send_delay_days")
+          .eq("id", enrollment.current_sequence_id)
+          .single();
+          
+        const nextSendAt = new Date();
+        nextSendAt.setDate(nextSendAt.getDate() + (sequence?.send_delay_days || 1));
+        
+        const { error } = await supabase
+          .from("business_nurture_enrollments")
+          .update({ 
+            status: "active",
+            next_send_at: nextSendAt.toISOString()
+          })
+          .eq("id", enrollment.id);
+          
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("business_nurture_enrollments")
+          .update({ status: "active" })
+          .eq("id", enrollment.id);
+          
+        if (error) throw error;
+      }
+      
+      await supabase.from("business_activity_log").insert({
+        business_id: businessId,
+        activity_type: "campaign_resumed",
+        activity_data: {
+          enrollment_id: enrollment.id,
+          campaign_name: enrollment.campaign_name,
+          action_by: user?.id,
+        },
+      });
+      
+      toast.success("Campaign enrollment resumed");
+      fetchEnrollments();
+    } catch (error: any) {
+      console.error("Error resuming enrollment:", error);
+      toast.error("Failed to resume enrollment");
+    } finally {
+      setResumingId(null);
+    }
+  };
+
+  const confirmCancelEnrollment = (enrollment: CampaignEnrollment) => {
+    setEnrollmentToCancel(enrollment);
+    setShowCancelDialog(true);
+  };
+
+  const handleCancelEnrollment = async () => {
+    if (!enrollmentToCancel) return;
+    
+    try {
+      setCancellingId(enrollmentToCancel.id);
+      const { error } = await supabase
+        .from("business_nurture_enrollments")
+        .update({ 
+          status: "cancelled",
+          completed_at: new Date().toISOString()
+        })
+        .eq("id", enrollmentToCancel.id);
+        
+      if (error) throw error;
+      
+      await supabase.from("business_activity_log").insert({
+        business_id: businessId,
+        activity_type: "campaign_cancelled",
+        activity_data: {
+          enrollment_id: enrollmentToCancel.id,
+          campaign_name: enrollmentToCancel.campaign_name,
+          action_by: user?.id,
+        },
+      });
+      
+      toast.success("Campaign enrollment cancelled");
+      setShowCancelDialog(false);
+      setEnrollmentToCancel(null);
+      fetchEnrollments();
+    } catch (error: any) {
+      console.error("Error cancelling enrollment:", error);
+      toast.error("Failed to cancel enrollment");
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const getCampaignTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      health_check: "Health Check",
+      expansion: "Expansion",
+      re_engagement: "Re-engagement",
+      cultivation: "Cultivation",
+      reactivation: "Reactivation",
+    };
+    return labels[type] || type;
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return (
+          <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+            <span className="animate-pulse mr-1">●</span> Active
+          </Badge>
+        );
+      case "paused":
+        return (
+          <Badge className="bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">
+            <Pause className="h-3 w-3 mr-1" /> Paused
+          </Badge>
+        );
+      case "completed":
+        return (
+          <Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20">
+            ✓ Completed
+          </Badge>
+        );
+      case "cancelled":
+        return (
+          <Badge variant="secondary" className="text-muted-foreground">
+            ✖ Cancelled
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getProgressPercentage = (current: number, total: number) => {
+    if (total === 0) return 0;
+    return Math.round((current / total) * 100);
+  };
+
+  const formatNextSend = (nextSendAt: string | null) => {
+    if (!nextSendAt) return "Not scheduled";
+    
+    const date = new Date(nextSendAt);
+    const now = new Date();
+    const diffMs = date.getTime() - now.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    
+    if (diffDays > 1) return `In ${diffDays} days`;
+    if (diffDays === 1) return "Tomorrow";
+    if (diffHours > 0) return `In ${diffHours} hours`;
+    if (diffMs > 0) return "Soon";
+    return "Overdue";
+  };
+
+  const canManageEnrollments = 
+    organizationUser?.user_type?.permission_level === 'organization_admin' ||
+    organizationUser?.user_type?.permission_level === 'program_manager';
 
   const getVerificationBadge = (status: string) => {
     switch (status) {
@@ -691,6 +970,148 @@ const BusinessProfile = () => {
               </CardContent>
             </Card>
 
+            {/* Campaign Enrollments */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Campaign Enrollments
+                  </CardTitle>
+                  <Badge variant="outline">
+                    {enrollments.filter(e => e.status === 'active').length} Active
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loadingEnrollments ? (
+                  <div className="space-y-4">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                        <Skeleton className="h-2 w-full" />
+                        <Skeleton className="h-8 w-32" />
+                      </div>
+                    ))}
+                  </div>
+                ) : enrollments.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground mb-4">
+                      This business is not enrolled in any campaigns yet
+                    </p>
+                    {canManageEnrollments && !business.archived_at && (
+                      <Button onClick={() => setShowEnrollmentDialog(true)}>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Enroll in Campaign
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {enrollments.map((enrollment) => (
+                      <div key={enrollment.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-semibold">{enrollment.campaign_name}</h4>
+                              {getStatusBadge(enrollment.status)}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {getCampaignTypeLabel(enrollment.campaign_type)} • Enrolled {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                            </p>
+                            {enrollment.status === 'completed' && enrollment.completed_at && (
+                              <p className="text-sm text-muted-foreground">
+                                Completed {new Date(enrollment.completed_at).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="text-muted-foreground">Progress</span>
+                            <span className="font-medium">
+                              {enrollment.current_sequence_order} of {enrollment.total_sequences} emails
+                            </span>
+                          </div>
+                          <Progress 
+                            value={getProgressPercentage(enrollment.current_sequence_order, enrollment.total_sequences)} 
+                            className="h-2"
+                          />
+                          {enrollment.status === 'active' && enrollment.next_send_at && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Next email: {formatNextSend(enrollment.next_send_at)}
+                            </p>
+                          )}
+                          {enrollment.status === 'paused' && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Campaign is paused
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-4 text-sm">
+                          <div className="flex items-center gap-1">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span>{enrollment.emails_sent} sent</span>
+                          </div>
+                          {enrollment.emails_sent > 0 && (
+                            <>
+                              <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                                <span>👁</span>
+                                <span>{enrollment.emails_opened} opened ({Math.round((enrollment.emails_opened / enrollment.emails_sent) * 100)}%)</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                                <span>🖱</span>
+                                <span>{enrollment.emails_clicked} clicked ({Math.round((enrollment.emails_clicked / enrollment.emails_sent) * 100)}%)</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {canManageEnrollments && (enrollment.status === 'active' || enrollment.status === 'paused') && (
+                          <div className="flex gap-2 pt-2">
+                            {enrollment.status === 'active' ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePauseEnrollment(enrollment)}
+                                disabled={pausingId === enrollment.id}
+                              >
+                                <Pause className="h-4 w-4 mr-2" />
+                                {pausingId === enrollment.id ? "Pausing..." : "Pause"}
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleResumeEnrollment(enrollment)}
+                                disabled={resumingId === enrollment.id}
+                              >
+                                <Play className="h-4 w-4 mr-2" />
+                                {resumingId === enrollment.id ? "Resuming..." : "Resume"}
+                              </Button>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => confirmCancelEnrollment(enrollment)}
+                              disabled={cancellingId === enrollment.id}
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Donation History */}
             <Card>
               <CardHeader>
@@ -937,13 +1358,36 @@ const BusinessProfile = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Campaign Enrollment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel the enrollment in "{enrollmentToCancel?.campaign_name}"? 
+              This action cannot be undone and the business will not receive any further emails from this campaign.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setEnrollmentToCancel(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCancelEnrollment} 
+              disabled={cancellingId === enrollmentToCancel?.id}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancellingId === enrollmentToCancel?.id ? "Cancelling..." : "Cancel Enrollment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <ManualEnrollmentDialog
         open={showEnrollmentDialog}
         onOpenChange={setShowEnrollmentDialog}
         organizationId={organizationUser.organization_id}
         preSelectedBusinessIds={businessId ? [businessId] : []}
         onSuccess={() => {
-          fetchBusinessDetails();
+          fetchEnrollments();
+          setShowEnrollmentDialog(false);
         }}
       />
     </DashboardPageLayout>
