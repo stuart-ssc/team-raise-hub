@@ -2,10 +2,13 @@ import { useState, useEffect } from "react";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +50,7 @@ export default function Campaigns() {
   const [managingCampaignId, setManagingCampaignId] = useState<string | null>(null);
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const permissionLevel = organizationUser?.user_type.permission_level;
   const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
@@ -296,20 +300,22 @@ export default function Campaigns() {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search campaigns..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="flex flex-col gap-4">
+              <div className="w-full">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search campaigns..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 w-full"
+                  />
+                </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 <Select value={sortBy} onValueChange={(value) => setSortBy(value as keyof Campaign)}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
@@ -323,7 +329,7 @@ export default function Campaigns() {
                 </Select>
 
                 <Select value={filterBy} onValueChange={setFilterBy}>
-                  <SelectTrigger className="w-[140px]">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Filter" />
                   </SelectTrigger>
                   <SelectContent>
@@ -333,28 +339,125 @@ export default function Campaigns() {
                   </SelectContent>
                 </Select>
 
-                <Button onClick={() => setShowAddCampaign(true)} className="flex items-center gap-2">
+                <Button onClick={() => setShowAddCampaign(true)} className="flex items-center gap-2 col-span-2 sm:col-span-1 w-full">
                   <Plus className="h-4 w-4" />
                   Add Campaign
                 </Button>
               </div>
             </div>
 
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead 
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("name")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Campaign Name
-                        {sortBy === "name" && (
-                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
+            {isMobile ? (
+              // Mobile Card View
+              <div className="grid grid-cols-1 gap-4">
+                {sortedCampaigns.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <p className="text-muted-foreground mb-4">No campaigns found.</p>
+                      <Button 
+                        onClick={() => setShowAddCampaign(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Let's Create a Campaign
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  sortedCampaigns.map((campaign) => (
+                    <Card key={campaign.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-base truncate">{campaign.name}</CardTitle>
+                            <p className="text-sm text-muted-foreground mt-1">{campaign.group_name || "—"}</p>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-background border">
+                              <DropdownMenuItem onClick={() => {
+                                setEditingCampaign(campaign);
+                                setManagingCampaignId(null);
+                                setShowAddCampaign(true);
+                              }}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setEditingCampaign(null);
+                                setManagingCampaignId(campaign.id);
+                                setShowAddCampaign(true);
+                              }}>
+                                <Package className="mr-2 h-4 w-4" />
+                                Manage Items
+                              </DropdownMenuItem>
+                              {campaign.slug && (
+                                <DropdownMenuItem onClick={() => window.open(`/campaign/${campaign.slug}`, '_blank')}>
+                                  <ExternalLink className="mr-2 h-4 w-4" />
+                                  View Landing Page
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Badge variant="outline">{campaign.campaign_type_name || "—"}</Badge>
+                          <CampaignPublicationControl
+                            campaignId={campaign.id}
+                            campaignName={campaign.name}
+                            groupId={campaign.group_id || ""}
+                            currentStatus={campaign.publication_status}
+                            onStatusChange={fetchCampaigns}
+                          />
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-baseline text-sm">
+                            <span className="text-muted-foreground">Progress</span>
+                            <span className="font-semibold">
+                              ${(campaign.amount_raised || 0).toLocaleString()} / ${campaign.goal_amount ? campaign.goal_amount.toLocaleString() : '0'}
+                            </span>
+                          </div>
+                          <Progress 
+                            value={campaign.goal_amount ? Math.min((campaign.amount_raised || 0) / campaign.goal_amount * 100, 100) : 0} 
+                          />
+                          <div className="text-sm text-muted-foreground">
+                            {campaign.start_date && campaign.end_date 
+                              ? `${new Date(campaign.start_date).toLocaleDateString()}-${new Date(campaign.end_date).toLocaleDateString()}`
+                              : campaign.start_date 
+                                ? new Date(campaign.start_date).toLocaleDateString()
+                                : campaign.end_date
+                                  ? new Date(campaign.end_date).toLocaleDateString()
+                                  : "—"
+                            }
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            ) : (
+              // Desktop Table View
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead 
+                        className="cursor-pointer select-none"
+                        onClick={() => handleSort("name")}
+                      >
+                        <div className="flex items-center gap-2">
+                          Campaign Name
+                          {sortBy === "name" && (
+                            sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                          )}
+                        </div>
+                      </TableHead>
                     <TableHead 
                       className="cursor-pointer select-none"
                       onClick={() => handleSort("group_name")}
@@ -530,9 +633,10 @@ export default function Campaigns() {
                       </TableRow>
                     ))
                   )}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableBody>
+                </Table>
+              </div>
+            )}
 
             {showAddCampaign && (
             <AddCampaignForm

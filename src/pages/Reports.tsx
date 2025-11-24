@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { useIsMobile } from "@/hooks/use-mobile";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, startOfMonth, startOfYear, subMonths, parseISO } from "date-fns";
@@ -62,6 +64,7 @@ interface RecentDonation {
 const Reports = () => {
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [campaigns, setCampaigns] = useState<CampaignReport[]>([]);
   const [stats, setStats] = useState<ReportStats>({
     totalCampaigns: 0,
@@ -828,7 +831,47 @@ const Reports = () => {
                       Create your first campaign to start seeing reports!
                     </p>
                   </div>
+                ) : isMobile ? (
+                  // Mobile Card View
+                  <div className="space-y-4">
+                    {campaigns.map((campaign) => (
+                      <Card key={campaign.id}>
+                        <CardHeader>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <CardTitle className="text-base truncate">{campaign.name}</CardTitle>
+                              <p className="text-sm text-muted-foreground">{campaign.group_name}</p>
+                            </div>
+                            <Badge variant={campaign.status ? "default" : "secondary"}>
+                              {campaign.status ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Progress</span>
+                              <span className="font-semibold">
+                                {formatCurrency(campaign.amount_raised)} / {formatCurrency(campaign.goal_amount)}
+                              </span>
+                            </div>
+                            <div className="space-y-1">
+                              <Progress value={calculateProgress(campaign.amount_raised, campaign.goal_amount)} />
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>{calculateProgress(campaign.amount_raised, campaign.goal_amount)}%</span>
+                                <span>{campaign.donation_count} donations</span>
+                              </div>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {formatDateRange(campaign.start_date, campaign.end_date)}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 ) : (
+                  // Desktop Table View
                   <Table>
                     <TableHeader>
                       <TableRow>

@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { MoreHorizontal, ChevronDown } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
@@ -31,6 +33,7 @@ const Groups = () => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const { organizationUser } = useOrganizationUser();
+  const isMobile = useIsMobile();
 
   const fetchGroups = async () => {
     if (!organizationUser) return;
@@ -249,11 +252,11 @@ const Groups = () => {
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-foreground">Groups</h2>
                   
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                     {/* Sort Dropdown */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-24">
+                        <Button variant="outline" className="w-full sm:w-24">
                           Sort
                           <ChevronDown className="ml-2 h-4 w-4" />
                         </Button>
@@ -274,7 +277,7 @@ const Groups = () => {
                     {/* Filter Dropdown */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-24">
+                        <Button variant="outline" className="w-full sm:w-24">
                           Filter
                           <ChevronDown className="ml-2 h-4 w-4" />
                         </Button>
@@ -294,7 +297,7 @@ const Groups = () => {
 
                     {/* New Button */}
                     <Button 
-                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
                       onClick={handleNewGroupClick}
                     >
                       New
@@ -302,10 +305,85 @@ const Groups = () => {
                   </div>
                 </div>
 
-                {/* Groups Table */}
-                <Card>
-                  <CardContent className="p-0">
-                    <Table>
+                {/* Groups Table/Cards */}
+                {isMobile ? (
+                  // Mobile Card View
+                  <div className="grid grid-cols-1 gap-4">
+                    {loading ? (
+                      <Card>
+                        <CardContent className="py-4 text-center">Loading...</CardContent>
+                      </Card>
+                    ) : groups.length === 0 ? (
+                      <Card>
+                        <CardContent className="py-4 text-center text-muted-foreground">
+                          No groups found
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      sortedGroups.map((group) => (
+                        <Card key={group.id}>
+                          <CardHeader>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <CardTitle className="text-base truncate">{group.group_name}</CardTitle>
+                                <p className="text-sm text-muted-foreground mt-1">{group.school_name}</p>
+                                <Badge variant="outline" className="mt-2">{group.group_type_name}</Badge>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={group.status ? "default" : "secondary"}>
+                                  {group.status ? "Active" : "Inactive"}
+                                </Badge>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleEditGroup(group)}>Edit</DropdownMenuItem>
+                                    {group.status ? (
+                                      <DropdownMenuItem onClick={() => handleUpdateGroupStatus(group.id, false)}>
+                                        Delete
+                                      </DropdownMenuItem>
+                                    ) : (
+                                      <DropdownMenuItem onClick={() => handleUpdateGroupStatus(group.id, true)}>
+                                        Activate
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex flex-col gap-2">
+                              <Button 
+                                variant="default" 
+                                size="sm" 
+                                className="w-full"
+                                onClick={() => handleManageRoster(group)}
+                              >
+                                Manage Roster
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="w-full"
+                                disabled
+                              >
+                                Payment Setup (Coming Soon)
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  // Desktop Table View
+                  <Card>
+                    <CardContent className="p-0">
+                      <Table>
                       <TableHeader>
                         <TableRow>
                            <TableHead>
@@ -385,10 +463,11 @@ const Groups = () => {
                              </TableRow>
                            ))
                          )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
+                       </TableBody>
+                     </Table>
+                   </CardContent>
+                 </Card>
+                )}
           </div>
         )}
       </div>
