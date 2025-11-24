@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +11,7 @@ import { getLabel } from "@/lib/terminology";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import NotificationDropdown from "@/components/NotificationDropdown";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DashboardHeaderProps {
   activeGroup?: {
@@ -80,6 +82,13 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters, onMobileMenuC
     await signOut();
   };
 
+  const isMobile = useIsMobile();
+  const shouldUseDropdown = isMobile || groups.length >= 4;
+
+  const selectedGroupName = activeGroup 
+    ? groups.find(g => g.id === activeGroup.id)?.group_name 
+    : "All";
+
   return (
     <header className="bg-background px-4 md:px-6 pt-4 pb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div className="flex items-center gap-4 w-full md:w-auto">
@@ -93,41 +102,66 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters, onMobileMenuC
         </Button>
         
         <div className="flex flex-col gap-1 flex-1">
-        <h1 id="school-name-title" className="text-xl md:text-3xl font-bold text-foreground">
-          {organizationUser?.organization?.name || "Organization"}
-        </h1>
-         <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-1">
-           <span className="text-muted-foreground text-sm md:text-base">
-             {organizationUser?.organization ? getLabel(organizationUser.organization.organization_type, 'programs') : 'Programs'}:
-           </span>
-           <Badge 
-             variant={!activeGroup ? "default" : "secondary"}
-             className={`text-xs md:text-sm ${showRosters ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-             onClick={() => {
-               if (!showRosters && onGroupClick) {
-                 onGroupClick(null);
-               }
-             }}
-           >
-             All
-           </Badge>
-           {groups
-             .sort((a, b) => a.group_name.localeCompare(b.group_name))
-             .map((group) => (
-               <Badge 
-                 key={group.id} 
-                 variant={activeGroup?.id === group.id ? "default" : "secondary"}
-                 className="cursor-pointer text-xs md:text-sm"
-                 onClick={() => onGroupClick && onGroupClick(group.id)}
-               >
-                 {group.group_name}
-               </Badge>
-             ))}
-         </div>
+          <h1 id="school-name-title" className="text-xl md:text-3xl font-bold text-foreground">
+            {organizationUser?.organization?.name || "Organization"}
+          </h1>
+          <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-1">
+            <span className="text-muted-foreground text-sm md:text-base">
+              {organizationUser?.organization ? getLabel(organizationUser.organization.organization_type, 'programs') : 'Programs'}:
+            </span>
+            
+            {shouldUseDropdown ? (
+              <Select
+                value={activeGroup?.id || "all"}
+                onValueChange={(value) => onGroupClick && onGroupClick(value === "all" ? null : value)}
+                disabled={showRosters}
+              >
+                <SelectTrigger className="w-[180px] h-8 text-xs md:text-sm">
+                  <SelectValue>{selectedGroupName}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {groups
+                    .sort((a, b) => a.group_name.localeCompare(b.group_name))
+                    .map((group) => (
+                      <SelectItem key={group.id} value={group.id}>
+                        {group.group_name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <>
+                <Badge 
+                  variant={!activeGroup ? "default" : "secondary"}
+                  className={`text-xs md:text-sm ${showRosters ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                  onClick={() => {
+                    if (!showRosters && onGroupClick) {
+                      onGroupClick(null);
+                    }
+                  }}
+                >
+                  All
+                </Badge>
+                {groups
+                  .sort((a, b) => a.group_name.localeCompare(b.group_name))
+                  .map((group) => (
+                    <Badge 
+                      key={group.id} 
+                      variant={activeGroup?.id === group.id ? "default" : "secondary"}
+                      className="cursor-pointer text-xs md:text-sm"
+                      onClick={() => onGroupClick && onGroupClick(group.id)}
+                    >
+                      {group.group_name}
+                    </Badge>
+                  ))}
+              </>
+            )}
+          </div>
         </div>
       </div>
       
-      <div className="flex items-center gap-2 md:gap-4 self-start md:self-auto">
+      <div className="hidden md:flex items-center gap-2 md:gap-4">
         <NotificationDropdown />
         
         <DropdownMenu>

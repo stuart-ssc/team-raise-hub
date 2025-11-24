@@ -1,4 +1,7 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardSidebarSheet from "./DashboardSidebarSheet";
 import DashboardHeader from "./DashboardHeader";
@@ -27,12 +30,56 @@ const DashboardPageLayout = ({
   children,
 }: DashboardPageLayoutProps) => {
   const { activeGroup, handleGroupClick } = useActiveGroup();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userName, setUserName] = useState("User");
+  const [userInitials, setUserInitials] = useState("U");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Fetch user profile for sidebar
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+
+      if (profile) {
+        const fullName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "User";
+        const initials = `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase() || "U";
+        setUserName(fullName);
+        setUserInitials(initials);
+        setAvatarUrl(profile.avatar_url);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
+
+  const handleLogout = async () => {
+    await signOut();
+  };
+
+  const handleProfileClick = () => {
+    navigate("/dashboard/profile");
+  };
 
   return (
     <div className="flex h-screen bg-background w-full">
       <DashboardSidebar />
-      <DashboardSidebarSheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} />
+      <DashboardSidebarSheet 
+        open={mobileMenuOpen} 
+        onOpenChange={setMobileMenuOpen}
+        userName={userName}
+        userInitials={userInitials}
+        avatarUrl={avatarUrl}
+        onLogout={handleLogout}
+        onProfileClick={handleProfileClick}
+      />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader

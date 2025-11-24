@@ -1,9 +1,13 @@
-import { Home, Users, Heart, Target, BarChart3, Package, Building2 } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Package, Building2, LogOut, User } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { getLabel } from "@/lib/terminology";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import NotificationDropdown from "@/components/NotificationDropdown";
 
 const sidebarItems = [
   { title: "Home", icon: Home, url: "/dashboard", end: true },
@@ -19,9 +23,22 @@ const sidebarItems = [
 interface DashboardSidebarSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  userName?: string;
+  userInitials?: string;
+  avatarUrl?: string | null;
+  onLogout?: () => void;
+  onProfileClick?: () => void;
 }
 
-const DashboardSidebarSheet = ({ open, onOpenChange }: DashboardSidebarSheetProps) => {
+const DashboardSidebarSheet = ({ 
+  open, 
+  onOpenChange, 
+  userName = "User",
+  userInitials = "U",
+  avatarUrl,
+  onLogout,
+  onProfileClick
+}: DashboardSidebarSheetProps) => {
   const location = useLocation();
   const { organizationUser } = useOrganizationUser();
 
@@ -89,6 +106,49 @@ const DashboardSidebarSheet = ({ open, onOpenChange }: DashboardSidebarSheetProp
               })}
             </ul>
           </nav>
+
+          {/* Footer Section - Notifications & Profile */}
+          <div className="border-t border-sidebar-border p-4 space-y-4">
+            {/* Notifications */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-sidebar-foreground font-medium">Notifications</span>
+              <NotificationDropdown />
+            </div>
+
+            <Separator className="bg-sidebar-border" />
+
+            {/* Profile */}
+            <div className="space-y-2">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                onClick={() => {
+                  onProfileClick?.();
+                  onOpenChange(false);
+                }}
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={avatarUrl || undefined} />
+                  <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="font-medium">{userName}</span>
+              </Button>
+
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                onClick={() => {
+                  onLogout?.();
+                  onOpenChange(false);
+                }}
+              >
+                <LogOut className="h-5 w-5" />
+                <span className="font-medium">Logout</span>
+              </Button>
+            </div>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
