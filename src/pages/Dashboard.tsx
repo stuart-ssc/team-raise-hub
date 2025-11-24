@@ -15,16 +15,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 const Dashboard = () => {
   const { user } = useAuth();
   const { organizationUser, loading } = useOrganizationUser();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { activeGroup, groups } = useActiveGroup();
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [totalCampaigns, setTotalCampaigns] = useState(0);
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
   const [showAddCampaignForm, setShowAddCampaignForm] = useState(false);
   const [editCampaign, setEditCampaign] = useState<any>(null);
   const [manageCampaignId, setManageCampaignId] = useState<string | null>(null);
@@ -60,8 +60,8 @@ const Dashboard = () => {
         .eq("groups.organization_id", organizationUser.organization_id);
 
       // Filter by selected group if one is selected
-      if (selectedGroup && selectedGroup !== "All") {
-        totalQuery = totalQuery.eq("group_id", selectedGroup);
+      if (activeGroup) {
+        totalQuery = totalQuery.eq("group_id", activeGroup.id);
       }
 
       const { data: totalData, error: totalError } = await totalQuery;
@@ -86,8 +86,8 @@ const Dashboard = () => {
         .order("end_date", { ascending: true }); // Sort by end date, soonest first
 
       // Filter by selected group if one is selected
-      if (selectedGroup && selectedGroup !== "All") {
-        activeQuery = activeQuery.eq("group_id", selectedGroup);
+      if (activeGroup) {
+        activeQuery = activeQuery.eq("group_id", activeGroup.id);
       }
 
       const { data: activeData, error: activeError } = await activeQuery;
@@ -103,44 +103,16 @@ const Dashboard = () => {
     }
   };
 
-  const fetchGroups = async () => {
-    if (!organizationUser) return;
-
-    const permissionLevel = organizationUser.user_type.permission_level;
-    
-    if (permissionLevel === 'organization_admin') {
-      // Organization admins see all groups for their organization
-      const { data } = await supabase
-        .from("groups")
-        .select("id, group_name")
-        .eq("organization_id", organizationUser.organization_id);
-      
-      setGroups(data || []);
-    } else if (permissionLevel === 'program_manager' || permissionLevel === 'participant' || permissionLevel === 'supporter') {
-      // These roles only see groups they're connected to
-      if (organizationUser.groups) {
-        setGroups([organizationUser.groups]);
-      }
-    }
-  };
-
-  const handleGroupClick = (groupId: string | null) => {
-    setSelectedGroup(groupId);
-  };
-
-  // Fetch groups and campaigns when component mounts or dependencies change
+  // Fetch campaigns when component mounts or dependencies change
   useEffect(() => {
     if (organizationUser?.organization_id) {
-      fetchGroups();
       fetchCampaigns();
     }
   }, [organizationUser?.organization_id]);
 
   useEffect(() => {
     fetchCampaigns();
-  }, [selectedGroup]);
-
-  const activeGroup = selectedGroup ? groups.find(g => g.id === selectedGroup) : null;
+  }, [activeGroup?.id]);
 
   // Calculate stats from campaigns data
   const activeCampaignsCount = campaigns.length;
