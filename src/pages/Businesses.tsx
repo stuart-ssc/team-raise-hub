@@ -13,6 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -249,29 +256,38 @@ const Businesses = () => {
           </div>
           <div className="flex gap-2">
             {canManageBusinesses && (
-              <>
-                <Button onClick={() => setShowAddDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Business
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowImportDialog(true)}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import CSV
-                </Button>
-              </>
+              <Button onClick={() => setShowAddDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Business
+              </Button>
             )}
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setShowExportDialog(true)}
-              disabled={filteredAndSortedBusinesses.length === 0}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Import / Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {canManageBusinesses && (
+                  <>
+                    <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Import CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem 
+                  onClick={() => setShowExportDialog(true)}
+                  disabled={filteredAndSortedBusinesses.length === 0}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
