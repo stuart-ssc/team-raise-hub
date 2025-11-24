@@ -707,102 +707,110 @@ const Businesses = () => {
         {/* Search and Filters */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, email, or EIN..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={verificationFilter} onValueChange={setVerificationFilter}>
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="Verification Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={archiveFilter} onValueChange={setArchiveFilter}>
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="Archive Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active Only</SelectItem>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="archived">Archived Only</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="donations">Total Donated</SelectItem>
-                  <SelectItem value="donors">Linked Donors</SelectItem>
-                  <SelectItem value="engagement">Engagement Score</SelectItem>
-                  <SelectItem value="recent">Recent Activity</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col gap-4">
+              {/* Row 1: Search + Select All */}
+              <div className="flex gap-4 items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name, email, or EIN..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
 
-              {allTags.length > 0 && (
-                <Select value={tagFilter} onValueChange={setTagFilter}>
+                {canManageBusinesses && filteredAndSortedBusinesses.length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSelectAll(selectedBusinessIds.length !== filteredAndSortedBusinesses.length)}
+                  >
+                    {selectedBusinessIds.length === filteredAndSortedBusinesses.length && filteredAndSortedBusinesses.length > 0 ? (
+                      <>
+                        <CheckSquare className="h-4 w-4 mr-2" />
+                        Deselect All
+                      </>
+                    ) : (
+                      <>
+                        <Square className="h-4 w-4 mr-2" />
+                        Select All
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+
+              {/* Row 2: All Filter Dropdowns */}
+              <div className="flex flex-col md:flex-row gap-4">
+                <Select value={verificationFilter} onValueChange={setVerificationFilter}>
                   <SelectTrigger className="w-full md:w-[200px]">
-                    <SelectValue placeholder="Filter by Tag" />
+                    <SelectValue placeholder="Verification Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Tags</SelectItem>
-                    {allTags.map(tag => (
-                      <SelectItem key={tag} value={tag}>
-                        {tag}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
-              )}
 
-              <Select value={segmentFilter} onValueChange={setSegmentFilter}>
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="Engagement Segment" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Segments</SelectItem>
-                  <SelectItem value="champion_partners">Champion Partners</SelectItem>
-                  <SelectItem value="engaged_partners">Engaged Partners</SelectItem>
-                  <SelectItem value="high_value_focused">High Value Focused</SelectItem>
-                  <SelectItem value="emerging_partners">Emerging Partners</SelectItem>
-                  <SelectItem value="needs_cultivation">Needs Cultivation</SelectItem>
-                  <SelectItem value="at_risk">At Risk</SelectItem>
-                  <SelectItem value="dormant">Dormant</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                </SelectContent>
-              </Select>
+                <Select value={archiveFilter} onValueChange={setArchiveFilter}>
+                  <SelectTrigger className="w-full md:w-[200px]">
+                    <SelectValue placeholder="Archive Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active Only</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="archived">Archived Only</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              {canManageBusinesses && filteredAndSortedBusinesses.length > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={() => handleSelectAll(selectedBusinessIds.length !== filteredAndSortedBusinesses.length)}
-                  className="w-full md:w-auto"
-                >
-                  {selectedBusinessIds.length === filteredAndSortedBusinesses.length && filteredAndSortedBusinesses.length > 0 ? (
-                    <>
-                      <CheckSquare className="h-4 w-4 mr-2" />
-                      Deselect All
-                    </>
-                  ) : (
-                    <>
-                      <Square className="h-4 w-4 mr-2" />
-                      Select All
-                    </>
-                  )}
-                </Button>
-              )}
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-full md:w-[200px]">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="donations">Total Donated</SelectItem>
+                    <SelectItem value="donors">Linked Donors</SelectItem>
+                    <SelectItem value="engagement">Engagement Score</SelectItem>
+                    <SelectItem value="recent">Recent Activity</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {allTags.length > 0 && (
+                  <Select value={tagFilter} onValueChange={setTagFilter}>
+                    <SelectTrigger className="w-full md:w-[200px]">
+                      <SelectValue placeholder="Filter by Tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Tags</SelectItem>
+                      {allTags.map(tag => (
+                        <SelectItem key={tag} value={tag}>
+                          {tag}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                <Select value={segmentFilter} onValueChange={setSegmentFilter}>
+                  <SelectTrigger className="w-full md:w-[200px]">
+                    <SelectValue placeholder="Engagement Segment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Segments</SelectItem>
+                    <SelectItem value="champion_partners">Champion Partners</SelectItem>
+                    <SelectItem value="engaged_partners">Engaged Partners</SelectItem>
+                    <SelectItem value="high_value_focused">High Value Focused</SelectItem>
+                    <SelectItem value="emerging_partners">Emerging Partners</SelectItem>
+                    <SelectItem value="needs_cultivation">Needs Cultivation</SelectItem>
+                    <SelectItem value="at_risk">At Risk</SelectItem>
+                    <SelectItem value="dormant">Dormant</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
