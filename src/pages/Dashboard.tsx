@@ -231,16 +231,16 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <CardTitle>Campaigns</CardTitle>
-              <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Button 
                   variant="outline" 
                   onClick={() => navigate('/dashboard/campaigns')}
                   size="sm"
-                  className="w-full md:w-auto"
+                  className="w-full sm:w-auto"
                 >
                   Manage All Campaigns
                 </Button>
-                <Button onClick={() => setShowAddCampaignForm(true)} size="sm" className="w-full md:w-auto">Add Campaign</Button>
+                <Button onClick={() => setShowAddCampaignForm(true)} size="sm" className="w-full sm:w-auto">Add Campaign</Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -257,7 +257,73 @@ const Dashboard = () => {
                   <div className="text-lg font-medium mb-2">You currently have no active campaigns</div>
                   <div className="text-muted-foreground">All your campaigns are inactive or ended</div>
                 </div>
+              ) : isMobile ? (
+                // Mobile Card View for Campaigns
+                <div className="space-y-3">
+                  {campaigns.map((campaign) => (
+                    <Card key={campaign.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold truncate">{campaign.name}</h4>
+                            <p className="text-xs text-muted-foreground">{campaign.groups?.group_name}</p>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-background border">
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  setEditCampaign(campaign);
+                                  setManageCampaignId(null);
+                                  setShowAddCampaignForm(true);
+                                }}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Update Campaign
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  setEditCampaign(null);
+                                  setManageCampaignId(campaign.id);
+                                  setShowAddCampaignForm(true);
+                                }}
+                              >
+                                <Package className="mr-2 h-4 w-4" />
+                                Manage Items
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Raised</span>
+                            <span className="font-semibold">
+                              ${campaign.amount_raised?.toLocaleString() || 0} / ${campaign.goal_amount?.toLocaleString() || 0}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {campaign.start_date && campaign.end_date 
+                              ? `${format(new Date(campaign.start_date), 'MMM d')}-${format(new Date(campaign.end_date), 'MMM d, yyyy')}`
+                              : campaign.start_date 
+                                ? format(new Date(campaign.start_date), 'MMM d, yyyy')
+                                : campaign.end_date
+                                  ? format(new Date(campaign.end_date), 'MMM d, yyyy')
+                                  : "—"
+                            }
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               ) : (
+                // Desktop Table View
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -334,8 +400,30 @@ const Dashboard = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
+              {isMobile ? (
+                // Mobile Card View for Donors
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {donors.map((donor, index) => (
+                    <Card key={index} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-sm truncate">{donor.name}</h4>
+                            <p className="text-xs text-muted-foreground truncate">{donor.email}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{donor.role}</p>
+                          </div>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                // Desktop Table View
+                <div className="overflow-x-auto">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="min-w-[150px]">Name</TableHead>
@@ -366,6 +454,7 @@ const Dashboard = () => {
                 </TableBody>
                 </Table>
               </div>
+              )}
             </CardContent>
           </Card>
         </main>

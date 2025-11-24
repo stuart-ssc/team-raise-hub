@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreHorizontal, ChevronDown, Search } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -57,6 +59,7 @@ const Users = () => {
   const [showAddUserForm, setShowAddUserForm] = useState(false);
   const { organizationUser } = useOrganizationUser();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   // Check if user has permission to access this page
   const permissionLevel = organizationUser?.user_type.permission_level;
@@ -295,11 +298,11 @@ const Users = () => {
                   />
                 </div>
                 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                   {/* Sort Dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-24">
+                      <Button variant="outline" className="w-full sm:w-24">
                         Sort
                         <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
@@ -326,7 +329,7 @@ const Users = () => {
                   {/* Filter Dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-24">
+                      <Button variant="outline" className="w-full sm:w-24">
                         {filterBy === "all" ? "All" : filterBy === "active" ? "Active" : "Inactive"}
                         <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
@@ -345,16 +348,96 @@ const Users = () => {
                   </DropdownMenu>
 
                   {/* Add User Button */}
-                  <Button onClick={() => setShowAddUserForm(true)}>
+                  <Button onClick={() => setShowAddUserForm(true)} className="w-full sm:w-auto">
                     Add User
                   </Button>
                 </div>
               </div>
 
-              {/* Users Table */}
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
+              {/* Users Table/Cards */}
+              {isMobile ? (
+                // Mobile Card View
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {loading ? (
+                    <Card>
+                      <CardContent className="py-4 text-center">Loading...</CardContent>
+                    </Card>
+                  ) : users.length === 0 ? (
+                    <Card>
+                      <CardContent className="py-4 text-center text-muted-foreground">
+                        No users found
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    sortedUsers.map((user) => (
+                      <Card key={user.school_user_id}>
+                        <CardHeader>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <CardTitle className="text-base truncate">{user.last_name}, {user.first_name}</CardTitle>
+                              <p className="text-sm text-muted-foreground mt-1">{user.role}</p>
+                            </div>
+                            <Badge variant={user.status ? "default" : "secondary"}>
+                              {user.status ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Group:</span>
+                              <span className="font-medium">{user.group_name || "-"}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Roster Year:</span>
+                              <span className="font-medium">{user.roster_year || "-"}</span>
+                            </div>
+                            {user.status ? (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm" className="w-full mt-2">
+                                    Deactivate
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirm Deactivation of {user.first_name} {user.last_name}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to deactivate {user.first_name} {user.last_name}? 
+                                      They will no longer be able to participate in that groups campaigns.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleUpdateUserStatus(user.school_user_id, false)}
+                                    >
+                                      Deactivate
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            ) : (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="w-full mt-2"
+                                onClick={() => handleUpdateUserStatus(user.school_user_id, true)}
+                              >
+                                Activate
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              ) : (
+                // Desktop Table View
+                <Card>
+                  <CardContent className="p-0">
+                    <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
@@ -434,6 +517,7 @@ const Users = () => {
                   </Table>
                 </CardContent>
               </Card>
+              )}
               
               <p className="text-sm text-muted-foreground italic mt-4">
                 Note: Once a person is added to the system, only they can update their person information (Name, email).
