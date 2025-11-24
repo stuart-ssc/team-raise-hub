@@ -24,7 +24,6 @@ import { Target, TrendingUp, AlertTriangle, DollarSign, Calendar, Users, Mail, S
 import { toast } from "sonner";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { BusinessContactsList } from "@/components/BusinessContactsList";
-import BusinessSubNav from "@/components/BusinessSubNav";
 import {
   BusinessOutreachQueueItem,
   getHealthStatusInfo,
@@ -243,7 +242,6 @@ export default function BusinessOutreachQueue() {
         { label: 'Outreach Queue' }
       ]}
     >
-      <BusinessSubNav />
       <div className="space-y-6">
         {/* Page Header */}
         <div className="flex items-center justify-between">

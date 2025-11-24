@@ -12,7 +12,6 @@ import { Building2, TrendingUp, CheckCircle, Users, AlertCircle, Tag, Activity, 
 import { getSegmentInfo, BUSINESS_SEGMENT_INFO } from "@/lib/businessEngagement";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
-import BusinessSubNav from "@/components/BusinessSubNav";
 import { useNavigate } from "react-router-dom";
 
 interface Business {
@@ -368,7 +367,6 @@ const BusinessAnalytics = () => {
         segments={[{ label: "Businesses", path: "/dashboard/businesses" }, { label: "Analytics" }]}
         loading={true}
       >
-        <BusinessSubNav />
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
@@ -402,7 +400,6 @@ const BusinessAnalytics = () => {
     <DashboardPageLayout
       segments={[{ label: "Businesses", path: "/dashboard/businesses" }, { label: "Analytics" }]}
     >
-      <BusinessSubNav />
       <div className="space-y-6">
         {/* Summary Statistics */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

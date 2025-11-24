@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3, Activity, Target } from "lucide-react";
+import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3, Activity, Target, MoreHorizontal, Mail } from "lucide-react";
 import { getSegmentInfo } from "@/lib/businessEngagement";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +44,6 @@ import { ImportBusinessesDialog } from "@/components/ImportBusinessesDialog";
 import BulkActionToolbarBusiness from "@/components/BulkActionToolbarBusiness";
 import BulkTagDialogBusiness from "@/components/BulkTagDialogBusiness";
 import BulkEmailDialogBusiness from "@/components/BulkEmailDialogBusiness";
-import BusinessSubNav from "@/components/BusinessSubNav";
 
 interface BusinessProfile {
   id: string;
@@ -440,7 +439,6 @@ const Businesses = () => {
 
   return (
     <DashboardPageLayout segments={[{ label: "Businesses" }]}>
-      <BusinessSubNav />
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -467,23 +465,6 @@ const Businesses = () => {
             
             <Button 
               variant="outline"
-              onClick={() => navigate('/dashboard/businesses/outreach-queue')}
-              className="relative"
-            >
-              <Target className="h-4 w-4 mr-2" />
-              Outreach Queue
-              {highPriorityCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="ml-2 px-1.5 py-0.5 text-xs"
-                >
-                  {highPriorityCount}
-                </Badge>
-              )}
-            </Button>
-            
-            <Button 
-              variant="outline"
               onClick={() => navigate('/dashboard/businesses/analytics')}
             >
               <BarChart3 className="h-4 w-4 mr-2" />
@@ -493,26 +474,42 @@ const Businesses = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Import / Export
+                  <MoreHorizontal className="h-4 w-4 mr-2" />
+                  More
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate('/dashboard/businesses/nurture')}>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Nurture Campaigns
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => navigate('/dashboard/businesses/outreach-queue')}
+                >
+                  <Target className="h-4 w-4 mr-2" />
+                  Outreach Queue
+                  {highPriorityCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="ml-2 px-1.5 py-0.5 text-xs"
+                    >
+                      {highPriorityCount}
+                    </Badge>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 {canManageBusinesses && (
-                  <>
-                    <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Import CSV
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
+                  <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import
+                  </DropdownMenuItem>
                 )}
                 <DropdownMenuItem 
                   onClick={() => setShowExportDialog(true)}
                   disabled={filteredAndSortedBusinesses.length === 0}
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                  Export
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
