@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -63,6 +64,7 @@ interface RecentDonation {
 
 const Reports = () => {
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
+  const { activeGroup, groups } = useActiveGroup();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [campaigns, setCampaigns] = useState<CampaignReport[]>([]);
@@ -75,16 +77,10 @@ const Reports = () => {
     avgDonation: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
   const [dateRange, setDateRange] = useState<string>("all");
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [topCampaigns, setTopCampaigns] = useState<TopCampaign[]>([]);
   const [recentDonations, setRecentDonations] = useState<RecentDonation[]>([]);
-
-  const handleGroupClick = (groupId: string | null) => {
-    setSelectedGroup(groupId);
-  };
 
   const getDateRangeFilter = () => {
     const now = new Date();
@@ -101,34 +97,8 @@ const Reports = () => {
     }
   };
 
-  const fetchGroups = async () => {
-    if (!organizationUser?.organization_id) return;
-    
-    const permissionLevel = organizationUser.user_type?.permission_level;
-    
-    if (permissionLevel === 'organization_admin' || permissionLevel === 'program_manager') {
-      const { data, error } = await supabase
-        .from("groups")
-        .select("id, group_name")
-        .eq("organization_id", organizationUser.organization_id)
-        .eq("status", true)
-        .order("group_name");
-        
-      if (error) {
-        console.error("Error fetching groups:", error);
-        return;
-      }
-      setGroups(data || []);
-    } else if (permissionLevel === 'participant' || permissionLevel === 'supporter') {
-      if (organizationUser.groups) {
-        setGroups([organizationUser.groups]);
-      }
-    }
-  };
-
   useEffect(() => {
     if (organizationUser?.organization_id) {
-      fetchGroups();
       fetchReportData();
       setupRealtimeSubscriptions();
     }
@@ -142,7 +112,7 @@ const Reports = () => {
     if (organizationUser?.organization_id) {
       fetchReportData();
     }
-  }, [selectedGroup]);
+  }, [activeGroup?.id]);
 
   useEffect(() => {
     if (organizationUser?.organization_id) {
@@ -215,8 +185,8 @@ const Reports = () => {
         .order("created_at", { ascending: false });
 
       // Filter by selected group if one is selected
-      if (selectedGroup && selectedGroup !== "All") {
-        campaignsQuery = campaignsQuery.eq("group_id", selectedGroup);
+      if (activeGroup) {
+        campaignsQuery = campaignsQuery.eq("group_id", activeGroup.id);
       }
 
       // Filter by date range
@@ -275,8 +245,8 @@ const Reports = () => {
         .order("created_at", { ascending: true });
 
       // Filter by selected group if one is selected
-      if (selectedGroup && selectedGroup !== "All") {
-        ordersWithDateQuery = ordersWithDateQuery.eq("campaigns.group_id", selectedGroup);
+      if (activeGroup) {
+        ordersWithDateQuery = ordersWithDateQuery.eq("campaigns.group_id", activeGroup.id);
       }
 
       // Filter by date range
@@ -329,8 +299,8 @@ const Reports = () => {
         .in("status", ["succeeded", "completed"]);
 
       // Filter by selected group if one is selected
-      if (selectedGroup && selectedGroup !== "All") {
-        ordersQuery = ordersQuery.eq("campaigns.group_id", selectedGroup);
+      if (activeGroup) {
+        ordersQuery = ordersQuery.eq("campaigns.group_id", activeGroup.id);
       }
 
       const { data: ordersData, error: ordersError } = await ordersQuery;
@@ -395,8 +365,8 @@ const Reports = () => {
         .order("created_at", { ascending: false })
         .limit(10);
 
-      if (selectedGroup && selectedGroup !== "All") {
-        recentQuery = recentQuery.eq("campaigns.group_id", selectedGroup);
+      if (activeGroup) {
+        recentQuery = recentQuery.eq("campaigns.group_id", activeGroup.id);
       }
 
       const { data: recentData } = await recentQuery;
@@ -446,7 +416,7 @@ const Reports = () => {
       ['CAMPAIGN REPORTS SUMMARY'],
       [''],
       ['Period', dateRange === 'month' ? 'This Month' : dateRange === '3months' ? 'Last 3 Months' : dateRange === 'year' ? 'This Year' : 'All Time'],
-      ['Group', selectedGroup && activeGroup ? activeGroup.group_name : 'All Groups'],
+      ['Group', activeGroup ? activeGroup.group_name : 'All Groups'],
       [''],
       ['OVERALL STATISTICS'],
       ['Total Campaigns', stats.totalCampaigns.toString()],
@@ -489,17 +459,12 @@ const Reports = () => {
     document.body.removeChild(link);
   };
 
-  const activeGroup = selectedGroup ? groups.find(g => g.id === selectedGroup) : null;
-
   if (organizationUserLoading || loading) {
     return (
       <div className="flex h-screen bg-background">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader 
-            onGroupClick={handleGroupClick} 
-            activeGroup={activeGroup} 
-          />
+          <DashboardHeader />
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
               <div className="flex items-center justify-between">
@@ -527,10 +492,7 @@ const Reports = () => {
     <div className="flex h-screen bg-background">
       <DashboardSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader 
-          onGroupClick={handleGroupClick} 
-          activeGroup={activeGroup} 
-        />
+        <DashboardHeader />
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
               <div className="flex items-center justify-between">
