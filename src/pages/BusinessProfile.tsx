@@ -15,7 +15,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star } from "lucide-react";
+import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X } from "lucide-react";
+import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
+import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
@@ -67,6 +69,8 @@ const BusinessProfile = () => {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [savingNotes, setSavingNotes] = useState(false);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [unlinkingDonor, setUnlinkingDonor] = useState<LinkedDonor | null>(null);
 
   useEffect(() => {
     if (businessId && organizationUser?.organization_id) {
@@ -284,6 +288,13 @@ const BusinessProfile = () => {
               </div>
             </div>
           </div>
+          {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
+            organizationUser?.user_type?.permission_level === 'program_manager') && (
+            <Button onClick={() => setShowLinkDialog(true)}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Link Employee
+            </Button>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -348,6 +359,10 @@ const BusinessProfile = () => {
                         <TableHead>Email</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead className="text-right">Donated</TableHead>
+                        {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
+                          organizationUser?.user_type?.permission_level === 'program_manager') && (
+                          <TableHead className="text-right">Actions</TableHead>
+                        )}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -379,6 +394,21 @@ const BusinessProfile = () => {
                           <TableCell className="text-right font-medium">
                             ${(donor.total_donations / 100).toFixed(2)}
                           </TableCell>
+                          {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
+                            organizationUser?.user_type?.permission_level === 'program_manager') && (
+                            <TableCell
+                              className="text-right"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setUnlinkingDonor(donor)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
@@ -499,6 +529,26 @@ const BusinessProfile = () => {
           </div>
         </div>
       </div>
+
+      <LinkDonorToBusinessDialog
+        open={showLinkDialog}
+        onOpenChange={setShowLinkDialog}
+        businessId={businessId}
+        organizationId={organizationUser?.organization_id || ""}
+        onSuccess={fetchBusinessDetails}
+      />
+
+      <UnlinkDonorBusinessDialog
+        open={!!unlinkingDonor}
+        onOpenChange={(open) => !open && setUnlinkingDonor(null)}
+        donorName={unlinkingDonor?.donor_name || ""}
+        businessName={business?.business_name || ""}
+        donorId={unlinkingDonor?.donor_id || ""}
+        businessId={businessId || ""}
+        organizationId={organizationUser?.organization_id || ""}
+        isPrimaryContact={unlinkingDonor?.is_primary_contact || false}
+        onSuccess={fetchBusinessDetails}
+      />
     </DashboardPageLayout>
   );
 };

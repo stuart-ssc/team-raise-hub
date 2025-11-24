@@ -23,8 +23,12 @@ import {
   MessageSquare,
   Edit,
   Building2,
-  CheckCircle2
+  CheckCircle2,
+  X,
+  Plus
 } from "lucide-react";
+import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
+import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -75,6 +79,8 @@ const DonorProfile = () => {
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [unlinkingAffiliation, setUnlinkingAffiliation] = useState<BusinessAffiliation | null>(null);
 
   useEffect(() => {
     if (organizationUser?.organization_id && donorId) {
@@ -457,13 +463,28 @@ const DonorProfile = () => {
                 {businessAffiliations.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        Business Affiliations
-                      </CardTitle>
-                      <CardDescription>
-                        Companies this donor is associated with
-                      </CardDescription>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Building2 className="h-4 w-4" />
+                            Business Affiliations
+                          </CardTitle>
+                          <CardDescription>
+                            Companies this donor is associated with
+                          </CardDescription>
+                        </div>
+                        {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
+                          organizationUser?.user_type?.permission_level === 'program_manager') && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowLinkDialog(true)}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Link
+                          </Button>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {businessAffiliations.map((affiliation) => (
@@ -473,39 +494,50 @@ const DonorProfile = () => {
                           className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
                         >
                           <div className="flex items-start gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                              {affiliation.business_logo ? (
-                                <img 
-                                  src={affiliation.business_logo} 
-                                  alt={affiliation.business_name}
-                                  className="h-10 w-10 rounded-lg object-cover"
-                                />
-                              ) : (
-                                <Building2 className="h-5 w-5 text-muted-foreground" />
-                              )}
-                            </div>
+                            {affiliation.business_logo ? (
+                              <img
+                                src={affiliation.business_logo}
+                                alt={affiliation.business_name}
+                                className="h-10 w-10 rounded object-cover"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center">
+                                <Building2 className="h-5 w-5 text-primary" />
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <p className="font-medium text-sm truncate">
-                                  {affiliation.business_name}
-                                </p>
-                                {affiliation.is_primary_contact && (
-                                  <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                                    <CheckCircle2 className="h-3 w-3" />
-                                    Primary
-                                  </Badge>
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  <p className="font-medium">{affiliation.business_name}</p>
+                                  {affiliation.role && (
+                                    <p className="text-sm text-muted-foreground">{affiliation.role}</p>
+                                  )}
+                                </div>
+                                {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
+                                  organizationUser?.user_type?.permission_level === 'program_manager') && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setUnlinkingAffiliation(affiliation);
+                                    }}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
                                 )}
                               </div>
-                              {affiliation.role && (
-                                <p className="text-xs text-muted-foreground">
-                                  {affiliation.role}
-                                </p>
-                              )}
-                              {affiliation.auto_linked && (
-                                <Badge variant="outline" className="text-xs mt-1">
-                                  Auto-linked
-                                </Badge>
-                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                {affiliation.is_primary_contact && (
+                                  <Badge variant="outline" className="text-xs">Primary Contact</Badge>
+                                )}
+                                {affiliation.auto_linked && (
+                                  <Badge variant="secondary" className="text-xs">Auto-linked</Badge>
+                                )}
+                                <span className="text-xs text-muted-foreground">
+                                  {format(parseISO(affiliation.linked_at), "MMM d, yyyy")}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -543,6 +575,26 @@ const DonorProfile = () => {
             </div>
         </div>
       </div>
+
+      <LinkDonorToBusinessDialog
+        open={showLinkDialog}
+        onOpenChange={setShowLinkDialog}
+        donorId={donorId}
+        organizationId={organizationUser?.organization_id || ""}
+        onSuccess={fetchDonorData}
+      />
+
+      <UnlinkDonorBusinessDialog
+        open={!!unlinkingAffiliation}
+        onOpenChange={(open) => !open && setUnlinkingAffiliation(null)}
+        donorName={donor?.first_name && donor?.last_name ? `${donor.first_name} ${donor.last_name}` : donor?.email || ""}
+        businessName={unlinkingAffiliation?.business_name || ""}
+        donorId={donorId || ""}
+        businessId={unlinkingAffiliation?.business_id || ""}
+        organizationId={organizationUser?.organization_id || ""}
+        isPrimaryContact={unlinkingAffiliation?.is_primary_contact || false}
+        onSuccess={fetchDonorData}
+      />
     </DashboardPageLayout>
   );
 };
