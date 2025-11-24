@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,47 +43,17 @@ export default function Campaigns() {
   const [sortBy, setSortBy] = useState<keyof Campaign>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterBy, setFilterBy] = useState("active");
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [showAddCampaign, setShowAddCampaign] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [managingCampaignId, setManagingCampaignId] = useState<string | null>(null);
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
+  const { activeGroup, groups } = useActiveGroup();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
   const permissionLevel = organizationUser?.user_type.permission_level;
   const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
-
-  const handleGroupClick = (groupId: string | null) => {
-    setSelectedGroup(groupId);
-  };
-
-  const fetchGroups = async () => {
-    if (!organizationUser?.organization_id) return;
-    
-    const permissionLevel = organizationUser.user_type?.permission_level;
-    
-    if (permissionLevel === 'organization_admin') {
-      const { data, error } = await supabase
-        .from("groups")
-        .select("id, group_name")
-        .eq("organization_id", organizationUser.organization_id)
-        .eq("status", true)
-        .order("group_name");
-        
-      if (error) {
-        console.error("Error fetching groups:", error);
-        return;
-      }
-      setGroups(data || []);
-    } else if (permissionLevel === 'program_manager' || permissionLevel === 'participant' || permissionLevel === 'supporter') {
-      if (organizationUser.groups) {
-        setGroups([organizationUser.groups]);
-      }
-    }
-  };
 
   const fetchCampaigns = async () => {
     if (!organizationUser) {
@@ -133,8 +104,8 @@ export default function Campaigns() {
       }
 
       // Apply selected group filter if set
-      if (selectedGroup && selectedGroup !== "All") {
-        query = query.eq('group_id', selectedGroup);
+      if (activeGroup) {
+        query = query.eq('group_id', activeGroup.id);
       }
 
       const { data, error } = await query;
@@ -251,7 +222,6 @@ export default function Campaigns() {
 
   useEffect(() => {
     if (!organizationUserLoading && organizationUser) {
-      fetchGroups();
       fetchCampaigns();
     }
   }, [organizationUser, organizationUserLoading]);
@@ -260,9 +230,7 @@ export default function Campaigns() {
     if (organizationUser) {
       fetchCampaigns();
     }
-  }, [selectedGroup]);
-
-  const activeGroup = selectedGroup ? groups.find(g => g.id === selectedGroup) : null;
+  }, [activeGroup?.id]);
 
   if (organizationUserLoading || loading) {
     return (
