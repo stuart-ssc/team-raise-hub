@@ -12,37 +12,56 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request body first
+    const requestBody = await req.json();
+    const { organizationId } = requestBody;
+    
+    if (!organizationId) {
+      throw new Error('organizationId is required in request body');
+    }
+
+    console.log('Processing request for organization:', organizationId);
+
+    // Get authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No Authorization header found');
+      throw new Error('Missing authorization header');
+    }
+
+    console.log('Authorization header present, creating client...');
+
+    // Create Supabase client with auth context
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
     console.log('Authenticating user...');
+    
+    // Get user from the JWT token
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     
     if (authError) {
-      console.error('Auth error:', authError);
+      console.error('Auth error details:', { 
+        message: authError.message, 
+        status: authError.status,
+        name: authError.name 
+      });
       throw new Error(`Authentication failed: ${authError.message}`);
     }
     
     if (!user) {
       console.error('No user found in session');
-      throw new Error('Unauthorized - No user session found');
+      throw new Error('No authenticated user found');
     }
 
-    console.log('User authenticated:', user.id);
-
-    const { organizationId } = await req.json();
-    if (!organizationId) {
-      throw new Error('organizationId is required');
-    }
-
-    console.log('Verifying permissions for organization:', organizationId);
+    console.log('User authenticated successfully:', user.id);
 
     // Verify user belongs to organization and has permission
     const { data: orgUser } = await supabaseClient
