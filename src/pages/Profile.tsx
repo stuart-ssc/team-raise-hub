@@ -295,11 +295,11 @@ const Profile = () => {
         <h1 className="text-3xl font-bold mb-6">Profile Settings</h1>
             
             <Tabs defaultValue="personal" className="space-y-6">
-              <TabsList>
-                <TabsTrigger value="personal">Personal Information</TabsTrigger>
-                <TabsTrigger value="security">Security</TabsTrigger>
-                <TabsTrigger value="notifications">Notifications</TabsTrigger>
-                <TabsTrigger value="groups">Groups & Roles</TabsTrigger>
+              <TabsList className="flex flex-col md:flex-row w-full md:w-auto h-auto md:h-10">
+                <TabsTrigger value="personal" className="w-full md:w-auto justify-start md:justify-center">Personal Information</TabsTrigger>
+                <TabsTrigger value="security" className="w-full md:w-auto justify-start md:justify-center">Security</TabsTrigger>
+                <TabsTrigger value="notifications" className="w-full md:w-auto justify-start md:justify-center">Notifications</TabsTrigger>
+                <TabsTrigger value="groups" className="w-full md:w-auto justify-start md:justify-center">Groups & Roles</TabsTrigger>
               </TabsList>
 
               <TabsContent value="personal">
