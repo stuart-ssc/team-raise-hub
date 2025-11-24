@@ -6,8 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Building2, TrendingUp, CheckCircle, Users, AlertCircle, Tag } from "lucide-react";
+import { Building2, TrendingUp, CheckCircle, Users, AlertCircle, Tag, Activity, Calculator } from "lucide-react";
+import { getSegmentInfo, BUSINESS_SEGMENT_INFO } from "@/lib/businessEngagement";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { useNavigate } from "react-router-dom";
@@ -25,6 +27,9 @@ interface Business {
   donor_count: number;
   total_donation_value: number;
   last_activity_date: string | null;
+  engagement_segment: string | null;
+  engagement_score: number | null;
+  total_partnership_value: number | null;
 }
 
 interface MonthlyGrowth {
@@ -68,6 +73,7 @@ const BusinessAnalytics = () => {
   const { activeGroup } = useActiveGroup();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
+  const [calculatingScores, setCalculatingScores] = useState(false);
 
   useEffect(() => {
     if (organizationUser?.organization_id) {
@@ -91,7 +97,10 @@ const BusinessAnalytics = () => {
           tags,
           state,
           created_at,
-          archived_at
+          archived_at,
+          engagement_segment,
+          engagement_score,
+          total_partnership_value
         `)
         .is('archived_at', null);
 
@@ -300,6 +309,42 @@ const BusinessAnalytics = () => {
     return months;
   };
 
+  // Calculate engagement segment distribution
+  const calculateEngagementSegments = () => {
+    const segmentMap = new Map<string, number>();
+    businesses.forEach(b => {
+      const segment = b.engagement_segment || 'new';
+      segmentMap.set(segment, (segmentMap.get(segment) || 0) + 1);
+    });
+    
+    return Object.keys(BUSINESS_SEGMENT_INFO).map(segment => ({
+      name: BUSINESS_SEGMENT_INFO[segment].label,
+      value: segmentMap.get(segment) || 0,
+      segment: segment
+    }));
+  };
+
+  const handleCalculateScores = async () => {
+    if (!organizationUser?.organization_id) return;
+    
+    setCalculatingScores(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('calculate-business-engagement', {
+        body: { organizationId: organizationUser.organization_id }
+      });
+
+      if (error) throw error;
+
+      toast.success(`Engagement scores calculated successfully! ${data.totalBusinesses} businesses processed.`);
+      await fetchData(); // Refresh data
+    } catch (error: any) {
+      console.error('Error calculating engagement scores:', error);
+      toast.error(error.message || 'Failed to calculate engagement scores');
+    } finally {
+      setCalculatingScores(false);
+    }
+  };
+
   // Calculate health indicators
   const needingAttention = businesses.filter(b => {
     if (!b.last_activity_date) return true;
@@ -349,6 +394,7 @@ const BusinessAnalytics = () => {
   const geographicData = calculateGeographicDistribution();
   const tagData = calculateTagAnalysis();
   const timelineData = calculateEngagementTimeline();
+  const engagementSegments = calculateEngagementSegments();
 
   return (
     <DashboardPageLayout
@@ -415,6 +461,7 @@ const BusinessAnalytics = () => {
           <TabsList>
             <TabsTrigger value="growth">Growth Trends</TabsTrigger>
             <TabsTrigger value="engagement">Engagement</TabsTrigger>
+            <TabsTrigger value="segments">Engagement Segments</TabsTrigger>
             <TabsTrigger value="top">Top Businesses</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
           </TabsList>
@@ -543,6 +590,111 @@ const BusinessAnalytics = () => {
                     />
                   </AreaChart>
                 </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="segments" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-medium">Partnership Engagement Segments</h3>
+                <p className="text-sm text-muted-foreground">BPV scoring: Breadth, Performance, Vitality</p>
+              </div>
+              <Button onClick={handleCalculateScores} disabled={calculatingScores}>
+                <Calculator className="h-4 w-4 mr-2" />
+                {calculatingScores ? 'Calculating...' : 'Calculate Scores'}
+              </Button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {Object.entries(BUSINESS_SEGMENT_INFO).map(([segment, info]) => {
+                const count = engagementSegments.find(s => s.segment === segment)?.value || 0;
+                const Icon = info.icon;
+                return (
+                  <Card key={segment} className={count > 0 ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <Badge className={`${info.bgColor} ${info.color} border-0`}>
+                          <Icon className="h-3 w-3 mr-1" />
+                          {info.label}
+                        </Badge>
+                        <span className="text-2xl font-bold">{count}</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground">{info.description}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Segment Distribution</CardTitle>
+                <CardDescription>Partnership engagement breakdown across all businesses</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={350}>
+                  <PieChart>
+                    <Pie
+                      data={engagementSegments.filter(s => s.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={100}
+                      fill="hsl(var(--chart-1))"
+                      dataKey="value"
+                    >
+                      {engagementSegments.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Segment Details</CardTitle>
+                <CardDescription>Average metrics per engagement segment</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Object.entries(BUSINESS_SEGMENT_INFO).map(([segment, info]) => {
+                    const segmentBusinesses = businesses.filter(b => b.engagement_segment === segment);
+                    if (segmentBusinesses.length === 0) return null;
+                    
+                    const avgScore = segmentBusinesses.reduce((sum, b) => sum + (b.engagement_score || 0), 0) / segmentBusinesses.length;
+                    const avgValue = segmentBusinesses.reduce((sum, b) => sum + (b.total_partnership_value || 0), 0) / segmentBusinesses.length;
+                    const Icon = info.icon;
+                    
+                    return (
+                      <div key={segment} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Badge className={`${info.bgColor} ${info.color} border-0`}>
+                            <Icon className="h-3 w-3 mr-1" />
+                            {info.label}
+                          </Badge>
+                          <span className="text-sm font-medium">{segmentBusinesses.length} businesses</span>
+                        </div>
+                        <div className="flex gap-6 text-sm">
+                          <div className="text-right">
+                            <p className="text-muted-foreground">Avg Score</p>
+                            <p className="font-medium">{avgScore.toFixed(0)}/100</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-muted-foreground">Avg Value</p>
+                            <p className="font-medium">${(avgValue / 100).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

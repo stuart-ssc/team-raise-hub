@@ -1,5 +1,8 @@
 project_id = "tfrebmhionpuowpzedvz"
 
+[functions.calculate-business-engagement]
+verify_jwt = true
+
 [functions.import-businesses]
 verify_jwt = true
 

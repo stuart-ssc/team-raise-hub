@@ -17,7 +17,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore } from "lucide-react";
+import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore, TrendingUp, Activity } from "lucide-react";
+import { getSegmentInfo } from "@/lib/businessEngagement";
+import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
@@ -55,6 +57,14 @@ interface BusinessDetails {
   created_at: string;
   updated_at: string;
   tags: string[] | null;
+  engagement_breadth_score: number | null;
+  engagement_performance_score: number | null;
+  engagement_vitality_score: number | null;
+  engagement_segment: string | null;
+  engagement_score: number | null;
+  total_partnership_value: number | null;
+  linked_donors_count: number | null;
+  last_donor_activity_date: string | null;
 }
 
 interface LinkedDonor {
@@ -476,6 +486,80 @@ const BusinessProfile = () => {
               </div>
             )}
         </div>
+
+        {/* Engagement Score Card */}
+        {business.engagement_score !== null && business.engagement_score > 0 && (
+          <Card className="border-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Partnership Engagement
+                </CardTitle>
+                {business.engagement_segment && (
+                  <Badge className={`${getSegmentInfo(business.engagement_segment).bgColor} ${getSegmentInfo(business.engagement_segment).color} border-0`}>
+                    {(() => {
+                      const Icon = getSegmentInfo(business.engagement_segment).icon;
+                      return <Icon className="h-3 w-3 mr-1" />;
+                    })()}
+                    {getSegmentInfo(business.engagement_segment).label}
+                  </Badge>
+                )}
+              </div>
+              {business.engagement_segment && (
+                <p className="text-sm text-muted-foreground">
+                  {getSegmentInfo(business.engagement_segment).description}
+                </p>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Overall Score</p>
+                  <p className="text-3xl font-bold text-foreground">{business.engagement_score}/100</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-muted-foreground" />
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium">Breadth (Linked Donors)</p>
+                    <Badge variant="outline">{business.engagement_breadth_score}/5</Badge>
+                  </div>
+                  <Progress value={(business.engagement_breadth_score || 0) * 20} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {business.linked_donors_count || 0} linked donors
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium">Performance (Total Value)</p>
+                    <Badge variant="outline">{business.engagement_performance_score}/5</Badge>
+                  </div>
+                  <Progress value={(business.engagement_performance_score || 0) * 20} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ${((business.total_partnership_value || 0) / 100).toLocaleString()} total value
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium">Vitality (Recent Activity)</p>
+                    <Badge variant="outline">{business.engagement_vitality_score}/5</Badge>
+                  </div>
+                  <Progress value={(business.engagement_vitality_score || 0) * 20} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {business.last_donor_activity_date
+                      ? `Last activity: ${new Date(business.last_donor_activity_date).toLocaleDateString()}`
+                      : "No activity recorded"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-3">
