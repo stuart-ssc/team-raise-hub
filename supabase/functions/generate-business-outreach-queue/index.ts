@@ -22,16 +22,18 @@ serve(async (req) => {
 
     console.log('Processing request for organization:', organizationId);
 
-    // Get authorization header
+    // Get authorization header and extract token
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       console.error('No Authorization header found');
       throw new Error('Missing authorization header');
     }
 
-    console.log('Authorization header present, creating client...');
+    // Extract the JWT token from "Bearer <token>"
+    const token = authHeader.replace('Bearer ', '');
+    console.log('Token extracted, creating client...');
 
-    // Create Supabase client with auth context
+    // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -39,13 +41,16 @@ serve(async (req) => {
         global: {
           headers: { Authorization: authHeader },
         },
+        auth: {
+          persistSession: false
+        }
       }
     );
 
-    console.log('Authenticating user...');
+    console.log('Authenticating user with token...');
     
-    // Get user from the JWT token
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Get user from the JWT token - pass token directly
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
     
     if (authError) {
       console.error('Auth error details:', { 
@@ -57,7 +62,7 @@ serve(async (req) => {
     }
     
     if (!user) {
-      console.error('No user found in session');
+      console.error('No user found in token');
       throw new Error('No authenticated user found');
     }
 
