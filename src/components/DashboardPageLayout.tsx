@@ -34,7 +34,7 @@ const DashboardPageLayout = ({
       <DashboardSidebar />
       <DashboardSidebarSheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} />
       
-      <div className="flex-1 flex flex-col overflow-hidden ml-0 md:ml-16 lg:ml-64">
+      <div className="flex-1 flex flex-col overflow-hidden md:ml-16 lg:ml-64">
         <DashboardHeader
           onGroupClick={handleGroupClick}
           activeGroup={activeGroup}
