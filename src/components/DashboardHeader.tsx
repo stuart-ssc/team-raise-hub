@@ -20,10 +20,11 @@ interface DashboardHeaderProps {
   } | null;
   onGroupClick?: (groupId: string | null) => void;
   showRosters?: boolean;
+  hideGroupsFilter?: boolean;
   onMobileMenuClick?: () => void;
 }
 
-const DashboardHeader = ({ activeGroup, onGroupClick, showRosters, onMobileMenuClick }: DashboardHeaderProps) => {
+const DashboardHeader = ({ activeGroup, onGroupClick, showRosters, hideGroupsFilter, onMobileMenuClick }: DashboardHeaderProps) => {
   const { signOut, user } = useAuth();
   const { organizationUser } = useOrganizationUser();
   const navigate = useNavigate();
@@ -105,59 +106,61 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters, onMobileMenuC
           <h1 id="school-name-title" className="text-xl md:text-3xl font-bold text-foreground">
             {organizationUser?.organization?.name || "Organization"}
           </h1>
-          <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-1">
-            <span className="text-muted-foreground text-sm md:text-base">
-              {organizationUser?.organization ? getLabel(organizationUser.organization.organization_type, 'programs') : 'Programs'}:
-            </span>
-            
-            {shouldUseDropdown ? (
-              <Select
-                value={activeGroup?.id || "all"}
-                onValueChange={(value) => onGroupClick && onGroupClick(value === "all" ? null : value)}
-                disabled={showRosters}
-              >
-                <SelectTrigger className="w-[180px] h-8 text-xs md:text-sm">
-                  <SelectValue>{selectedGroupName}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
+          {!hideGroupsFilter && (
+            <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-1">
+              <span className="text-muted-foreground text-sm md:text-base">
+                {organizationUser?.organization ? getLabel(organizationUser.organization.organization_type, 'programs') : 'Programs'}:
+              </span>
+              
+              {shouldUseDropdown ? (
+                <Select
+                  value={activeGroup?.id || "all"}
+                  onValueChange={(value) => onGroupClick && onGroupClick(value === "all" ? null : value)}
+                  disabled={showRosters}
+                >
+                  <SelectTrigger className="w-[180px] h-8 text-xs md:text-sm">
+                    <SelectValue>{selectedGroupName}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {groups
+                      .sort((a, b) => a.group_name.localeCompare(b.group_name))
+                      .map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.group_name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <>
+                  <Badge 
+                    variant={!activeGroup ? "default" : "secondary"}
+                    className={`text-xs md:text-sm ${showRosters ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                    onClick={() => {
+                      if (!showRosters && onGroupClick) {
+                        onGroupClick(null);
+                      }
+                    }}
+                  >
+                    All
+                  </Badge>
                   {groups
                     .sort((a, b) => a.group_name.localeCompare(b.group_name))
                     .map((group) => (
-                      <SelectItem key={group.id} value={group.id}>
+                      <Badge 
+                        key={group.id} 
+                        variant={activeGroup?.id === group.id ? "default" : "secondary"}
+                        className="cursor-pointer text-xs md:text-sm"
+                        onClick={() => onGroupClick && onGroupClick(group.id)}
+                      >
                         {group.group_name}
-                      </SelectItem>
+                      </Badge>
                     ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <>
-                <Badge 
-                  variant={!activeGroup ? "default" : "secondary"}
-                  className={`text-xs md:text-sm ${showRosters ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                  onClick={() => {
-                    if (!showRosters && onGroupClick) {
-                      onGroupClick(null);
-                    }
-                  }}
-                >
-                  All
-                </Badge>
-                {groups
-                  .sort((a, b) => a.group_name.localeCompare(b.group_name))
-                  .map((group) => (
-                    <Badge 
-                      key={group.id} 
-                      variant={activeGroup?.id === group.id ? "default" : "secondary"}
-                      className="cursor-pointer text-xs md:text-sm"
-                      onClick={() => onGroupClick && onGroupClick(group.id)}
-                    >
-                      {group.group_name}
-                    </Badge>
-                  ))}
-              </>
-            )}
-          </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
       

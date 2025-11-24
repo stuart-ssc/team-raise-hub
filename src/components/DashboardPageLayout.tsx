@@ -19,6 +19,7 @@ interface DashboardPageLayoutProps {
   showBreadcrumbs?: boolean;
   loading?: boolean;
   showRosters?: boolean;
+  hideGroupsFilter?: boolean;
   children: ReactNode;
 }
 
@@ -27,6 +28,7 @@ const DashboardPageLayout = ({
   showBreadcrumbs = true,
   loading = false,
   showRosters,
+  hideGroupsFilter,
   children,
 }: DashboardPageLayoutProps) => {
   const { activeGroup, handleGroupClick } = useActiveGroup();
@@ -86,6 +88,7 @@ const DashboardPageLayout = ({
           onGroupClick={handleGroupClick}
           activeGroup={activeGroup}
           showRosters={showRosters}
+          hideGroupsFilter={hideGroupsFilter}
           onMobileMenuClick={() => setMobileMenuOpen(true)}
         />
         {showBreadcrumbs && (
