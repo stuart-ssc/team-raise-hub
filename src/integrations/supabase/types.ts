@@ -110,6 +110,8 @@ export type Database = {
         Row: {
           address_line1: string | null
           address_line2: string | null
+          archived_at: string | null
+          archived_by: string | null
           business_email: string | null
           business_name: string
           business_phone: string | null
@@ -131,6 +133,8 @@ export type Database = {
         Insert: {
           address_line1?: string | null
           address_line2?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           business_email?: string | null
           business_name: string
           business_phone?: string | null
@@ -152,6 +156,8 @@ export type Database = {
         Update: {
           address_line1?: string | null
           address_line2?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           business_email?: string | null
           business_name?: string
           business_phone?: string | null
