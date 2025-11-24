@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { SponsorshipFileUploader } from "@/components/SponsorshipFileUploader";
 import {
   AlertDialog,
@@ -44,6 +45,7 @@ const CheckoutSuccess = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<OrderDetails | null>(null);
@@ -277,9 +279,17 @@ const CheckoutSuccess = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="space-y-2">
+              {user && (
+                <Button variant="outline" asChild className="w-full">
+                  <Link to="/dashboard/orders">
+                    View My Orders
+                  </Link>
+                </Button>
+              )}
+              
               {order && (
                 <Button variant="outline" asChild className="w-full">
-                  <Link to={`/campaigns/${order.campaign.id}`}>
+                  <Link to={`/c/${order.campaign.id}`}>
                     View Campaign Details
                   </Link>
                 </Button>
@@ -289,12 +299,6 @@ const CheckoutSuccess = () => {
                 <Link to="/">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Return to Home
-                </Link>
-              </Button>
-              
-              <Button variant="outline" asChild className="w-full">
-                <Link to="/campaigns">
-                  Browse More Campaigns
                 </Link>
               </Button>
             </div>
@@ -325,7 +329,7 @@ const CheckoutSuccess = () => {
                 </div>
               )}
               <p className="text-sm">
-                You can also return to this page anytime using the link in your confirmation email.
+                You can also return to this page anytime using the link in your confirmation email or by visiting "My Orders" in your dashboard.
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
