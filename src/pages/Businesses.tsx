@@ -497,6 +497,10 @@ const Businesses = () => {
                     </Badge>
                   )}
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/dashboard/businesses/campaign-analytics')}>
+                  <Activity className="h-4 w-4 mr-2" />
+                  Campaign Analytics
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {canManageBusinesses && (
                   <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
