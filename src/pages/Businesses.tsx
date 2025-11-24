@@ -13,11 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, DollarSign, Users, Handshake, Search, Download } from "lucide-react";
+import { Building2, DollarSign, Users, Handshake, Search, Download, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { CsvExportBusinessDialog } from "@/components/CsvExportBusinessDialog";
+import { AddBusinessDialog } from "@/components/AddBusinessDialog";
 
 interface BusinessProfile {
   id: string;
@@ -32,6 +33,7 @@ interface BusinessProfile {
   address_line1: string | null;
   city: string | null;
   state: string | null;
+  archived_at: string | null;
   linked_donors_count: number;
   total_donations: number;
   last_donation_date: string | null;
@@ -44,8 +46,14 @@ const Businesses = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [verificationFilter, setVerificationFilter] = useState<string>("all");
+  const [archiveFilter, setArchiveFilter] = useState<string>("active");
   const [sortBy, setSortBy] = useState<string>("name");
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+
+  const canManageBusinesses = 
+    organizationUser?.user_type?.permission_level === 'organization_admin' ||
+    organizationUser?.user_type?.permission_level === 'program_manager';
 
   useEffect(() => {
     if (organizationUser?.organization_id) {
@@ -72,7 +80,7 @@ const Businesses = () => {
 
       const businessIds = orgBusinesses.map(ob => ob.business_id);
 
-      // Fetch business details
+      // Fetch business details including archived_at
       const { data: businessData, error: businessError } = await supabase
         .from("businesses")
         .select("*")
@@ -157,7 +165,12 @@ const Businesses = () => {
       const matchesVerification =
         verificationFilter === "all" || business.verification_status === verificationFilter;
 
-      return matchesSearch && matchesVerification;
+      const matchesArchive =
+        archiveFilter === "all" ||
+        (archiveFilter === "active" && !business.archived_at) ||
+        (archiveFilter === "archived" && business.archived_at);
+
+      return matchesSearch && matchesVerification && matchesArchive;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -230,15 +243,23 @@ const Businesses = () => {
             <h1 className="text-3xl font-bold text-foreground">Business Partnerships</h1>
             <p className="text-muted-foreground">Manage corporate relationships and donations</p>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowExportDialog(true)}
-            disabled={filteredAndSortedBusinesses.length === 0}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
+          <div className="flex gap-2">
+            {canManageBusinesses && (
+              <Button onClick={() => setShowAddDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Business
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowExportDialog(true)}
+              disabled={filteredAndSortedBusinesses.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -318,6 +339,16 @@ const Businesses = () => {
                   <SelectItem value="verified">Verified</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={archiveFilter} onValueChange={setArchiveFilter}>
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectValue placeholder="Archive Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active Only</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="archived">Archived Only</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={sortBy} onValueChange={setSortBy}>
@@ -405,6 +436,12 @@ const Businesses = () => {
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
         selectedBusinessIds={filteredAndSortedBusinesses.map(b => b.id)}
+      />
+
+      <AddBusinessDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onSuccess={fetchBusinesses}
       />
     </DashboardPageLayout>
   );

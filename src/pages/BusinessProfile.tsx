@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { useAuth } from "@/hooks/useAuth";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,10 +16,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit } from "lucide-react";
+import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive } from "lucide-react";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
 import { EditBusinessDialog } from "@/components/EditBusinessDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
@@ -38,6 +49,7 @@ interface BusinessDetails {
   state: string | null;
   zip: string | null;
   country: string;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +75,7 @@ interface DonationHistory {
 const BusinessProfile = () => {
   const { businessId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { organizationUser } = useOrganizationUser();
   const [business, setBusiness] = useState<BusinessDetails | null>(null);
   const [linkedDonors, setLinkedDonors] = useState<LinkedDonor[]>([]);
@@ -72,6 +85,8 @@ const BusinessProfile = () => {
   const [savingNotes, setSavingNotes] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [unlinkingDonor, setUnlinkingDonor] = useState<LinkedDonor | null>(null);
 
   useEffect(() => {
@@ -203,6 +218,35 @@ const BusinessProfile = () => {
     }
   };
 
+  const handleArchive = async () => {
+    if (!user?.id) {
+      toast.error("User not found");
+      return;
+    }
+
+    setIsArchiving(true);
+    try {
+      const { error } = await supabase
+        .from("businesses")
+        .update({
+          archived_at: new Date().toISOString(),
+          archived_by: user.id,
+        })
+        .eq("id", businessId);
+
+      if (error) throw error;
+
+      toast.success("Business archived successfully");
+      setShowArchiveDialog(false);
+      navigate("/dashboard/businesses");
+    } catch (error: any) {
+      console.error("Error archiving business:", error);
+      toast.error("Failed to archive business");
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   const getVerificationBadge = (status: string) => {
     switch (status) {
       case "verified":
@@ -290,19 +334,25 @@ const BusinessProfile = () => {
               </div>
             </div>
           </div>
-          {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
-            organizationUser?.user_type?.permission_level === 'program_manager') && (
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowEditDialog(true)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-              <Button onClick={() => setShowLinkDialog(true)}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Link Employee
-              </Button>
-            </div>
-          )}
+            {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
+              organizationUser?.user_type?.permission_level === 'program_manager') && (
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowEditDialog(true)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button onClick={() => setShowLinkDialog(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Link Employee
+                </Button>
+                {organizationUser?.user_type?.permission_level === 'organization_admin' && !business?.archived_at && (
+                  <Button variant="outline" onClick={() => setShowArchiveDialog(true)}>
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archive
+                  </Button>
+                )}
+              </div>
+            )}
         </div>
 
         {/* Stats Cards */}
@@ -566,6 +616,24 @@ const BusinessProfile = () => {
           onSuccess={fetchBusinessDetails}
         />
       )}
+
+      <AlertDialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Business</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to archive <strong>{business?.business_name}</strong>? 
+              This will hide it from active business lists. You can restore it later if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleArchive} disabled={isArchiving}>
+              {isArchiving ? "Archiving..." : "Archive Business"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardPageLayout>
   );
 };
