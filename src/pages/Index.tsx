@@ -422,7 +422,7 @@ const Index = () => {
           
           <div className="border-t pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-sm text-muted-foreground">
-              © 2024 Sponsorly™. All rights reserved.
+              © {new Date().getFullYear()} Sponsorly™. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
               <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
