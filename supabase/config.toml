@@ -98,3 +98,6 @@ verify_jwt = true
 
 [functions.generate-batch-insights]
 verify_jwt = true
+
+[functions.generate-business-insights]
+verify_jwt = true

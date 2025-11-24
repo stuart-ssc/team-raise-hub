@@ -24,6 +24,8 @@ import { Input } from "@/components/ui/input";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
 import { EditBusinessDialog } from "@/components/EditBusinessDialog";
+import { BusinessActivityTimeline } from "@/components/BusinessActivityTimeline";
+import { BusinessInsightsPanel } from "@/components/BusinessInsightsPanel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -709,6 +711,9 @@ const BusinessProfile = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Activity Timeline */}
+            <BusinessActivityTimeline businessId={businessId} />
           </div>
 
           {/* Sidebar */}
@@ -772,6 +777,14 @@ const BusinessProfile = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Partnership Insights Panel */}
+            {organizationUser?.organization_id && (
+              <BusinessInsightsPanel 
+                businessId={businessId}
+                organizationId={organizationUser.organization_id}
+              />
+            )}
 
             {/* Tags */}
             {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
