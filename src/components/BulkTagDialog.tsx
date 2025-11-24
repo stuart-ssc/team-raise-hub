@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus } from "lucide-react";
+import { getTagColor, getTagBgColor } from "@/lib/utils";
 
 interface BulkTagDialogProps {
   open: boolean;
@@ -128,7 +129,16 @@ const BulkTagDialog = ({
               <Label>Tags to add ({tags.length})</Label>
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="gap-1">
+                  <Badge 
+                    key={tag} 
+                    variant="secondary" 
+                    className="gap-1 border"
+                    style={{
+                      backgroundColor: getTagBgColor(tag),
+                      color: getTagColor(tag),
+                      borderColor: getTagColor(tag)
+                    }}
+                  >
                     {tag}
                     <button
                       onClick={() => removeTag(tag)}

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getTagColor, getTagBgColor } from "@/lib/utils";
 import { Loader2, X } from "lucide-react";
 
 interface EditBusinessDialogProps {
@@ -440,7 +441,16 @@ export function EditBusinessDialog({
                 <div className="flex flex-wrap gap-2 min-h-[32px]">
                   {currentTags.length > 0 ? (
                     currentTags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="gap-1">
+                      <Badge 
+                        key={tag} 
+                        variant="secondary" 
+                        className="gap-1 border"
+                        style={{
+                          backgroundColor: getTagBgColor(tag),
+                          color: getTagColor(tag),
+                          borderColor: getTagColor(tag)
+                        }}
+                      >
                         {tag}
                         <button
                           type="button"

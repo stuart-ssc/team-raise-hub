@@ -33,6 +33,7 @@ import {
 import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { getTagColor, getTagBgColor } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { CsvExportBusinessDialog } from "@/components/CsvExportBusinessDialog";
@@ -613,7 +614,12 @@ const Businesses = () => {
                         <Badge 
                           key={idx} 
                           variant="secondary" 
-                          className="text-xs"
+                          className="text-xs border"
+                          style={{
+                            backgroundColor: getTagBgColor(tag),
+                            color: getTagColor(tag),
+                            borderColor: getTagColor(tag)
+                          }}
                         >
                           {tag}
                         </Badge>
