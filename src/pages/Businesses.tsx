@@ -13,12 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, DollarSign, Users, Handshake, Search, Download, Plus } from "lucide-react";
+import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { CsvExportBusinessDialog } from "@/components/CsvExportBusinessDialog";
 import { AddBusinessDialog } from "@/components/AddBusinessDialog";
+import { EditBusinessDialog } from "@/components/EditBusinessDialog";
 
 interface BusinessProfile {
   id: string;
@@ -50,6 +51,7 @@ const Businesses = () => {
   const [sortBy, setSortBy] = useState<string>("name");
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingBusiness, setEditingBusiness] = useState<BusinessProfile | null>(null);
 
   const canManageBusinesses = 
     organizationUser?.user_type?.permission_level === 'organization_admin' ||
@@ -379,9 +381,22 @@ const Businesses = () => {
             {filteredAndSortedBusinesses.map((business) => (
               <Card
                 key={business.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow"
+                className="relative cursor-pointer hover:shadow-lg transition-shadow group"
                 onClick={() => navigate(`/dashboard/businesses/${business.id}`)}
               >
+                {canManageBusinesses && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingBusiness(business);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -443,6 +458,15 @@ const Businesses = () => {
         onOpenChange={setShowAddDialog}
         onSuccess={fetchBusinesses}
       />
+
+      {editingBusiness && (
+        <EditBusinessDialog
+          open={!!editingBusiness}
+          onOpenChange={(open) => !open && setEditingBusiness(null)}
+          business={editingBusiness}
+          onSuccess={fetchBusinesses}
+        />
+      )}
     </DashboardPageLayout>
   );
 };
