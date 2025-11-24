@@ -16,7 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive } from "lucide-react";
+import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
 import { EditBusinessDialog } from "@/components/EditBusinessDialog";
@@ -52,6 +53,7 @@ interface BusinessDetails {
   archived_at: string | null;
   created_at: string;
   updated_at: string;
+  tags: string[] | null;
 }
 
 interface LinkedDonor {
@@ -88,6 +90,8 @@ const BusinessProfile = () => {
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [unlinkingDonor, setUnlinkingDonor] = useState<LinkedDonor | null>(null);
+  const [newTag, setNewTag] = useState("");
+  const [savingTags, setSavingTags] = useState(false);
 
   useEffect(() => {
     if (businessId && organizationUser?.organization_id) {
@@ -244,6 +248,66 @@ const BusinessProfile = () => {
       toast.error("Failed to archive business");
     } finally {
       setIsArchiving(false);
+    }
+  };
+
+  const addTag = async (tagToAdd: string) => {
+    if (!tagToAdd.trim() || !business) return;
+    
+    const currentTags = business.tags || [];
+    if (currentTags.includes(tagToAdd.trim())) {
+      toast.error("Tag already exists");
+      return;
+    }
+
+    setSavingTags(true);
+    try {
+      const updatedTags = [...currentTags, tagToAdd.trim()];
+      const { error } = await supabase
+        .from("businesses")
+        .update({ tags: updatedTags, updated_at: new Date().toISOString() })
+        .eq("id", businessId);
+
+      if (error) throw error;
+
+      setBusiness({ ...business, tags: updatedTags });
+      setNewTag("");
+      toast.success("Tag added successfully");
+    } catch (error: any) {
+      console.error("Error adding tag:", error);
+      toast.error("Failed to add tag");
+    } finally {
+      setSavingTags(false);
+    }
+  };
+
+  const removeTag = async (tagToRemove: string) => {
+    if (!business) return;
+
+    setSavingTags(true);
+    try {
+      const updatedTags = (business.tags || []).filter(tag => tag !== tagToRemove);
+      const { error } = await supabase
+        .from("businesses")
+        .update({ tags: updatedTags, updated_at: new Date().toISOString() })
+        .eq("id", businessId);
+
+      if (error) throw error;
+
+      setBusiness({ ...business, tags: updatedTags });
+      toast.success("Tag removed successfully");
+    } catch (error: any) {
+      console.error("Error removing tag:", error);
+      toast.error("Failed to remove tag");
+    } finally {
+      setSavingTags(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addTag(newTag);
     }
   };
 
@@ -566,6 +630,54 @@ const BusinessProfile = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Tags */}
+            {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
+              organizationUser?.user_type?.permission_level === 'program_manager') && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    Tags
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {business.tags && business.tags.length > 0 ? (
+                      business.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="gap-1">
+                          {tag}
+                          <button
+                            onClick={() => removeTag(tag)}
+                            disabled={savingTags}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No tags yet</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add a tag..."
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      disabled={savingTags}
+                    />
+                    <Button 
+                      onClick={() => addTag(newTag)} 
+                      disabled={savingTags || !newTag.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Notes */}
             <Card>
