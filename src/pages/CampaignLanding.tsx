@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Minus, Plus, ShoppingCart, Calendar, Target, MapPin, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { BusinessInfoForm } from "@/components/BusinessInfoForm";
+import { CustomFieldsRenderer } from "@/components/CustomFieldsRenderer";
 
 interface CampaignData {
   id: string;
@@ -21,8 +24,11 @@ interface CampaignData {
   end_date: string | null;
   status: boolean | null;
   image_url: string | null;
+  requires_business_info: boolean | null;
+  file_upload_deadline_days: number | null;
   groups: {
     id: string;
+    organization_id: string;
     group_name: string;
     group_type: {
       id: string;
@@ -58,6 +64,16 @@ interface CartItem extends CampaignItem {
   selectedQuantity: number;
 }
 
+interface CustomField {
+  id: string;
+  field_name: string;
+  field_type: string;
+  field_options: any;
+  is_required: boolean;
+  help_text: string | null;
+  display_order: number;
+}
+
 const CampaignLanding = () => {
   const { slug } = useParams<{ slug: string }>();
   const { toast } = useToast();
@@ -67,6 +83,13 @@ const CampaignLanding = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | undefined>();
+  
+  // Multi-step checkout state
+  const [checkoutStep, setCheckoutStep] = useState<'cart' | 'business-info' | 'custom-fields' | 'payment'>('cart');
+  const [businessData, setBusinessData] = useState<any>(null);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [processingCheckout, setProcessingCheckout] = useState(false);
 
   // Track campaign views for donor engagement analytics
   useCampaignViewTracking({
@@ -98,6 +121,7 @@ const CampaignLanding = () => {
           *,
           groups!inner(
             id,
+            organization_id,
             group_name,
             group_type(id, name),
             schools!inner(id, school_name, city, state, "Primary Color")
@@ -126,6 +150,19 @@ const CampaignLanding = () => {
       } else {
         setCampaignItems(itemsData || []);
         setCart(itemsData?.map(item => ({ ...item, selectedQuantity: 0 })) || []);
+      }
+
+      // Fetch custom fields
+      const { data: fieldsData, error: fieldsError } = await supabase
+        .from("campaign_custom_fields")
+        .select("*")
+        .eq("campaign_id", campaignData.id)
+        .order("display_order", { ascending: true });
+
+      if (fieldsError) {
+        console.error("Error fetching custom fields:", fieldsError);
+      } else {
+        setCustomFields(fieldsData || []);
       }
     } catch (error) {
       console.error("Error fetching campaign data:", error);
@@ -161,13 +198,10 @@ const CampaignLanding = () => {
     return cart.reduce((count, item) => count + item.selectedQuantity, 0);
   };
 
-  const handleProceedToCheckout = async () => {
+  const handleProceedToCheckout = () => {
     if (!campaign) return;
     
-    const items = cart.filter(item => item.selectedQuantity > 0).map(item => ({
-      id: item.id,
-      quantity: item.selectedQuantity
-    }));
+    const items = cart.filter(item => item.selectedQuantity > 0);
 
     if (items.length === 0) {
       toast({
@@ -178,26 +212,114 @@ const CampaignLanding = () => {
       return;
     }
 
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
-        body: {
-          campaignSlug: slug,
-          items: items,
-          customerInfo: null // Will be collected by Stripe Checkout
-        }
+    // Determine next step based on campaign requirements
+    if (campaign.requires_business_info) {
+      setCheckoutStep('business-info');
+    } else if (customFields.length > 0) {
+      setCheckoutStep('custom-fields');
+    } else {
+      setCheckoutStep('payment');
+    }
+  };
+
+  const handleBusinessInfoNext = () => {
+    if (customFields.length > 0) {
+      setCheckoutStep('custom-fields');
+    } else {
+      setCheckoutStep('payment');
+    }
+  };
+
+  const validateCustomFields = () => {
+    const requiredFields = customFields.filter(f => f.is_required);
+    
+    return requiredFields.every(field => {
+      const value = customFieldValues[field.id];
+      // Allow required file fields to be empty (can upload later)
+      if (field.field_type === 'file') return true;
+      return value !== undefined && value !== null && value !== '';
+    });
+  };
+
+  const handleCustomFieldsNext = () => {
+    if (!validateCustomFields()) {
+      toast({
+        title: "Required fields missing",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
       });
+      return;
+    }
+    
+    setCheckoutStep('payment');
+  };
 
-      if (error) throw error;
-
-      if (data.url) {
-        // Open Stripe checkout in a new tab
-        window.open(data.url, '_blank');
+  const handleFinalCheckout = async () => {
+    if (!campaign) return;
+    
+    setProcessingCheckout(true);
+    
+    try {
+      const items = cart.filter(item => item.selectedQuantity > 0).map(item => ({
+        id: item.id,
+        quantity: item.selectedQuantity
+      }));
+      
+      // Step 1: Create Stripe checkout session
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
+        'create-stripe-checkout',
+        {
+          body: {
+            campaignSlug: slug,
+            items: items,
+            customerInfo: null
+          }
+        }
+      );
+      
+      if (checkoutError) throw checkoutError;
+      
+      // Step 2: Process business data and custom fields if they exist
+      if ((businessData || Object.keys(customFieldValues).length > 0) && checkoutData.orderId) {
+        const { error: processError } = await supabase.functions.invoke(
+          'process-checkout-business',
+          {
+            body: {
+              orderId: checkoutData.orderId,
+              businessId: businessData?.businessId,
+              organizationId: campaign.groups?.organization_id,
+              customFieldValues: customFieldValues,
+              campaignId: campaign.id
+            }
+          }
+        );
+        
+        if (processError) {
+          console.error('Error processing business data:', processError);
+          toast({
+            title: "Warning",
+            description: "Purchase created but business data may need to be added later.",
+          });
+        }
+      }
+      
+      // Step 3: Redirect to Stripe Checkout
+      if (checkoutData.url) {
+        window.open(checkoutData.url, '_blank');
+        
+        // Reset checkout state
+        setCheckoutStep('cart');
+        setBusinessData(null);
+        setCustomFieldValues({});
+        
+        toast({
+          title: "Redirecting to payment",
+          description: "Please complete your payment in the new tab."
+        });
       } else {
         throw new Error('No checkout URL received');
       }
-
+      
     } catch (error) {
       console.error('Checkout error:', error);
       toast({
@@ -206,7 +328,7 @@ const CampaignLanding = () => {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setProcessingCheckout(false);
     }
   };
 
@@ -378,153 +500,352 @@ const CampaignLanding = () => {
         </div>
       </div>
 
-      {/* Campaign Items */}
+      {/* Campaign Items and Checkout Steps */}
       <div className="max-w-6xl mx-auto p-6">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-2">{getSectionTitle()}</h2>
-          <p className="text-muted-foreground">
-            {getSectionDescription()}
-          </p>
-        </div>
+        {checkoutStep === 'cart' && (
+          <>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-2">{getSectionTitle()}</h2>
+              <p className="text-muted-foreground">
+                {getSectionDescription()}
+              </p>
+            </div>
 
-        {campaignItems.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">No items available for this campaign yet.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cart.map((item) => (
-              <Card key={item.id} className="overflow-hidden">
-                {item.image && (
-                  <div className="aspect-video bg-muted">
-                    <img 
-                      src={item.image} 
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <CardHeader>
-                  <CardTitle className="line-clamp-2">{item.name}</CardTitle>
-                  {item.description && (
-                    <CardDescription className="line-clamp-3">
-                      {item.description}
-                    </CardDescription>
-                  )}
-                  {item.size && (
-                    <Badge variant="outline" className="w-fit">
-                      Size: {item.size}
-                    </Badge>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">
-                      ${(item.cost || 0).toFixed(2)}
-                    </span>
-                    {item.quantity_available !== null && (
-                      <span className="text-sm text-muted-foreground">
-                        {item.quantity_available} available
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(item.id, item.selectedQuantity - 1)}
-                      disabled={item.selectedQuantity === 0}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="w-12 text-center font-medium">
-                      {item.selectedQuantity}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(item.id, item.selectedQuantity + 1)}
-                      disabled={
-                        (item.quantity_available && item.selectedQuantity >= item.quantity_available) ||
-                        (item.max_items_purchased && item.selectedQuantity >= item.max_items_purchased)
-                      }
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {item.max_items_purchased && (
-                    <p className="text-xs text-muted-foreground">
-                      Max {item.max_items_purchased} per person
-                    </p>
-                  )}
+            {campaignItems.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-muted-foreground">No items available for this campaign yet.</p>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {cart.map((item) => (
+                  <Card key={item.id} className="overflow-hidden">
+                    {item.image && (
+                      <div className="aspect-video bg-muted">
+                        <img 
+                          src={item.image} 
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <CardHeader>
+                      <CardTitle className="line-clamp-2">{item.name}</CardTitle>
+                      {item.description && (
+                        <CardDescription className="line-clamp-3">
+                          {item.description}
+                        </CardDescription>
+                      )}
+                      {item.size && (
+                        <Badge variant="outline" className="w-fit">
+                          Size: {item.size}
+                        </Badge>
+                      )}
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl font-bold">
+                          ${(item.cost || 0).toFixed(2)}
+                        </span>
+                        {item.quantity_available !== null && (
+                          <span className="text-sm text-muted-foreground">
+                            {item.quantity_available} available
+                          </span>
+                        )}
+                      </div>
 
-        {/* Cart Summary */}
-        {getSelectedItemsCount() > 0 && (
-          <Card className="mt-8">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <ShoppingCart className="h-5 w-5" />
-                <span className="font-semibold">
-                  {getSelectedItemsCount()} item{getSelectedItemsCount() !== 1 ? 's' : ''} selected
-                </span>
-              </div>
-              
-              {/* Selected Items */}
-              <div className="space-y-2 mb-4">
-                {cart.filter(item => item.selectedQuantity > 0).map(item => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span>{item.name} × {item.selectedQuantity}</span>
-                    <span>${((item.cost || 0) * item.selectedQuantity).toFixed(2)}</span>
-                  </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateQuantity(item.id, item.selectedQuantity - 1)}
+                          disabled={item.selectedQuantity === 0}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-12 text-center font-medium">
+                          {item.selectedQuantity}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateQuantity(item.id, item.selectedQuantity + 1)}
+                          disabled={
+                            (item.quantity_available && item.selectedQuantity >= item.quantity_available) ||
+                            (item.max_items_purchased && item.selectedQuantity >= item.max_items_purchased)
+                          }
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      {item.max_items_purchased && (
+                        <p className="text-xs text-muted-foreground">
+                          Max {item.max_items_purchased} per person
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
+            )}
 
-              {/* Cost Breakdown */}
-              <div className="space-y-2 border-t pt-4">
-                <div className="flex justify-between text-sm">
-                  <span>Subtotal</span>
-                  <span>${getSubtotal().toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <div className="flex items-center gap-1">
-                    <span>Platform Fee</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-3 w-3 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">
-                            The platform fee is your way to further support the group by covering their fees so they can receive your full donation.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+            {/* Cart Summary */}
+            {getSelectedItemsCount() > 0 && (
+              <Card className="mt-8">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <ShoppingCart className="h-5 w-5" />
+                    <span className="font-semibold">
+                      {getSelectedItemsCount()} item{getSelectedItemsCount() !== 1 ? 's' : ''} selected
+                    </span>
                   </div>
-                  <span>${getPlatformFee().toFixed(2)}</span>
+                  
+                  {/* Selected Items */}
+                  <div className="space-y-2 mb-4">
+                    {cart.filter(item => item.selectedQuantity > 0).map(item => (
+                      <div key={item.id} className="flex justify-between text-sm">
+                        <span>{item.name} × {item.selectedQuantity}</span>
+                        <span>${((item.cost || 0) * item.selectedQuantity).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Cost Breakdown */}
+                  <div className="space-y-2 border-t pt-4">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal</span>
+                      <span>${getSubtotal().toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <div className="flex items-center gap-1">
+                        <span>Platform Fee</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="h-3 w-3 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-xs">
+                                The platform fee is your way to further support the group by covering their fees so they can receive your full donation.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <span>${getPlatformFee().toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-lg border-t pt-2">
+                      <span>Total</span>
+                      <span>${getTotalAmount().toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={handleProceedToCheckout}
+                    className="w-full mt-4"
+                    size="lg"
+                  >
+                    Proceed to Checkout
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
+        {/* Business Info Step */}
+        {checkoutStep === 'business-info' && campaign && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Business Information</CardTitle>
+              <CardDescription>
+                This campaign requires business/sponsor information for recognition purposes.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <BusinessInfoForm
+                organizationId={campaign.groups?.organization_id || ''}
+                onBusinessSelected={(businessId, isNew) => {
+                  setBusinessData({
+                    businessId,
+                    isNew
+                  });
+                }}
+                onSkip={() => {
+                  toast({
+                    title: "Skipped",
+                    description: "You can add business information later if needed."
+                  });
+                  if (customFields.length > 0) {
+                    setCheckoutStep('custom-fields');
+                  } else {
+                    setCheckoutStep('payment');
+                  }
+                }}
+              />
+              
+              <div className="flex gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setCheckoutStep('cart')}
+                >
+                  Back to Cart
+                </Button>
+                <Button
+                  onClick={handleBusinessInfoNext}
+                  disabled={!businessData}
+                  className="flex-1"
+                >
+                  Continue
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Custom Fields Step */}
+        {checkoutStep === 'custom-fields' && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Additional Information</CardTitle>
+              <CardDescription>
+                Please provide the following information to complete your purchase.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <CustomFieldsRenderer
+                fields={customFields}
+                values={customFieldValues}
+                onChange={(fieldId, value) => {
+                  setCustomFieldValues(prev => ({
+                    ...prev,
+                    [fieldId]: value
+                  }));
+                }}
+              />
+              
+              {customFields.some(f => f.field_type === 'file') && campaign && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Don't have all files ready? No problem! You can complete this purchase now
+                    and upload required files later. We'll send you reminders.
+                    {campaign.file_upload_deadline_days && (
+                      <> You'll have {campaign.file_upload_deadline_days} days after purchase to upload files.</>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="flex gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setCheckoutStep(campaign?.requires_business_info ? 'business-info' : 'cart')}
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleCustomFieldsNext}
+                  disabled={!validateCustomFields()}
+                  className="flex-1"
+                >
+                  Continue to Payment
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Payment Confirmation Step */}
+        {checkoutStep === 'payment' && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Review & Confirm</CardTitle>
+              <CardDescription>
+                Please review your order before proceeding to payment.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2">Items</h3>
+                  <div className="space-y-2">
+                    {cart.filter(item => item.selectedQuantity > 0).map(item => (
+                      <div key={item.id} className="flex justify-between text-sm">
+                        <span>{item.name} × {item.selectedQuantity}</span>
+                        <span>${((item.cost || 0) * item.selectedQuantity).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex justify-between font-bold text-lg border-t pt-2">
-                  <span>Total</span>
-                  <span>${getTotalAmount().toFixed(2)}</span>
+                
+                {businessData && (
+                  <div className="border-t pt-4">
+                    <h3 className="font-semibold mb-2">Business Information</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {businessData.isNew 
+                        ? 'New business information added'
+                        : 'Business linked to order'
+                      }
+                    </p>
+                  </div>
+                )}
+                
+                {Object.keys(customFieldValues).length > 0 && (
+                  <div className="border-t pt-4">
+                    <h3 className="font-semibold mb-2">Additional Information</h3>
+                    <div className="space-y-1 text-sm">
+                      {customFields.map(field => {
+                        const value = customFieldValues[field.id];
+                        if (!value) return null;
+                        return (
+                          <div key={field.id} className="flex justify-between">
+                            <span className="text-muted-foreground">{field.field_name}:</span>
+                            <span className="font-medium">
+                              {field.field_type === 'file' ? 'File selected' : String(value)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="border-t pt-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Subtotal</span>
+                    <span>${getSubtotal().toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Platform Fee</span>
+                    <span>${getPlatformFee().toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-lg border-t pt-2">
+                    <span>Total</span>
+                    <span>${getTotalAmount().toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
-
-              <Button 
-                onClick={handleProceedToCheckout}
-                className="w-full mt-4"
-                size="lg"
-              >
-                Proceed to Checkout
-              </Button>
+              
+              <div className="flex gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setCheckoutStep(customFields.length > 0 ? 'custom-fields' : 
+                    (campaign?.requires_business_info ? 'business-info' : 'cart'))}
+                  disabled={processingCheckout}
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleFinalCheckout}
+                  disabled={processingCheckout}
+                  className="flex-1"
+                >
+                  {processingCheckout ? 'Processing...' : 'Proceed to Payment'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
