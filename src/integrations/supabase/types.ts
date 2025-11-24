@@ -119,11 +119,20 @@ export type Database = {
           country: string | null
           created_at: string | null
           ein: string | null
+          engagement_breadth_score: number | null
+          engagement_performance_score: number | null
+          engagement_score: number | null
+          engagement_segment: string | null
+          engagement_vitality_score: number | null
           id: string
           industry: string | null
+          last_donor_activity_date: string | null
+          linked_donors_count: number | null
           logo_url: string | null
+          segment_updated_at: string | null
           state: string | null
           tags: string[] | null
+          total_partnership_value: number | null
           updated_at: string | null
           verification_status: string | null
           verification_submitted_at: string | null
@@ -143,11 +152,20 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           ein?: string | null
+          engagement_breadth_score?: number | null
+          engagement_performance_score?: number | null
+          engagement_score?: number | null
+          engagement_segment?: string | null
+          engagement_vitality_score?: number | null
           id?: string
           industry?: string | null
+          last_donor_activity_date?: string | null
+          linked_donors_count?: number | null
           logo_url?: string | null
+          segment_updated_at?: string | null
           state?: string | null
           tags?: string[] | null
+          total_partnership_value?: number | null
           updated_at?: string | null
           verification_status?: string | null
           verification_submitted_at?: string | null
@@ -167,11 +185,20 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           ein?: string | null
+          engagement_breadth_score?: number | null
+          engagement_performance_score?: number | null
+          engagement_score?: number | null
+          engagement_segment?: string | null
+          engagement_vitality_score?: number | null
           id?: string
           industry?: string | null
+          last_donor_activity_date?: string | null
+          linked_donors_count?: number | null
           logo_url?: string | null
+          segment_updated_at?: string | null
           state?: string | null
           tags?: string[] | null
+          total_partnership_value?: number | null
           updated_at?: string | null
           verification_status?: string | null
           verification_submitted_at?: string | null
@@ -2326,6 +2353,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_business_engagement_scores: {
+        Args: { org_id: string }
+        Returns: undefined
+      }
       calculate_rfm_scores: { Args: { org_id: string }; Returns: undefined }
       can_update_organization_user: {
         Args: { target_org_user_id: string }

@@ -30,7 +30,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3 } from "lucide-react";
+import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3, Activity } from "lucide-react";
+import { getSegmentInfo } from "@/lib/businessEngagement";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { getTagColor, getTagBgColor } from "@/lib/utils";
@@ -62,6 +63,8 @@ interface BusinessProfile {
   total_donations: number;
   last_donation_date: string | null;
   tags: string[] | null;
+  engagement_segment: string | null;
+  engagement_score: number | null;
 }
 
 const Businesses = () => {
@@ -84,6 +87,7 @@ const Businesses = () => {
   const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
   const [showBulkEmailDialog, setShowBulkEmailDialog] = useState(false);
   const [tagFilter, setTagFilter] = useState<string>("all");
+  const [segmentFilter, setSegmentFilter] = useState<string>("all");
 
   const canManageBusinesses = 
     organizationUser?.user_type?.permission_level === 'organization_admin' ||
@@ -208,7 +212,11 @@ const Businesses = () => {
         tagFilter === "all" ||
         (business.tags && business.tags.includes(tagFilter));
 
-      return matchesSearch && matchesVerification && matchesArchive && matchesTag;
+      const matchesSegment =
+        segmentFilter === "all" ||
+        business.engagement_segment === segmentFilter;
+
+      return matchesSearch && matchesVerification && matchesArchive && matchesTag && matchesSegment;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -222,6 +230,8 @@ const Businesses = () => {
           if (!a.last_donation_date) return 1;
           if (!b.last_donation_date) return -1;
           return new Date(b.last_donation_date).getTime() - new Date(a.last_donation_date).getTime();
+        case "engagement":
+          return (b.engagement_score || 0) - (a.engagement_score || 0);
         default:
           return 0;
       }
@@ -571,6 +581,7 @@ const Businesses = () => {
                   <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="donations">Total Donated</SelectItem>
                   <SelectItem value="donors">Linked Donors</SelectItem>
+                  <SelectItem value="engagement">Engagement Score</SelectItem>
                   <SelectItem value="recent">Recent Activity</SelectItem>
                 </SelectContent>
               </Select>
@@ -590,6 +601,23 @@ const Businesses = () => {
                   </SelectContent>
                 </Select>
               )}
+
+              <Select value={segmentFilter} onValueChange={setSegmentFilter}>
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectValue placeholder="Engagement Segment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Segments</SelectItem>
+                  <SelectItem value="champion_partners">Champion Partners</SelectItem>
+                  <SelectItem value="engaged_partners">Engaged Partners</SelectItem>
+                  <SelectItem value="high_value_focused">High Value Focused</SelectItem>
+                  <SelectItem value="emerging_partners">Emerging Partners</SelectItem>
+                  <SelectItem value="needs_cultivation">Needs Cultivation</SelectItem>
+                  <SelectItem value="at_risk">At Risk</SelectItem>
+                  <SelectItem value="dormant">Dormant</SelectItem>
+                  <SelectItem value="new">New</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -636,11 +664,22 @@ const Businesses = () => {
                           </div>
                         )}
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <CardTitle className="text-base">{business.business_name}</CardTitle>
                             {business.archived_at && (
                               <Badge variant="secondary" className="bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
                                 Archived
+                              </Badge>
+                            )}
+                            {business.engagement_segment && business.engagement_score && business.engagement_score > 0 && (
+                              <Badge 
+                                className={`${getSegmentInfo(business.engagement_segment).bgColor} ${getSegmentInfo(business.engagement_segment).color} border-0 text-xs`}
+                              >
+                                {(() => {
+                                  const Icon = getSegmentInfo(business.engagement_segment).icon;
+                                  return <Icon className="h-3 w-3 mr-1" />;
+                                })()}
+                                {business.engagement_score}
                               </Badge>
                             )}
                           </div>
