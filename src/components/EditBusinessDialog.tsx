@@ -29,7 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, X } from "lucide-react";
 
 interface EditBusinessDialogProps {
   open: boolean;
@@ -49,6 +50,7 @@ interface EditBusinessDialogProps {
     zip?: string | null;
     country?: string | null;
     logo_url?: string | null;
+    tags?: string[] | null;
   };
   onSuccess: () => void;
 }
@@ -97,6 +99,7 @@ const formSchema = z.object({
   zip: z.string().optional(),
   country: z.string().optional(),
   logo_url: z.string().url("Invalid URL format").optional().or(z.literal("")),
+  tags: z.array(z.string()).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -108,6 +111,8 @@ export function EditBusinessDialog({
   onSuccess,
 }: EditBusinessDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [newTag, setNewTag] = useState("");
+  const [currentTags, setCurrentTags] = useState<string[]>(business.tags || []);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -125,6 +130,7 @@ export function EditBusinessDialog({
       zip: business.zip || "",
       country: business.country || "US",
       logo_url: business.logo_url || "",
+      tags: business.tags || [],
     },
   });
 
@@ -147,6 +153,7 @@ export function EditBusinessDialog({
           zip: data.zip || null,
           country: data.country || "US",
           logo_url: data.logo_url || null,
+          tags: currentTags,
           updated_at: new Date().toISOString(),
         })
         .eq("id", business.id);
@@ -161,6 +168,27 @@ export function EditBusinessDialog({
       toast.error("Failed to update business");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const addTag = () => {
+    if (!newTag.trim()) return;
+    if (currentTags.includes(newTag.trim())) {
+      toast.error("Tag already exists");
+      return;
+    }
+    setCurrentTags([...currentTags, newTag.trim()]);
+    setNewTag("");
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setCurrentTags(currentTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addTag();
     }
   };
 
@@ -402,6 +430,44 @@ export function EditBusinessDialog({
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold">Tags</h3>
+              
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2 min-h-[32px]">
+                  {currentTags.length > 0 ? (
+                    currentTags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="gap-1">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeTag(tag)}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No tags yet</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Add a tag..."
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                  />
+                  <Button type="button" onClick={addTag} disabled={!newTag.trim()}>
+                    Add
+                  </Button>
+                </div>
+              </div>
             </div>
 
             <DialogFooter>
