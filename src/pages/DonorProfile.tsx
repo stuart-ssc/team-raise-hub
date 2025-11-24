@@ -21,7 +21,9 @@ import {
   TrendingUp, 
   Heart,
   MessageSquare,
-  Edit
+  Edit,
+  Building2,
+  CheckCircle2
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +53,17 @@ interface DonationHistory {
   group_name: string;
 }
 
+interface BusinessAffiliation {
+  id: string;
+  business_id: string;
+  business_name: string;
+  business_logo: string | null;
+  role: string | null;
+  is_primary_contact: boolean;
+  auto_linked: boolean;
+  linked_at: string;
+}
+
 const DonorProfile = () => {
   const { donorId } = useParams<{ donorId: string }>();
   const navigate = useNavigate();
@@ -58,6 +71,7 @@ const DonorProfile = () => {
   const { toast } = useToast();
   const [donor, setDonor] = useState<DonorProfile | null>(null);
   const [donations, setDonations] = useState<DonationHistory[]>([]);
+  const [businessAffiliations, setBusinessAffiliations] = useState<BusinessAffiliation[]>([]);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
@@ -113,6 +127,40 @@ const DonorProfile = () => {
       }));
 
       setDonations(formattedDonations);
+
+      // Fetch business affiliations
+      const { data: affiliationsData, error: affiliationsError } = await supabase
+        .from("business_donors")
+        .select(`
+          id,
+          business_id,
+          role,
+          is_primary_contact,
+          auto_linked,
+          linked_at,
+          businesses!inner(
+            business_name,
+            logo_url
+          )
+        `)
+        .eq("donor_id", donorId)
+        .is("blocked_at", null)
+        .order("linked_at", { ascending: false });
+
+      if (affiliationsError) throw affiliationsError;
+
+      const formattedAffiliations: BusinessAffiliation[] = (affiliationsData || []).map((aff: any) => ({
+        id: aff.id,
+        business_id: aff.business_id,
+        business_name: aff.businesses?.business_name || "Unknown Business",
+        business_logo: aff.businesses?.logo_url || null,
+        role: aff.role,
+        is_primary_contact: aff.is_primary_contact || false,
+        auto_linked: aff.auto_linked || false,
+        linked_at: aff.linked_at,
+      }));
+
+      setBusinessAffiliations(formattedAffiliations);
     } catch (error) {
       console.error("Error fetching donor data:", error);
       toast({
@@ -404,6 +452,67 @@ const DonorProfile = () => {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Business Affiliations */}
+                {businessAffiliations.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        Business Affiliations
+                      </CardTitle>
+                      <CardDescription>
+                        Companies this donor is associated with
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {businessAffiliations.map((affiliation) => (
+                        <div
+                          key={affiliation.id}
+                          onClick={() => navigate(`/dashboard/businesses/${affiliation.business_id}`)}
+                          className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                              {affiliation.business_logo ? (
+                                <img 
+                                  src={affiliation.business_logo} 
+                                  alt={affiliation.business_name}
+                                  className="h-10 w-10 rounded-lg object-cover"
+                                />
+                              ) : (
+                                <Building2 className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-medium text-sm truncate">
+                                  {affiliation.business_name}
+                                </p>
+                                {affiliation.is_primary_contact && (
+                                  <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Primary
+                                  </Badge>
+                                )}
+                              </div>
+                              {affiliation.role && (
+                                <p className="text-xs text-muted-foreground">
+                                  {affiliation.role}
+                                </p>
+                              )}
+                              {affiliation.auto_linked && (
+                                <Badge variant="outline" className="text-xs mt-1">
+                                  Auto-linked
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Notes */}
                 <Card>
