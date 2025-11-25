@@ -587,6 +587,13 @@ export type Database = {
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "campaign_custom_fields_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["campaign_id"]
+          },
         ]
       }
       campaign_items: {
@@ -645,6 +652,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_campaign_items_campaign_id"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["campaign_id"]
           },
         ]
       }
@@ -708,6 +722,13 @@ export type Database = {
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "campaign_views_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["campaign_id"]
+          },
         ]
       }
       campaigns: {
@@ -716,6 +737,7 @@ export type Database = {
           campaign_type_id: string | null
           created_at: string
           description: string | null
+          enable_roster_attribution: boolean | null
           end_date: string | null
           file_upload_deadline_days: number | null
           goal_amount: number | null
@@ -735,6 +757,7 @@ export type Database = {
           campaign_type_id?: string | null
           created_at?: string
           description?: string | null
+          enable_roster_attribution?: boolean | null
           end_date?: string | null
           file_upload_deadline_days?: number | null
           goal_amount?: number | null
@@ -754,6 +777,7 @@ export type Database = {
           campaign_type_id?: string | null
           created_at?: string
           description?: string | null
+          enable_roster_attribution?: boolean | null
           end_date?: string | null
           file_upload_deadline_days?: number | null
           goal_amount?: number | null
@@ -1887,6 +1911,7 @@ export type Database = {
         Row: {
           access_token: string | null
           application_fee_amount: number | null
+          attributed_roster_member_id: string | null
           business_id: string | null
           business_purchase: boolean | null
           campaign_id: string
@@ -1912,6 +1937,7 @@ export type Database = {
         Insert: {
           access_token?: string | null
           application_fee_amount?: number | null
+          attributed_roster_member_id?: string | null
           business_id?: string | null
           business_purchase?: boolean | null
           campaign_id: string
@@ -1937,6 +1963,7 @@ export type Database = {
         Update: {
           access_token?: string | null
           application_fee_amount?: number | null
+          attributed_roster_member_id?: string | null
           business_id?: string | null
           business_purchase?: boolean | null
           campaign_id?: string
@@ -1961,6 +1988,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "orders_attributed_roster_member_id_fkey"
+            columns: ["attributed_roster_member_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["roster_member_id"]
+          },
+          {
+            foreignKeyName: "orders_attributed_roster_member_id_fkey"
+            columns: ["attributed_roster_member_id"]
+            isOneToOne: false
+            referencedRelation: "school_user"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
@@ -1973,6 +2014,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["campaign_id"]
           },
         ]
       }
@@ -2210,6 +2258,59 @@ export type Database = {
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roster_member_campaign_links: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          id: string
+          roster_member_id: string
+          slug: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          roster_member_id: string
+          slug: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          roster_member_id?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roster_member_campaign_links_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roster_member_campaign_links_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "roster_member_campaign_links_roster_member_id_fkey"
+            columns: ["roster_member_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["roster_member_id"]
+          },
+          {
+            foreignKeyName: "roster_member_campaign_links_roster_member_id_fkey"
+            columns: ["roster_member_id"]
+            isOneToOne: false
+            referencedRelation: "school_user"
             referencedColumns: ["id"]
           },
         ]
@@ -2684,7 +2785,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      roster_member_fundraising_stats: {
+        Row: {
+          avg_donation: number | null
+          campaign_id: string | null
+          donation_count: number | null
+          group_id: string | null
+          last_donation_date: string | null
+          roster_id: number | null
+          roster_member_id: string | null
+          total_raised: number | null
+          unique_supporters: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Rosters_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_user_roster_id_fkey"
+            columns: ["roster_id"]
+            isOneToOne: false
+            referencedRelation: "rosters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_business_engagement_scores: {

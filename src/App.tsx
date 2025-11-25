@@ -44,6 +44,7 @@ import BusinessAnalytics from "./pages/BusinessAnalytics";
 import BusinessOutreachQueue from "./pages/BusinessOutreachQueue";
 import BusinessNurtureCampaigns from "./pages/BusinessNurtureCampaigns";
 import BusinessCampaignAnalytics from "./pages/BusinessCampaignAnalytics";
+import MyFundraising from "./pages/MyFundraising";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
@@ -91,6 +92,7 @@ const AppContent = () => {
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path="/c/:slug" element={<CampaignLanding />} />
+        <Route path="/c/:slug/:rosterMemberSlug" element={<CampaignLanding />} />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
         <Route path="/donor-receipts" element={<DonorReceiptPortal />} />
         <Route path="/orders/:orderId" element={<OrderDetails />} />
@@ -116,6 +118,7 @@ const AppContent = () => {
         <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/dashboard/notifications" element={<ProtectedRoute><NotificationHistory /></ProtectedRoute>} />
         <Route path="/dashboard/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/dashboard/my-fundraising" element={<ProtectedRoute><MyFundraising /></ProtectedRoute>} />
         <Route path="/system-admin" element={<ProtectedRoute><SystemAdminGuard><SystemAdminDashboard /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/organizations" element={<ProtectedRoute><SystemAdminGuard><OrganizationsList /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/verification" element={<ProtectedRoute><SystemAdminGuard><VerificationQueue /></SystemAdminGuard></ProtectedRoute>} />
