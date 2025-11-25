@@ -13,8 +13,10 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Edit, Plus } from "lucide-react";
+import { Trash2, Edit, Plus, Info } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FormDescription } from "@/components/ui/form";
 
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
@@ -29,6 +31,7 @@ const campaignSchema = z.object({
   requiresBusinessInfo: z.boolean().optional(),
   fileUploadDeadlineDays: z.string().optional(),
   enableRosterAttribution: z.boolean().optional(),
+  rosterId: z.string().optional(),
 });
 
 const campaignItemSchema = z.object({
@@ -101,6 +104,7 @@ interface CustomField {
 export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampaign, manageCampaignId }: AddCampaignFormProps) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [campaignTypes, setCampaignTypes] = useState<CampaignType[]>([]);
+  const [rosters, setRosters] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [createdCampaignId, setCreatedCampaignId] = useState<string | null>(null);
@@ -132,6 +136,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       requiresBusinessInfo: false,
       fileUploadDeadlineDays: "",
       enableRosterAttribution: false,
+      rosterId: "",
     },
   });
 
@@ -299,6 +304,31 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     }
   };
 
+  const fetchRosters = async (groupId: string) => {
+    if (!groupId) {
+      setRosters([]);
+      return;
+    }
+
+    try {
+      const { data, error } = await (supabase as any)
+        .from("rosters")
+        .select("id, name, year")
+        .eq("group_id", groupId)
+        .eq("status", true)
+        .order("year", { ascending: false });
+
+      if (!error && data) {
+        setRosters(data);
+      } else {
+        setRosters([]);
+      }
+    } catch (error) {
+      console.error("Error fetching rosters:", error);
+      setRosters([]);
+    }
+  };
+
   const addCustomField = () => {
     setCustomFields([
       ...customFields,
@@ -392,6 +422,16 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     }
   };
 
+  // Fetch rosters when group is selected
+  useEffect(() => {
+    const subscription = campaignForm.watch((value, { name }) => {
+      if (name === "groupId" && value.groupId) {
+        fetchRosters(value.groupId);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   useEffect(() => {
     if (open) {
       fetchGroups();
@@ -421,6 +461,10 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         setCreatedCampaignId(editCampaign.id);
         setCampaignTypeId(editCampaign.campaign_type_id);
         fetchCustomFields(editCampaign.id);
+        // Fetch rosters for the selected group
+        if (editCampaign.group_id) {
+          fetchRosters(editCampaign.group_id);
+        }
       }
       // Pre-populate slug for new campaigns
       else {
@@ -482,6 +526,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         image_url: imageUrl || null,
         requires_business_info: values.requiresBusinessInfo || false,
         file_upload_deadline_days: values.fileUploadDeadlineDays ? parseInt(values.fileUploadDeadlineDays) : null,
+        enable_roster_attribution: values.enableRosterAttribution || false,
+        roster_id: values.rosterId ? parseInt(values.rosterId) : null,
       };
 
       if (editCampaign) {
@@ -1114,6 +1160,85 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                       </FormItem>
                     )}
                   />
+                )}
+              </div>
+
+              {/* Peer-to-Peer Fundraising Section */}
+              <div className="space-y-4 pt-6 border-t">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Peer-to-Peer Fundraising</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Enable roster members to have personal fundraising pages with unique shareable URLs
+                  </p>
+                </div>
+
+                <FormField
+                  control={campaignForm.control}
+                  name="enableRosterAttribution"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">
+                          Enable Roster Attribution
+                        </FormLabel>
+                        <FormDescription>
+                          Allow donations to be attributed to specific roster members
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {campaignForm.watch("enableRosterAttribution") && (
+                  <>
+                    <FormField
+                      control={campaignForm.control}
+                      name="rosterId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Select Roster</FormLabel>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose which roster to use" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {rosters.map((roster) => (
+                                <SelectItem 
+                                  key={roster.id} 
+                                  value={roster.id.toString()}
+                                >
+                                  {roster.name} ({roster.year})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Select which roster members will have personal fundraising pages
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        When enabled, each roster member will receive a unique shareable URL (e.g., sponsorly.io/c/campaign-name/member-name). 
+                        Donations made through these links will be attributed to the specific member.
+                      </AlertDescription>
+                    </Alert>
+                  </>
                 )}
               </div>
 

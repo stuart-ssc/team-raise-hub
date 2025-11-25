@@ -747,6 +747,7 @@ export type Database = {
           name: string
           publication_status: string | null
           requires_business_info: boolean | null
+          roster_id: number | null
           slug: string | null
           start_date: string | null
           status: boolean | null
@@ -767,6 +768,7 @@ export type Database = {
           name: string
           publication_status?: string | null
           requires_business_info?: boolean | null
+          roster_id?: number | null
           slug?: string | null
           start_date?: string | null
           status?: boolean | null
@@ -787,6 +789,7 @@ export type Database = {
           name?: string
           publication_status?: string | null
           requires_business_info?: boolean | null
+          roster_id?: number | null
           slug?: string | null
           start_date?: string | null
           status?: boolean | null
@@ -805,6 +808,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_roster_id_fkey"
+            columns: ["roster_id"]
+            isOneToOne: false
+            referencedRelation: "rosters"
             referencedColumns: ["id"]
           },
         ]
