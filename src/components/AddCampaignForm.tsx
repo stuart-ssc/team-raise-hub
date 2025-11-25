@@ -1116,59 +1116,61 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
 
               {/* Business Information Section */}
               <div className="space-y-4 border-t pt-4">
-                <h3 className="font-semibold text-lg">Business/Sponsor Information</h3>
+                <h3 className="font-semibold text-lg">Sponsor Details</h3>
                 
                 <FormField
                   control={campaignForm.control}
                   name="requiresBusinessInfo"
                   render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">Require business information</FormLabel>
-                        <div className="text-sm text-muted-foreground">
-                          Collect business details during checkout for sponsorship campaigns
+                    <FormItem className="rounded-lg border p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">Require business info</FormLabel>
+                          <div className="text-sm text-muted-foreground">
+                            Collect sponsor details at checkout
+                          </div>
                         </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
                       </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
+
+                      {campaignForm.watch("requiresBusinessInfo") && (
+                        <FormField
+                          control={campaignForm.control}
+                          name="fileUploadDeadlineDays"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Upload deadline (days)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  placeholder="e.g., 14" 
+                                  {...field}
+                                />
+                              </FormControl>
+                              <div className="text-sm text-muted-foreground">
+                                Days after purchase to upload files
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
-                      </FormControl>
+                      )}
                     </FormItem>
                   )}
                 />
-
-                {campaignForm.watch("requiresBusinessInfo") && (
-                  <FormField
-                    control={campaignForm.control}
-                    name="fileUploadDeadlineDays"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>File upload deadline (days after purchase)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="e.g., 14" 
-                            {...field}
-                          />
-                        </FormControl>
-                        <div className="text-sm text-muted-foreground">
-                          Donors will be reminded to upload required files before this deadline
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
               </div>
 
               {/* Peer-to-Peer Fundraising Section */}
               <div className="space-y-4 pt-6 border-t">
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Peer-to-Peer Fundraising</h3>
+                  <h3 className="text-lg font-semibold mb-2">Roster Attribution</h3>
                   <p className="text-sm text-muted-foreground">
-                    Enable roster members to have personal fundraising pages with unique shareable URLs
+                    Give roster members personal fundraising links
                   </p>
                 </div>
 
@@ -1176,70 +1178,71 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                   control={campaignForm.control}
                   name="enableRosterAttribution"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">
-                          Enable Roster Attribution
-                        </FormLabel>
-                        <FormDescription>
-                          Allow donations to be attributed to specific roster members
-                        </FormDescription>
+                    <FormItem className="rounded-lg border p-4 space-y-4">
+                      <div className="flex flex-row items-center justify-between">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">
+                            Enable roster attribution
+                          </FormLabel>
+                          <FormDescription>
+                            Track donations by roster member
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
                       </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
+
+                      {campaignForm.watch("enableRosterAttribution") && (
+                        <>
+                          <FormField
+                            control={campaignForm.control}
+                            name="rosterId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Roster</FormLabel>
+                                <Select 
+                                  onValueChange={field.onChange} 
+                                  value={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select roster" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {rosters.map((roster) => (
+                                      <SelectItem 
+                                        key={roster.id} 
+                                        value={roster.id.toString()}
+                                      >
+                                        {roster.name} ({roster.year})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormDescription>
+                                  Roster members get unique URLs
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <Alert>
+                            <Info className="h-4 w-4" />
+                            <AlertDescription>
+                              Each member gets a shareable link (e.g., sponsorly.io/c/campaign-name/member-name)
+                            </AlertDescription>
+                          </Alert>
+                        </>
+                      )}
                     </FormItem>
                   )}
                 />
-
-                {campaignForm.watch("enableRosterAttribution") && (
-                  <>
-                    <FormField
-                      control={campaignForm.control}
-                      name="rosterId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Select Roster</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Choose which roster to use" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {rosters.map((roster) => (
-                                <SelectItem 
-                                  key={roster.id} 
-                                  value={roster.id.toString()}
-                                >
-                                  {roster.name} ({roster.year})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            Select which roster members will have personal fundraising pages
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <Alert>
-                      <Info className="h-4 w-4" />
-                      <AlertDescription>
-                        When enabled, each roster member will receive a unique shareable URL (e.g., sponsorly.io/c/campaign-name/member-name). 
-                        Donations made through these links will be attributed to the specific member.
-                      </AlertDescription>
-                    </Alert>
-                  </>
-                )}
               </div>
 
               {/* Custom Fields Section */}
