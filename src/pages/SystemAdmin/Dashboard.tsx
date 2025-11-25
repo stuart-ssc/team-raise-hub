@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Building2, FileCheck, Target, Users, Mail, FlaskConical } from "lucide-react";
-import { Link } from "react-router-dom";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import DashboardHeader from "@/components/DashboardHeader";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Building2, FileCheck, Mail, FlaskConical } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { supabase } from "@/integrations/supabase/client";
 
 const SystemAdminDashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalOrgs: 0,
     pendingVerifications: 0,
@@ -36,94 +35,133 @@ const SystemAdminDashboard = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex bg-background">
-      <DashboardSidebar />
-      <div className="flex-1 flex flex-col">
-        <DashboardHeader />
-        <main className="flex-1 p-8">
-          <div className="space-y-8">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">System Administration</h1>
-              <p className="text-muted-foreground">Manage organizations, verifications, and platform settings</p>
-            </div>
+    <SystemAdminPageLayout>
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">System Administration</h1>
+            <p className="text-muted-foreground mt-2">
+              Manage platform-wide settings and monitor system health
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Organizations</CardTitle>
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalOrgs}</div>
-                </CardContent>
-              </Card>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Organizations
+                </CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalOrgs}</div>
+                <p className="text-xs text-muted-foreground">
+                  Active organizations
+                </p>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Pending Verifications</CardTitle>
-                  <FileCheck className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.pendingVerifications}</div>
-                </CardContent>
-              </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Pending Verifications
+                </CardTitle>
+                <FileCheck className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.pendingVerifications}</div>
+                <p className="text-xs text-muted-foreground">
+                  Awaiting review
+                </p>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
-                  <Target className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.activeCampaigns}</div>
-                </CardContent>
-              </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Active Campaigns
+                </CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.activeCampaigns}</div>
+                <p className="text-xs text-muted-foreground">
+                  Currently running
+                </p>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalUsers}</div>
-                </CardContent>
-              </Card>
-            </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Users
+                </CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                <p className="text-xs text-muted-foreground">
+                  Platform users
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate('/system-admin/organizations')}>
                 <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    <CardTitle>Manage Organizations</CardTitle>
+                  </div>
+                  <CardDescription>
+                    View and manage all organizations on the platform
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <Link to="/system-admin/organizations">
-                    <Button className="w-full" variant="outline">
-                      View All Organizations
-                    </Button>
-                  </Link>
-                  <Link to="/system-admin/verification">
-                    <Button className="w-full" variant="outline">
-                      Review Verifications
-                    </Button>
-                  </Link>
-                  <Link to="/system-admin/emails">
-                    <Button className="w-full" variant="outline">
-                      <Mail className="mr-2 h-4 w-4" />
-                      Email Management
-                    </Button>
-                  </Link>
-                  <Link to="/system-admin/ab-tests">
-                    <Button className="w-full" variant="outline">
-                      <FlaskConical className="mr-2 h-4 w-4" />
-                      A/B Testing
-                    </Button>
-                  </Link>
-                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate('/system-admin/verification')}>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <FileCheck className="h-5 w-5" />
+                    <CardTitle>Verification Queue</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Review and approve organization verification requests
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate('/system-admin/emails')}>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    <CardTitle>Email Management</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Monitor email delivery and manage email settings
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate('/system-admin/ab-tests')}>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <FlaskConical className="h-5 w-5" />
+                    <CardTitle>A/B Testing</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Manage and analyze email A/B tests
+                  </CardDescription>
+                </CardHeader>
               </Card>
             </div>
           </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </SystemAdminPageLayout>
   );
 };
 
