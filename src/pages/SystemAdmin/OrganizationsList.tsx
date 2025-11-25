@@ -275,7 +275,6 @@ const OrganizationsList = () => {
                         <TableHead>Name</TableHead>
                         <TableHead>Location</TableHead>
                         <TableHead>Verification</TableHead>
-                        <TableHead>Created</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -292,9 +291,6 @@ const OrganizationsList = () => {
                             {org.city && org.state ? `${org.city}, ${org.state}` : '-'}
                           </TableCell>
                           <TableCell>{getVerificationBadge(org.verification_status)}</TableCell>
-                          <TableCell>
-                            {org.created_at ? format(new Date(org.created_at), 'MMM d, yyyy') : '-'}
-                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button
