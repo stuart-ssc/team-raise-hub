@@ -495,13 +495,18 @@ const Reports = () => {
         <DashboardHeader />
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
+            <div className="flex flex-col gap-4">
+              {/* Row 1: Page Title */}
               <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                <Activity className="h-8 w-8 text-primary" />
-                Analytics Dashboard
-              </h1>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary/10 border border-primary/20">
+                <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+                  <Activity className="h-8 w-8 text-primary" />
+                  Analytics Dashboard
+                </h1>
+              </div>
+              
+              {/* Row 2: Controls - Stack on mobile, row on desktop */}
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary/10 border border-primary/20 w-fit">
                   <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                   <span className="text-sm font-medium text-primary">Live</span>
                 </div>
@@ -510,12 +515,13 @@ const Reports = () => {
                   size="default"
                   onClick={exportToCSV}
                   disabled={campaigns.length === 0}
+                  className="w-full sm:w-auto"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Export CSV
                 </Button>
                 <Select value={dateRange} onValueChange={setDateRange}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Select period" />
                   </SelectTrigger>
                   <SelectContent>
