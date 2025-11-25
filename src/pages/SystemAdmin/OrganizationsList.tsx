@@ -10,10 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import DashboardHeader from "@/components/DashboardHeader";
+import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, Heart } from "lucide-react";
+import { Search } from "lucide-react";
+import { format } from "date-fns";
 
 interface Organization {
   id: string;
@@ -76,80 +76,73 @@ const OrganizationsList = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-background">
-      <DashboardSidebar />
-      <div className="flex-1 flex flex-col">
-        <DashboardHeader />
-        <main className="flex-1 p-8">
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Organizations</h1>
-              <p className="text-muted-foreground">Manage all schools and non-profits</p>
-            </div>
+    <SystemAdminPageLayout>
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
+            <p className="text-muted-foreground mt-2">
+              View and manage all organizations on the platform
+            </p>
+          </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Search Organizations</CardTitle>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader>
+              <CardTitle>All Organizations</CardTitle>
+              <div className="relative mt-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search by name, city, or state..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
                 />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-0">
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading organizations...</div>
+              ) : filteredOrgs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {searchQuery ? "No organizations found matching your search." : "No organizations found."}
+                </div>
+              ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Type</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>Verification</TableHead>
                       <TableHead>Created</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-4">
-                          Loading...
+                    {filteredOrgs.map((org) => (
+                      <TableRow key={org.id}>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {org.organization_type === 'school' ? 'School' : 'Non-Profit'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{org.name}</TableCell>
+                        <TableCell>
+                          {org.city && org.state ? `${org.city}, ${org.state}` : '-'}
+                        </TableCell>
+                        <TableCell>{getVerificationBadge(org.verification_status)}</TableCell>
+                        <TableCell>
+                          {org.created_at ? format(new Date(org.created_at), 'MMM d, yyyy') : '-'}
                         </TableCell>
                       </TableRow>
-                    ) : filteredOrgs.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
-                          No organizations found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredOrgs.map((org) => (
-                        <TableRow key={org.id}>
-                          <TableCell>
-                            {org.organization_type === 'school' ? (
-                              <Building2 className="h-5 w-5 text-primary" />
-                            ) : (
-                              <Heart className="h-5 w-5 text-primary" />
-                            )}
-                          </TableCell>
-                          <TableCell className="font-medium">{org.name}</TableCell>
-                          <TableCell>{org.city}, {org.state}</TableCell>
-                          <TableCell>{getVerificationBadge(org.verification_status)}</TableCell>
-                          <TableCell>{new Date(org.created_at).toLocaleDateString()}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
+                    ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </SystemAdminPageLayout>
   );
 };
 
