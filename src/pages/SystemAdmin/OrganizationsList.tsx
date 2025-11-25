@@ -20,6 +20,7 @@ import {
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -127,6 +128,26 @@ const OrganizationsList = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedOrgs = filteredOrgs.slice(startIndex, endIndex);
+
+  // Smart pagination helper: shows limited page numbers with ellipsis
+  const getVisiblePages = () => {
+    const delta = 1; // Number of pages to show on each side of current
+    const range: (number | 'ellipsis')[] = [];
+    
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 || // First page
+        i === totalPages || // Last page
+        (i >= currentPage - delta && i <= currentPage + delta) // Pages around current
+      ) {
+        range.push(i);
+      } else if (range[range.length - 1] !== 'ellipsis') {
+        range.push('ellipsis');
+      }
+    }
+    
+    return range;
+  };
 
   return (
     <SystemAdminPageLayout
@@ -247,15 +268,19 @@ const OrganizationsList = () => {
                               />
                             </PaginationItem>
                             
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                              <PaginationItem key={page}>
-                                <PaginationLink
-                                  onClick={() => setCurrentPage(page)}
-                                  isActive={currentPage === page}
-                                  className="cursor-pointer"
-                                >
-                                  {page}
-                                </PaginationLink>
+                            {getVisiblePages().map((page, index) => (
+                              <PaginationItem key={index}>
+                                {page === 'ellipsis' ? (
+                                  <PaginationEllipsis />
+                                ) : (
+                                  <PaginationLink
+                                    onClick={() => setCurrentPage(page)}
+                                    isActive={currentPage === page}
+                                    className="cursor-pointer"
+                                  >
+                                    {page}
+                                  </PaginationLink>
+                                )}
                               </PaginationItem>
                             ))}
                             
