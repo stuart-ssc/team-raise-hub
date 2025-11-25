@@ -41,9 +41,10 @@ import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { AddOrganizationDialog } from "@/components/AddOrganizationDialog";
 import { EditOrganizationDialog } from "@/components/EditOrganizationDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Plus, Pencil, Trash2 } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface Organization {
   id: string;
@@ -56,6 +57,7 @@ interface Organization {
 }
 
 const OrganizationsList = () => {
+  const navigate = useNavigate();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [filteredOrgs, setFilteredOrgs] = useState<Organization[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -293,6 +295,14 @@ const OrganizationsList = () => {
                           <TableCell>{getVerificationBadge(org.verification_status)}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/system-admin/organizations/${org.id}`)}
+                              >
+                                <Settings className="h-4 w-4 mr-1" />
+                                Manage
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
