@@ -114,7 +114,8 @@ const OrganizationsList = () => {
     const { data, error } = await supabase
       .from('organizations')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(0, 9999);
 
     if (error) {
       console.error('Error fetching organizations:', error);
