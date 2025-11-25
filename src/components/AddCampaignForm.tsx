@@ -1116,8 +1116,6 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
 
               {/* Business Information Section */}
               <div className="space-y-4 border-t pt-4">
-                <h3 className="font-semibold text-lg">Sponsor Details</h3>
-                
                 <FormField
                   control={campaignForm.control}
                   name="requiresBusinessInfo"
@@ -1167,13 +1165,6 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
 
               {/* Peer-to-Peer Fundraising Section */}
               <div className="space-y-4 pt-6 border-t">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Roster Attribution</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Give roster members personal fundraising links
-                  </p>
-                </div>
-
                 <FormField
                   control={campaignForm.control}
                   name="enableRosterAttribution"
