@@ -17,6 +17,8 @@ interface SystemAdminHeaderProps {
   userName?: string;
   userInitials?: string;
   avatarUrl?: string;
+  title: string;
+  subtitle?: string;
 }
 
 export const SystemAdminHeader = ({
@@ -24,6 +26,8 @@ export const SystemAdminHeader = ({
   userName,
   userInitials,
   avatarUrl,
+  title,
+  subtitle,
 }: SystemAdminHeaderProps) => {
   const navigate = useNavigate();
 
@@ -34,7 +38,7 @@ export const SystemAdminHeader = ({
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center justify-between px-4">
+      <div className="flex h-20 items-center justify-between px-4">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -45,7 +49,12 @@ export const SystemAdminHeader = ({
             <Menu className="h-6 w-6" />
           </Button>
           
-          <h1 className="text-lg font-semibold">System Administration</h1>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+            {subtitle && (
+              <p className="text-sm text-muted-foreground">{subtitle}</p>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-4">

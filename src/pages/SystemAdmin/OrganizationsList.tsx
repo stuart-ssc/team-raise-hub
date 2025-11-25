@@ -76,15 +76,12 @@ const OrganizationsList = () => {
   };
 
   return (
-    <SystemAdminPageLayout>
+    <SystemAdminPageLayout
+      title="Organizations"
+      subtitle="View and manage all organizations on the platform"
+    >
       <div className="p-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
-            <p className="text-muted-foreground mt-2">
-              View and manage all organizations on the platform
-            </p>
-          </div>
 
           <Card>
             <CardHeader>

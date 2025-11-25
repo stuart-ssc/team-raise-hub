@@ -7,9 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface SystemAdminPageLayoutProps {
   children: ReactNode;
+  title: string;
+  subtitle?: string;
 }
 
-export const SystemAdminPageLayout = ({ children }: SystemAdminPageLayoutProps) => {
+export const SystemAdminPageLayout = ({ children, title, subtitle }: SystemAdminPageLayoutProps) => {
   const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userName, setUserName] = useState<string>("");
@@ -56,6 +58,8 @@ export const SystemAdminPageLayout = ({ children }: SystemAdminPageLayoutProps) 
           userName={userName}
           userInitials={userInitials}
           avatarUrl={avatarUrl}
+          title={title}
+          subtitle={subtitle}
         />
         
         <main className="flex-1 overflow-y-auto bg-background">
