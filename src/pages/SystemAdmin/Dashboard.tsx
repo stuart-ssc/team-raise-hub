@@ -35,15 +35,12 @@ const SystemAdminDashboard = () => {
   }, []);
 
   return (
-    <SystemAdminPageLayout>
+    <SystemAdminPageLayout
+      title="System Dashboard"
+      subtitle="Manage platform-wide settings and monitor system health"
+    >
       <div className="p-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">System Administration</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage platform-wide settings and monitor system health
-            </p>
-          </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
