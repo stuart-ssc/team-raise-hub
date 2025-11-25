@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -26,10 +27,23 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
+import { AddOrganizationDialog } from "@/components/AddOrganizationDialog";
+import { EditOrganizationDialog } from "@/components/EditOrganizationDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { Search } from "lucide-react";
+import { Search, Plus, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface Organization {
   id: string;
@@ -51,6 +65,12 @@ const OrganizationsList = () => {
   const [verificationFilter, setVerificationFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Dialog states
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
 
   useEffect(() => {
     fetchOrganizations();
@@ -101,6 +121,27 @@ const OrganizationsList = () => {
       setFilteredOrgs(data || []);
     }
     setLoading(false);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedOrg) return;
+
+    try {
+      const { error } = await supabase
+        .from("organizations")
+        .delete()
+        .eq("id", selectedOrg.id);
+
+      if (error) throw error;
+
+      toast.success("Organization deleted successfully");
+      fetchOrganizations();
+      setShowDeleteDialog(false);
+      setSelectedOrg(null);
+    } catch (error: any) {
+      console.error("Error deleting organization:", error);
+      toast.error(error.message || "Failed to delete organization");
+    }
   };
 
   const formatVerificationStatus = (status: string) => {
@@ -161,14 +202,20 @@ const OrganizationsList = () => {
             <CardHeader>
               <CardTitle>All Organizations</CardTitle>
               <div className="space-y-4 mt-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search by name, city, or state..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
+                <div className="flex gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search by name, city, or state..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <Button onClick={() => setShowAddDialog(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Organization
+                  </Button>
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -229,6 +276,7 @@ const OrganizationsList = () => {
                         <TableHead>Location</TableHead>
                         <TableHead>Verification</TableHead>
                         <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -246,6 +294,30 @@ const OrganizationsList = () => {
                           <TableCell>{getVerificationBadge(org.verification_status)}</TableCell>
                           <TableCell>
                             {org.created_at ? format(new Date(org.created_at), 'MMM d, yyyy') : '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedOrg(org);
+                                  setShowEditDialog(true);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedOrg(org);
+                                  setShowDeleteDialog(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -301,6 +373,44 @@ const OrganizationsList = () => {
           </Card>
         </div>
       </div>
+
+      {/* Add Organization Dialog */}
+      <AddOrganizationDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onSuccess={fetchOrganizations}
+      />
+
+      {/* Edit Organization Dialog */}
+      {selectedOrg && (
+        <EditOrganizationDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          organization={selectedOrg}
+          onSuccess={fetchOrganizations}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Organization?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{selectedOrg?.name}"?
+              This action cannot be undone. All related data (users, groups, campaigns) will be affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedOrg(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+              Delete Organization
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SystemAdminPageLayout>
   );
 };
