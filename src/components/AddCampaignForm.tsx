@@ -311,12 +311,12 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     }
 
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("rosters")
-        .select("id, name, year")
+        .select("id, roster_year")
         .eq("group_id", groupId)
-        .eq("status", true)
-        .order("year", { ascending: false });
+        .eq("current_roster", true)
+        .order("roster_year", { ascending: false });
 
       if (!error && data) {
         setRosters(data);
@@ -1210,7 +1210,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                                         key={roster.id} 
                                         value={roster.id.toString()}
                                       >
-                                        {roster.name} ({roster.year})
+                                        {roster.roster_year}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
