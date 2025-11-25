@@ -28,6 +28,7 @@ const campaignSchema = z.object({
   imageUrl: z.string().optional(),
   requiresBusinessInfo: z.boolean().optional(),
   fileUploadDeadlineDays: z.string().optional(),
+  enableRosterAttribution: z.boolean().optional(),
 });
 
 const campaignItemSchema = z.object({
@@ -130,6 +131,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       imageUrl: "",
       requiresBusinessInfo: false,
       fileUploadDeadlineDays: "",
+      enableRosterAttribution: false,
     },
   });
 

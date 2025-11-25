@@ -113,3 +113,12 @@ verify_jwt = false
 
 [functions.trigger-business-campaign]
 verify_jwt = true
+
+[functions.generate-roster-member-links]
+verify_jwt = true
+
+[functions.get-roster-member-stats]
+verify_jwt = true
+
+[functions.create-stripe-checkout]
+verify_jwt = true

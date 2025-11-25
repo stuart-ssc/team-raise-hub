@@ -75,8 +75,9 @@ interface CustomField {
 }
 
 const CampaignLanding = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug, rosterMemberSlug } = useParams<{ slug: string; rosterMemberSlug?: string }>();
   const { toast } = useToast();
+  const [attributedRosterMember, setAttributedRosterMember] = useState<any>(null);
   const [campaign, setCampaign] = useState<CampaignData | null>(null);
   const [campaignItems, setCampaignItems] = useState<CampaignItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -272,7 +273,8 @@ const CampaignLanding = () => {
           body: {
             campaignSlug: slug,
             items: items,
-            customerInfo: null
+            customerInfo: null,
+            attributedRosterMemberId: attributedRosterMember?.id || null
           }
         }
       );
