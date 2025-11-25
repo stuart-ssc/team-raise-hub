@@ -101,10 +101,16 @@ interface CustomField {
   display_order: number;
 }
 
+interface Roster {
+  id: number;
+  roster_year: number;
+  current_roster: boolean;
+}
+
 export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampaign, manageCampaignId }: AddCampaignFormProps) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [campaignTypes, setCampaignTypes] = useState<CampaignType[]>([]);
-  const [rosters, setRosters] = useState<any[]>([]);
+  const [rosters, setRosters] = useState<Roster[]>([]);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [createdCampaignId, setCreatedCampaignId] = useState<string | null>(null);
@@ -313,9 +319,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     try {
       const { data, error } = await supabase
         .from("rosters")
-        .select("id, roster_year")
+        .select("id, roster_year, current_roster")
         .eq("group_id", groupId)
-        .eq("current_roster", true)
         .order("roster_year", { ascending: false });
 
       if (!error && data) {
@@ -1210,7 +1215,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                                         key={roster.id} 
                                         value={roster.id.toString()}
                                       >
-                                        {roster.roster_year}
+                                        {roster.roster_year}{roster.current_roster ? " (Current Roster)" : ""}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
