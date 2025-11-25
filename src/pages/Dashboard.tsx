@@ -28,18 +28,47 @@ const Dashboard = () => {
   const [showAddCampaignForm, setShowAddCampaignForm] = useState(false);
   const [editCampaign, setEditCampaign] = useState<any>(null);
   const [manageCampaignId, setManageCampaignId] = useState<string | null>(null);
+  const [isSystemAdmin, setIsSystemAdmin] = useState<boolean | null>(null);
 
-  // Check if user needs to complete organization setup
+  // Check if user is system admin
   useEffect(() => {
-    console.log("Dashboard useEffect - user:", !!user, "loading:", loading, "organizationUser:", !!organizationUser);
-    if (user && !loading && !organizationUser) {
-      console.log("Showing setup modal because no organizationUser found");
-      setShowSetupModal(true);
+    const checkSystemAdmin = async () => {
+      if (!user?.id) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('system_admin')
+        .eq('id', user.id)
+        .single();
+      
+      setIsSystemAdmin(data?.system_admin || false);
+    };
+    
+    checkSystemAdmin();
+  }, [user?.id]);
+
+  // Check if user needs to complete organization setup or redirect system admin
+  useEffect(() => {
+    // Wait for both checks to complete
+    if (isSystemAdmin === null || loading) return;
+    
+    console.log("Dashboard useEffect - user:", !!user, "loading:", loading, "organizationUser:", !!organizationUser, "isSystemAdmin:", isSystemAdmin);
+    
+    if (user && !organizationUser) {
+      if (isSystemAdmin) {
+        // System admins without an org should go to admin dashboard
+        console.log("Redirecting system admin to /system-admin");
+        navigate('/system-admin');
+      } else {
+        // Regular users need to complete organization setup
+        console.log("Showing setup modal because no organizationUser found");
+        setShowSetupModal(true);
+      }
     } else {
       console.log("Not showing setup modal");
       setShowSetupModal(false);
     }
-  }, [user, loading, organizationUser]);
+  }, [user, loading, organizationUser, isSystemAdmin, navigate]);
 
   const handleSetupComplete = (organizationUserData: any) => {
     setShowSetupModal(false);
