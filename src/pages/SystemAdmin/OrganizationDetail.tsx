@@ -65,7 +65,6 @@ interface UserRecord {
   profiles: {
     first_name: string | null;
     last_name: string | null;
-    email: string;
   };
   user_type: {
     name: string;
@@ -254,26 +253,44 @@ const OrganizationDetail = () => {
           break;
 
         case "users":
-          const { data: usersData, error: usersError } = await supabase
+          // Step 1: Get organization_user records
+          const { data: orgUsersData, error: orgUsersError } = await supabase
             .from("organization_user")
             .select(`
               id,
               user_id,
               active_user,
               created_at,
-              profiles!organization_user_user_id_fkey(
-                first_name,
-                last_name,
-                email
-              ),
               user_type:user_type_id(name)
             `)
             .eq("organization_id", organization.id)
             .order("created_at", { ascending: false })
             .limit(50);
 
-          if (usersError) throw usersError;
-          setUsers(usersData as any || []);
+          if (orgUsersError) throw orgUsersError;
+
+          // Step 2: Fetch profiles separately
+          const userIds = (orgUsersData || []).map(u => u.user_id);
+          let profilesMap: Record<string, any> = {};
+          
+          if (userIds.length > 0) {
+            const { data: profilesData } = await supabase
+              .from("profiles")
+              .select("id, first_name, last_name")
+              .in("id", userIds);
+            
+            (profilesData || []).forEach(p => {
+              profilesMap[p.id] = p;
+            });
+          }
+
+          // Step 3: Merge the data
+          const mergedUsers = (orgUsersData || []).map(u => ({
+            ...u,
+            profiles: profilesMap[u.user_id] || { first_name: null, last_name: null }
+          }));
+
+          setUsers(mergedUsers as any);
           break;
 
         case "campaigns":
@@ -653,7 +670,6 @@ const OrganizationDetail = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
                           <TableHead>Role</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Joined</TableHead>
@@ -662,7 +678,7 @@ const OrganizationDetail = () => {
                       <TableBody>
                         {users.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                               No users found
                             </TableCell>
                           </TableRow>
@@ -674,7 +690,6 @@ const OrganizationDetail = () => {
                                   ? `${user.profiles.first_name} ${user.profiles.last_name}`
                                   : '-'}
                               </TableCell>
-                              <TableCell>{user.profiles.email}</TableCell>
                               <TableCell>{user.user_type.name}</TableCell>
                               <TableCell>{getStatusBadge(user.active_user)}</TableCell>
                               <TableCell>{format(new Date(user.created_at), 'MMM d, yyyy')}</TableCell>
