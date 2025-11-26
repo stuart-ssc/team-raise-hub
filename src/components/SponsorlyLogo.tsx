@@ -6,13 +6,18 @@ const SponsorlyLogo = ({ variant = 'full', theme = 'dark', className = "" }: {
   const logoSrc = variant === 'full' 
     ? (theme === 'light' ? '/lovable-uploads/Sponsorly-Logo.jpg' : '/lovable-uploads/Sponsorly-Logo-White.png')
     : (theme === 'light' ? '/lovable-uploads/Sponsorly-Mark.jpg' : '/lovable-uploads/Sponsorly-Mark-White.png');
+  
+  // Default sizes if no className provided
+  const defaultSize = variant === 'full' ? 'h-12 w-auto' : 'h-8 w-8';
+  // If className provided, use it; otherwise use default
+  const imgClassName = className || defaultSize;
     
   return (
-    <div className={`flex items-center ${className}`}>
+    <div className="flex items-center">
       <img 
         src={logoSrc} 
         alt="Sponsorly" 
-        className={variant === 'full' ? 'h-12 w-auto' : 'h-8 w-8'}
+        className={imgClassName}
       />
     </div>
   );
