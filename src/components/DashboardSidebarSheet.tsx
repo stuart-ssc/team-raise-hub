@@ -1,4 +1,4 @@
-import { Home, Users, Heart, Target, BarChart3, Package, Building2, LogOut, User } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Package, Building2, LogOut, User, Settings } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -18,6 +18,7 @@ const sidebarItems = [
   { title: "Businesses", icon: Building2, url: "/dashboard/businesses" },
   { title: "Users", icon: Users, url: "/dashboard/users" },
   { title: "Reports", icon: BarChart3, url: "/dashboard/reports" },
+  { title: "Settings", icon: Settings, url: "/dashboard/settings" },
 ];
 
 interface DashboardSidebarSheetProps {
@@ -45,6 +46,7 @@ const DashboardSidebarSheet = ({
   // Check if user has permission to see Users menu item
   const permissionLevel = organizationUser?.user_type.permission_level;
   const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
+  const isOrgAdmin = permissionLevel === 'organization_admin';
 
   const isActive = (path: string, end?: boolean) => {
     if (end) {
@@ -80,6 +82,11 @@ const DashboardSidebarSheet = ({
                 
                 // Hide Users, Campaigns, Donors, and Businesses menu items for unauthorized roles
                 if ((item.title === "Users" || item.title === "Campaigns" || item.title === "Donors" || item.title === "Businesses") && !canSeeUsers) {
+                  return null;
+                }
+                
+                // Hide Settings menu item if user is not an org admin
+                if (item.title === "Settings" && !isOrgAdmin) {
                   return null;
                 }
                 

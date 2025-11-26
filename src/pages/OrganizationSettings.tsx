@@ -31,9 +31,7 @@ const organizationSchema = z.object({
   name: z.string().min(2, "Organization name must be at least 2 characters"),
   email: z.string().email("Invalid email format").optional().or(z.literal("")),
   phone: z.string().optional(),
-  website: z.string().url("Invalid URL format").optional().or(z.literal("")),
-  address_line1: z.string().optional(),
-  address_line2: z.string().optional(),
+  website_url: z.string().url("Invalid URL format").optional().or(z.literal("")),
   city: z.string().optional(),
   state: z.string().optional(),
   zip: z.string().optional(),
@@ -60,9 +58,7 @@ const OrganizationSettings = () => {
       name: "",
       email: "",
       phone: "",
-      website: "",
-      address_line1: "",
-      address_line2: "",
+      website_url: "",
       city: "",
       state: "",
       zip: "",
@@ -105,9 +101,7 @@ const OrganizationSettings = () => {
           name: org.name || "",
           email: org.email || "",
           phone: org.phone || "",
-          website: org.website || "",
-          address_line1: org.address_line1 || "",
-          address_line2: org.address_line2 || "",
+          website_url: org.website_url || "",
           city: org.city || "",
           state: org.state || "",
           zip: org.zip || "",
@@ -156,9 +150,7 @@ const OrganizationSettings = () => {
           name: values.name,
           email: values.email || null,
           phone: values.phone || null,
-          website: values.website || null,
-          address_line1: values.address_line1 || null,
-          address_line2: values.address_line2 || null,
+          website_url: values.website_url || null,
           city: values.city || null,
           state: values.state || null,
           zip: values.zip || null,
@@ -228,8 +220,8 @@ const OrganizationSettings = () => {
 
   return (
     <DashboardPageLayout
-      breadcrumbs={[
-        { label: "Dashboard", href: "/dashboard" },
+      segments={[
+        { label: "Dashboard", path: "/dashboard" },
         { label: "Settings" },
       ]}
       hideGroupsFilter={true}
@@ -333,7 +325,7 @@ const OrganizationSettings = () => {
 
                     <FormField
                       control={form.control}
-                      name="website"
+                      name="website_url"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Website</FormLabel>
@@ -346,35 +338,7 @@ const OrganizationSettings = () => {
                     />
 
                     <div className="space-y-4">
-                      <h3 className="text-sm font-medium">Address</h3>
-
-                      <FormField
-                        control={form.control}
-                        name="address_line1"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Address Line 1</FormLabel>
-                            <FormControl>
-                              <Input {...field} disabled={!isEditing} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="address_line2"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Address Line 2</FormLabel>
-                            <FormControl>
-                              <Input {...field} disabled={!isEditing} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <h3 className="text-sm font-medium">Location</h3>
 
                       <div className="grid md:grid-cols-3 gap-4">
                         <FormField
