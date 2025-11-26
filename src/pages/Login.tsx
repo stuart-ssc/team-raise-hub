@@ -119,10 +119,12 @@ const Login = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md space-y-8">
+          <div className="flex justify-center mb-8">
+            <SponsorlyLogo variant="full" theme="light" className="h-16" />
+          </div>
           <div>
-            <SponsorlyLogo variant="full" theme="light" className="mb-8" />
             <h1 className="text-3xl font-semibold mb-2">
               {showForgotPassword ? "Reset Password" : "Log in"}
             </h1>
@@ -266,8 +268,8 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Right side - Blue gradient with testimonial */}
-      <div className="flex-1 bg-gradient-primary relative overflow-hidden">
+      {/* Right side - Blue gradient with testimonial (hidden on mobile) */}
+      <div className="hidden md:flex w-full lg:w-1/2 bg-gradient-primary relative overflow-hidden">
         {/* Dot pattern overlay */}
         <div 
           className="absolute inset-0 opacity-20"
@@ -277,36 +279,35 @@ const Login = () => {
           }}
         />
         
-        <div className="relative h-full flex items-center justify-center p-8">
+        <div className="relative h-full flex flex-col items-center justify-center p-8 text-center">
+          {/* Headline and description */}
+          <h2 className="text-4xl font-bold text-white mb-4">
+            Empowering Organizations to Raise More
+          </h2>
+          <p className="text-white/90 text-lg leading-relaxed max-w-xl mb-8">
+            Whether you're a school, club, or non-profit, Sponsorly makes 
+            fundraising simple, effective, and free to use.
+          </p>
+          
+          {/* Testimonial card */}
           <Card className="max-w-sm bg-white/95 backdrop-blur-sm border-0 shadow-xl">
             <CardContent className="p-6">
               <div className="flex items-start space-x-4">
                 <Avatar className="w-12 h-12 flex-shrink-0">
-                  <AvatarImage src="/placeholder.svg" alt="Canvas Developer" />
-                  <AvatarFallback>CD</AvatarFallback>
+                  <AvatarImage src="/placeholder.svg" alt="John Peterson" />
+                  <AvatarFallback>JP</AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-sm text-gray-700 mb-3 leading-relaxed">
-                    Canvas is an incredible set of templates that makes building apps 
-                    at least twice as fast. With the new browser plugin that accompanies it, 
-                    Canvas is even faster and easier to work with. Amazing work by AirDev.
+                    "Sponsorly has revolutionized how we manage fundraising. 
+                    The platform is intuitive and our teams love it!"
                   </p>
-                  <div className="font-medium text-gray-900">Canvas Developer</div>
+                  <div className="font-medium text-gray-900">John Peterson</div>
+                  <div className="text-xs text-gray-600">Athletic Director</div>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        <div className="absolute bottom-8 left-8 right-8 text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">
-            Raising Money Has Never Been Easier!
-          </h2>
-          <p className="text-white/90 text-lg leading-relaxed max-w-2xl mx-auto">
-            With School Sponsor Connect, raise and collect money easier than ever before. 
-            Get the funds you need for your school PTO, club, or team to succeed. 
-            And it's free for you to use!
-          </p>
         </div>
       </div>
     </div>
