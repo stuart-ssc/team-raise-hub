@@ -85,6 +85,9 @@ const MarketingFooter = () => {
             <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Privacy
             </Link>
+            <Link to="/dpa" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Data Processing Agreement
+            </Link>
           </div>
         </div>
       </div>
