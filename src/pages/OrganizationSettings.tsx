@@ -33,6 +33,8 @@ const organizationSchema = z.object({
   email: z.string().email("Invalid email format").optional().or(z.literal("")),
   phone: z.string().optional(),
   website_url: z.string().url("Invalid URL format").optional().or(z.literal("")),
+  address_line1: z.string().optional(),
+  address_line2: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
   zip: z.string().optional(),
@@ -65,6 +67,8 @@ const OrganizationSettings = () => {
       email: "",
       phone: "",
       website_url: "",
+      address_line1: "",
+      address_line2: "",
       city: "",
       state: "",
       zip: "",
@@ -113,6 +117,8 @@ const OrganizationSettings = () => {
             email: org.email || "",
             phone: org.phone || "",
             website_url: org.website_url || "",
+            address_line1: org.address_line1 || "",
+            address_line2: org.address_line2 || "",
             city: org.city || "",
             state: org.state || "",
             zip: org.zip || "",
@@ -177,6 +183,8 @@ const OrganizationSettings = () => {
           email: values.email || null,
           phone: values.phone || null,
           website_url: values.website_url || null,
+          address_line1: values.address_line1 || null,
+          address_line2: values.address_line2 || null,
           city: values.city || null,
           state: values.state || null,
           zip: values.zip || null,
@@ -339,6 +347,34 @@ const OrganizationSettings = () => {
                           <FormLabel>Website</FormLabel>
                           <FormControl>
                             <Input {...field} type="url" disabled={!isEditMode} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="address_line1"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Street Address</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="123 Main Street" disabled={!isEditMode} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="address_line2"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address Line 2</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Suite 100" disabled={!isEditMode} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

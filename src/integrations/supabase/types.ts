@@ -2150,6 +2150,8 @@ export type Database = {
       organizations: {
         Row: {
           active_user_count: number | null
+          address_line1: string | null
+          address_line2: string | null
           city: string | null
           created_at: string | null
           email: string | null
@@ -2173,6 +2175,8 @@ export type Database = {
         }
         Insert: {
           active_user_count?: number | null
+          address_line1?: string | null
+          address_line2?: string | null
           city?: string | null
           created_at?: string | null
           email?: string | null
@@ -2196,6 +2200,8 @@ export type Database = {
         }
         Update: {
           active_user_count?: number | null
+          address_line1?: string | null
+          address_line2?: string | null
           city?: string | null
           created_at?: string | null
           email?: string | null
