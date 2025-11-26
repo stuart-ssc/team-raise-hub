@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +30,7 @@ import {
 } from "@/components/ui/pagination";
 import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, TrendingUp, DollarSign, Users, Building2 } from "lucide-react";
+import { Search, TrendingUp, DollarSign, Users, Building2, Eye } from "lucide-react";
 import { getSegmentInfo } from "@/lib/businessEngagement";
 
 interface Business {
@@ -43,11 +44,10 @@ interface Business {
   total_partnership_value: number;
   linked_donors_count: number;
   verification_status: string;
-  organization_name?: string;
-  organization_type?: string;
 }
 
 const BusinessesList = () => {
+  const navigate = useNavigate();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [filteredBusinesses, setFilteredBusinesses] = useState<Business[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,8 +78,7 @@ const BusinessesList = () => {
     if (searchQuery) {
       results = results.filter(biz =>
         biz.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        biz.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        biz.organization_name?.toLowerCase().includes(searchQuery.toLowerCase())
+        biz.city?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     
@@ -110,16 +109,10 @@ const BusinessesList = () => {
   const fetchBusinesses = async () => {
     setLoading(true);
     
-    // Fetch businesses with organization information
+    // Fetch businesses
     const { data: businessData, error } = await supabase
       .from('businesses')
-      .select(`
-        *,
-        organization_businesses!inner(
-          organization_id,
-          organizations(name, organization_type)
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -128,30 +121,23 @@ const BusinessesList = () => {
       return;
     }
 
-    // Transform data to flatten organization info
-    const transformedData = (businessData || []).map((biz: any) => ({
-      ...biz,
-      organization_name: biz.organization_businesses?.[0]?.organizations?.name,
-      organization_type: biz.organization_businesses?.[0]?.organizations?.organization_type,
-    }));
-
-    setBusinesses(transformedData);
-    setFilteredBusinesses(transformedData);
+    setBusinesses(businessData || []);
+    setFilteredBusinesses(businessData || []);
     
     // Calculate stats
-    const totalValue = transformedData.reduce((sum, biz) => sum + (biz.total_partnership_value || 0), 0);
-    const avgScore = transformedData.length > 0 
-      ? transformedData.reduce((sum, biz) => sum + (biz.engagement_score || 0), 0) / transformedData.length 
+    const totalValue = (businessData || []).reduce((sum, biz) => sum + (biz.total_partnership_value || 0), 0);
+    const avgScore = businessData && businessData.length > 0
+      ? businessData.reduce((sum, biz) => sum + (biz.engagement_score || 0), 0) / businessData.length 
       : 0;
     
     const segmentCounts: Record<string, number> = {};
-    transformedData.forEach(biz => {
+    (businessData || []).forEach(biz => {
       const segment = biz.engagement_segment || 'new';
       segmentCounts[segment] = (segmentCounts[segment] || 0) + 1;
     });
 
     setStats({
-      totalBusinesses: transformedData.length,
+      totalBusinesses: businessData?.length || 0,
       totalPartnershipValue: totalValue,
       avgEngagementScore: Math.round(avgScore),
       segmentBreakdown: segmentCounts
@@ -272,7 +258,7 @@ const BusinessesList = () => {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder="Search by business name, city, or organization..."
+                    placeholder="Search by business name or city..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
@@ -355,11 +341,11 @@ const BusinessesList = () => {
                         <TableHead>Business Name</TableHead>
                         <TableHead>Location</TableHead>
                         <TableHead>Industry</TableHead>
-                        <TableHead>Organization</TableHead>
                         <TableHead>Engagement</TableHead>
                         <TableHead>Value</TableHead>
                         <TableHead>Donors</TableHead>
                         <TableHead>Verification</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -374,16 +360,6 @@ const BusinessesList = () => {
                               {biz.city && biz.state ? `${biz.city}, ${biz.state}` : biz.state || '-'}
                             </TableCell>
                             <TableCell>{biz.industry || '-'}</TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="text-sm">{biz.organization_name || '-'}</span>
-                                {biz.organization_type && (
-                                  <Badge variant="outline" className="w-fit mt-1 text-xs">
-                                    {biz.organization_type === 'school' ? 'School' : 'Non-Profit'}
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <div className={`p-1 rounded ${segmentInfo.bgColor}`}>
@@ -400,6 +376,16 @@ const BusinessesList = () => {
                             </TableCell>
                             <TableCell>{biz.linked_donors_count}</TableCell>
                             <TableCell>{getVerificationBadge(biz.verification_status)}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/system-admin/businesses/${biz.id}`)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Manage
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         );
                       })}
