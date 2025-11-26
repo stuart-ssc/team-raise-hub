@@ -112,16 +112,45 @@ const OrganizationSettings = () => {
 
         // Fetch stats
         const [usersResult, groupsResult, campaignsResult, ordersResult] = await Promise.all([
-          supabase.from("organization_user").select("id", { count: "exact", head: true }).eq("organization_id", organizationUser.organization_id),
-          supabase.from("groups").select("id", { count: "exact", head: true }).eq("organization_id", organizationUser.organization_id),
-          supabase.from("campaigns").select("id", { count: "exact", head: true }).eq("group_id", org.id).in("group_id", await supabase.from("groups").select("id").eq("organization_id", organizationUser.organization_id).then(r => r.data?.map(g => g.id) || [])),
-          supabase.from("orders").select("total_amount").eq("organization_id", organizationUser.organization_id).eq("payment_status", "completed"),
+          supabase
+            .from("organization_user")
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", organizationUser.organization_id),
+          supabase
+            .from("groups")
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", organizationUser.organization_id),
+          supabase
+            .from("groups")
+            .select("id")
+            .eq("organization_id", organizationUser.organization_id)
+            .then(async (groupsResult) => {
+              if (!groupsResult.data) return { count: 0 };
+              const groupIds = groupsResult.data.map((g) => g.id);
+              if (groupIds.length === 0) return { count: 0 };
+              return supabase
+                .from("campaigns")
+                .select("id", { count: "exact", head: true })
+                .in("group_id", groupIds);
+            }),
+          supabase
+            .from("orders")
+            .select("total_amount")
+            .eq("payment_status", "completed")
+            .then((result) => {
+              if (!result.data) return { data: [] };
+              return result;
+            }),
         ]);
+
+        const campaignsCount = typeof campaignsResult === "object" && "count" in campaignsResult 
+          ? campaignsResult.count 
+          : 0;
 
         setStats({
           users: usersResult.count || 0,
           groups: groupsResult.count || 0,
-          campaigns: campaignsResult.count || 0,
+          campaigns: campaignsCount || 0,
           revenue: ordersResult.data?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0,
         });
       } catch (error: any) {
