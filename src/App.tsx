@@ -52,6 +52,8 @@ import BusinessNurtureCampaigns from "./pages/BusinessNurtureCampaigns";
 import BusinessCampaignAnalytics from "./pages/BusinessCampaignAnalytics";
 import MyFundraising from "./pages/MyFundraising";
 import OrganizationSettings from "./pages/OrganizationSettings";
+import Contact from "./pages/Contact";
+import ContactSubmissions from "./pages/SystemAdmin/ContactSubmissions";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import { HubSpotTracker } from "./components/HubSpotTracker";
@@ -98,6 +100,7 @@ const AppContent = () => {
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/install" element={<InstallApp />} />
         <Route path="/native-features" element={<ProtectedRoute><NativeFeatures /></ProtectedRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
@@ -140,6 +143,7 @@ const AppContent = () => {
         <Route path="/system-admin/emails" element={<ProtectedRoute><SystemAdminGuard><EmailManagement /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/ab-tests" element={<ProtectedRoute><SystemAdminGuard><ABTestManagement /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/reports" element={<ProtectedRoute><SystemAdminGuard><SystemAdminReports /></SystemAdminGuard></ProtectedRoute>} />
+        <Route path="/system-admin/contact-submissions" element={<ProtectedRoute><SystemAdminGuard><ContactSubmissions /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

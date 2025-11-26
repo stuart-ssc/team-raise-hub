@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, Building2, FileCheck, Mail, FlaskConical, Briefcase, BarChart3 } from "lucide-react";
+import { Home, Building2, FileCheck, Mail, FlaskConical, Briefcase, BarChart3, MessageSquare } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import SponsorlyLogo from "./SponsorlyLogo";
 
@@ -44,6 +44,11 @@ const sidebarItems = [
     title: "Reports",
     icon: BarChart3,
     url: "/system-admin/reports",
+  },
+  {
+    title: "Contact Submissions",
+    icon: MessageSquare,
+    url: "/system-admin/contact-submissions",
   },
 ];
 
