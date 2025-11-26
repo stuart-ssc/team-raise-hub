@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, FileCheck, Mail, FlaskConical } from "lucide-react";
+import { Building2, FileCheck, Mail, FlaskConical, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -151,6 +151,18 @@ const SystemAdminDashboard = () => {
                   </div>
                   <CardDescription>
                     Manage and analyze email A/B tests
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate('/system-admin/reports')}>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    <CardTitle>Platform Reports</CardTitle>
+                  </div>
+                  <CardDescription>
+                    View comprehensive platform analytics and insights
                   </CardDescription>
                 </CardHeader>
               </Card>
