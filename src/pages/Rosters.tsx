@@ -135,9 +135,9 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
 
   const fetchSchoolUsers = async (rosterId: number) => {
     try {
-      // Get all school users for this roster (both active and inactive)
+      // Get all organization users for this roster (both active and inactive)
       const { data: schoolUsersData, error: schoolUsersError } = await supabase
-        .from("school_user")
+        .from("organization_user")
         .select("id, user_id, user_type_id, roster_id, active_user")
         .eq("roster_id", rosterId);
 
@@ -276,7 +276,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
   const handleRemoveUser = async (userId: string, userName: string) => {
     try {
       const { error } = await supabase
-        .from("school_user")
+        .from("organization_user")
         .update({ active_user: false })
         .eq("id", userId);
 
@@ -313,7 +313,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
   const handleReactivateUser = async (userId: string, userName: string) => {
     try {
       const { error } = await supabase
-        .from("school_user")
+        .from("organization_user")
         .update({ active_user: true })
         .eq("id", userId);
 
