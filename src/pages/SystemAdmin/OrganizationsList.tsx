@@ -41,7 +41,7 @@ import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { AddOrganizationDialog } from "@/components/AddOrganizationDialog";
 import { EditOrganizationDialog } from "@/components/EditOrganizationDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Plus, Pencil, Trash2, Settings, Info } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -259,17 +259,6 @@ const OrganizationsList = () => {
                       <SelectItem value="rejected">Rejected</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                
-                {/* Debug indicator */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-md">
-                  <Info className="h-4 w-4" />
-                  <span>
-                    Loaded {organizations.length} organizations from database
-                    {filteredOrgs.length !== organizations.length && (
-                      <> ({filteredOrgs.length} after filtering)</>
-                    )}
-                  </span>
                 </div>
               </div>
             </CardHeader>
