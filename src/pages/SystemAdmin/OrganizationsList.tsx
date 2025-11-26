@@ -27,21 +27,10 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { AddOrganizationDialog } from "@/components/AddOrganizationDialog";
-import { EditOrganizationDialog } from "@/components/EditOrganizationDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Plus, Pencil, Trash2, Settings } from "lucide-react";
+import { Search, Plus, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -70,9 +59,6 @@ const OrganizationsList = () => {
 
   // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
 
   useEffect(() => {
     fetchOrganizations();
@@ -126,26 +112,6 @@ const OrganizationsList = () => {
     setLoading(false);
   };
 
-  const handleDelete = async () => {
-    if (!selectedOrg) return;
-
-    try {
-      const { error } = await supabase
-        .from("organizations")
-        .delete()
-        .eq("id", selectedOrg.id);
-
-      if (error) throw error;
-
-      toast.success("Organization deleted successfully");
-      fetchOrganizations();
-      setShowDeleteDialog(false);
-      setSelectedOrg(null);
-    } catch (error: any) {
-      console.error("Error deleting organization:", error);
-      toast.error(error.message || "Failed to delete organization");
-    }
-  };
 
   const formatVerificationStatus = (status: string) => {
     return status
@@ -295,36 +261,14 @@ const OrganizationsList = () => {
                           </TableCell>
                           <TableCell>{getVerificationBadge(org.verification_status)}</TableCell>
                           <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => navigate(`/system-admin/organizations/${org.id}`)}
-                              >
-                                <Settings className="h-4 w-4 mr-1" />
-                                Manage
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedOrg(org);
-                                  setShowEditDialog(true);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedOrg(org);
-                                  setShowDeleteDialog(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/system-admin/organizations/${org.id}`)}
+                            >
+                              <Settings className="h-4 w-4 mr-1" />
+                              Manage
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -387,37 +331,6 @@ const OrganizationsList = () => {
         onOpenChange={setShowAddDialog}
         onSuccess={fetchOrganizations}
       />
-
-      {/* Edit Organization Dialog */}
-      {selectedOrg && (
-        <EditOrganizationDialog
-          open={showEditDialog}
-          onOpenChange={setShowEditDialog}
-          organization={selectedOrg}
-          onSuccess={fetchOrganizations}
-        />
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Organization?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{selectedOrg?.name}"?
-              This action cannot be undone. All related data (users, groups, campaigns) will be affected.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedOrg(null)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Delete Organization
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </SystemAdminPageLayout>
   );
 };
