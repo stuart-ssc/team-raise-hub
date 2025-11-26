@@ -151,7 +151,10 @@ const OrganizationSettings = () => {
           users: usersResult.count || 0,
           groups: groupsResult.count || 0,
           campaigns: campaignsCount || 0,
-          revenue: ordersResult.data?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0,
+          revenue:
+            ordersResult.data?.reduce((sum: number, order: { total_amount: number }) => {
+              return sum + (order.total_amount || 0);
+            }, 0) || 0,
         });
       } catch (error: any) {
         console.error("Error fetching organization data:", error);
