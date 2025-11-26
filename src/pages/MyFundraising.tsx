@@ -42,7 +42,7 @@ export default function MyFundraising() {
     try {
       // Get user's roster memberships
       const { data: rosterMemberships, error: rosterError } = await supabase
-        .from('school_user')
+        .from('organization_user')
         .select(`
           id,
           roster_id,
