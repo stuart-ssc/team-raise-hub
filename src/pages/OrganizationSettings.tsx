@@ -5,6 +5,7 @@ import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { AvatarUpload } from "@/components/AvatarUpload";
+import { LogoUpload } from "@/components/LogoUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, FileText, Upload, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Loader2, FileText, Upload, CheckCircle2, XCircle, AlertCircle, Pencil } from "lucide-react";
 
 const US_STATES = [
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
@@ -52,6 +53,7 @@ const OrganizationSettings = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isBrandingEditMode, setIsBrandingEditMode] = useState(false);
   const [organization, setOrganization] = useState<any>(null);
   const [stats, setStats] = useState({
     userCount: 0,
@@ -202,6 +204,18 @@ const OrganizationSettings = () => {
         description: "Organization settings updated successfully",
       });
       setIsEditMode(false);
+      setIsBrandingEditMode(false);
+      
+      // Refresh organization data
+      const { data: updatedOrg } = await supabase
+        .from("organizations")
+        .select("*")
+        .eq("id", organizationUser.organization_id)
+        .single();
+      
+      if (updatedOrg) {
+        setOrganization(updatedOrg);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -445,28 +459,63 @@ const OrganizationSettings = () => {
           <TabsContent value="branding">
             <Card>
               <CardHeader>
-                <CardTitle>Branding</CardTitle>
-                <CardDescription>Customize your organization's appearance</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Branding</CardTitle>
+                    <CardDescription>Customize your organization's visual identity</CardDescription>
+                  </div>
+                  {!isBrandingEditMode ? (
+                    <Button onClick={() => setIsBrandingEditMode(true)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => {
+                        setIsBrandingEditMode(false);
+                        form.reset({
+                          ...form.getValues(),
+                          logo_url: organization?.logo_url || '',
+                          primary_color: organization?.primary_color || '',
+                          secondary_color: organization?.secondary_color || '',
+                        });
+                      }}>
+                        Cancel
+                      </Button>
+                      <Button onClick={form.handleSubmit(onSubmit)} disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <Form {...form}>
                   <div>
-                    <Label>Organization Logo</Label>
+                    <Label className="text-sm font-medium mb-2 block">Organization Logo</Label>
                     <p className="text-sm text-muted-foreground mb-4">
                       Upload a logo to personalize your campaigns and emails
                     </p>
-                    <FormField
-                      control={form.control}
-                      name="logo_url"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input {...field} type="url" placeholder="https://example.com/logo.png" disabled={!isEditMode} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {isBrandingEditMode ? (
+                      <LogoUpload
+                        organizationId={organizationUser?.organization_id || ''}
+                        currentLogoUrl={form.watch('logo_url')}
+                        onLogoUpdate={(url) => form.setValue('logo_url', url || '')}
+                      />
+                    ) : (
+                      organization?.logo_url ? (
+                        <div className="h-24 w-48 rounded-lg border-2 border-border overflow-hidden bg-muted">
+                          <img
+                            src={organization.logo_url}
+                            alt="Organization logo"
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No logo uploaded</p>
+                      )
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -478,9 +527,9 @@ const OrganizationSettings = () => {
                           <FormLabel>Primary Brand Color</FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
-                              <Input {...field} type="color" className="w-20 h-10" disabled={!isEditMode} />
+                              <Input {...field} type="color" className="w-20 h-10" disabled={!isBrandingEditMode} />
                             </FormControl>
-                            <Input {...field} placeholder="#0066cc" disabled={!isEditMode} />
+                            <Input {...field} placeholder="#0066cc" disabled={!isBrandingEditMode} />
                           </div>
                           <FormMessage />
                         </FormItem>
@@ -495,9 +544,9 @@ const OrganizationSettings = () => {
                           <FormLabel>Secondary Brand Color</FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
-                              <Input {...field} type="color" className="w-20 h-10" disabled={!isEditMode} />
+                              <Input {...field} type="color" className="w-20 h-10" disabled={!isBrandingEditMode} />
                             </FormControl>
-                            <Input {...field} placeholder="#ff6600" disabled={!isEditMode} />
+                            <Input {...field} placeholder="#ff6600" disabled={!isBrandingEditMode} />
                           </div>
                           <FormMessage />
                         </FormItem>
