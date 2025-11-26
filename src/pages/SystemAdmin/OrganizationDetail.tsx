@@ -23,10 +23,15 @@ import {
   Archive,
   CheckCircle2,
   Clock,
-  XCircle
+  XCircle,
+  Save,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Organization {
   id: string;
@@ -125,6 +130,21 @@ const OrganizationDetail = () => {
   const [donors, setDonors] = useState<DonorRecord[]>([]);
   const [activeTab, setActiveTab] = useState("groups");
   const [loadingTab, setLoadingTab] = useState(false);
+  
+  // Edit mode states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    website_url: '',
+    address_line1: '',
+    city: '',
+    state: '',
+    zip: '',
+    logo_url: '',
+    verification_status: '',
+  });
 
   useEffect(() => {
     if (orgId) {
@@ -387,6 +407,34 @@ const OrganizationDetail = () => {
     }
   };
 
+  const handleSave = async () => {
+    if (!organization) return;
+    
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update(editForm)
+        .eq('id', organization.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Organization updated successfully",
+      });
+      
+      setIsEditing(false);
+      fetchOrganizationData();
+    } catch (error) {
+      console.error("Error updating organization:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update organization",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <SystemAdminPageLayout title="Loading..." subtitle="Organization details">
@@ -458,7 +506,26 @@ const OrganizationDetail = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setEditForm({
+                    name: organization.name,
+                    email: organization.email || '',
+                    phone: organization.phone || '',
+                    website_url: organization.website_url || '',
+                    address_line1: organization.address_line1 || '',
+                    city: organization.city || '',
+                    state: organization.state || '',
+                    zip: organization.zip || '',
+                    logo_url: organization.logo_url || '',
+                    verification_status: organization.verification_status,
+                  });
+                  setIsEditing(true);
+                  setActiveTab("settings");
+                }}
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Button>
@@ -735,51 +802,176 @@ const OrganizationDetail = () => {
                     <div className="space-y-6">
                       <div>
                         <h3 className="text-lg font-semibold mb-4">Organization Details</h3>
-                        <div className="grid gap-4">
-                          <div className="flex items-start gap-3">
-                            <Mail className="h-4 w-4 text-muted-foreground mt-1" />
-                            <div>
-                              <p className="text-sm font-medium">Email</p>
-                              <p className="text-sm text-muted-foreground">{organization.email || '-'}</p>
+                        
+                        {isEditing ? (
+                          /* Edit Mode */
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="name">Organization Name</Label>
+                              <Input 
+                                id="name"
+                                value={editForm.name}
+                                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input 
+                                  id="email"
+                                  type="email"
+                                  value={editForm.email}
+                                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="phone">Phone</Label>
+                                <Input 
+                                  id="phone"
+                                  value={editForm.phone}
+                                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="website">Website</Label>
+                              <Input 
+                                id="website"
+                                value={editForm.website_url}
+                                onChange={(e) => setEditForm({ ...editForm, website_url: e.target.value })}
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="logo">Logo URL</Label>
+                              <Input 
+                                id="logo"
+                                value={editForm.logo_url}
+                                onChange={(e) => setEditForm({ ...editForm, logo_url: e.target.value })}
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="address">Address Line 1</Label>
+                              <Input 
+                                id="address"
+                                value={editForm.address_line1}
+                                onChange={(e) => setEditForm({ ...editForm, address_line1: e.target.value })}
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="city">City</Label>
+                                <Input 
+                                  id="city"
+                                  value={editForm.city}
+                                  onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="state">State</Label>
+                                <Input 
+                                  id="state"
+                                  value={editForm.state}
+                                  onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="zip">ZIP Code</Label>
+                                <Input 
+                                  id="zip"
+                                  value={editForm.zip}
+                                  onChange={(e) => setEditForm({ ...editForm, zip: e.target.value })}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="verification">Verification Status</Label>
+                              <Select 
+                                value={editForm.verification_status}
+                                onValueChange={(value) => setEditForm({ ...editForm, verification_status: value })}
+                              >
+                                <SelectTrigger id="verification">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="in_review">In Review</SelectItem>
+                                  <SelectItem value="approved">Approved</SelectItem>
+                                  <SelectItem value="rejected">Rejected</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="flex gap-2 pt-4">
+                              <Button onClick={handleSave}>
+                                <Save className="h-4 w-4 mr-2" />
+                                Save Changes
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                onClick={() => setIsEditing(false)}
+                              >
+                                <X className="h-4 w-4 mr-2" />
+                                Cancel
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-start gap-3">
-                            <Phone className="h-4 w-4 text-muted-foreground mt-1" />
-                            <div>
-                              <p className="text-sm font-medium">Phone</p>
-                              <p className="text-sm text-muted-foreground">{organization.phone || '-'}</p>
+                        ) : (
+                          /* View Mode */
+                          <div className="grid gap-4">
+                            <div className="flex items-start gap-3">
+                              <Mail className="h-4 w-4 text-muted-foreground mt-1" />
+                              <div>
+                                <p className="text-sm font-medium">Email</p>
+                                <p className="text-sm text-muted-foreground">{organization.email || '-'}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <Phone className="h-4 w-4 text-muted-foreground mt-1" />
+                              <div>
+                                <p className="text-sm font-medium">Phone</p>
+                                <p className="text-sm text-muted-foreground">{organization.phone || '-'}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <Globe className="h-4 w-4 text-muted-foreground mt-1" />
+                              <div>
+                                <p className="text-sm font-medium">Website</p>
+                                <p className="text-sm text-muted-foreground">{organization.website_url || '-'}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
+                              <div>
+                                <p className="text-sm font-medium">Address</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {organization.address_line1 || '-'}
+                                  {organization.city && organization.state && (
+                                    <><br />{organization.city}, {organization.state} {organization.zip}</>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <Building2 className="h-4 w-4 text-muted-foreground mt-1" />
+                              <div>
+                                <p className="text-sm font-medium">Verification Status</p>
+                                <div className="mt-1">{getVerificationBadge(organization.verification_status)}</div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Requires verification: {organization.requires_verification ? 'Yes' : 'No'}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-start gap-3">
-                            <Globe className="h-4 w-4 text-muted-foreground mt-1" />
-                            <div>
-                              <p className="text-sm font-medium">Website</p>
-                              <p className="text-sm text-muted-foreground">{organization.website_url || '-'}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
-                            <div>
-                              <p className="text-sm font-medium">Address</p>
-                              <p className="text-sm text-muted-foreground">
-                                {organization.address_line1 || '-'}
-                                {organization.city && organization.state && (
-                                  <><br />{organization.city}, {organization.state} {organization.zip}</>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <Building2 className="h-4 w-4 text-muted-foreground mt-1" />
-                            <div>
-                              <p className="text-sm font-medium">Verification Status</p>
-                              <div className="mt-1">{getVerificationBadge(organization.verification_status)}</div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Requires verification: {organization.requires_verification ? 'Yes' : 'No'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </TabsContent>
