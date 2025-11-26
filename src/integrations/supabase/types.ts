@@ -2872,6 +2872,10 @@ export type Database = {
         Args: { school_id: string; user_id: string }
         Returns: boolean
       }
+      user_can_view_business: {
+        Args: { _business_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       organization_type: "school" | "nonprofit"
