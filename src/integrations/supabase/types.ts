@@ -819,6 +819,56 @@ export type Database = {
           },
         ]
       }
+      contact_submissions: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          email: string
+          id: string
+          message: string
+          name: string
+          replied_at: string | null
+          replied_by: string | null
+          status: string
+          subject: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          message: string
+          name: string
+          replied_at?: string | null
+          replied_by?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          replied_at?: string | null
+          replied_by?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_submissions_replied_by_fkey"
+            columns: ["replied_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       counties: {
         Row: {
           county_name: string

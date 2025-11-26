@@ -48,9 +48,9 @@ const MarketingFooter = () => {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Contact
-                </a>
+                </Link>
               </li>
               <li>
                 <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
