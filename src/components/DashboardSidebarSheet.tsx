@@ -1,4 +1,4 @@
-import { Home, Users, Heart, Target, BarChart3, Package, Building2, LogOut, User } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, LogOut, User } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -18,6 +18,7 @@ const sidebarItems = [
   { title: "Businesses", icon: Building2, url: "/dashboard/businesses" },
   { title: "Users", icon: Users, url: "/dashboard/users" },
   { title: "Reports", icon: BarChart3, url: "/dashboard/reports" },
+  { title: "Settings", icon: Settings, url: "/dashboard/settings", adminOnly: true },
 ];
 
 interface DashboardSidebarSheetProps {
@@ -80,6 +81,11 @@ const DashboardSidebarSheet = ({
                 
                 // Hide Users, Campaigns, Donors, and Businesses menu items for unauthorized roles
                 if ((item.title === "Users" || item.title === "Campaigns" || item.title === "Donors" || item.title === "Businesses") && !canSeeUsers) {
+                  return null;
+                }
+                
+                // Hide Settings menu item for non-admins
+                if (item.adminOnly && permissionLevel !== 'organization_admin') {
                   return null;
                 }
                 
