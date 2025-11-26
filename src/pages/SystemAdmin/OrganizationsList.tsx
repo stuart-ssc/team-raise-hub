@@ -54,7 +54,6 @@ const OrganizationsList = () => {
   const [loading, setLoading] = useState(true);
   const [orgTypeFilter, setOrgTypeFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
-  const [verificationFilter, setVerificationFilter] = useState<string>("all");
   const [userStatusFilter, setUserStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -88,21 +87,22 @@ const OrganizationsList = () => {
       results = results.filter(org => org.state === stateFilter);
     }
     
-    // Apply verification filter
-    if (verificationFilter !== "all") {
-      results = results.filter(org => org.verification_status === verificationFilter);
-    }
-    
     // Apply user status filter
-    if (userStatusFilter === "has_users") {
-      results = results.filter(org => org.active_user_count > 0);
-    } else if (userStatusFilter === "no_users") {
+    if (userStatusFilter === "zero") {
       results = results.filter(org => org.active_user_count === 0);
+    } else if (userStatusFilter === "1-9") {
+      results = results.filter(org => org.active_user_count >= 1 && org.active_user_count <= 9);
+    } else if (userStatusFilter === "10-49") {
+      results = results.filter(org => org.active_user_count >= 10 && org.active_user_count <= 49);
+    } else if (userStatusFilter === "50-99") {
+      results = results.filter(org => org.active_user_count >= 50 && org.active_user_count <= 99);
+    } else if (userStatusFilter === "100+") {
+      results = results.filter(org => org.active_user_count >= 100);
     }
     
     setFilteredOrgs(results);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchQuery, organizations, orgTypeFilter, stateFilter, verificationFilter, userStatusFilter]);
+  }, [searchQuery, organizations, orgTypeFilter, stateFilter, userStatusFilter]);
 
   const fetchOrganizations = async () => {
     setLoading(true);
@@ -121,23 +121,6 @@ const OrganizationsList = () => {
     setLoading(false);
   };
 
-
-  const formatVerificationStatus = (status: string) => {
-    return status
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
-  const getVerificationBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      approved: "default",
-      pending: "secondary",
-      in_review: "secondary",
-      rejected: "destructive"
-    };
-    return <Badge variant={variants[status] || "outline"}>{formatVerificationStatus(status)}</Badge>;
-  };
 
   // Get unique states for filter dropdown
   const uniqueStates = Array.from(new Set(organizations.map(org => org.state).filter(Boolean))).sort();
@@ -196,7 +179,7 @@ const OrganizationsList = () => {
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <Select value={orgTypeFilter} onValueChange={setOrgTypeFilter}>
                     <SelectTrigger>
                       <SelectValue placeholder="Org Type" />
@@ -222,27 +205,17 @@ const OrganizationsList = () => {
                     </SelectContent>
                   </Select>
 
-                  <Select value={verificationFilter} onValueChange={setVerificationFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Verification" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in_review">In Review</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-
                   <Select value={userStatusFilter} onValueChange={setUserStatusFilter}>
                     <SelectTrigger>
-                      <SelectValue placeholder="User Status" />
+                      <SelectValue placeholder="Active Users" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Organizations</SelectItem>
-                      <SelectItem value="has_users">Has Users</SelectItem>
-                      <SelectItem value="no_users">No Users</SelectItem>
+                      <SelectItem value="zero">0 users</SelectItem>
+                      <SelectItem value="1-9">1-9 users</SelectItem>
+                      <SelectItem value="10-49">10-49 users</SelectItem>
+                      <SelectItem value="50-99">50-99 users</SelectItem>
+                      <SelectItem value="100+">100+ users</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -260,12 +233,11 @@ const OrganizationsList = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Active Users</TableHead>
-                        <TableHead>Verification</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Active Users</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -285,7 +257,6 @@ const OrganizationsList = () => {
                               {org.active_user_count} {org.active_user_count === 1 ? 'user' : 'users'}
                             </Badge>
                           </TableCell>
-                          <TableCell>{getVerificationBadge(org.verification_status)}</TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="outline"
