@@ -66,7 +66,8 @@ interface OrganizationRecord {
   id: string;
   name: string;
   organization_type: string;
-  relationship_notes: string | null;
+  relationship_status: string | null;
+  notes: string | null;
   created_at: string;
 }
 
@@ -233,7 +234,8 @@ export default function BusinessDetail() {
             .select(`
               id,
               organization_id,
-              relationship_notes,
+              relationship_status,
+              notes,
               created_at,
               organizations:organization_id(
                 name,
@@ -249,7 +251,8 @@ export default function BusinessDetail() {
             id: record.organization_id,
             name: record.organizations?.name || 'Unknown',
             organization_type: record.organizations?.organization_type || 'unknown',
-            relationship_notes: record.relationship_notes,
+            relationship_status: record.relationship_status,
+            notes: record.notes,
             created_at: record.created_at,
           }));
           
@@ -732,6 +735,8 @@ export default function BusinessDetail() {
                       <TableRow>
                         <TableHead>Organization</TableHead>
                         <TableHead>Type</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Notes</TableHead>
                         <TableHead>Since</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -743,6 +748,18 @@ export default function BusinessDetail() {
                             <Badge variant="outline">
                               {org.organization_type === 'school' ? 'School' : 'Non-Profit'}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {org.relationship_status ? (
+                              <Badge variant="secondary" className="capitalize">
+                                {org.relationship_status}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {org.notes || '—'}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {format(new Date(org.created_at), "MMM d, yyyy")}
