@@ -2149,6 +2149,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          active_user_count: number | null
           city: string | null
           created_at: string | null
           email: string | null
@@ -2171,6 +2172,7 @@ export type Database = {
           zip: string | null
         }
         Insert: {
+          active_user_count?: number | null
           city?: string | null
           created_at?: string | null
           email?: string | null
@@ -2193,6 +2195,7 @@ export type Database = {
           zip?: string | null
         }
         Update: {
+          active_user_count?: number | null
           city?: string | null
           created_at?: string | null
           email?: string | null
