@@ -49,6 +49,7 @@ import BusinessOutreachQueue from "./pages/BusinessOutreachQueue";
 import BusinessNurtureCampaigns from "./pages/BusinessNurtureCampaigns";
 import BusinessCampaignAnalytics from "./pages/BusinessCampaignAnalytics";
 import MyFundraising from "./pages/MyFundraising";
+import OrganizationSettings from "./pages/OrganizationSettings";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import { HubSpotTracker } from "./components/HubSpotTracker";
@@ -122,6 +123,7 @@ const AppContent = () => {
         <Route path="/dashboard/businesses/:businessId" element={<ProtectedRoute><BusinessProfile /></ProtectedRoute>} />
         <Route path="/dashboard/businesses/analytics" element={<ProtectedRoute><BusinessAnalytics /></ProtectedRoute>} />
         <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/dashboard/settings" element={<ProtectedRoute><OrganizationSettings /></ProtectedRoute>} />
         <Route path="/dashboard/notifications" element={<ProtectedRoute><NotificationHistory /></ProtectedRoute>} />
         <Route path="/dashboard/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
         <Route path="/dashboard/my-fundraising" element={<ProtectedRoute><MyFundraising /></ProtectedRoute>} />
