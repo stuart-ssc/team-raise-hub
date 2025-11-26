@@ -29,6 +29,7 @@ import SystemAdminDashboard from "./pages/SystemAdmin/Dashboard";
 import OrganizationsList from "./pages/SystemAdmin/OrganizationsList";
 import OrganizationDetail from "./pages/SystemAdmin/OrganizationDetail";
 import BusinessesList from "./pages/SystemAdmin/BusinessesList";
+import BusinessDetail from "./pages/SystemAdmin/BusinessDetail";
 import VerificationQueue from "./pages/SystemAdmin/VerificationQueue";
 import EmailManagement from "./pages/SystemAdmin/EmailManagement";
 import ABTestManagement from "./pages/SystemAdmin/ABTestManagement";
@@ -125,6 +126,7 @@ const AppContent = () => {
         <Route path="/system-admin/organizations" element={<ProtectedRoute><SystemAdminGuard><OrganizationsList /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/organizations/:orgId" element={<ProtectedRoute><SystemAdminGuard><OrganizationDetail /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/businesses" element={<ProtectedRoute><SystemAdminGuard><BusinessesList /></SystemAdminGuard></ProtectedRoute>} />
+        <Route path="/system-admin/businesses/:businessId" element={<ProtectedRoute><SystemAdminGuard><BusinessDetail /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/verification" element={<ProtectedRoute><SystemAdminGuard><VerificationQueue /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/emails" element={<ProtectedRoute><SystemAdminGuard><EmailManagement /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/ab-tests" element={<ProtectedRoute><SystemAdminGuard><ABTestManagement /></SystemAdminGuard></ProtectedRoute>} />
