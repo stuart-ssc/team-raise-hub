@@ -43,6 +43,7 @@ interface Organization {
   state: string;
   verification_status: string;
   created_at: string;
+  active_user_count: number;
 }
 
 const OrganizationsList = () => {
@@ -54,6 +55,7 @@ const OrganizationsList = () => {
   const [orgTypeFilter, setOrgTypeFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [verificationFilter, setVerificationFilter] = useState<string>("all");
+  const [userStatusFilter, setUserStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -91,9 +93,16 @@ const OrganizationsList = () => {
       results = results.filter(org => org.verification_status === verificationFilter);
     }
     
+    // Apply user status filter
+    if (userStatusFilter === "has_users") {
+      results = results.filter(org => org.active_user_count > 0);
+    } else if (userStatusFilter === "no_users") {
+      results = results.filter(org => org.active_user_count === 0);
+    }
+    
     setFilteredOrgs(results);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchQuery, organizations, orgTypeFilter, stateFilter, verificationFilter]);
+  }, [searchQuery, organizations, orgTypeFilter, stateFilter, verificationFilter, userStatusFilter]);
 
   const fetchOrganizations = async () => {
     setLoading(true);
@@ -187,7 +196,7 @@ const OrganizationsList = () => {
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <Select value={orgTypeFilter} onValueChange={setOrgTypeFilter}>
                     <SelectTrigger>
                       <SelectValue placeholder="Org Type" />
@@ -225,6 +234,17 @@ const OrganizationsList = () => {
                       <SelectItem value="rejected">Rejected</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  <Select value={userStatusFilter} onValueChange={setUserStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="User Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Organizations</SelectItem>
+                      <SelectItem value="has_users">Has Users</SelectItem>
+                      <SelectItem value="no_users">No Users</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardHeader>
@@ -243,6 +263,7 @@ const OrganizationsList = () => {
                         <TableHead>Type</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Location</TableHead>
+                        <TableHead>Active Users</TableHead>
                         <TableHead>Verification</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -258,6 +279,11 @@ const OrganizationsList = () => {
                           <TableCell className="font-medium">{org.name}</TableCell>
                           <TableCell>
                             {org.city && org.state ? `${org.city}, ${org.state}` : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={org.active_user_count > 0 ? "default" : "secondary"}>
+                              {org.active_user_count} {org.active_user_count === 1 ? 'user' : 'users'}
+                            </Badge>
                           </TableCell>
                           <TableCell>{getVerificationBadge(org.verification_status)}</TableCell>
                           <TableCell className="text-right">
