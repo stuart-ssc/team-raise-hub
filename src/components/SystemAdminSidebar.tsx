@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Building2, FileCheck, Mail, FlaskConical } from "lucide-react";
+import { Home, Building2, FileCheck, Mail, FlaskConical, Briefcase } from "lucide-react";
 import SponsorlyLogo from "./SponsorlyLogo";
 
 const sidebarItems = [
@@ -13,6 +13,11 @@ const sidebarItems = [
     title: "Organizations",
     icon: Building2,
     url: "/system-admin/organizations",
+  },
+  {
+    title: "Businesses",
+    icon: Briefcase,
+    url: "/system-admin/businesses",
   },
   {
     title: "Verification Queue",
