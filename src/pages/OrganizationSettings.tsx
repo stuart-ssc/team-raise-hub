@@ -449,74 +449,76 @@ const OrganizationSettings = () => {
                 <CardDescription>Customize your organization's appearance</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div>
-                  <Label>Organization Logo</Label>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Upload a logo to personalize your campaigns and emails
-                  </p>
-                  <FormField
-                    control={form.control}
-                    name="logo_url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Input {...field} type="url" placeholder="https://example.com/logo.png" disabled={!isEditMode} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="primary_color"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Primary Brand Color</FormLabel>
-                        <div className="flex gap-2">
+                <Form {...form}>
+                  <div>
+                    <Label>Organization Logo</Label>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Upload a logo to personalize your campaigns and emails
+                    </p>
+                    <FormField
+                      control={form.control}
+                      name="logo_url"
+                      render={({ field }) => (
+                        <FormItem>
                           <FormControl>
-                            <Input {...field} type="color" className="w-20 h-10" disabled={!isEditMode} />
+                            <Input {...field} type="url" placeholder="https://example.com/logo.png" disabled={!isEditMode} />
                           </FormControl>
-                          <Input {...field} placeholder="#0066cc" disabled={!isEditMode} />
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="secondary_color"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Secondary Brand Color</FormLabel>
-                        <div className="flex gap-2">
-                          <FormControl>
-                            <Input {...field} type="color" className="w-20 h-10" disabled={!isEditMode} />
-                          </FormControl>
-                          <Input {...field} placeholder="#ff6600" disabled={!isEditMode} />
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm font-medium mb-2">Brand Color Preview</p>
-                  <div className="flex gap-4">
-                    <div 
-                      className="w-20 h-20 rounded-md border"
-                      style={{ backgroundColor: form.watch("primary_color") || "#0066cc" }}
-                    />
-                    <div 
-                      className="w-20 h-20 rounded-md border"
-                      style={{ backgroundColor: form.watch("secondary_color") || "#ff6600" }}
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="primary_color"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Primary Brand Color</FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input {...field} type="color" className="w-20 h-10" disabled={!isEditMode} />
+                            </FormControl>
+                            <Input {...field} placeholder="#0066cc" disabled={!isEditMode} />
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="secondary_color"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Secondary Brand Color</FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input {...field} type="color" className="w-20 h-10" disabled={!isEditMode} />
+                            </FormControl>
+                            <Input {...field} placeholder="#ff6600" disabled={!isEditMode} />
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-sm font-medium mb-2">Brand Color Preview</p>
+                    <div className="flex gap-4">
+                      <div 
+                        className="w-20 h-20 rounded-md border"
+                        style={{ backgroundColor: form.watch("primary_color") || "#0066cc" }}
+                      />
+                      <div 
+                        className="w-20 h-20 rounded-md border"
+                        style={{ backgroundColor: form.watch("secondary_color") || "#ff6600" }}
+                      />
+                    </div>
+                  </div>
+                </Form>
               </CardContent>
             </Card>
           </TabsContent>
