@@ -430,12 +430,12 @@ const Pricing = () => {
                       </tr>
                       <tr className="border-b">
                         <td className="py-4 px-4">Platform Fees</td>
-                        <td className="text-center py-4 px-4 text-destructive">5-8% taken from donation</td>
+                        <td className="text-center py-4 px-4 text-destructive">5-20% taken from donation</td>
                         <td className="text-center py-4 px-4 bg-primary/5 font-semibold text-primary">10% added (donor covers)</td>
                       </tr>
                       <tr className="border-b">
                         <td className="py-4 px-4">Organization Receives</td>
-                        <td className="text-center py-4 px-4">92-95% of donation</td>
+                        <td className="text-center py-4 px-4">80-95% of donation</td>
                         <td className="text-center py-4 px-4 bg-primary/5 font-semibold text-primary">100% of donation ✓</td>
                       </tr>
                       <tr className="border-b">
@@ -446,7 +446,7 @@ const Pricing = () => {
                       <tr>
                         <td className="py-4 px-4 font-semibold">$10,000 Raised</td>
                         <td className="text-center py-4 px-4">
-                          <div className="text-lg">$9,200-$9,500</div>
+                          <div className="text-lg">$8,000-$9,500</div>
                           <div className="text-xs text-muted-foreground">(after fees)</div>
                         </td>
                         <td className="text-center py-4 px-4 bg-primary/5">
