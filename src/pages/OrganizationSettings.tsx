@@ -136,25 +136,22 @@ const OrganizationSettings = () => {
           supabase
             .from("orders")
             .select("total_amount")
-            .eq("payment_status", "completed")
-            .then((result) => {
-              if (!result.data) return { data: [] };
-              return result;
-            }),
+            .eq("payment_status", "completed"),
         ]);
 
         const campaignsCount = typeof campaignsResult === "object" && "count" in campaignsResult 
           ? campaignsResult.count 
           : 0;
 
+        const totalRevenue = ordersResult.data 
+          ? ordersResult.data.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0)
+          : 0;
+
         setStats({
           users: usersResult.count || 0,
           groups: groupsResult.count || 0,
           campaigns: campaignsCount || 0,
-          revenue:
-            ordersResult.data?.reduce((sum: number, order: { total_amount: number }) => {
-              return sum + (order.total_amount || 0);
-            }, 0) || 0,
+          revenue: totalRevenue,
         });
       } catch (error: any) {
         console.error("Error fetching organization data:", error);
