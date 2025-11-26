@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -106,13 +108,14 @@ const Signup = () => {
   };
 
   return (
-    // Clean signup form without school selection
     <div className="min-h-screen flex">
       {/* Left side - Signup Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md space-y-8">
+          <div className="flex justify-center mb-8">
+            <SponsorlyLogo variant="full" theme="light" className="h-16" />
+          </div>
           <div>
-            <SponsorlyLogo variant="full" theme="light" className="mb-8" />
             <h1 className="text-3xl font-semibold mb-2">Sign up</h1>
             <p className="text-muted-foreground">Create your account to get started</p>
           </div>
@@ -236,27 +239,46 @@ const Signup = () => {
         </div>
       </div>
 
-      {/* Right side - Same blue gradient */}
-      <div className="flex-1 bg-gradient-primary relative overflow-hidden">
+      {/* Right side - Blue gradient with testimonial (hidden on mobile) */}
+      <div className="hidden md:flex w-full lg:w-1/2 bg-gradient-primary relative overflow-hidden">
+        {/* Dot pattern overlay */}
         <div 
           className="absolute inset-0 opacity-20"
           style={{
-            backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-            backgroundSize: '20px 20px'
+            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px)',
+            backgroundSize: '30px 30px'
           }}
         />
         
-        <div className="relative h-full flex items-center justify-center p-8">
-          <div className="text-center text-white max-w-lg">
-            <h2 className="text-4xl font-bold mb-6">
-              Join Thousands of Schools
-            </h2>
-            <p className="text-white/90 text-lg leading-relaxed">
-              Schools across the country are already using School Sponsor Connect 
-              to raise funds more effectively. Join them today and start making 
-              fundraising easier for your teams and groups.
-            </p>
-          </div>
+        <div className="relative h-full flex flex-col items-center justify-center p-8 text-center">
+          {/* Headline and description */}
+          <h2 className="text-4xl font-bold text-white mb-4">
+            Join Thousands of Organizations
+          </h2>
+          <p className="text-white/90 text-lg leading-relaxed max-w-xl mb-8">
+            Schools, clubs, and non-profits across the country are already using 
+            Sponsorly to raise funds more effectively. Join them today!
+          </p>
+          
+          {/* Testimonial card */}
+          <Card className="max-w-sm bg-white/95 backdrop-blur-sm border-0 shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-start space-x-4">
+                <Avatar className="w-12 h-12 flex-shrink-0">
+                  <AvatarImage src="/placeholder.svg" alt="Sarah Mitchell" />
+                  <AvatarFallback>SM</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                    "We raised 40% more than last year with Sponsorly. 
+                    The platform made it easy to engage our community and track donations."
+                  </p>
+                  <div className="font-medium text-gray-900">Sarah Mitchell</div>
+                  <div className="text-xs text-gray-600">Executive Director, Local Food Bank</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
