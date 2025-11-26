@@ -50,6 +50,7 @@ import BusinessCampaignAnalytics from "./pages/BusinessCampaignAnalytics";
 import MyFundraising from "./pages/MyFundraising";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
+import { HubSpotTracker } from "./components/HubSpotTracker";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,7 @@ const AppContent = () => {
 
   return (
     <BrowserRouter>
+      <HubSpotTracker />
       <PWAInstallPrompt />
       <Routes>
         <Route path="/" element={<Index />} />
