@@ -4,7 +4,7 @@ const SponsorlyLogo = ({ variant = 'full', theme = 'dark', className = "" }: {
   className?: string 
 }) => {
   const logoSrc = variant === 'full' 
-    ? (theme === 'light' ? '/lovable-uploads/Sponsorly-Logo.jpg' : '/lovable-uploads/Sponsorly-Logo-White.png')
+    ? (theme === 'light' ? '/lovable-uploads/Sponsorly-Logo.png' : '/lovable-uploads/Sponsorly-Logo-White.png')
     : (theme === 'light' ? '/lovable-uploads/Sponsorly-Mark.jpg' : '/lovable-uploads/Sponsorly-Mark-White.png');
   
   // Default sizes if no className provided
