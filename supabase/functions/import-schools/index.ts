@@ -38,21 +38,35 @@ serve(async (req) => {
   }
 
   try {
+    // Check for Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No Authorization header found');
+      throw new Error('No Authorization header provided');
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
     // Verify user is system admin
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Unauthorized');
+    if (userError) {
+      console.error('Auth error:', userError);
+      throw new Error(`Authentication failed: ${userError.message}`);
     }
+    if (!user) {
+      console.error('No user found in session');
+      throw new Error('No authenticated user');
+    }
+
+    console.log('Authenticated user:', user.id);
 
     const { data: profile } = await supabaseClient
       .from('profiles')
