@@ -69,19 +69,41 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
     },
   });
 
-  // Load group types
+  // Load group types filtered by organization type
   useEffect(() => {
     const loadGroupTypes = async () => {
+      if (!organizationUser) return;
+
+      // Get organization type
+      const { data: orgData } = await supabase
+        .from("organizations")
+        .select("organization_type")
+        .eq("id", organizationUser.organization_id)
+        .single();
+
+      const orgType = orgData?.organization_type;
+
+      // Fetch all group types
       const { data } = await supabase
         .from("group_type")
         .select("id, name")
         .order("name");
       
-      if (data) setGroupTypes(data);
+      if (data) {
+        // Filter based on organization type
+        const filtered = data.filter(type => {
+          if (orgType === 'school') {
+            return ['Sports Team', 'Club', 'PTO'].includes(type.name);
+          } else {
+            return ['Program', 'Initiative', 'Chapter', 'Campaign'].includes(type.name);
+          }
+        });
+        setGroupTypes(filtered);
+      }
     };
 
     loadGroupTypes();
-  }, []);
+  }, [organizationUser]);
 
   // Load existing group data when editing
   useEffect(() => {
