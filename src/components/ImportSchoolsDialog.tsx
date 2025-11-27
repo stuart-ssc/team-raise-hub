@@ -146,7 +146,7 @@ export const ImportSchoolsDialog = ({ open, onOpenChange, onImportComplete }: Im
     setFieldMappings(prev =>
       prev.map(mapping =>
         mapping.csvField === csvField
-          ? { ...mapping, schoolField }
+          ? { ...mapping, schoolField: schoolField === "skip" ? "" : schoolField }
           : mapping
       )
     );
@@ -319,14 +319,14 @@ export const ImportSchoolsDialog = ({ open, onOpenChange, onImportComplete }: Im
                       <ArrowRight className="h-4 w-4 text-muted-foreground" />
                       <div className="flex-1">
                         <Select
-                          value={mapping?.schoolField || ""}
+                          value={mapping?.schoolField || "skip"}
                           onValueChange={(value) => updateFieldMapping(header, value)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Skip this field" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Skip this field</SelectItem>
+                            <SelectItem value="skip">Skip this field</SelectItem>
                             {SCHOOL_FIELDS.map((field) => (
                               <SelectItem key={field.value} value={field.value}>
                                 {field.label}
