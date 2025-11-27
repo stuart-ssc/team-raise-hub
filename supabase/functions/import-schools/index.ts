@@ -54,6 +54,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
+    
+    // Alias for database operations
+    const supabaseClient = supabaseAdmin;
 
     // Verify the JWT token and get user
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
