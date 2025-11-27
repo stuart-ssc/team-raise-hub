@@ -15,6 +15,7 @@ interface InviteUserRequest {
   organizationId: string;
   groupId: string | null;
   rosterId: number | null;
+  linkedOrganizationUserId?: string | null;
 }
 
 serve(async (req: Request) => {
@@ -28,7 +29,7 @@ serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { email, firstName, lastName, userTypeId, organizationId, groupId, rosterId }: InviteUserRequest = await req.json();
+    const { email, firstName, lastName, userTypeId, organizationId, groupId, rosterId, linkedOrganizationUserId }: InviteUserRequest = await req.json();
 
     // Check if user already exists in profiles
     const { data: existingProfiles } = await supabaseAdmin
@@ -87,6 +88,7 @@ serve(async (req: Request) => {
         .update({
           user_type_id: userTypeId,
           roster_id: rosterId,
+          linked_organization_user_id: linkedOrganizationUserId,
           active_user: true,
           updated_at: new Date().toISOString()
         })
@@ -108,7 +110,8 @@ serve(async (req: Request) => {
           user_type_id: userTypeId,
           organization_id: organizationId,
           group_id: groupId,
-          roster_id: rosterId
+          roster_id: rosterId,
+          linked_organization_user_id: linkedOrganizationUserId
         });
 
       if (orgUserError) {
