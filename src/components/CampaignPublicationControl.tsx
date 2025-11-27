@@ -19,6 +19,7 @@ interface CampaignPublicationControlProps {
   campaignName: string;
   groupId: string;
   currentStatus: string;
+  enableRosterAttribution?: boolean;
   onStatusChange: () => void;
 }
 
@@ -33,6 +34,7 @@ export const CampaignPublicationControl = ({
   campaignName,
   groupId,
   currentStatus,
+  enableRosterAttribution,
   onStatusChange,
 }: CampaignPublicationControlProps) => {
   const [showDialog, setShowDialog] = useState(false);
@@ -148,6 +150,24 @@ export const CampaignPublicationControl = ({
         .eq("id", campaignId);
 
       if (error) throw error;
+
+      // Auto-generate roster links if publishing a roster-attributed campaign
+      if (newStatus === 'published' && enableRosterAttribution) {
+        try {
+          const { data: linkData, error: linkError } = await supabase.functions.invoke('generate-roster-member-links', {
+            body: { campaignId }
+          });
+
+          if (linkError) {
+            console.error('Error auto-generating roster links:', linkError);
+          } else if (linkData?.count) {
+            console.log(`Auto-generated ${linkData.count} roster member links`);
+          }
+        } catch (linkError) {
+          console.error('Error invoking generate-roster-member-links:', linkError);
+          // Don't block the publish process if link generation fails
+        }
+      }
 
       toast({
         title: "Success",

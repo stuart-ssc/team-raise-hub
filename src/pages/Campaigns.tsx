@@ -386,7 +386,7 @@ export default function Campaigns() {
                                 <Package className="mr-2 h-4 w-4" />
                                 Manage Items
                               </DropdownMenuItem>
-                              {campaign.enable_roster_attribution && (
+                              {campaign.enable_roster_attribution && campaign.publication_status === 'published' && (
                                 <DropdownMenuItem onClick={() => handleGenerateRosterLinks(campaign.id, campaign.name)}>
                                   <LinkIcon className="mr-2 h-4 w-4" />
                                   Generate Roster Links
@@ -408,6 +408,7 @@ export default function Campaigns() {
                             campaignName={campaign.name}
                             groupId={campaign.group_id || ""}
                             currentStatus={campaign.publication_status}
+                            enableRosterAttribution={campaign.enable_roster_attribution}
                             onStatusChange={fetchCampaigns}
                           />
                         </div>
@@ -547,6 +548,7 @@ export default function Campaigns() {
                             campaignName={campaign.name}
                             groupId={campaign.group_id || ""}
                             currentStatus={campaign.publication_status}
+                            enableRosterAttribution={campaign.enable_roster_attribution}
                             onStatusChange={fetchCampaigns}
                           />
                         </TableCell>
@@ -578,7 +580,7 @@ export default function Campaigns() {
                                 <Package className="mr-2 h-4 w-4" />
                                 Manage Campaign Items
                               </DropdownMenuItem>
-                              {campaign.enable_roster_attribution && (
+                              {campaign.enable_roster_attribution && campaign.publication_status === 'published' && (
                                 <DropdownMenuItem 
                                   className="cursor-pointer"
                                   onClick={() => handleGenerateRosterLinks(campaign.id, campaign.name)}
