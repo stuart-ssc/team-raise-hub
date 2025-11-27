@@ -180,6 +180,18 @@ export const ImportSchoolsDialog = ({ open, onOpenChange, onImportComplete }: Im
   const handleImport = async () => {
     setImporting(true);
     try {
+      // Verify we have a valid session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in again to continue.",
+          variant: "destructive",
+        });
+        setImporting(false);
+        return;
+      }
+
       // Transform CSV data according to mappings
       const schools = csvData.map(row => {
         const school: any = {};
