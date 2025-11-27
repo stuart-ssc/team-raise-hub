@@ -1,4 +1,4 @@
-import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, Trophy } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -7,6 +7,7 @@ import { getLabel } from "@/lib/terminology";
 const sidebarItems = [
   { title: "Home", icon: Home, url: "/dashboard", end: true },
   { title: "My Orders", icon: Package, url: "/dashboard/orders" },
+  { title: "My Fundraising", icon: Trophy, url: "/dashboard/my-fundraising", participantOnly: true },
   { title: "Groups", icon: Users, url: "/dashboard/groups" },
   { title: "Campaigns", icon: Target, url: "/dashboard/campaigns" },
   { title: "Donors", icon: Heart, url: "/dashboard/donors" },
@@ -55,8 +56,13 @@ const DashboardSidebar = () => {
             const Icon = item.icon;
             const active = isActive(item.url, item.end);
             
-            // Hide Users, Campaigns, Donors, and Businesses menu items for unauthorized roles
-            if ((item.title === "Users" || item.title === "Campaigns" || item.title === "Donors" || item.title === "Businesses") && !canSeeUsers) {
+            // Hide admin/manager items from participants
+            if ((item.title === "Users" || item.title === "Campaigns" || item.title === "Donors" || item.title === "Businesses" || item.title === "Groups" || item.title === "Reports") && !canSeeUsers) {
+              return null;
+            }
+            
+            // Show participant-only items only for participants/supporters
+            if (item.participantOnly && canSeeUsers) {
               return null;
             }
             
