@@ -9,6 +9,9 @@ verify_jwt = true
 [functions.import-businesses]
 verify_jwt = true
 
+[functions.import-schools]
+verify_jwt = true
+
 [functions.bulk-tag-businesses]
 verify_jwt = true
 

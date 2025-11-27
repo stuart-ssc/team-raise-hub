@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, Building2, FileCheck, Mail, FlaskConical, Briefcase, BarChart3, MessageSquare } from "lucide-react";
+import { Home, Building2, FileCheck, Mail, FlaskConical, Briefcase, BarChart3, MessageSquare, GraduationCap } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import SponsorlyLogo from "./SponsorlyLogo";
 
@@ -24,6 +24,11 @@ const sidebarItems = [
     title: "Businesses",
     icon: Briefcase,
     url: "/system-admin/businesses",
+  },
+  {
+    title: "School Import",
+    icon: GraduationCap,
+    url: "/system-admin/school-import",
   },
   {
     title: "Verification Queue",
