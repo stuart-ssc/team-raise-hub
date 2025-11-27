@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { AddCampaignForm } from "@/components/AddCampaignForm";
 import { CampaignPublicationControl } from "@/components/CampaignPublicationControl";
-import { ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Package, X, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Package, X, ExternalLink, Link as LinkIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Campaign {
@@ -34,6 +34,7 @@ interface Campaign {
   campaign_type_id?: string;
   slug?: string;
   image_url?: string | null;
+  enable_roster_attribution?: boolean;
 }
 
 export default function Campaigns() {
@@ -133,6 +134,7 @@ export default function Campaigns() {
         campaign_type_id: campaign.campaign_type_id,
         slug: campaign.slug,
         image_url: campaign.image_url,
+        enable_roster_attribution: campaign.enable_roster_attribution,
       }));
 
       console.log("Formatted campaigns:", formattedCampaigns);
@@ -174,6 +176,28 @@ export default function Campaigns() {
         title: "Error",
         description: "Failed to update campaign status",
         variant: "destructive",
+      });
+    }
+  };
+
+  const handleGenerateRosterLinks = async (campaignId: string, campaignName: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-roster-member-links', {
+        body: { campaignId }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Generated ${data.count} shareable links for ${campaignName}`,
+      });
+    } catch (error) {
+      console.error('Error generating roster links:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to generate roster links",
       });
     }
   };
@@ -362,6 +386,12 @@ export default function Campaigns() {
                                 <Package className="mr-2 h-4 w-4" />
                                 Manage Items
                               </DropdownMenuItem>
+                              {campaign.enable_roster_attribution && (
+                                <DropdownMenuItem onClick={() => handleGenerateRosterLinks(campaign.id, campaign.name)}>
+                                  <LinkIcon className="mr-2 h-4 w-4" />
+                                  Generate Roster Links
+                                </DropdownMenuItem>
+                              )}
                               {campaign.slug && (
                                 <DropdownMenuItem onClick={() => window.open(`/campaign/${campaign.slug}`, '_blank')}>
                                   <ExternalLink className="mr-2 h-4 w-4" />
@@ -548,6 +578,15 @@ export default function Campaigns() {
                                 <Package className="mr-2 h-4 w-4" />
                                 Manage Campaign Items
                               </DropdownMenuItem>
+                              {campaign.enable_roster_attribution && (
+                                <DropdownMenuItem 
+                                  className="cursor-pointer"
+                                  onClick={() => handleGenerateRosterLinks(campaign.id, campaign.name)}
+                                >
+                                  <LinkIcon className="mr-2 h-4 w-4" />
+                                  Generate Roster Links
+                                </DropdownMenuItem>
+                              )}
                               {campaign.slug && (
                                 <DropdownMenuItem 
                                   className="cursor-pointer"
