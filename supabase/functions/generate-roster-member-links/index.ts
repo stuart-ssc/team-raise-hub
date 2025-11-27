@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
 
     // Get all roster members
     let rosterQuery = supabaseClient
-      .from('school_user')
+      .from('organization_user')
       .select(`
         id,
         user_id,
