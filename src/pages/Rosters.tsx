@@ -531,11 +531,12 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
          </>
        )}
 
-       <NewRosterForm
-         open={showNewRosterForm}
-         onOpenChange={setShowNewRosterForm}
-         onSubmit={handleCreateRoster}
-       />
+      <NewRosterForm
+        open={showNewRosterForm}
+        onOpenChange={setShowNewRosterForm}
+        onSubmit={handleCreateRoster}
+        existingYears={availableYears}
+      />
      </div>
    );
 };
