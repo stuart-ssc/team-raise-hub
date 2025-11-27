@@ -28,6 +28,7 @@ interface ImportResult {
   imported: number;
   updated: number;
   skipped: number;
+  districtsCreated: number;
   errors: Array<{ row: number; school_name: string; error: string }>;
 }
 
@@ -74,8 +75,12 @@ serve(async (req) => {
       imported: 0,
       updated: 0,
       skipped: 0,
+      districtsCreated: 0,
       errors: [],
     };
+
+    // District cache to avoid repeated lookups: "district_name|state" -> district_id
+    const districtCache = new Map<string, string>();
 
     for (let i = 0; i < schools.length; i++) {
       const school = schools[i];
@@ -90,6 +95,48 @@ serve(async (req) => {
             error: 'School name is required',
           });
           continue;
+        }
+
+        // Handle district lookup/creation if district name provided
+        let districtId: string | null = null;
+        if (school.school_district?.trim() && school.state?.trim()) {
+          const districtKey = `${school.school_district.trim()}|${school.state.trim()}`;
+          
+          // Check cache first
+          if (districtCache.has(districtKey)) {
+            districtId = districtCache.get(districtKey)!;
+          } else {
+            // Query for existing district
+            const { data: existingDistrict } = await supabaseClient
+              .from('school_districts')
+              .select('id')
+              .eq('name', school.school_district.trim())
+              .eq('state_id', school.state.trim())
+              .single();
+
+            if (existingDistrict) {
+              districtId = existingDistrict.id;
+              districtCache.set(districtKey, districtId);
+            } else {
+              // Create new district
+              const { data: newDistrict, error: districtError } = await supabaseClient
+                .from('school_districts')
+                .insert({
+                  name: school.school_district.trim(),
+                  state_id: school.state.trim(),
+                })
+                .select('id')
+                .single();
+
+              if (districtError) {
+                console.error(`Error creating district ${school.school_district}:`, districtError);
+              } else if (newDistrict) {
+                districtId = newDistrict.id;
+                districtCache.set(districtKey, districtId);
+                result.districtsCreated++;
+              }
+            }
+          }
         }
 
         // Check for existing school (by name + city + state)
@@ -127,6 +174,7 @@ serve(async (req) => {
               .update({
                 school_name: school.school_name.trim(),
                 district_name: school.school_district?.trim() || null,
+                school_district_id: districtId,
                 county_name: school.county?.trim() || null,
                 street_address: school.street_address?.trim() || null,
                 city: school.city?.trim() || null,
@@ -171,6 +219,7 @@ serve(async (req) => {
             organization_id: newOrg.id,
             school_name: school.school_name.trim(),
             district_name: school.school_district?.trim() || null,
+            school_district_id: districtId,
             county_name: school.county?.trim() || null,
             street_address: school.street_address?.trim() || null,
             city: school.city?.trim() || null,
