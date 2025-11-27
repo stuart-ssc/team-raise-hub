@@ -38,7 +38,6 @@ serve(async (req) => {
   }
 
   try {
-    // Get Authorization header
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -46,19 +45,15 @@ serve(async (req) => {
       throw new Error('Invalid Authorization header');
     }
 
-    // Extract the JWT token
     const token = authHeader.replace('Bearer ', '');
     
-    // Use service role client to verify the JWT and get user
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
     
-    // Alias for database operations
     const supabaseClient = supabaseAdmin;
 
-    // Verify the JWT token and get user
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
     
     if (userError || !user) {
@@ -68,7 +63,6 @@ serve(async (req) => {
 
     console.log('Authenticated user:', user.id);
 
-    // Verify user is system admin
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('system_admin')
@@ -97,169 +91,203 @@ serve(async (req) => {
       errors: [],
     };
 
-    // District cache to avoid repeated lookups: "district_name|state" -> district_id
     const districtCache = new Map<string, string>();
+    const stateCache = new Map<string, number>();
 
-    for (let i = 0; i < schools.length; i++) {
-      const school = schools[i];
-      const rowNum = i + 2; // Account for header row
+    const BATCH_SIZE = 50;
+    
+    for (let batchStart = 0; batchStart < schools.length; batchStart += BATCH_SIZE) {
+      const batchEnd = Math.min(batchStart + BATCH_SIZE, schools.length);
+      const batch = schools.slice(batchStart, batchEnd);
+      
+      console.log(`Processing batch ${Math.floor(batchStart / BATCH_SIZE) + 1}: rows ${batchStart + 2} to ${batchEnd + 1}`);
+      
+      for (let i = 0; i < batch.length; i++) {
+        const school = batch[i];
+        const rowNum = batchStart + i + 2;
 
-      try {
-        // Validate required field
-        if (!school.school_name?.trim()) {
-          result.errors.push({
-            row: rowNum,
-            school_name: school.school_name || 'N/A',
-            error: 'School name is required',
-          });
-          continue;
-        }
+        try {
+          if (!school.school_name?.trim()) {
+            result.errors.push({
+              row: rowNum,
+              school_name: school.school_name || 'N/A',
+              error: 'School name is required',
+            });
+            continue;
+          }
 
-        // Handle district lookup/creation if district name provided
-        let districtId: string | null = null;
-        if (school.school_district?.trim() && school.state?.trim()) {
-          const districtKey = `${school.school_district.trim()}|${school.state.trim()}`;
-          
-          // Check cache first
-          if (districtCache.has(districtKey)) {
-            districtId = districtCache.get(districtKey)!;
-          } else {
-            // Query for existing district
-            const { data: existingDistrict } = await supabaseClient
-              .from('school_districts')
-              .select('id')
-              .eq('name', school.school_district.trim())
-              .eq('state_id', school.state.trim())
-              .single();
-
-            if (existingDistrict) {
-              districtId = existingDistrict.id;
-              districtCache.set(districtKey, districtId);
+          let districtId: string | null = null;
+          if (school.school_district?.trim() && school.state?.trim()) {
+            const districtKey = `${school.school_district.trim()}|${school.state.trim()}`;
+            
+            if (districtCache.has(districtKey)) {
+              districtId = districtCache.get(districtKey)!;
             } else {
-              // Create new district
-              const { data: newDistrict, error: districtError } = await supabaseClient
+              let stateId: number | null = null;
+              const stateCode = school.state.trim().toUpperCase();
+              
+              if (stateCache.has(stateCode)) {
+                stateId = stateCache.get(stateCode)!;
+              } else {
+                const { data: stateData } = await supabaseClient
+                  .from('states')
+                  .select('id')
+                  .eq('state_code', stateCode)
+                  .single();
+                
+                if (stateData) {
+                  stateId = stateData.id;
+                  stateCache.set(stateCode, stateId);
+                }
+              }
+              
+              if (!stateId) {
+                console.error(`State not found: ${stateCode}`);
+                result.errors.push({
+                  row: rowNum,
+                  school_name: school.school_name,
+                  error: `State not found: ${stateCode}`,
+                });
+                continue;
+              }
+              
+              const { data: existingDistrict } = await supabaseClient
                 .from('school_districts')
-                .insert({
-                  name: school.school_district.trim(),
-                  state_id: school.state.trim(),
-                })
                 .select('id')
+                .eq('name', school.school_district.trim())
+                .eq('state_id', stateId)
                 .single();
 
-              if (districtError) {
-                console.error(`Error creating district ${school.school_district}:`, districtError);
-              } else if (newDistrict) {
-                districtId = newDistrict.id;
+              if (existingDistrict) {
+                districtId = existingDistrict.id;
                 districtCache.set(districtKey, districtId);
-                result.districtsCreated++;
+              } else {
+                const { data: newDistrict, error: districtError } = await supabaseClient
+                  .from('school_districts')
+                  .insert({
+                    name: school.school_district.trim(),
+                    state_id: stateId,
+                  })
+                  .select('id')
+                  .single();
+
+                if (districtError) {
+                  console.error(`Error creating district ${school.school_district}:`, districtError);
+                  result.errors.push({
+                    row: rowNum,
+                    school_name: school.school_name,
+                    error: `Failed to create district: ${districtError.message}`,
+                  });
+                  continue;
+                } else if (newDistrict) {
+                  districtId = newDistrict.id;
+                  districtCache.set(districtKey, districtId);
+                  result.districtsCreated++;
+                }
               }
             }
           }
-        }
 
-        // Check for existing school (by name + city + state)
-        const { data: existingSchools } = await supabaseClient
-          .from('schools')
-          .select('id, organization_id')
-          .eq('school_name', school.school_name.trim())
-          .eq('city', school.city?.trim() || '')
-          .eq('state', school.state?.trim() || '');
+          const { data: existingSchools } = await supabaseClient
+            .from('schools')
+            .select('id, organization_id')
+            .eq('school_name', school.school_name.trim())
+            .eq('city', school.city?.trim() || '')
+            .eq('state', school.state?.trim() || '');
 
-        if (existingSchools && existingSchools.length > 0) {
-          // School already exists
-          if (updateExisting) {
-            const existingSchool = existingSchools[0];
+          if (existingSchools && existingSchools.length > 0) {
+            if (updateExisting) {
+              const existingSchool = existingSchools[0];
 
-            // Update organization record
-            const { error: orgUpdateError } = await supabaseClient
-              .from('organizations')
-              .update({
-                name: school.school_name.trim(),
-                city: school.city?.trim() || null,
-                state: school.state?.trim() || null,
-                zip: school.zipcode?.trim() || null,
-                phone: school.phone_number?.trim() || null,
-                address_line1: school.street_address?.trim() || null,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', existingSchool.organization_id);
+              const { error: orgUpdateError } = await supabaseClient
+                .from('organizations')
+                .update({
+                  name: school.school_name.trim(),
+                  city: school.city?.trim() || null,
+                  state: school.state?.trim() || null,
+                  zip: school.zipcode?.trim() || null,
+                  phone: school.phone_number?.trim() || null,
+                  address_line1: school.street_address?.trim() || null,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', existingSchool.organization_id);
 
-            if (orgUpdateError) throw orgUpdateError;
+              if (orgUpdateError) throw orgUpdateError;
 
-            // Update school record
-            const { error: schoolUpdateError } = await supabaseClient
-              .from('schools')
-              .update({
-                school_name: school.school_name.trim(),
-                district_name: school.school_district?.trim() || null,
-                school_district_id: districtId,
-                county_name: school.county?.trim() || null,
-                street_address: school.street_address?.trim() || null,
-                city: school.city?.trim() || null,
-                state: school.state?.trim() || null,
-                zip: school.zipcode?.trim() || null,
-                zip_4_digit: school.zipcode_4_digit?.trim() || null,
-                phone: school.phone_number?.trim() || null,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', existingSchool.id);
+              const { error: schoolUpdateError } = await supabaseClient
+                .from('schools')
+                .update({
+                  school_name: school.school_name.trim(),
+                  district_name: school.school_district?.trim() || null,
+                  school_district_id: districtId,
+                  county_name: school.county?.trim() || null,
+                  street_address: school.street_address?.trim() || null,
+                  city: school.city?.trim() || null,
+                  state: school.state?.trim() || null,
+                  zip: school.zipcode?.trim() || null,
+                  zip_4_digit: school.zipcode_4_digit?.trim() || null,
+                  phone: school.phone_number?.trim() || null,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', existingSchool.id);
 
-            if (schoolUpdateError) throw schoolUpdateError;
+              if (schoolUpdateError) throw schoolUpdateError;
 
-            result.updated++;
-          } else {
-            result.skipped++;
+              result.updated++;
+            } else {
+              result.skipped++;
+            }
+            continue;
           }
-          continue;
-        }
 
-        // Create new organization first
-        const { data: newOrg, error: orgError } = await supabaseClient
-          .from('organizations')
-          .insert({
-            organization_type: 'school',
-            name: school.school_name.trim(),
-            city: school.city?.trim() || null,
-            state: school.state?.trim() || null,
-            zip: school.zipcode?.trim() || null,
-            phone: school.phone_number?.trim() || null,
-            address_line1: school.street_address?.trim() || null,
-          })
-          .select()
-          .single();
+          const { data: newOrg, error: orgError } = await supabaseClient
+            .from('organizations')
+            .insert({
+              organization_type: 'school',
+              name: school.school_name.trim(),
+              city: school.city?.trim() || null,
+              state: school.state?.trim() || null,
+              zip: school.zipcode?.trim() || null,
+              phone: school.phone_number?.trim() || null,
+              address_line1: school.street_address?.trim() || null,
+            })
+            .select()
+            .single();
 
-        if (orgError) throw orgError;
+          if (orgError) throw orgError;
 
-        // Create school record linked to organization
-        const { error: schoolError } = await supabaseClient
-          .from('schools')
-          .insert({
-            organization_id: newOrg.id,
-            school_name: school.school_name.trim(),
-            district_name: school.school_district?.trim() || null,
-            school_district_id: districtId,
-            county_name: school.county?.trim() || null,
-            street_address: school.street_address?.trim() || null,
-            city: school.city?.trim() || null,
-            state: school.state?.trim() || null,
-            zip: school.zipcode?.trim() || null,
-            zip_4_digit: school.zipcode_4_digit?.trim() || null,
-            phone: school.phone_number?.trim() || null,
-            school_subtype: 'public',
+          const { error: schoolError } = await supabaseClient
+            .from('schools')
+            .insert({
+              organization_id: newOrg.id,
+              school_name: school.school_name.trim(),
+              district_name: school.school_district?.trim() || null,
+              school_district_id: districtId,
+              county_name: school.county?.trim() || null,
+              street_address: school.street_address?.trim() || null,
+              city: school.city?.trim() || null,
+              state: school.state?.trim() || null,
+              zip: school.zipcode?.trim() || null,
+              zip_4_digit: school.zipcode_4_digit?.trim() || null,
+              phone: school.phone_number?.trim() || null,
+              school_subtype: 'public',
+            });
+
+          if (schoolError) throw schoolError;
+
+          result.imported++;
+
+        } catch (error) {
+          console.error(`Error processing row ${rowNum}:`, error);
+          result.errors.push({
+            row: rowNum,
+            school_name: school.school_name || 'Unknown',
+            error: error.message || 'Unknown error occurred',
           });
-
-        if (schoolError) throw schoolError;
-
-        result.imported++;
-
-      } catch (error) {
-        console.error(`Error processing row ${rowNum}:`, error);
-        result.errors.push({
-          row: rowNum,
-          school_name: school.school_name || 'Unknown',
-          error: error.message || 'Unknown error occurred',
-        });
+        }
       }
+      
+      console.log(`Batch ${Math.floor(batchStart / BATCH_SIZE) + 1} complete: ${result.imported} imported, ${result.updated} updated, ${result.skipped} skipped, ${result.errors.length} errors`);
     }
 
     return new Response(JSON.stringify(result), {
