@@ -178,6 +178,8 @@ export const ImportSchoolsDialog = ({ open, onOpenChange, onImportComplete }: Im
     });
   };
 
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
+
   const handleImport = async () => {
     setImporting(true);
     try {
@@ -204,28 +206,70 @@ export const ImportSchoolsDialog = ({ open, onOpenChange, onImportComplete }: Im
         return school;
       });
 
-      const { data, error } = await supabase.functions.invoke("import-schools", {
-        body: {
-          schools,
-          updateExisting,
-        },
-      });
+      // Split into chunks of 200 schools to avoid CPU timeout
+      const CHUNK_SIZE = 200;
+      const chunks: any[][] = [];
+      for (let i = 0; i < schools.length; i += CHUNK_SIZE) {
+        chunks.push(schools.slice(i, i + CHUNK_SIZE));
+      }
 
-      if (error) throw error;
+      // Aggregate results across all chunks
+      let totalImported = 0;
+      let totalUpdated = 0;
+      let totalSkipped = 0;
+      let totalDistrictsCreated = 0;
+      const allErrors: Array<{ row: number; school_name: string; error: string }> = [];
 
-      setImportResult(data as ImportResult);
+      // Process each chunk sequentially
+      for (let i = 0; i < chunks.length; i++) {
+        setImportProgress({ current: i + 1, total: chunks.length });
+
+        const { data, error } = await supabase.functions.invoke("import-schools", {
+          body: {
+            schools: chunks[i],
+            updateExisting,
+          },
+        });
+
+        if (error) throw error;
+
+        // Aggregate results
+        totalImported += data.imported || 0;
+        totalUpdated += data.updated || 0;
+        totalSkipped += data.skipped || 0;
+        totalDistrictsCreated += data.districtsCreated || 0;
+        
+        // Adjust row numbers in errors to match original CSV
+        const chunkErrors = (data.errors || []).map((err: any) => ({
+          ...err,
+          row: err.row + (i * CHUNK_SIZE),
+        }));
+        allErrors.push(...chunkErrors);
+      }
+
+      // Set final aggregated results
+      const finalResult: ImportResult = {
+        success: true,
+        imported: totalImported,
+        updated: totalUpdated,
+        skipped: totalSkipped,
+        districtsCreated: totalDistrictsCreated,
+        errors: allErrors,
+      };
+
+      setImportResult(finalResult);
       setStep(4);
 
-      if (data.errors.length === 0) {
+      if (allErrors.length === 0) {
         toast({
           title: "Import Successful",
-          description: `${data.imported} schools imported, ${data.updated} updated`,
+          description: `${totalImported} schools imported, ${totalUpdated} updated`,
         });
         onImportComplete();
       } else {
         toast({
           title: "Import Completed with Errors",
-          description: `${data.imported + data.updated} successful, ${data.errors.length} errors`,
+          description: `${totalImported + totalUpdated} successful, ${allErrors.length} errors`,
           variant: "destructive",
         });
       }
@@ -238,6 +282,7 @@ export const ImportSchoolsDialog = ({ open, onOpenChange, onImportComplete }: Im
       });
     } finally {
       setImporting(false);
+      setImportProgress({ current: 0, total: 0 });
     }
   };
 
@@ -415,6 +460,9 @@ export const ImportSchoolsDialog = ({ open, onOpenChange, onImportComplete }: Im
                   <p className="text-sm text-muted-foreground">
                     {csvData.length} schools • {updateExisting ? "Will update existing" : "Skip existing"}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Large files will be processed in chunks of 200 schools
+                  </p>
                 </div>
               </div>
             </div>
@@ -524,7 +572,9 @@ export const ImportSchoolsDialog = ({ open, onOpenChange, onImportComplete }: Im
                 {importing ? (
                   <>
                     <Upload className="mr-2 h-4 w-4 animate-pulse" />
-                    Importing...
+                    {importProgress.total > 0 
+                      ? `Processing chunk ${importProgress.current} of ${importProgress.total}...`
+                      : "Importing..."}
                   </>
                 ) : (
                   <>
