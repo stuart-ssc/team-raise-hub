@@ -145,13 +145,16 @@ export const AddParticipantForm = ({ groupId, groupName, groupTypeName, organiza
       return;
     }
 
+    // Validate that Family Member has a linked player
+    const selectedUserTypeName = userTypes.find(ut => ut.id === selectedUserType)?.name;
+    if (selectedUserTypeName === 'Family Member' && !linkedPlayerId) {
+      return;
+    }
+
     setLoading(true);
 
     try {
       let userId: string;
-
-      // Get selected user type name
-      const selectedUserTypeName = userTypes.find(ut => ut.id === selectedUserType)?.name;
 
       // Use edge function to create user without affecting current session
       const { data: inviteData, error: inviteError } = await supabase.functions.invoke('invite-user', {
@@ -163,7 +166,7 @@ export const AddParticipantForm = ({ groupId, groupName, groupTypeName, organiza
           organizationId,
           groupId,
           rosterId: parseInt(selectedRoster),
-          linkedOrganizationUserId: selectedUserTypeName === 'Family Member' ? linkedPlayerId : null,
+          linkedOrganizationUserId: linkedPlayerId || null,
         }
       });
 
@@ -266,30 +269,47 @@ export const AddParticipantForm = ({ groupId, groupName, groupTypeName, organiza
               </Select>
             </div>
 
-            {userTypes.find(ut => ut.id === selectedUserType)?.name === 'Family Member' && (
-              <div>
-                <Label htmlFor="linkedPlayer">Link to Player/Student *</Label>
-                <Select
-                  value={linkedPlayerId}
-                  onValueChange={setLinkedPlayerId}
-                  required
-                >
-                  <SelectTrigger id="linkedPlayer">
-                    <SelectValue placeholder="Select the player this family member is associated with" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rosterPlayers.map((player) => (
-                      <SelectItem key={player.id} value={player.id}>
-                        {player.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Donations from this family member will be attributed to this player.
-                </p>
-              </div>
-            )}
+            {selectedUserType && rosterPlayers.length > 0 && (() => {
+              const selectedUserTypeName = userTypes.find(ut => ut.id === selectedUserType)?.name;
+              const isFamilyMember = selectedUserTypeName === 'Family Member';
+              
+              return (
+                <div>
+                  <Label htmlFor="linkedPlayer">
+                    Link to Player/Student {isFamilyMember ? '*' : '(Optional)'}
+                  </Label>
+                  <Select
+                    value={linkedPlayerId}
+                    onValueChange={setLinkedPlayerId}
+                    required={isFamilyMember}
+                  >
+                    <SelectTrigger id="linkedPlayer">
+                      <SelectValue placeholder={
+                        isFamilyMember 
+                          ? "Select the player this family member is associated with" 
+                          : "Optionally link to a player for donation attribution"
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {!isFamilyMember && (
+                        <SelectItem value="">None</SelectItem>
+                      )}
+                      {rosterPlayers.map((player) => (
+                        <SelectItem key={player.id} value={player.id}>
+                          {player.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {isFamilyMember 
+                      ? "Donations from this family member will be attributed to this player."
+                      : "If linked, donations from this person will be attributed to the selected player."
+                    }
+                  </p>
+                </div>
+              );
+            })()}
 
             <div className="flex gap-3 pt-4">
               <Button type="button" variant="outline" onClick={onBack}>
