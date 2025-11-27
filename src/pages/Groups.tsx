@@ -17,6 +17,7 @@ interface Group {
   group_name: string;
   school_name: string;
   group_type_name: string;
+  organization_type: 'school' | 'nonprofit';
   status: boolean;
   stripe_account_id?: string;
   stripe_account_enabled?: boolean;
@@ -46,7 +47,7 @@ const Groups = () => {
           id,
           group_name,
           status,
-          organizations!organization_id(name),
+          organizations!organization_id(name, organization_type),
           group_type!group_type_id(name)
         `);
 
@@ -85,6 +86,7 @@ const Groups = () => {
         group_name: group.group_name,
         school_name: group.organizations.name,
         group_type_name: group.group_type.name,
+        organization_type: group.organizations.organization_type,
         status: group.status ?? true,
       }));
 
