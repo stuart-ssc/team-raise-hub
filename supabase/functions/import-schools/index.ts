@@ -132,7 +132,7 @@ serve(async (req) => {
                 const { data: stateData } = await supabaseClient
                   .from('states')
                   .select('id')
-                  .eq('state_code', stateCode)
+                  .eq('abbreviation', stateCode)
                   .single();
                 
                 if (stateData) {
