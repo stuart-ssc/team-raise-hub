@@ -48,6 +48,7 @@ interface ImportResult {
   imported: number;
   updated: number;
   skipped: number;
+  districtsCreated: number;
   errors: Array<{ row: number; school_name: string; error: string }>;
 }
 
@@ -449,6 +450,31 @@ export const ImportSchoolsDialog = ({ open, onOpenChange, onImportComplete }: Im
                   </p>
                 </div>
               </div>
+
+              {importResult.districtsCreated > 0 && (
+                <div className="p-4 rounded-lg border bg-purple-50 dark:bg-purple-950">
+                  <p className="text-sm text-muted-foreground">Districts Created</p>
+                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    {importResult.districtsCreated}
+                  </p>
+                </div>
+              )}
+
+              {importResult.skipped > 0 && (
+                <Alert className="bg-yellow-50 dark:bg-yellow-950 border-yellow-200">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription>
+                    <span className="font-medium">{importResult.skipped} records were skipped</span> because schools 
+                    with matching name, city, and state already exist in the database.
+                    {!updateExisting && (
+                      <span className="block mt-1 text-muted-foreground">
+                        To update existing records instead of skipping them, enable "Update existing schools" 
+                        in the field mapping step before importing.
+                      </span>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {importResult.errors.length > 0 && (
                 <div className="space-y-2">
