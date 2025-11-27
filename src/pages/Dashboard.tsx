@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
+import { getPermissionLevel } from "@/lib/permissions";
+import PlayerDashboard from "@/components/PlayerDashboard";
 const Dashboard = () => {
   const { user } = useAuth();
   const { organizationUser, loading } = useOrganizationUser();
@@ -188,11 +190,20 @@ const Dashboard = () => {
     title: "rmishra@testemail.com",
     role: "Standard"
   }];
+  // Check if user is a participant/supporter to show player dashboard
+  const permissionLevel = organizationUser?.user_type?.permission_level || 
+    getPermissionLevel(organizationUser?.user_type?.name || '');
+  const isPlayer = permissionLevel === 'participant' || permissionLevel === 'supporter';
+
   return (
     <DashboardPageLayout
       showBreadcrumbs={false}
     >
       <div className="space-y-4 md:space-y-6">
+        {isPlayer ? (
+          <PlayerDashboard />
+        ) : (
+          <>
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             <Card>
@@ -454,7 +465,8 @@ const Dashboard = () => {
               )}
             </CardContent>
           </Card>
-        </div>
+        </>
+        )}
 
         {/* Organization Setup Modal */}
         {user && (
@@ -481,6 +493,7 @@ const Dashboard = () => {
           editCampaign={editCampaign}
           manageCampaignId={manageCampaignId}
         />
+      </div>
       </DashboardPageLayout>
     );
   };
