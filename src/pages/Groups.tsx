@@ -47,8 +47,9 @@ const Groups = () => {
           id,
           group_name,
           status,
+          group_type_id,
           organizations!organization_id(name, organization_type),
-          group_type!group_type_id(name)
+          group_type(name)
         `);
 
       // Apply role-based filtering
@@ -84,9 +85,9 @@ const Groups = () => {
       const formattedGroups: Group[] = (data || []).map((group: any) => ({
         id: group.id,
         group_name: group.group_name,
-        school_name: group.organizations.name,
-        group_type_name: group.group_type.name,
-        organization_type: group.organizations.organization_type,
+        school_name: group.organizations?.name || 'Unknown',
+        group_type_name: group.group_type?.name || 'Uncategorized',
+        organization_type: group.organizations?.organization_type,
         status: group.status ?? true,
       }));
 
