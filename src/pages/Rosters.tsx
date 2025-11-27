@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ArrowLeft } from "lucide-react";
+import { ChevronDown, ArrowLeft, Plus, UserPlus } from "lucide-react";
 import { NewRosterForm } from "@/components/NewRosterForm";
 import { AddParticipantForm } from "@/components/AddParticipantForm";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { toast } from "@/hooks/use-toast";
@@ -249,6 +250,10 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
   };
 
   const handleYearChange = (year: string) => {
+    if (year === "new") {
+      setShowNewRosterForm(true);
+      return;
+    }
     setSelectedYear(year);
     const selectedRoster = rosters.find(roster => roster.roster_year.toString() === year);
     if (selectedRoster) {
@@ -386,6 +391,13 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
                     {year}
                   </SelectItem>
                 ))}
+                <Separator className="my-1" />
+                <SelectItem value="new">
+                  <span className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    New Roster
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
 
@@ -401,19 +413,12 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
               </SelectContent>
             </Select>
 
-               {/* New Button */}
+               {/* Add Participant Button */}
                 <Button 
                   className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  onClick={() => setShowNewRosterForm(true)}
-                >
-                  New Roster
-                </Button>
-
-                {/* Add Participant Button */}
-                <Button 
-                  variant="outline"
                   onClick={() => setShowAddParticipantForm(true)}
                 >
+                  <UserPlus className="mr-2 h-4 w-4" />
                   Add Participant
                 </Button>
              </div>
