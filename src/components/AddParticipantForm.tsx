@@ -27,13 +27,15 @@ interface Roster {
 interface AddParticipantFormProps {
   groupId: string;
   groupName: string;
+  groupTypeName: string;
+  organizationType: 'school' | 'nonprofit';
   organizationId: string;
   rosters: Roster[];
   onBack: () => void;
   onSuccess: () => void;
 }
 
-export const AddParticipantForm = ({ groupId, groupName, organizationId, rosters, onBack, onSuccess }: AddParticipantFormProps) => {
+export const AddParticipantForm = ({ groupId, groupName, groupTypeName, organizationType, organizationId, rosters, onBack, onSuccess }: AddParticipantFormProps) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -50,12 +52,26 @@ export const AddParticipantForm = ({ groupId, groupName, organizationId, rosters
       setSelectedRoster(currentRoster.id.toString());
     }
 
-    // Fetch user types
+    // Fetch user types based on organization type and group type
     const fetchUserTypes = async () => {
+      // Determine which user types to fetch based on organization and group type
+      let allowedUserTypes: string[] = [];
+      
+      if (organizationType === 'nonprofit') {
+        // Non-profit programs show non-profit roles
+        allowedUserTypes = ['Executive Director', 'Board Member', 'Program Director', 'Volunteer'];
+      } else if (groupTypeName === 'Sports Team') {
+        // School sports teams
+        allowedUserTypes = ['Coach', 'Booster Leader', 'Team Player', 'Family Member'];
+      } else {
+        // School clubs and PTOs
+        allowedUserTypes = ['Club Sponsor', 'Club Participant', 'Family Member'];
+      }
+      
       const { data, error } = await supabase
         .from("user_type")
         .select("id, name")
-        .not("name", "in", '("Principal","Athletic Director","Sponsor")')
+        .in("name", allowedUserTypes)
         .order("name");
 
       if (!error && data) {

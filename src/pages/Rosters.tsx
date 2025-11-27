@@ -62,6 +62,7 @@ interface Group {
   group_name: string;
   school_name: string;
   group_type_name: string;
+  organization_type: 'school' | 'nonprofit';
   status: boolean;
 }
 
@@ -353,6 +354,8 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
           <AddParticipantForm
             groupId={selectedGroup.id}
             groupName={selectedGroup.group_name}
+            groupTypeName={selectedGroup.group_type_name}
+            organizationType={selectedGroup.organization_type}
             organizationId={organizationUser?.organization_id || ""}
             rosters={rosters}
            onBack={() => setShowAddParticipantForm(false)}
