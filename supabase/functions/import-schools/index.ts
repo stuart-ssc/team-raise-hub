@@ -38,47 +38,34 @@ serve(async (req) => {
   }
 
   try {
-    // Check for Authorization header
+    // Get Authorization header
     const authHeader = req.headers.get('Authorization');
-    console.log('Authorization header present:', !!authHeader);
-    console.log('Authorization header starts with Bearer:', authHeader?.startsWith('Bearer '));
     
-    if (!authHeader) {
-      console.error('No Authorization header found');
-      throw new Error('No Authorization header provided');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('Invalid or missing Authorization header');
+      throw new Error('Invalid Authorization header');
     }
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    );
-
-    // Verify user is authenticated and get user info
-    console.log('Attempting to get user from JWT...');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    // Extract the JWT token
+    const token = authHeader.replace('Bearer ', '');
     
-    if (userError) {
-      console.error('Auth error:', userError.message, userError);
-      throw new Error(`Authentication failed: ${userError.message}`);
-    }
-    if (!user) {
-      console.error('No user found in session');
-      throw new Error('No authenticated user');
-    }
-
-    console.log('Authenticated user:', user.id);
-
-    // Verify user is system admin using service role client
+    // Use service role client to verify the JWT and get user
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
+    // Verify the JWT token and get user
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.error('JWT verification failed:', userError?.message);
+      throw new Error(`Authentication failed: ${userError?.message || 'Invalid token'}`);
+    }
+
+    console.log('Authenticated user:', user.id);
+
+    // Verify user is system admin
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('system_admin')
@@ -90,7 +77,7 @@ serve(async (req) => {
       throw new Error('System admin access required');
     }
 
-    console.log('System admin verified:', user.id);
+    console.log('System admin verified');
 
     const { schools, updateExisting }: ImportRequest = await req.json();
 
