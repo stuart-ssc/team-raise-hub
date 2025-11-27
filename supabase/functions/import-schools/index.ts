@@ -40,6 +40,9 @@ serve(async (req) => {
   try {
     // Check for Authorization header
     const authHeader = req.headers.get('Authorization');
+    console.log('Authorization header present:', !!authHeader);
+    console.log('Authorization header starts with Bearer:', authHeader?.startsWith('Bearer '));
+    
     if (!authHeader) {
       console.error('No Authorization header found');
       throw new Error('No Authorization header provided');
@@ -55,10 +58,12 @@ serve(async (req) => {
       }
     );
 
-    // Verify user is system admin
+    // Verify user is authenticated and get user info
+    console.log('Attempting to get user from JWT...');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
     if (userError) {
-      console.error('Auth error:', userError);
+      console.error('Auth error:', userError.message, userError);
       throw new Error(`Authentication failed: ${userError.message}`);
     }
     if (!user) {
@@ -68,15 +73,24 @@ serve(async (req) => {
 
     console.log('Authenticated user:', user.id);
 
-    const { data: profile } = await supabaseClient
+    // Verify user is system admin using service role client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
+
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('system_admin')
       .eq('id', user.id)
       .single();
 
     if (!profile?.system_admin) {
+      console.error('User is not system admin:', user.id);
       throw new Error('System admin access required');
     }
+
+    console.log('System admin verified:', user.id);
 
     const { schools, updateExisting }: ImportRequest = await req.json();
 
