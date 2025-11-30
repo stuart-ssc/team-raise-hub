@@ -57,12 +57,14 @@ const OrganizationsList = () => {
   const [userStatusFilter, setUserStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [allStates, setAllStates] = useState<{abbreviation: string, name: string}[]>([]);
 
   // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   useEffect(() => {
     fetchOrganizations();
+    fetchStates();
   }, []);
 
   useEffect(() => {
@@ -121,9 +123,16 @@ const OrganizationsList = () => {
     setLoading(false);
   };
 
-
-  // Get unique states for filter dropdown
-  const uniqueStates = Array.from(new Set(organizations.map(org => org.state).filter(Boolean))).sort();
+  const fetchStates = async () => {
+    const { data, error } = await supabase
+      .from('states')
+      .select('abbreviation, name')
+      .order('name', { ascending: true });
+    
+    if (!error && data) {
+      setAllStates(data);
+    }
+  };
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredOrgs.length / itemsPerPage);
@@ -197,9 +206,9 @@ const OrganizationsList = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All States</SelectItem>
-                      {uniqueStates.map((state) => (
-                        <SelectItem key={state} value={state!}>
-                          {state}
+                      {allStates.map((state) => (
+                        <SelectItem key={state.abbreviation} value={state.abbreviation}>
+                          {state.name} ({state.abbreviation})
                         </SelectItem>
                       ))}
                     </SelectContent>
