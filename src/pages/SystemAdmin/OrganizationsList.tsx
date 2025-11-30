@@ -30,7 +30,7 @@ import {
 import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { AddOrganizationDialog } from "@/components/AddOrganizationDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Plus, Settings } from "lucide-react";
+import { Search, Plus, Settings, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -56,6 +56,8 @@ const OrganizationsList = () => {
   const [orgTypeFilter, setOrgTypeFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [userStatusFilter, setUserStatusFilter] = useState<string>("all");
+  const [sortColumn, setSortColumn] = useState<'name' | 'city' | 'active_user_count' | 'organization_type'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [allStates, setAllStates] = useState<{abbreviation: string, name: string}[]>([]);
@@ -66,6 +68,31 @@ const OrganizationsList = () => {
   // Check if any filter is active
   const hasActiveFilters = debouncedSearch.trim() !== "" || stateFilter !== "all" || 
                            orgTypeFilter !== "all" || userStatusFilter !== "all";
+
+  const handleSort = (column: typeof sortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortableHeader = ({ column, label }: { column: typeof sortColumn; label: string }) => (
+    <TableHead 
+      className="cursor-pointer hover:bg-muted/50 select-none"
+      onClick={() => handleSort(column)}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        {sortColumn === column ? (
+          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+        ) : (
+          <ArrowUpDown className="h-4 w-4 opacity-30" />
+        )}
+      </div>
+    </TableHead>
+  );
 
   // Debounce search input
   useEffect(() => {
@@ -84,7 +111,7 @@ const OrganizationsList = () => {
   useEffect(() => {
     fetchOrganizations();
     setCurrentPage(1);
-  }, [debouncedSearch, orgTypeFilter, stateFilter, userStatusFilter]);
+  }, [debouncedSearch, orgTypeFilter, stateFilter, userStatusFilter, sortColumn, sortDirection]);
 
   const fetchOrganizations = async () => {
     // Don't fetch if no filters are active
@@ -100,7 +127,7 @@ const OrganizationsList = () => {
     let query = supabase
       .from('organizations')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order(sortColumn, { ascending: sortDirection === 'asc' });
     
     // Apply server-side filters
     if (stateFilter !== "all") {
@@ -267,15 +294,15 @@ const OrganizationsList = () => {
               ) : (
                 <>
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                <TableHead>Type</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Active Users</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
+              <TableHeader>
+                <TableRow>
+                  <SortableHeader column="organization_type" label="Type" />
+                  <SortableHeader column="name" label="Name" />
+                  <SortableHeader column="city" label="Location" />
+                  <SortableHeader column="active_user_count" label="Active Users" />
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
                     <TableBody>
                       {paginatedOrgs.map((org) => (
                         <TableRow key={org.id}>
