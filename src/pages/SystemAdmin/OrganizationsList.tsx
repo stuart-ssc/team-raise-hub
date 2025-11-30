@@ -51,7 +51,8 @@ const OrganizationsList = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [filteredOrgs, setFilteredOrgs] = useState<Organization[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [loading, setLoading] = useState(false);
   const [orgTypeFilter, setOrgTypeFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [userStatusFilter, setUserStatusFilter] = useState<string>("all");
@@ -62,60 +63,78 @@ const OrganizationsList = () => {
   // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
 
+  // Check if any filter is active
+  const hasActiveFilters = debouncedSearch.trim() !== "" || stateFilter !== "all" || 
+                           orgTypeFilter !== "all" || userStatusFilter !== "all";
+
+  // Debounce search input
   useEffect(() => {
-    fetchOrganizations();
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Only fetch states on mount, not organizations
+  useEffect(() => {
     fetchStates();
   }, []);
 
+  // Fetch organizations when filters change
   useEffect(() => {
-    let results = organizations;
-    
-    // Apply search filter
-    if (searchQuery) {
-      results = results.filter(org =>
-        org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        org.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        org.state?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    
-    // Apply org type filter
-    if (orgTypeFilter !== "all") {
-      results = results.filter(org => org.organization_type === orgTypeFilter);
-    }
-    
-    // Apply state filter
-    if (stateFilter !== "all") {
-      results = results.filter(org => org.state === stateFilter);
-    }
-    
-    // Apply user status filter
-    if (userStatusFilter === "zero") {
-      results = results.filter(org => org.active_user_count === 0);
-    } else if (userStatusFilter === "1-9") {
-      results = results.filter(org => org.active_user_count >= 1 && org.active_user_count <= 9);
-    } else if (userStatusFilter === "10-49") {
-      results = results.filter(org => org.active_user_count >= 10 && org.active_user_count <= 49);
-    } else if (userStatusFilter === "50-99") {
-      results = results.filter(org => org.active_user_count >= 50 && org.active_user_count <= 99);
-    } else if (userStatusFilter === "100+") {
-      results = results.filter(org => org.active_user_count >= 100);
-    }
-    
-    setFilteredOrgs(results);
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [searchQuery, organizations, orgTypeFilter, stateFilter, userStatusFilter]);
+    fetchOrganizations();
+    setCurrentPage(1);
+  }, [debouncedSearch, orgTypeFilter, stateFilter, userStatusFilter]);
 
   const fetchOrganizations = async () => {
+    // Don't fetch if no filters are active
+    if (!hasActiveFilters) {
+      setOrganizations([]);
+      setFilteredOrgs([]);
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
-    const { data, error } = await supabase
+    
+    let query = supabase
       .from('organizations')
       .select('*')
-      .order('created_at', { ascending: false })
-      .range(0, 9999);
-
+      .order('created_at', { ascending: false });
+    
+    // Apply server-side filters
+    if (stateFilter !== "all") {
+      query = query.eq('state', stateFilter);
+    }
+    
+    if (orgTypeFilter !== "all") {
+      query = query.eq('organization_type', orgTypeFilter as 'school' | 'nonprofit');
+    }
+    
+    if (debouncedSearch.trim()) {
+      query = query.or(`name.ilike.%${debouncedSearch}%,city.ilike.%${debouncedSearch}%`);
+    }
+    
+    // User status filter (active_user_count ranges)
+    if (userStatusFilter === "zero") {
+      query = query.eq('active_user_count', 0);
+    } else if (userStatusFilter === "1-9") {
+      query = query.gte('active_user_count', 1).lte('active_user_count', 9);
+    } else if (userStatusFilter === "10-49") {
+      query = query.gte('active_user_count', 10).lte('active_user_count', 49);
+    } else if (userStatusFilter === "50-99") {
+      query = query.gte('active_user_count', 50).lte('active_user_count', 99);
+    } else if (userStatusFilter === "100+") {
+      query = query.gte('active_user_count', 100);
+    }
+    
+    query = query.limit(1000);
+    
+    const { data, error } = await query;
+    
     if (error) {
       console.error('Error fetching organizations:', error);
+      toast.error('Failed to fetch organizations');
     } else {
       setOrganizations(data || []);
       setFilteredOrgs(data || []);
@@ -233,9 +252,17 @@ const OrganizationsList = () => {
             <CardContent>
               {loading ? (
                 <div className="text-center py-8 text-muted-foreground">Loading organizations...</div>
+              ) : !hasActiveFilters ? (
+                <div className="flex flex-col items-center gap-4 text-muted-foreground text-center py-12">
+                  <Search className="h-12 w-12 opacity-50" />
+                  <div>
+                    <p className="text-lg font-medium">Select a filter to view organizations</p>
+                    <p className="text-sm mt-1">Choose a state, organization type, or search by name to get started</p>
+                  </div>
+                </div>
               ) : filteredOrgs.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  {searchQuery ? "No organizations found matching your search." : "No organizations found."}
+                  No organizations found matching your filters.
                 </div>
               ) : (
                 <>
