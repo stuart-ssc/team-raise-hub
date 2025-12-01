@@ -49,7 +49,7 @@ interface Organization {
 const OrganizationsList = () => {
   const navigate = useNavigate();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [filteredOrgs, setFilteredOrgs] = useState<Organization[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -107,64 +107,79 @@ const OrganizationsList = () => {
     fetchStates();
   }, []);
 
-  // Fetch organizations when filters change
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, orgTypeFilter, stateFilter, userStatusFilter]);
+
+  // Fetch organizations when filters or page changes
   useEffect(() => {
     fetchOrganizations();
-    setCurrentPage(1);
-  }, [debouncedSearch, orgTypeFilter, stateFilter, userStatusFilter, sortColumn, sortDirection]);
+  }, [debouncedSearch, orgTypeFilter, stateFilter, userStatusFilter, sortColumn, sortDirection, currentPage]);
 
   const fetchOrganizations = async () => {
     // Don't fetch if no filters are active
     if (!hasActiveFilters) {
       setOrganizations([]);
-      setFilteredOrgs([]);
+      setTotalCount(0);
       setLoading(false);
       return;
     }
     
     setLoading(true);
     
-    let query = supabase
+    // Helper to apply same filters to both queries
+    const applyFilters = (query: any) => {
+      if (stateFilter !== "all") {
+        query = query.eq('state', stateFilter);
+      }
+      if (orgTypeFilter !== "all") {
+        query = query.eq('organization_type', orgTypeFilter as 'school' | 'nonprofit');
+      }
+      if (debouncedSearch.trim()) {
+        query = query.or(`name.ilike.%${debouncedSearch}%,city.ilike.%${debouncedSearch}%`);
+      }
+      if (userStatusFilter === "zero") {
+        query = query.eq('active_user_count', 0);
+      } else if (userStatusFilter === "1-9") {
+        query = query.gte('active_user_count', 1).lte('active_user_count', 9);
+      } else if (userStatusFilter === "10-49") {
+        query = query.gte('active_user_count', 10).lte('active_user_count', 49);
+      } else if (userStatusFilter === "50-99") {
+        query = query.gte('active_user_count', 50).lte('active_user_count', 99);
+      } else if (userStatusFilter === "100+") {
+        query = query.gte('active_user_count', 100);
+      }
+      return query;
+    };
+    
+    // Get total count
+    let countQuery = supabase
+      .from('organizations')
+      .select('*', { count: 'exact', head: true });
+    countQuery = applyFilters(countQuery);
+    
+    const { count } = await countQuery;
+    setTotalCount(count || 0);
+    
+    // Get current page data
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage - 1;
+    
+    let dataQuery = supabase
       .from('organizations')
       .select('*')
-      .order(sortColumn, { ascending: sortDirection === 'asc' });
+      .order(sortColumn, { ascending: sortDirection === 'asc' })
+      .range(startIndex, endIndex);
+    dataQuery = applyFilters(dataQuery);
     
-    // Apply server-side filters
-    if (stateFilter !== "all") {
-      query = query.eq('state', stateFilter);
-    }
-    
-    if (orgTypeFilter !== "all") {
-      query = query.eq('organization_type', orgTypeFilter as 'school' | 'nonprofit');
-    }
-    
-    if (debouncedSearch.trim()) {
-      query = query.or(`name.ilike.%${debouncedSearch}%,city.ilike.%${debouncedSearch}%`);
-    }
-    
-    // User status filter (active_user_count ranges)
-    if (userStatusFilter === "zero") {
-      query = query.eq('active_user_count', 0);
-    } else if (userStatusFilter === "1-9") {
-      query = query.gte('active_user_count', 1).lte('active_user_count', 9);
-    } else if (userStatusFilter === "10-49") {
-      query = query.gte('active_user_count', 10).lte('active_user_count', 49);
-    } else if (userStatusFilter === "50-99") {
-      query = query.gte('active_user_count', 50).lte('active_user_count', 99);
-    } else if (userStatusFilter === "100+") {
-      query = query.gte('active_user_count', 100);
-    }
-    
-    query = query.limit(1000);
-    
-    const { data, error } = await query;
+    const { data, error } = await dataQuery;
     
     if (error) {
       console.error('Error fetching organizations:', error);
       toast.error('Failed to fetch organizations');
     } else {
       setOrganizations(data || []);
-      setFilteredOrgs(data || []);
     }
     setLoading(false);
   };
@@ -181,10 +196,9 @@ const OrganizationsList = () => {
   };
 
   // Pagination calculations
-  const totalPages = Math.ceil(filteredOrgs.length / itemsPerPage);
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedOrgs = filteredOrgs.slice(startIndex, endIndex);
+  const endIndex = Math.min(startIndex + itemsPerPage, totalCount);
 
   // Smart pagination helper: shows limited page numbers with ellipsis
   const getVisiblePages = () => {
@@ -287,7 +301,7 @@ const OrganizationsList = () => {
                     <p className="text-sm mt-1">Choose a state, organization type, or search by name to get started</p>
                   </div>
                 </div>
-              ) : filteredOrgs.length === 0 ? (
+              ) : totalCount === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No organizations found matching your filters.
                 </div>
@@ -303,8 +317,8 @@ const OrganizationsList = () => {
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-                    <TableBody>
-                      {paginatedOrgs.map((org) => (
+                     <TableBody>
+                      {organizations.map((org) => (
                         <TableRow key={org.id}>
                           <TableCell>
                             <Badge variant="outline">
@@ -335,10 +349,10 @@ const OrganizationsList = () => {
                     </TableBody>
                   </Table>
                   
-                  {filteredOrgs.length > 0 && (
+                  {totalCount > 0 && (
                     <div className="flex items-center justify-between pt-4">
                       <p className="text-sm text-muted-foreground">
-                        Showing {startIndex + 1}-{Math.min(endIndex, filteredOrgs.length)} of {filteredOrgs.length} organizations
+                        Showing {startIndex + 1}-{endIndex} of {totalCount} organizations
                       </p>
                       
                       {totalPages > 1 && (
