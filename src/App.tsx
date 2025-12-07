@@ -61,6 +61,7 @@ import ContactSubmissions from "./pages/SystemAdmin/ContactSubmissions";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import { HubSpotTracker } from "./components/HubSpotTracker";
+import { GoogleAnalyticsTracker } from "./components/GoogleAnalyticsTracker";
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -98,6 +99,7 @@ const AppContent = () => {
     <BrowserRouter>
       <ScrollToTop />
       <HubSpotTracker />
+      <GoogleAnalyticsTracker />
       <PWAInstallPrompt />
       <Routes>
         <Route path="/" element={<Index />} />
