@@ -8,6 +8,7 @@ import { ActiveGroupProvider } from "@/contexts/ActiveGroupContext";
 import Index from "./pages/Index";
 import Platform from "./pages/Platform";
 import Schools from "./pages/Schools";
+import Nonprofits from "./pages/Nonprofits";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
 import Terms from "./pages/Terms";
@@ -101,6 +102,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/schools" element={<Schools />} />
+        <Route path="/nonprofits" element={<Nonprofits />} />
         <Route path="/platform" element={<Platform />} />
         <Route path="/features" element={<Features />} />
         <Route path="/pricing" element={<Pricing />} />
