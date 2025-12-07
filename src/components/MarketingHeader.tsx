@@ -8,6 +8,7 @@ const MarketingHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navigation = [
+    { name: 'Schools', href: '/schools' },
     { name: 'Platform', href: '/platform' },
     { name: 'Features', href: '/features' },
     { name: 'Pricing', href: '/pricing' },

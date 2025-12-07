@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ActiveGroupProvider } from "@/contexts/ActiveGroupContext";
 import Index from "./pages/Index";
 import Platform from "./pages/Platform";
+import Schools from "./pages/Schools";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
 import Terms from "./pages/Terms";
@@ -99,6 +100,7 @@ const AppContent = () => {
       <PWAInstallPrompt />
       <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/schools" element={<Schools />} />
         <Route path="/platform" element={<Platform />} />
         <Route path="/features" element={<Features />} />
         <Route path="/pricing" element={<Pricing />} />
