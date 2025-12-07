@@ -36,7 +36,7 @@ const DEMO_USERS: DemoUser[] = [
     lastName: 'Coach',
     organizationId: '11111111-1111-1111-1111-111111111111',
     userTypeName: 'Coach',
-    groupId: '33333333-3333-3333-3333-333333333333', // Varsity Basketball
+    groupId: '33333333-3333-3333-3333-333333333333',
   },
   {
     email: 'player@sampleschool.demo',
@@ -44,7 +44,7 @@ const DEMO_USERS: DemoUser[] = [
     lastName: 'Player',
     organizationId: '11111111-1111-1111-1111-111111111111',
     userTypeName: 'Team Player',
-    groupId: '33333333-3333-3333-3333-333333333333', // Varsity Basketball
+    groupId: '33333333-3333-3333-3333-333333333333',
   },
   {
     email: 'parent@sampleschool.demo',
@@ -52,7 +52,7 @@ const DEMO_USERS: DemoUser[] = [
     lastName: 'Parent',
     organizationId: '11111111-1111-1111-1111-111111111111',
     userTypeName: 'Family Member',
-    groupId: '33333333-3333-3333-3333-333333333333', // Varsity Basketball
+    groupId: '33333333-3333-3333-3333-333333333333',
   },
   {
     email: 'sponsor@sampleschool.demo',
@@ -75,7 +75,7 @@ const DEMO_USERS: DemoUser[] = [
     lastName: 'Program',
     organizationId: '22222222-2222-2222-2222-222222222222',
     userTypeName: 'Program Director',
-    groupId: '55555555-5555-5555-5555-555555555555', // Youth Mentorship Program
+    groupId: '55555555-5555-5555-5555-555555555555',
   },
   {
     email: 'volunteer@helpfulhouse.demo',
@@ -83,7 +83,7 @@ const DEMO_USERS: DemoUser[] = [
     lastName: 'Volunteer',
     organizationId: '22222222-2222-2222-2222-222222222222',
     userTypeName: 'Volunteer',
-    groupId: '55555555-5555-5555-5555-555555555555', // Youth Mentorship Program
+    groupId: '55555555-5555-5555-5555-555555555555',
   },
   {
     email: 'board@helpfulhouse.demo',
@@ -107,6 +107,39 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // SECURITY: Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('Missing authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Create user client to verify identity
+    const supabaseUser = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    if (authError || !user) {
+      console.error('Invalid authentication:', authError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Create admin client for privileged operations
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -117,6 +150,26 @@ Deno.serve(async (req) => {
         },
       }
     );
+
+    // SECURITY: Verify system admin status
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('system_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile?.system_admin) {
+      console.error('System admin access required. User:', user.id);
+      return new Response(
+        JSON.stringify({ error: 'System admin access required' }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    console.log('System admin verified:', user.email);
 
     const results = {
       created: [] as string[],
@@ -153,7 +206,7 @@ Deno.serve(async (req) => {
         }
 
         // Create auth user with known password
-        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        const { data: authUser, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
           email: demoUser.email,
           password: DEMO_PASSWORD,
           email_confirm: true,
@@ -163,14 +216,14 @@ Deno.serve(async (req) => {
           },
         });
 
-        if (authError || !authUser.user) {
-          throw new Error(`Failed to create auth user: ${authError?.message}`);
+        if (createAuthError || !authUser.user) {
+          throw new Error(`Failed to create auth user: ${createAuthError?.message}`);
         }
 
         console.log(`Created auth user: ${demoUser.email} (${authUser.user.id})`);
 
         // Create profile (should be handled by trigger, but ensure it exists)
-        const { error: profileError } = await supabaseAdmin
+        const { error: profileCreateError } = await supabaseAdmin
           .from('profiles')
           .upsert({
             id: authUser.user.id,
@@ -179,8 +232,8 @@ Deno.serve(async (req) => {
             email: demoUser.email,
           });
 
-        if (profileError) {
-          console.error(`Profile creation error for ${demoUser.email}:`, profileError);
+        if (profileCreateError) {
+          console.error(`Profile creation error for ${demoUser.email}:`, profileCreateError);
         }
 
         // Create organization_user record
@@ -200,11 +253,12 @@ Deno.serve(async (req) => {
 
         console.log(`Successfully created demo user: ${demoUser.email}`);
         results.created.push(demoUser.email);
-      } catch (error) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error(`Error creating user ${demoUser.email}:`, error);
         results.errors.push({
           email: demoUser.email,
-          error: error.message,
+          error: errorMessage,
         });
       }
     }
@@ -223,10 +277,11 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-  } catch (error) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error in seed-demo-users function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
