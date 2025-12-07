@@ -78,7 +78,7 @@ const Schools = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl transform rotate-3" />
               <img
                 src={heroImage}
-                alt="Football team huddle with coach on the field"
+                alt="High school football team in stadium with sponsor advertising"
                 className="relative rounded-2xl shadow-2xl w-full h-auto object-cover"
               />
             </div>
