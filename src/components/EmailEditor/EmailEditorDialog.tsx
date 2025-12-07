@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import DOMPurify from "dompurify";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,44 @@ import { BlockToolbar } from "./BlockToolbar";
 import { EmailBlock } from "./EmailBlock";
 import { emailLayouts } from "./EmailLayoutTemplates";
 import { Eye, Sparkles, Save, Trash2, Send, Monitor, Smartphone, Download, Upload, Clock, CheckCircle2, Loader2, AlertCircle, History, RotateCcw } from "lucide-react";
+
+// Security: Sanitize text content to prevent XSS
+const sanitizeText = (content: string): string => {
+  return DOMPurify.sanitize(content, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+};
+
+// Security: Validate and sanitize URLs
+const sanitizeUrl = (url: string): string => {
+  if (!url) return '#';
+  try {
+    const parsed = new URL(url);
+    // Only allow http/https protocols
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return '#';
+    }
+    return parsed.toString();
+  } catch {
+    // If URL parsing fails, check if it's a relative URL starting with /
+    if (url.startsWith('/')) {
+      return url;
+    }
+    return '#';
+  }
+};
+
+// Security: Sanitize color values
+const sanitizeColor = (color: string, defaultColor: string): string => {
+  if (!color) return defaultColor;
+  // Allow hex colors, rgb/rgba, and named colors
+  const hexPattern = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
+  const rgbPattern = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(,\s*[\d.]+)?\s*\)$/;
+  const namedColors = ['black', 'white', 'red', 'green', 'blue', 'yellow', 'orange', 'purple', 'gray', 'grey'];
+  
+  if (hexPattern.test(color) || rgbPattern.test(color) || namedColors.includes(color.toLowerCase())) {
+    return color;
+  }
+  return defaultColor;
+};
 
 interface CustomLayout {
   id: string;
@@ -645,13 +684,16 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
   };
 
   const generateHTML = () => {
+    // Sanitize subject for use in title tag
+    const sanitizedSubject = sanitizeText(subject);
+    
     let html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
+  <title>${sanitizedSubject}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -667,29 +709,29 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
       switch (type) {
         case 'heading':
           html += `
-              <h2 style="font-size: ${styles.fontSize || '24px'}; color: ${styles.color || '#000000'}; text-align: ${styles.textAlign || 'left'}; font-weight: ${styles.fontWeight || 'bold'}; margin: 0 0 20px 0;">
-                ${content || 'Heading Text'}
+              <h2 style="font-size: ${sanitizeText(styles.fontSize || '24px')}; color: ${sanitizeColor(styles.color, '#000000')}; text-align: ${sanitizeText(styles.textAlign || 'left')}; font-weight: ${sanitizeText(styles.fontWeight || 'bold')}; margin: 0 0 20px 0;">
+                ${sanitizeText(content || 'Heading Text')}
               </h2>`;
           break;
         case 'paragraph':
           html += `
-              <p style="font-size: ${styles.fontSize || '16px'}; color: ${styles.color || '#000000'}; text-align: ${styles.textAlign || 'left'}; line-height: 1.6; margin: 0 0 20px 0;">
-                ${content || 'Paragraph text goes here'}
+              <p style="font-size: ${sanitizeText(styles.fontSize || '16px')}; color: ${sanitizeColor(styles.color, '#000000')}; text-align: ${sanitizeText(styles.textAlign || 'left')}; line-height: 1.6; margin: 0 0 20px 0;">
+                ${sanitizeText(content || 'Paragraph text goes here')}
               </p>`;
           break;
         case 'button':
           html += `
-              <div style="text-align: ${styles.textAlign || 'center'}; margin: 20px 0;">
-                <a href="${styles.buttonUrl || '#'}" style="display: inline-block; padding: 12px 24px; background-color: ${styles.buttonColor || '#0066cc'}; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold;">
-                  ${styles.buttonText || 'Click Here'}
+              <div style="text-align: ${sanitizeText(styles.textAlign || 'center')}; margin: 20px 0;">
+                <a href="${sanitizeUrl(styles.buttonUrl || '#')}" style="display: inline-block; padding: 12px 24px; background-color: ${sanitizeColor(styles.buttonColor, '#0066cc')}; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                  ${sanitizeText(styles.buttonText || 'Click Here')}
                 </a>
               </div>`;
           break;
         case 'image':
           if (styles.imageUrl) {
             html += `
-              <div style="text-align: ${styles.textAlign || 'center'}; margin: 20px 0;">
-                <img src="${styles.imageUrl}" alt="${styles.imageAlt || 'Email image'}" style="max-width: ${styles.imageWidth || '100%'}; height: auto; display: inline-block;">
+              <div style="text-align: ${sanitizeText(styles.textAlign || 'center')}; margin: 20px 0;">
+                <img src="${sanitizeUrl(styles.imageUrl)}" alt="${sanitizeText(styles.imageAlt || 'Email image')}" style="max-width: ${sanitizeText(styles.imageWidth || '100%')}; height: auto; display: inline-block;">
               </div>`;
           }
           break;
@@ -699,7 +741,7 @@ export function EmailEditorDialog({ open, onOpenChange, initialSubject, initialC
           break;
         case 'spacer':
           html += `
-              <div style="height: ${styles.spacerHeight || '20px'};"></div>`;
+              <div style="height: ${sanitizeText(styles.spacerHeight || '20px')};"></div>`;
           break;
       }
     });

@@ -10,7 +10,7 @@ interface ManageTestRequest {
   action: "create" | "update" | "activate" | "complete" | "get_variant" | "calculate_winner";
   testId?: string;
   testData?: any;
-  email?: string; // For variant selection
+  email?: string;
 }
 
 // Chi-square test for statistical significance
@@ -37,7 +37,7 @@ function calculateChiSquare(
 
   // Approximation for p-value with df=1, critical value at p=0.05 is 3.841
   const significant = chiSquare > 3.841;
-  const pValue = significant ? 0.05 : 0.1; // Simplified
+  const pValue = significant ? 0.05 : 0.1;
 
   return { chiSquare, pValue, significant };
 }
@@ -48,9 +48,62 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // SECURITY: Verify authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("Missing authorization header");
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Create user client to verify identity
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    if (authError || !user) {
+      console.error("Invalid authentication:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Create admin client for database operations
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // SECURITY: Verify system admin status
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("system_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile?.system_admin) {
+      console.error("System admin access required. User:", user.id);
+      return new Response(
+        JSON.stringify({ error: "System admin access required" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    console.log("System admin verified:", user.email);
 
     const { action, testId, testData, email }: ManageTestRequest = await req.json();
 
@@ -87,6 +140,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         if (variantsError) throw variantsError;
 
+        console.log("A/B test created:", test.id);
         return new Response(
           JSON.stringify({ success: true, test }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -105,6 +159,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         if (error) throw error;
 
+        console.log("A/B test activated:", testId);
         return new Response(
           JSON.stringify({ success: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -220,6 +275,8 @@ const handler = async (req: Request): Promise<Response> => {
               end_date: new Date().toISOString(),
             })
             .eq("id", testId);
+          
+          console.log("A/B test winner determined:", winner);
         }
 
         return new Response(

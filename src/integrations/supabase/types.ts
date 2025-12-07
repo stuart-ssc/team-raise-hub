@@ -101,6 +101,13 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "business_donors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       business_insights: {
@@ -161,6 +168,13 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "business_insights_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       business_nurture_campaigns: {
@@ -203,6 +217,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_nurture_campaigns_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
             referencedColumns: ["id"]
           },
         ]
@@ -394,6 +415,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_outreach_queue_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
             referencedColumns: ["id"]
           },
           {
@@ -982,6 +1010,13 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "custom_email_layouts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       donor_activity_log: {
@@ -1071,6 +1106,13 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "donor_insights_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       donor_profiles: {
@@ -1152,6 +1194,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1257,6 +1306,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_segments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1622,6 +1678,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "groups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "groups_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false
@@ -1721,6 +1784,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: true
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nonprofits_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1835,6 +1905,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nurture_campaigns_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2130,6 +2207,13 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "organization_businesses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       organization_user: {
@@ -2189,6 +2273,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_user_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
             referencedColumns: ["id"]
           },
           {
@@ -2688,6 +2779,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "schools_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "schools_school_district_id_fkey"
             columns: ["school_district_id"]
             isOneToOne: false
@@ -2833,6 +2931,13 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "thank_you_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_type: {
@@ -2864,6 +2969,42 @@ export type Database = {
       }
     }
     Views: {
+      organizations_public: {
+        Row: {
+          city: string | null
+          id: string | null
+          logo_url: string | null
+          name: string | null
+          organization_type:
+            | Database["public"]["Enums"]["organization_type"]
+            | null
+          state: string | null
+          website_url: string | null
+        }
+        Insert: {
+          city?: string | null
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          organization_type?:
+            | Database["public"]["Enums"]["organization_type"]
+            | null
+          state?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          city?: string | null
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          organization_type?:
+            | Database["public"]["Enums"]["organization_type"]
+            | null
+          state?: string | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       roster_member_fundraising_stats: {
         Row: {
           avg_donation: number | null
