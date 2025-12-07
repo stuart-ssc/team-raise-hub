@@ -31,7 +31,7 @@ import {
   PieChart,
   Award,
 } from "lucide-react";
-import teamImage from "@/assets/team-collaboration.jpg";
+import heroImage from "@/assets/nonprofits-hero.png";
 
 const Nonprofits = () => {
   useEffect(() => {
@@ -80,8 +80,8 @@ const Nonprofits = () => {
             <div className="relative">
               <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur-2xl" />
               <img
-                src={teamImage}
-                alt="Nonprofit team collaboration"
+                src={heroImage}
+                alt="Charity golf tournament with sponsor advertising"
                 className="relative rounded-2xl shadow-2xl w-full"
               />
             </div>
