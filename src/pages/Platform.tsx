@@ -100,6 +100,13 @@ const Platform = () => {
                     </p>
                   </div>
                 </div>
+                <div className="text-center mt-8">
+                  <Link to="/schools">
+                    <Button variant="outline" size="lg">
+                      Learn More About Sponsorly for Schools
+                    </Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -176,6 +183,13 @@ const Platform = () => {
                       Show donors the difference their contributions make
                     </p>
                   </div>
+                </div>
+                <div className="text-center mt-8">
+                  <Link to="/nonprofits">
+                    <Button variant="outline" size="lg">
+                      Learn More About Sponsorly for Non-Profits
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
