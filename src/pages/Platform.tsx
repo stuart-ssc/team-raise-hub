@@ -102,7 +102,7 @@ const Platform = () => {
                 </div>
                 <div className="text-center mt-8">
                   <Link to="/schools">
-                    <Button variant="outline" size="lg">
+                    <Button size="lg">
                       Learn More About Sponsorly for Schools
                     </Button>
                   </Link>
@@ -186,7 +186,7 @@ const Platform = () => {
                 </div>
                 <div className="text-center mt-8">
                   <Link to="/nonprofits">
-                    <Button variant="outline" size="lg">
+                    <Button size="lg">
                       Learn More About Sponsorly for Non-Profits
                     </Button>
                   </Link>
