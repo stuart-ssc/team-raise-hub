@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import MarketingHeader from '@/components/MarketingHeader';
 import MarketingFooter from '@/components/MarketingFooter';
+import heroImage from '@/assets/hero-celebration.jpg';
+import teamImage from '@/assets/team-collaboration.jpg';
 import {
   GraduationCap,
   Users,
@@ -27,6 +29,7 @@ import {
   ClipboardList,
   Calendar,
   PiggyBank,
+  ArrowRight,
 } from 'lucide-react';
 
 const Schools = () => {
@@ -43,37 +46,48 @@ const Schools = () => {
       <MarketingHeader />
 
       {/* Hero Section */}
-      <section className="relative py-20 sm:py-28 lg:py-36 bg-gradient-to-br from-primary/10 via-background to-accent/10">
+      <section className="relative py-20 sm:py-28 lg:py-36 bg-gradient-to-br from-primary/10 via-background to-accent/10 overflow-hidden">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6">
-              <GraduationCap className="h-5 w-5" />
-              <span className="text-sm font-medium">Built for K-12 Schools</span>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6">
+                <GraduationCap className="h-5 w-5" />
+                <span className="text-sm font-medium">Built for K-12 Schools</span>
+              </div>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6">
+                Everything Your School Needs to Fundraise Smarter
+              </h1>
+              <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto lg:mx-0">
+                From sports teams to drama clubs, band to PTOs — Sponsorly gives every group the tools to raise more while keeping 100% of every donation.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Link to="/signup">
+                  <Button size="lg" className="w-full sm:w-auto text-lg px-8">
+                    Get Started Free
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link to="/features">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8">
+                    See All Features
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6">
-              Everything Your School Needs to Fundraise Smarter
-            </h1>
-            <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              From sports teams to drama clubs, band to PTOs — Sponsorly gives every group the tools to raise more while keeping 100% of every donation.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/signup">
-                <Button size="lg" className="w-full sm:w-auto text-lg px-8">
-                  Get Started Free
-                </Button>
-              </Link>
-              <Link to="/features">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8">
-                  See All Features
-                </Button>
-              </Link>
+            <div className="relative hidden lg:block">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl transform rotate-3" />
+              <img
+                src={heroImage}
+                alt="Students celebrating successful fundraising"
+                className="relative rounded-2xl shadow-2xl w-full h-auto object-cover"
+              />
             </div>
           </div>
         </div>
       </section>
 
       {/* School Programs Grid */}
-      <section className="py-16 sm:py-20">
+      <section className="py-16 sm:py-20 bg-accent/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
@@ -92,7 +106,7 @@ const Schools = () => {
               { icon: Users, label: 'PTOs & Boosters' },
               { icon: Award, label: 'Honor Societies' },
             ].map((item, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
+              <Card key={index} className="text-center hover:shadow-lg transition-shadow bg-background/80 backdrop-blur-sm">
                 <CardContent className="pt-6 pb-4">
                   <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
                     <item.icon className="h-6 w-6 text-primary" />
@@ -106,7 +120,7 @@ const Schools = () => {
       </section>
 
       {/* School-Level Management */}
-      <section className="py-16 sm:py-20 bg-accent/20">
+      <section className="py-16 sm:py-20 bg-gradient-to-b from-background to-primary/5">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -137,42 +151,45 @@ const Schools = () => {
                 ))}
               </ul>
             </div>
-            <div className="bg-background rounded-2xl p-8 shadow-xl border">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between pb-4 border-b">
-                  <h3 className="font-semibold text-foreground">School Dashboard</h3>
-                  <span className="text-sm text-muted-foreground">All Programs</span>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-lg bg-accent/30">
-                    <p className="text-2xl font-bold text-foreground">$47,250</p>
-                    <p className="text-sm text-muted-foreground">Total Raised</p>
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl transform -rotate-2" />
+              <div className="relative bg-background rounded-2xl p-8 shadow-xl border">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between pb-4 border-b">
+                    <h3 className="font-semibold text-foreground">School Dashboard</h3>
+                    <span className="text-sm text-muted-foreground">All Programs</span>
                   </div>
-                  <div className="p-4 rounded-lg bg-accent/30">
-                    <p className="text-2xl font-bold text-foreground">12</p>
-                    <p className="text-sm text-muted-foreground">Active Campaigns</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-lg bg-primary/5">
+                      <p className="text-2xl font-bold text-primary">$47,250</p>
+                      <p className="text-sm text-muted-foreground">Total Raised</p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-accent/50">
+                      <p className="text-2xl font-bold text-foreground">12</p>
+                      <p className="text-sm text-muted-foreground">Active Campaigns</p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-accent/50">
+                      <p className="text-2xl font-bold text-foreground">234</p>
+                      <p className="text-sm text-muted-foreground">Supporters</p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-primary/5">
+                      <p className="text-2xl font-bold text-primary">8</p>
+                      <p className="text-sm text-muted-foreground">Teams & Clubs</p>
+                    </div>
                   </div>
-                  <div className="p-4 rounded-lg bg-accent/30">
-                    <p className="text-2xl font-bold text-foreground">234</p>
-                    <p className="text-sm text-muted-foreground">Supporters</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-accent/30">
-                    <p className="text-2xl font-bold text-foreground">8</p>
-                    <p className="text-sm text-muted-foreground">Teams & Clubs</p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-foreground">Varsity Football</span>
-                    <span className="text-sm font-medium text-primary">$12,400</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-foreground">Band Boosters</span>
-                    <span className="text-sm font-medium text-primary">$8,750</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-foreground">Drama Club</span>
-                    <span className="text-sm font-medium text-primary">$6,200</span>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-foreground">Varsity Football</span>
+                      <span className="text-sm font-medium text-primary">$12,400</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-foreground">Band Boosters</span>
+                      <span className="text-sm font-medium text-primary">$8,750</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-foreground">Drama Club</span>
+                      <span className="text-sm font-medium text-primary">$6,200</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -182,19 +199,29 @@ const Schools = () => {
       </section>
 
       {/* Team & Club Features */}
-      <section className="py-16 sm:py-20">
+      <section className="py-16 sm:py-20 bg-accent/20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary mb-4">
-              <Trophy className="h-4 w-4" />
-              <span className="text-sm font-medium">For Coaches & Club Sponsors</span>
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-12">
+            <div className="order-2 lg:order-1 relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-primary/10 rounded-2xl transform rotate-2" />
+              <img
+                src={teamImage}
+                alt="Team collaboration and planning"
+                className="relative rounded-2xl shadow-xl w-full h-auto object-cover"
+              />
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Empower Your Team to Raise More
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Give coaches and sponsors the tools they need to run successful fundraisers without the administrative headaches.
-            </p>
+            <div className="order-1 lg:order-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary mb-4">
+                <Trophy className="h-4 w-4" />
+                <span className="text-sm font-medium">For Coaches & Club Sponsors</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                Empower Your Team to Raise More
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                Give coaches and sponsors the tools they need to run successful fundraisers without the administrative headaches.
+              </p>
+            </div>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
@@ -229,7 +256,7 @@ const Schools = () => {
                 description: 'Parents and supporters can donate in seconds from any device.',
               },
             ].map((feature, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
+              <Card key={index} className="hover:shadow-lg transition-shadow bg-background">
                 <CardContent className="pt-6">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <feature.icon className="h-6 w-6 text-primary" />
@@ -244,7 +271,7 @@ const Schools = () => {
       </section>
 
       {/* PTO/Booster Features */}
-      <section className="py-16 sm:py-20 bg-accent/20">
+      <section className="py-16 sm:py-20 bg-gradient-to-b from-background to-accent/10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1">
@@ -255,7 +282,7 @@ const Schools = () => {
                   { icon: Calendar, title: 'Event Fundraising', desc: 'Perfect for auctions, galas, and special events' },
                   { icon: BarChart3, title: 'Detailed Reports', desc: 'Export-ready reports for your records' },
                 ].map((item, index) => (
-                  <Card key={index} className="hover:shadow-lg transition-shadow">
+                  <Card key={index} className="hover:shadow-lg transition-shadow bg-background">
                     <CardContent className="pt-6">
                       <item.icon className="h-8 w-8 text-primary mb-3" />
                       <h4 className="font-semibold text-foreground mb-1">{item.title}</h4>
@@ -295,7 +322,7 @@ const Schools = () => {
       </section>
 
       {/* Key Benefits */}
-      <section className="py-16 sm:py-20">
+      <section className="py-16 sm:py-20 bg-gradient-to-br from-accent/20 via-primary/5 to-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
@@ -338,7 +365,7 @@ const Schools = () => {
                 description: 'Bank-level security and full compliance with school district requirements.',
               },
             ].map((benefit, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
+              <Card key={index} className="text-center hover:shadow-lg transition-all hover:-translate-y-1 bg-background">
                 <CardContent className="pt-8 pb-6">
                   <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
                     <benefit.icon className="h-7 w-7 text-primary" />
@@ -353,35 +380,40 @@ const Schools = () => {
       </section>
 
       {/* Social Proof */}
-      <section className="py-16 sm:py-20 bg-accent/20">
+      <section className="py-16 sm:py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+                Trusted by Schools Nationwide
+              </h2>
+            </div>
             <div className="grid md:grid-cols-3 gap-8 text-center mb-12">
               <div>
-                <p className="text-4xl sm:text-5xl font-bold text-primary mb-2">500+</p>
-                <p className="text-muted-foreground">Schools & Programs</p>
+                <p className="text-4xl sm:text-5xl font-bold mb-2">500+</p>
+                <p className="text-primary-foreground/80">Schools & Programs</p>
               </div>
               <div>
-                <p className="text-4xl sm:text-5xl font-bold text-primary mb-2">$2M+</p>
-                <p className="text-muted-foreground">Raised for Schools</p>
+                <p className="text-4xl sm:text-5xl font-bold mb-2">$2M+</p>
+                <p className="text-primary-foreground/80">Raised for Schools</p>
               </div>
               <div>
-                <p className="text-4xl sm:text-5xl font-bold text-primary mb-2">50,000+</p>
-                <p className="text-muted-foreground">Supporters</p>
+                <p className="text-4xl sm:text-5xl font-bold mb-2">50,000+</p>
+                <p className="text-primary-foreground/80">Supporters</p>
               </div>
             </div>
-            <Card className="bg-background">
+            <Card className="bg-primary-foreground/10 border-primary-foreground/20">
               <CardContent className="p-8">
-                <blockquote className="text-lg sm:text-xl text-foreground italic mb-6">
+                <blockquote className="text-lg sm:text-xl text-primary-foreground italic mb-6">
                   "Sponsorly transformed how we manage fundraising across all 15 of our athletic programs. The visibility it gives me as Athletic Director is incredible — I can see exactly what every team is doing without chasing down coaches."
                 </blockquote>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <GraduationCap className="h-6 w-6 text-primary" />
+                  <div className="w-12 h-12 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                    <GraduationCap className="h-6 w-6 text-primary-foreground" />
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground">Mike Johnson</p>
-                    <p className="text-sm text-muted-foreground">Athletic Director, Lincoln High School</p>
+                    <p className="font-semibold text-primary-foreground">Mike Johnson</p>
+                    <p className="text-sm text-primary-foreground/80">Athletic Director, Lincoln High School</p>
                   </div>
                 </div>
               </CardContent>
@@ -391,7 +423,7 @@ const Schools = () => {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 sm:py-28">
+      <section className="py-20 sm:py-28 bg-gradient-to-br from-primary/10 via-accent/20 to-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
@@ -404,6 +436,7 @@ const Schools = () => {
               <Link to="/signup">
                 <Button size="lg" className="w-full sm:w-auto text-lg px-8">
                   Get Started Free
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link to="/contact">
