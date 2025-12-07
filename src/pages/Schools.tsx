@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import MarketingHeader from '@/components/MarketingHeader';
 import MarketingFooter from '@/components/MarketingFooter';
-import heroImage from '@/assets/hero-celebration.jpg';
+import heroImage from '@/assets/schools-hero.png';
 import teamImage from '@/assets/team-collaboration.jpg';
 import {
   GraduationCap,
@@ -78,7 +78,7 @@ const Schools = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl transform rotate-3" />
               <img
                 src={heroImage}
-                alt="Students celebrating successful fundraising"
+                alt="Football team huddle with coach on the field"
                 className="relative rounded-2xl shadow-2xl w-full h-auto object-cover"
               />
             </div>
