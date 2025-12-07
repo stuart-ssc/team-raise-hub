@@ -9,6 +9,7 @@ const MarketingHeader = () => {
 
   const navigation = [
     { name: 'Schools', href: '/schools' },
+    { name: 'Nonprofits', href: '/nonprofits' },
     { name: 'Platform', href: '/platform' },
     { name: 'Features', href: '/features' },
     { name: 'Pricing', href: '/pricing' },
