@@ -115,7 +115,7 @@ const Index = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
                   size="lg"
-                  onClick={() => navigate('/signup')}
+                  onClick={() => navigate('/schools')}
                   className="gap-2 text-lg px-8 py-6"
                 >
                   <GraduationCap className="h-5 w-5" />
@@ -124,7 +124,7 @@ const Index = () => {
                 <Button 
                   size="lg"
                   variant="outline"
-                  onClick={() => navigate('/signup')}
+                  onClick={() => navigate('/nonprofits')}
                   className="gap-2 text-lg px-8 py-6"
                 >
                   <Building2 className="h-5 w-5" />
@@ -334,7 +334,7 @@ const Index = () => {
               <Button 
                 size="lg"
                 variant="secondary"
-                onClick={() => navigate('/signup')}
+                onClick={() => navigate('/schools')}
                 className="gap-2 text-lg px-8 py-6"
               >
                 <GraduationCap className="h-5 w-5" />
@@ -344,7 +344,7 @@ const Index = () => {
               <Button 
                 size="lg"
                 variant="outline"
-                onClick={() => navigate('/signup')}
+                onClick={() => navigate('/nonprofits')}
                 className="gap-2 text-lg px-8 py-6 bg-primary-foreground text-primary hover:bg-primary-foreground/90"
               >
                 <Building2 className="h-5 w-5" />
