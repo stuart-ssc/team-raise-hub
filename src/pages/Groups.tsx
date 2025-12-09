@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MoreHorizontal, ChevronDown } from "lucide-react";
+import { MoreHorizontal, ChevronDown, CreditCard, CheckCircle2, AlertCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { CreateGroupForm } from "@/components/CreateGroupForm";
+import { GroupPaymentSetupDialog } from "@/components/GroupPaymentSetupDialog";
 import Rosters from "@/pages/Rosters";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -33,6 +34,8 @@ const Groups = () => {
   const [showRosters, setShowRosters] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentDialogGroup, setPaymentDialogGroup] = useState<Group | null>(null);
   const { organizationUser } = useOrganizationUser();
   const isMobile = useIsMobile();
 
@@ -183,6 +186,11 @@ const Groups = () => {
     } catch (error) {
       console.error("Error updating group status:", error);
     }
+  };
+
+  const handlePaymentSetup = (group: Group) => {
+    setPaymentDialogGroup(group);
+    setPaymentDialogOpen(true);
   };
 
   const handleSort = (newSortBy: string) => {
@@ -372,9 +380,10 @@ const Groups = () => {
                                 variant="outline" 
                                 size="sm"
                                 className="w-full"
-                                disabled
+                                onClick={() => handlePaymentSetup(group)}
                               >
-                                Payment Setup (Coming Soon)
+                                <CreditCard className="h-4 w-4 mr-1" />
+                                Payment Setup
                               </Button>
                             </div>
                           </CardContent>
@@ -432,9 +441,10 @@ const Groups = () => {
                                   <Button 
                                     variant="outline" 
                                     size="sm"
-                                    disabled
+                                    onClick={() => handlePaymentSetup(group)}
                                   >
-                                    Coming Soon
+                                    <CreditCard className="h-4 w-4 mr-1" />
+                                    Setup
                                   </Button>
                                 </TableCell>
                                 <TableCell>
@@ -474,6 +484,16 @@ const Groups = () => {
           </div>
         )}
       </div>
+
+      {/* Payment Setup Dialog */}
+      {paymentDialogGroup && (
+        <GroupPaymentSetupDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          groupId={paymentDialogGroup.id}
+          groupName={paymentDialogGroup.group_name}
+        />
+      )}
     </DashboardPageLayout>
   );
 };
