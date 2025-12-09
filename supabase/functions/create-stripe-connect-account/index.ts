@@ -25,9 +25,13 @@ Deno.serve(async (req) => {
 
     // Verify user is authenticated
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    console.log('User auth result:', { userId: user?.id, authError });
     if (authError || !user) {
-      console.error('Auth error:', authError);
-      throw new Error('Unauthorized');
+      console.error('Auth error details:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized', details: authError?.message }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
     }
 
     const { organizationId, groupId, businessType = 'company' } = await req.json();
