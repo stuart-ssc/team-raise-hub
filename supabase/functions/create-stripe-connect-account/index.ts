@@ -14,18 +14,30 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      console.error('No authorization header provided');
+      return new Response(
+        JSON.stringify({ error: 'No authorization header' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
     }
 
+    // Extract the JWT token from Bearer header
+    const token = authHeader.replace('Bearer ', '');
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      {
+        global: {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      }
     );
 
-    // Verify user is authenticated
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    console.log('User auth result:', { userId: user?.id, authError });
+    // Verify user is authenticated using the token directly
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    console.log('User auth result:', { userId: user?.id, authError: authError?.message });
+    
     if (authError || !user) {
       console.error('Auth error details:', authError);
       return new Response(
