@@ -272,13 +272,23 @@ const OrganizationSettings = () => {
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="branding">Branding</TabsTrigger>
-            <TabsTrigger value="payment">Payment</TabsTrigger>
-            <TabsTrigger value="verification">Verification</TabsTrigger>
-            <TabsTrigger value="info">Organization Info</TabsTrigger>
-          </TabsList>
+          {/* Schools: 4 tabs (no Payment - that's at group level). Nonprofits: 5 tabs */}
+          {organizationUser?.organization?.organization_type === 'nonprofit' ? (
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="general">General</TabsTrigger>
+              <TabsTrigger value="branding">Branding</TabsTrigger>
+              <TabsTrigger value="payment">Payment</TabsTrigger>
+              <TabsTrigger value="verification">Verification</TabsTrigger>
+              <TabsTrigger value="info">Organization Info</TabsTrigger>
+            </TabsList>
+          ) : (
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="general">General</TabsTrigger>
+              <TabsTrigger value="branding">Branding</TabsTrigger>
+              <TabsTrigger value="verification">Verification</TabsTrigger>
+              <TabsTrigger value="info">Organization Info</TabsTrigger>
+            </TabsList>
+          )}
 
           {/* General Information Tab */}
           <TabsContent value="general">
@@ -573,15 +583,17 @@ const OrganizationSettings = () => {
             </Card>
           </TabsContent>
 
-          {/* Payment Setup Tab */}
-          <TabsContent value="payment">
-            {organizationUser?.organization_id && (
-              <PaymentSetupTab 
-                organizationId={organizationUser.organization_id}
-                organizationName={organization?.name || ""}
-              />
-            )}
-          </TabsContent>
+          {/* Payment Setup Tab - Only shown for nonprofits */}
+          {organizationUser?.organization?.organization_type === 'nonprofit' && (
+            <TabsContent value="payment">
+              {organizationUser?.organization_id && (
+                <PaymentSetupTab 
+                  organizationId={organizationUser.organization_id}
+                  organizationName={organization?.name || ""}
+                />
+              )}
+            </TabsContent>
+          )}
 
           {/* Verification Tab */}
           <TabsContent value="verification">
