@@ -1,0 +1,256 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import Stripe from 'https://esm.sh/stripe@14.21.0';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+      apiVersion: '2023-10-16',
+    });
+
+    const signature = req.headers.get('stripe-signature');
+    const body = await req.text();
+    
+    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+    
+    let event: Stripe.Event;
+    
+    if (webhookSecret && signature) {
+      try {
+        event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      } catch (err) {
+        console.error('Webhook signature verification failed:', err.message);
+        return new Response(
+          JSON.stringify({ error: 'Invalid signature' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      // For development without signature verification
+      event = JSON.parse(body);
+      console.warn('Webhook signature verification skipped - no secret configured');
+    }
+
+    console.log('Received Stripe webhook event:', event.type);
+
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log('Processing checkout.session.completed:', session.id);
+
+        const orderId = session.metadata?.order_id;
+        if (!orderId) {
+          console.error('No order_id in session metadata');
+          break;
+        }
+
+        // Update order status
+        const { error: orderError } = await supabaseAdmin
+          .from('orders')
+          .update({
+            status: 'succeeded',
+            stripe_payment_intent_id: session.payment_intent as string,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', orderId);
+
+        if (orderError) {
+          console.error('Error updating order:', orderError);
+          throw orderError;
+        }
+
+        // Get order to update campaign amount_raised
+        const { data: order } = await supabaseAdmin
+          .from('orders')
+          .select('campaign_id, total_amount, platform_fee_amount')
+          .eq('id', orderId)
+          .single();
+
+        if (order) {
+          // Calculate net amount (total minus platform fee)
+          const netAmount = order.total_amount - (order.platform_fee_amount || 0);
+          
+          // Update campaign amount_raised
+          const { error: campaignError } = await supabaseAdmin.rpc('increment_campaign_amount', {
+            campaign_id: order.campaign_id,
+            amount: netAmount,
+          });
+
+          if (campaignError) {
+            console.error('Error updating campaign amount:', campaignError);
+            // Non-fatal, continue
+          }
+        }
+
+        console.log('Order updated successfully:', orderId);
+        break;
+      }
+
+      case 'account.updated': {
+        const account = event.data.object as Stripe.Account;
+        console.log('Processing account.updated:', account.id);
+
+        // Update stripe_connect_accounts
+        const { error: updateError } = await supabaseAdmin
+          .from('stripe_connect_accounts')
+          .update({
+            charges_enabled: account.charges_enabled,
+            payouts_enabled: account.payouts_enabled,
+            details_submitted: account.details_submitted,
+            onboarding_complete: account.charges_enabled && account.payouts_enabled,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('stripe_account_id', account.id);
+
+        if (updateError) {
+          console.error('Error updating connect account:', updateError);
+        }
+
+        // Also update payment_processor_config in organization/group
+        if (account.charges_enabled) {
+          const { data: connectAccount } = await supabaseAdmin
+            .from('stripe_connect_accounts')
+            .select('organization_id, group_id')
+            .eq('stripe_account_id', account.id)
+            .single();
+
+          if (connectAccount) {
+            const config = {
+              processor: 'stripe',
+              account_id: account.id,
+              account_enabled: account.charges_enabled,
+            };
+
+            if (connectAccount.organization_id) {
+              await supabaseAdmin
+                .from('organizations')
+                .update({ payment_processor_config: config })
+                .eq('id', connectAccount.organization_id);
+            }
+            
+            if (connectAccount.group_id) {
+              await supabaseAdmin
+                .from('groups')
+                .update({ payment_processor_config: config })
+                .eq('id', connectAccount.group_id);
+            }
+          }
+        }
+
+        console.log('Account updated successfully:', account.id);
+        break;
+      }
+
+      case 'payout.paid':
+      case 'payout.failed': {
+        const payout = event.data.object as Stripe.Payout;
+        console.log('Processing payout event:', event.type, payout.id);
+
+        // Find the connected account
+        const stripeAccountId = event.account;
+        if (!stripeAccountId) {
+          console.error('No account ID in payout event');
+          break;
+        }
+
+        const { data: connectAccount } = await supabaseAdmin
+          .from('stripe_connect_accounts')
+          .select('id')
+          .eq('stripe_account_id', stripeAccountId)
+          .single();
+
+        if (!connectAccount) {
+          console.error('Connect account not found:', stripeAccountId);
+          break;
+        }
+
+        // Upsert payout record
+        const { error: payoutError } = await supabaseAdmin
+          .from('stripe_payouts')
+          .upsert({
+            stripe_connect_account_id: connectAccount.id,
+            stripe_payout_id: payout.id,
+            amount: payout.amount,
+            currency: payout.currency,
+            status: payout.status,
+            arrival_date: payout.arrival_date 
+              ? new Date(payout.arrival_date * 1000).toISOString() 
+              : null,
+          }, {
+            onConflict: 'stripe_payout_id',
+          });
+
+        if (payoutError) {
+          console.error('Error recording payout:', payoutError);
+        }
+
+        console.log('Payout recorded:', payout.id);
+        break;
+      }
+
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        console.log('Processing payment_intent.succeeded:', paymentIntent.id);
+        
+        // Update order with payment intent ID if not already set
+        const orderId = paymentIntent.metadata?.order_id;
+        if (orderId) {
+          await supabaseAdmin
+            .from('orders')
+            .update({
+              stripe_payment_intent_id: paymentIntent.id,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', orderId);
+        }
+        break;
+      }
+
+      case 'transfer.created': {
+        const transfer = event.data.object as Stripe.Transfer;
+        console.log('Processing transfer.created:', transfer.id);
+        
+        // Update order with transfer ID
+        const orderId = transfer.metadata?.order_id;
+        if (orderId) {
+          await supabaseAdmin
+            .from('orders')
+            .update({
+              stripe_transfer_id: transfer.id,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', orderId);
+        }
+        break;
+      }
+
+      default:
+        console.log('Unhandled event type:', event.type);
+    }
+
+    return new Response(
+      JSON.stringify({ received: true }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Webhook error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+    );
+  }
+});

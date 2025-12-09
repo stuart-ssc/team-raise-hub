@@ -2060,10 +2060,13 @@ export type Database = {
           id: string
           items: Json
           payment_processor: string | null
+          platform_fee_amount: number | null
           processor_session_id: string | null
           processor_transaction_id: string | null
           shipping_address: Json | null
           status: string | null
+          stripe_payment_intent_id: string | null
+          stripe_transfer_id: string | null
           tax_receipt_issued: boolean | null
           tax_receipt_sent_at: string | null
           token_expires_at: string | null
@@ -2086,10 +2089,13 @@ export type Database = {
           id?: string
           items: Json
           payment_processor?: string | null
+          platform_fee_amount?: number | null
           processor_session_id?: string | null
           processor_transaction_id?: string | null
           shipping_address?: Json | null
           status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_transfer_id?: string | null
           tax_receipt_issued?: boolean | null
           tax_receipt_sent_at?: string | null
           token_expires_at?: string | null
@@ -2112,10 +2118,13 @@ export type Database = {
           id?: string
           items?: Json
           payment_processor?: string | null
+          platform_fee_amount?: number | null
           processor_session_id?: string | null
           processor_transaction_id?: string | null
           shipping_address?: Json | null
           status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_transfer_id?: string | null
           tax_receipt_issued?: boolean | null
           tax_receipt_sent_at?: string | null
           token_expires_at?: string | null
@@ -2888,6 +2897,117 @@ export type Database = {
           name?: string | null
         }
         Relationships: []
+      }
+      stripe_connect_accounts: {
+        Row: {
+          business_type: string | null
+          charges_enabled: boolean | null
+          created_at: string | null
+          details_submitted: boolean | null
+          group_id: string | null
+          id: string
+          minimum_payout_amount: number | null
+          onboarding_complete: boolean | null
+          organization_id: string | null
+          payout_schedule: string | null
+          payouts_enabled: boolean | null
+          stripe_account_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_type?: string | null
+          charges_enabled?: boolean | null
+          created_at?: string | null
+          details_submitted?: boolean | null
+          group_id?: string | null
+          id?: string
+          minimum_payout_amount?: number | null
+          onboarding_complete?: boolean | null
+          organization_id?: string | null
+          payout_schedule?: string | null
+          payouts_enabled?: boolean | null
+          stripe_account_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_type?: string | null
+          charges_enabled?: boolean | null
+          created_at?: string | null
+          details_submitted?: boolean | null
+          group_id?: string | null
+          id?: string
+          minimum_payout_amount?: number | null
+          onboarding_complete?: boolean | null
+          organization_id?: string | null
+          payout_schedule?: string | null
+          payouts_enabled?: boolean | null
+          stripe_account_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_accounts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_accounts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_accounts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_payouts: {
+        Row: {
+          amount: number
+          arrival_date: string | null
+          created_at: string | null
+          currency: string | null
+          id: string
+          status: string
+          stripe_connect_account_id: string | null
+          stripe_payout_id: string
+        }
+        Insert: {
+          amount: number
+          arrival_date?: string | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          status: string
+          stripe_connect_account_id?: string | null
+          stripe_payout_id: string
+        }
+        Update: {
+          amount?: number
+          arrival_date?: string | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          status?: string
+          stripe_connect_account_id?: string | null
+          stripe_payout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_payouts_stripe_connect_account_id_fkey"
+            columns: ["stripe_connect_account_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_connect_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       thank_you_templates: {
         Row: {
