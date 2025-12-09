@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { LogoUpload } from "@/components/LogoUpload";
+import { PaymentSetupTab } from "@/components/PaymentSetupTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -574,28 +575,12 @@ const OrganizationSettings = () => {
 
           {/* Payment Setup Tab */}
           <TabsContent value="payment">
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Setup</CardTitle>
-                <CardDescription>Manage your payment processor and account</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <p className="font-medium">Payment Processor</p>
-                    <p className="text-sm text-muted-foreground">Status: Pending Setup</p>
-                  </div>
-                  <Badge variant="secondary">Not Connected</Badge>
-                </div>
-
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    Payment processing integration is coming soon. This will allow you to accept donations
-                    and payments directly through your campaigns.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            {organizationUser?.organization_id && (
+              <PaymentSetupTab 
+                organizationId={organizationUser.organization_id}
+                organizationName={organization?.name || ""}
+              />
+            )}
           </TabsContent>
 
           {/* Verification Tab */}
