@@ -22,6 +22,10 @@ import {
   Share2,
   MapPin,
   School,
+  Building2,
+  Eye,
+  Handshake,
+  Store,
 } from 'lucide-react';
 
 interface SchoolData {
@@ -211,6 +215,7 @@ const VariantAContent = ({ school, locationText, stateSlug, stateName }: Variant
     </section>
 
     <SharedValueProposition schoolName={school.school_name} stateName={stateName} />
+    <SharedAdminLeadership />
     <SharedProgramTypes />
     <SharedFeaturesList schoolName={school.school_name} stateName={stateName} />
     <SharedCTA schoolName={school.school_name} />
@@ -281,6 +286,7 @@ const VariantBContent = ({ school, locationText, stateSlug, stateName }: Variant
     </section>
 
     <SharedValueProposition schoolName={school.school_name} stateName={stateName} />
+    <SharedAdminLeadership />
     <SharedProgramTypes />
     <SharedFeaturesList schoolName={school.school_name} stateName={stateName} />
     <SharedCTA schoolName={school.school_name} />
@@ -341,6 +347,7 @@ const VariantCContent = ({ school, locationText, stateSlug, stateName }: Variant
     </section>
 
     <SharedValueProposition schoolName={school.school_name} stateName={stateName} />
+    <SharedAdminLeadership />
     <SharedProgramTypes />
     <SharedFeaturesList schoolName={school.school_name} stateName={stateName} />
     <SharedCTA schoolName={school.school_name} />
@@ -402,6 +409,69 @@ const SharedValueProposition = ({ schoolName, stateName }: { schoolName: string;
             </CardContent>
           </Card>
         ))}
+      </div>
+    </div>
+  </section>
+);
+
+const SharedAdminLeadership = () => (
+  <section className="py-16 sm:py-20 bg-gradient-to-br from-primary/5 to-accent/5">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6">
+            <Building2 className="h-5 w-5" />
+            <span className="text-sm font-medium">School Administrators & Athletic Directors</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+            Supervise All Fundraising with Complete Accountability
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Get the oversight and insights you need to support your teams while ensuring compliance and transparency.
+          </p>
+        </div>
+        
+        <div className="grid sm:grid-cols-2 gap-6">
+          {[
+            {
+              icon: Eye,
+              title: 'Unified Oversight',
+              description: 'Oversee every team and club\'s fundraising from a single dashboard',
+            },
+            {
+              icon: Shield,
+              title: 'Approval Workflows',
+              description: 'Set approval workflows to ensure campaigns meet district guidelines',
+            },
+            {
+              icon: BarChart3,
+              title: 'Detailed Reporting',
+              description: 'Track accountability with detailed audit trails and reporting',
+            },
+            {
+              icon: Store,
+              title: 'Business Discovery',
+              description: 'Discover local and regional businesses actively supporting your students',
+            },
+            {
+              icon: Handshake,
+              title: 'Partnership Opportunities',
+              description: 'Identify partnership opportunities with sponsors investing in your school community',
+            },
+          ].map((item, index) => (
+            <Card key={index} className="bg-background hover:shadow-lg transition-shadow">
+              <CardContent className="pt-6 flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <item.icon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   </section>
