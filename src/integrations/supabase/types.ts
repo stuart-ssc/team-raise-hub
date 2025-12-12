@@ -3294,6 +3294,23 @@ export type Database = {
         Returns: string
       }
       generate_slug: { Args: { input_text: string }; Returns: string }
+      generate_unique_district_slug: {
+        Args: {
+          district_id: string
+          district_name: string
+          district_state: string
+        }
+        Returns: string
+      }
+      generate_unique_school_slug: {
+        Args: {
+          school_city: string
+          school_id: string
+          school_name: string
+          school_state: string
+        }
+        Returns: string
+      }
       get_ab_test_results: {
         Args: { test_uuid: string }
         Returns: {
