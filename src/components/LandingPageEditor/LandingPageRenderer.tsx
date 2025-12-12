@@ -9,6 +9,8 @@ interface LandingPageRendererProps {
   seoTitle?: string;
   seoDescription?: string;
   ogImageUrl?: string;
+  canonicalUrl?: string;
+  entityName?: string;
 }
 
 export function LandingPageRenderer({
@@ -17,6 +19,8 @@ export function LandingPageRenderer({
   seoTitle,
   seoDescription,
   ogImageUrl,
+  canonicalUrl,
+  entityName,
 }: LandingPageRendererProps) {
   const resolvedBlocks = React.useMemo(
     () => resolveTemplateVariables(blocks, variables),
@@ -29,16 +33,30 @@ export function LandingPageRenderer({
 
   return (
     <>
-      {(resolvedTitle || resolvedDescription || ogImageUrl) && (
-        <Helmet>
-          {resolvedTitle && <title>{resolvedTitle}</title>}
-          {resolvedDescription && <meta name="description" content={resolvedDescription} />}
-          {resolvedTitle && <meta property="og:title" content={resolvedTitle} />}
-          {resolvedDescription && <meta property="og:description" content={resolvedDescription} />}
-          {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
-          <meta property="og:type" content="website" />
-        </Helmet>
-      )}
+      <Helmet>
+        {/* Primary Meta Tags */}
+        {resolvedTitle && <title>{resolvedTitle}</title>}
+        {resolvedDescription && <meta name="description" content={resolvedDescription} />}
+        {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+        <meta name="robots" content="index, follow" />
+        {entityName && <meta name="author" content={entityName} />}
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        {resolvedTitle && <meta property="og:title" content={resolvedTitle} />}
+        {resolvedDescription && <meta property="og:description" content={resolvedDescription} />}
+        {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+        {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+        <meta property="og:site_name" content="Sponsorly" />
+        <meta property="og:locale" content="en_US" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        {resolvedTitle && <meta name="twitter:title" content={resolvedTitle} />}
+        {resolvedDescription && <meta name="twitter:description" content={resolvedDescription} />}
+        {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
+        <meta name="twitter:site" content="@sponsorlyio" />
+      </Helmet>
       
       <div className="min-h-screen bg-background">
         {resolvedBlocks.map((block) => (

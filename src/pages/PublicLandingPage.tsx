@@ -3,11 +3,14 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LandingPageRenderer } from '@/components/LandingPageEditor/LandingPageRenderer';
+import { JsonLdSchema } from '@/components/LandingPageEditor/JsonLdSchema';
 import { buildTemplateVariables } from '@/components/LandingPageEditor/resolveTemplateVariables';
 import { useEntityStats } from '@/hooks/useEntityStats';
 import { LandingPageBlock } from '@/components/LandingPageEditor/types';
 import NotFound from './NotFound';
-import { HelmetProvider } from 'react-helmet-async';
+import { HelmetProvider, Helmet } from 'react-helmet-async';
+
+const BASE_URL = 'https://sponsorly.io';
 
 interface PublicLandingPageProps {
   entityType: 'school' | 'district';
@@ -151,23 +154,69 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
     return <NotFound />;
   }
 
+  // Build canonical URL
+  const canonicalUrl = `${BASE_URL}/${entityType === 'school' ? 'schools' : 'districts'}/${state?.toLowerCase()}/${slug}`;
+
+  // Build entity data for JSON-LD
+  const entityData = React.useMemo(() => {
+    if (!entity) return null;
+    
+    if (entityType === 'school') {
+      const school = entity as SchoolEntity;
+      return {
+        name: school.school_name,
+        city: school.city || undefined,
+        state: school.state || undefined,
+        address: school.street_address || undefined,
+        logo: school.logo_file || undefined,
+      };
+    } else {
+      const district = entity as DistrictEntity;
+      return {
+        name: district.name,
+        state: district.state || undefined,
+      };
+    }
+  }, [entity, entityType]);
+
   // No template available - show basic info
   if (!template || blocks.length === 0) {
     return (
       <HelmetProvider>
-        <BasicEntityPage entity={entity} entityType={entityType} stats={stats} />
+        <BasicEntityPage 
+          entity={entity} 
+          entityType={entityType} 
+          stats={stats} 
+          canonicalUrl={canonicalUrl}
+        />
       </HelmetProvider>
     );
   }
 
+  const entityName = entityType === 'school' 
+    ? (entity as SchoolEntity).school_name 
+    : (entity as DistrictEntity).name;
+
   return (
     <HelmetProvider>
+      {entityData && (
+        <JsonLdSchema
+          entityType={entityType}
+          entity={entityData}
+          stats={stats}
+          pageUrl={canonicalUrl}
+          pageTitle={config?.seo_title || `${entityName} - Sponsorly`}
+          pageDescription={config?.seo_description || undefined}
+        />
+      )}
       <LandingPageRenderer
         blocks={blocks}
         variables={variables}
-        seoTitle={config?.seo_title || undefined}
-        seoDescription={config?.seo_description || undefined}
+        seoTitle={config?.seo_title || `${entityName} - Sponsorly`}
+        seoDescription={config?.seo_description || `Support ${entityName} through community fundraising on Sponsorly.`}
         ogImageUrl={config?.og_image_url || undefined}
+        canonicalUrl={canonicalUrl}
+        entityName={entityName}
       />
     </HelmetProvider>
   );
@@ -177,64 +226,116 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
 function BasicEntityPage({ 
   entity, 
   entityType,
-  stats 
+  stats,
+  canonicalUrl,
 }: { 
   entity: Entity; 
   entityType: 'school' | 'district';
   stats?: { total_raised?: number; campaign_count?: number; supporter_count?: number; group_count?: number };
+  canonicalUrl: string;
 }) {
   const name = entityType === 'school' ? (entity as SchoolEntity).school_name : (entity as DistrictEntity).name;
   const city = entityType === 'school' ? (entity as SchoolEntity).city : null;
-  const location = [city, entity.state].filter(Boolean).join(', ');
+  const stateValue = entity.state;
+  const location = [city, stateValue].filter(Boolean).join(', ');
   const logoUrl = entityType === 'school' ? (entity as SchoolEntity).logo_file : null;
+  const address = entityType === 'school' ? (entity as SchoolEntity).street_address : null;
+
+  const pageTitle = `${name} - Sponsorly`;
+  const pageDescription = `Support ${name}${location ? ` in ${location}` : ''} through community fundraising on Sponsorly.`;
+
+  const entityData = {
+    name,
+    city: city || undefined,
+    state: stateValue || undefined,
+    address: address || undefined,
+    logo: logoUrl || undefined,
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-primary text-primary-foreground py-16 px-6 text-center">
-        {logoUrl && (
-          <img 
-            src={logoUrl} 
-            alt={name}
-            className="w-24 h-24 mx-auto mb-6 rounded-full object-cover bg-white"
-          />
-        )}
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">{name}</h1>
-        {location && (
-          <p className="text-xl opacity-90">{location}</p>
-        )}
-      </header>
+    <>
+      {/* SEO Meta Tags */}
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta name="robots" content="index, follow" />
+        <meta name="author" content={name} />
+        
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="Sponsorly" />
+        <meta property="og:locale" content="en_US" />
+        {logoUrl && <meta property="og:image" content={logoUrl} />}
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:site" content="@sponsorlyio" />
+        {logoUrl && <meta name="twitter:image" content={logoUrl} />}
+      </Helmet>
 
-      {/* Stats */}
-      {stats && (
-        <section className="py-12 px-6 bg-muted/30">
-          <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="bg-background p-6 rounded-xl text-center shadow-sm">
-              <div className="text-3xl font-bold text-primary">
-                ${((stats.total_raised || 0) / 100).toLocaleString()}
+      {/* JSON-LD Structured Data */}
+      <JsonLdSchema
+        entityType={entityType}
+        entity={entityData}
+        stats={stats}
+        pageUrl={canonicalUrl}
+        pageTitle={pageTitle}
+        pageDescription={pageDescription}
+      />
+
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="bg-primary text-primary-foreground py-16 px-6 text-center">
+          {logoUrl && (
+            <img 
+              src={logoUrl} 
+              alt={name}
+              className="w-24 h-24 mx-auto mb-6 rounded-full object-cover bg-white"
+            />
+          )}
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">{name}</h1>
+          {location && (
+            <p className="text-xl opacity-90">{location}</p>
+          )}
+        </header>
+
+        {/* Stats */}
+        {stats && (
+          <section className="py-12 px-6 bg-muted/30">
+            <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="bg-background p-6 rounded-xl text-center shadow-sm">
+                <div className="text-3xl font-bold text-primary">
+                  ${((stats.total_raised || 0) / 100).toLocaleString()}
+                </div>
+                <div className="text-sm text-muted-foreground">Total Raised</div>
               </div>
-              <div className="text-sm text-muted-foreground">Total Raised</div>
+              <div className="bg-background p-6 rounded-xl text-center shadow-sm">
+                <div className="text-3xl font-bold text-primary">{stats.campaign_count || 0}</div>
+                <div className="text-sm text-muted-foreground">Campaigns</div>
+              </div>
+              <div className="bg-background p-6 rounded-xl text-center shadow-sm">
+                <div className="text-3xl font-bold text-primary">{stats.supporter_count || 0}</div>
+                <div className="text-sm text-muted-foreground">Supporters</div>
+              </div>
+              <div className="bg-background p-6 rounded-xl text-center shadow-sm">
+                <div className="text-3xl font-bold text-primary">{stats.group_count || 0}</div>
+                <div className="text-sm text-muted-foreground">Groups</div>
+              </div>
             </div>
-            <div className="bg-background p-6 rounded-xl text-center shadow-sm">
-              <div className="text-3xl font-bold text-primary">{stats.campaign_count || 0}</div>
-              <div className="text-sm text-muted-foreground">Campaigns</div>
-            </div>
-            <div className="bg-background p-6 rounded-xl text-center shadow-sm">
-              <div className="text-3xl font-bold text-primary">{stats.supporter_count || 0}</div>
-              <div className="text-sm text-muted-foreground">Supporters</div>
-            </div>
-            <div className="bg-background p-6 rounded-xl text-center shadow-sm">
-              <div className="text-3xl font-bold text-primary">{stats.group_count || 0}</div>
-              <div className="text-sm text-muted-foreground">Groups</div>
-            </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
 
-      {/* Footer */}
-      <footer className="py-8 px-6 text-center text-muted-foreground text-sm border-t">
-        <p>Powered by <a href="/" className="text-primary hover:underline">Sponsorly</a></p>
-      </footer>
-    </div>
+        {/* Footer */}
+        <footer className="py-8 px-6 text-center text-muted-foreground text-sm border-t">
+          <p>Powered by <a href="/" className="text-primary hover:underline">Sponsorly</a></p>
+        </footer>
+      </div>
+    </>
   );
 }

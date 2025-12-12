@@ -12,3 +12,14 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Sitemap
+Sitemap: https://sponsorly.io/api/sitemap.xml
+
+# Disallow admin and dashboard areas
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /system-admin
+Disallow: /system-admin/*
+Disallow: /login
+Disallow: /signup
