@@ -22,6 +22,18 @@ const staticPages = [
   { path: '/privacy', priority: '0.3', changefreq: 'yearly' },
 ];
 
+// All 50 US states + DC for state landing pages
+const statePages = [
+  'alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado', 'connecticut',
+  'delaware', 'district-of-columbia', 'florida', 'georgia', 'hawaii', 'idaho', 'illinois',
+  'indiana', 'iowa', 'kansas', 'kentucky', 'louisiana', 'maine', 'maryland', 'massachusetts',
+  'michigan', 'minnesota', 'mississippi', 'missouri', 'montana', 'nebraska', 'nevada',
+  'new-hampshire', 'new-jersey', 'new-mexico', 'new-york', 'north-carolina', 'north-dakota',
+  'ohio', 'oklahoma', 'oregon', 'pennsylvania', 'rhode-island', 'south-carolina', 'south-dakota',
+  'tennessee', 'texas', 'utah', 'vermont', 'virginia', 'washington', 'west-virginia',
+  'wisconsin', 'wyoming',
+];
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -48,6 +60,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Add state landing pages
+    for (const stateSlug of statePages) {
+      urls.push({
+        loc: `${BASE_URL}/schools/${stateSlug}`,
+        lastmod: today,
+        changefreq: 'weekly',
+        priority: '0.7',
+      });
+    }
+
     // Fetch published school landing pages
     const { data: schoolConfigs, error: schoolError } = await supabase
       .from('landing_page_configs')
@@ -70,7 +92,7 @@ Deno.serve(async (req) => {
             loc: `${BASE_URL}/schools/${school.state.toLowerCase()}/${school.slug}`,
             lastmod: config.updated_at ? new Date(config.updated_at).toISOString().split('T')[0] : today,
             changefreq: 'weekly',
-            priority: '0.7',
+            priority: '0.8',
           });
         }
       }
@@ -98,7 +120,7 @@ Deno.serve(async (req) => {
             loc: `${BASE_URL}/districts/${district.state.toLowerCase()}/${district.slug}`,
             lastmod: config.updated_at ? new Date(config.updated_at).toISOString().split('T')[0] : today,
             changefreq: 'weekly',
-            priority: '0.7',
+            priority: '0.8',
           });
         }
       }

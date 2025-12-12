@@ -65,6 +65,7 @@ import { HubSpotTracker } from "./components/HubSpotTracker";
 import { GoogleAnalyticsTracker } from "./components/GoogleAnalyticsTracker";
 import ScrollToTop from "./components/ScrollToTop";
 import PublicLandingPage from "./pages/PublicLandingPage";
+import StateLandingPage from "./pages/StateLandingPage";
 
 const queryClient = new QueryClient();
 
@@ -106,6 +107,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/schools" element={<Schools />} />
+        <Route path="/schools/:state" element={<StateLandingPage />} />
         <Route path="/nonprofits" element={<Nonprofits />} />
         <Route path="/platform" element={<Platform />} />
         <Route path="/features" element={<Features />} />
