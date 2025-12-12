@@ -474,23 +474,23 @@ const SharedDistrictFeatures = ({ districtName, stateName }: { districtName: str
 );
 
 const SharedDistrictCTA = ({ districtName }: { districtName: string }) => (
-  <section className="py-16 sm:py-20 bg-gradient-to-br from-primary/10 via-background to-accent/10">
+  <section className="py-16 sm:py-20 bg-primary">
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+      <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
         Ready to Transform District Fundraising?
       </h2>
-      <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+      <p className="text-lg text-white/90 max-w-2xl mx-auto mb-8">
         Join districts across America already using Sponsorly to raise more money while keeping 100% of every donation.
       </p>
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <Link to="/signup">
-          <Button size="lg" className="w-full sm:w-auto text-lg px-8">
+          <Button size="lg" className="w-full sm:w-auto text-lg px-8 bg-[#22C55E] hover:bg-[#16A34A] text-white border-0">
             Get Started Free
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </Link>
         <Link to="/contact">
-          <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8">
+          <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8 bg-white text-primary hover:bg-white/90 border-white">
             Contact Us
           </Button>
         </Link>
