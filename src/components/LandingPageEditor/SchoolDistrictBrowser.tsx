@@ -1,10 +1,11 @@
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, School, Building2, Loader2, Settings, Check } from "lucide-react";
+import { Search, School, Building2, Loader2, Settings, Check, Layers, Square, CheckSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BulkConfigDialog } from "./BulkConfigDialog";
 
 // US States for filter dropdown
 const US_STATES = [
@@ -42,6 +44,13 @@ interface SchoolDistrictBrowserProps {
   }) => void;
 }
 
+interface SelectedEntity {
+  id: string;
+  name: string;
+  city?: string;
+  state?: string;
+}
+
 const ITEMS_PER_PAGE = 10;
 
 export function SchoolDistrictBrowser({ onConfigurePage }: SchoolDistrictBrowserProps) {
@@ -50,6 +59,10 @@ export function SchoolDistrictBrowser({ onConfigurePage }: SchoolDistrictBrowser
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Bulk selection state
+  const [selectedEntities, setSelectedEntities] = useState<Map<string, SelectedEntity>>(new Map());
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
 
   // Debounce search query
   const debounceTimeout = useMemo(() => {
@@ -69,7 +82,7 @@ export function SchoolDistrictBrowser({ onConfigurePage }: SchoolDistrictBrowser
   const hasActiveFilters = stateFilter || debouncedQuery;
 
   // Fetch existing landing page configs to check which entities have configs
-  const { data: existingConfigs } = useQuery({
+  const { data: existingConfigs, refetch: refetchConfigs } = useQuery({
     queryKey: ["landing-page-configs-map"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -155,6 +168,7 @@ export function SchoolDistrictBrowser({ onConfigurePage }: SchoolDistrictBrowser
   const handleEntityTypeChange = useCallback((value: 'school' | 'district') => {
     setEntityType(value);
     setCurrentPage(1);
+    setSelectedEntities(new Map()); // Clear selection when switching types
   }, []);
 
   const handleStateChange = useCallback((value: string) => {
@@ -166,208 +180,364 @@ export function SchoolDistrictBrowser({ onConfigurePage }: SchoolDistrictBrowser
     return existingConfigs?.has(`${type}-${entityId}`) || false;
   }, [existingConfigs]);
 
+  // Toggle selection for a single entity
+  const toggleSelection = useCallback((entity: SelectedEntity) => {
+    setSelectedEntities(prev => {
+      const newMap = new Map(prev);
+      if (newMap.has(entity.id)) {
+        newMap.delete(entity.id);
+      } else {
+        newMap.set(entity.id, entity);
+      }
+      return newMap;
+    });
+  }, []);
+
+  // Select all visible entities
+  const selectAllVisible = useCallback(() => {
+    if (!data?.data) return;
+    
+    setSelectedEntities(prev => {
+      const newMap = new Map(prev);
+      data.data.forEach((item: any) => {
+        const entity: SelectedEntity = {
+          id: item.id,
+          name: entityType === 'school' ? item.school_name : item.name,
+          city: item.city,
+          state: item.state,
+        };
+        newMap.set(entity.id, entity);
+      });
+      return newMap;
+    });
+  }, [data, entityType]);
+
+  // Deselect all visible entities
+  const deselectAllVisible = useCallback(() => {
+    if (!data?.data) return;
+    
+    setSelectedEntities(prev => {
+      const newMap = new Map(prev);
+      data.data.forEach((item: any) => {
+        newMap.delete(item.id);
+      });
+      return newMap;
+    });
+  }, [data]);
+
+  // Check if all visible entities are selected
+  const allVisibleSelected = useMemo(() => {
+    if (!data?.data || data.data.length === 0) return false;
+    return data.data.every((item: any) => selectedEntities.has(item.id));
+  }, [data, selectedEntities]);
+
+  // Check if some visible entities are selected
+  const someVisibleSelected = useMemo(() => {
+    if (!data?.data || data.data.length === 0) return false;
+    return data.data.some((item: any) => selectedEntities.has(item.id));
+  }, [data, selectedEntities]);
+
+  const handleBulkComplete = useCallback(() => {
+    setSelectedEntities(new Map());
+    refetchConfigs();
+  }, [refetchConfigs]);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          {entityType === 'school' ? <School className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
-          Browse Schools & Districts
-        </CardTitle>
-        <CardDescription>
-          Search for schools or districts to configure their landing pages
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Select value={entityType} onValueChange={handleEntityTypeChange}>
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Entity Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="school">
-                <div className="flex items-center gap-2">
-                  <School className="h-4 w-4" />
-                  Schools
-                </div>
-              </SelectItem>
-              <SelectItem value="district">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Districts
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={stateFilter || 'all'} onValueChange={handleStateChange}>
-            <SelectTrigger className="w-full sm:w-32">
-              <SelectValue placeholder="State" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All States</SelectItem>
-              {US_STATES.map(state => (
-                <SelectItem key={state} value={state}>{state}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder={`Search ${entityType === 'school' ? 'schools' : 'districts'}...`}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        </div>
-
-        {/* Results */}
-        {!hasActiveFilters ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Search className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Select a filter to begin</h3>
-            <p className="text-muted-foreground">
-              Choose a state or search by name to find {entityType === 'school' ? 'schools' : 'districts'}
-            </p>
-          </div>
-        ) : isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : data?.data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <School className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No results found</h3>
-            <p className="text-muted-foreground">
-              Try adjusting your search or filter criteria
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="text-sm text-muted-foreground mb-2">
-              Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount.toLocaleString()} {entityType === 'school' ? 'schools' : 'districts'}
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                {entityType === 'school' ? <School className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
+                Browse Schools & Districts
+              </CardTitle>
+              <CardDescription>
+                Search for schools or districts to configure their landing pages
+              </CardDescription>
             </div>
             
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    {entityType === 'school' && <TableHead>City</TableHead>}
-                    <TableHead>State</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {entityType === 'school' ? (
-                    (data?.data as any[])?.map((school) => {
-                      const hasConfig = checkHasConfig(school.id, 'school');
-                      return (
-                        <TableRow key={school.id}>
-                          <TableCell className="font-medium">{school.school_name}</TableCell>
-                          <TableCell>{school.city}</TableCell>
-                          <TableCell>{school.state}</TableCell>
-                          <TableCell>
-                            {hasConfig ? (
-                              <Badge variant="secondary" className="bg-primary/10 text-primary">
-                                <Check className="h-3 w-3 mr-1" />
-                                Configured
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">Not Configured</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              variant={hasConfig ? "outline" : "default"}
-                              onClick={() => onConfigurePage({
-                                id: school.id,
-                                name: school.school_name,
-                                type: 'school',
-                                city: school.city,
-                                state: school.state,
-                                hasConfig,
-                              })}
-                            >
-                              <Settings className="h-4 w-4 mr-1" />
-                              {hasConfig ? 'Edit' : 'Configure'}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  ) : (
-                    (data?.data as any[])?.map((district) => {
-                      const hasConfig = checkHasConfig(district.id, 'district');
-                      return (
-                        <TableRow key={district.id}>
-                          <TableCell className="font-medium">{district.name}</TableCell>
-                          <TableCell>{district.state}</TableCell>
-                          <TableCell>
-                            {hasConfig ? (
-                              <Badge variant="secondary" className="bg-primary/10 text-primary">
-                                <Check className="h-3 w-3 mr-1" />
-                                Configured
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">Not Configured</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              variant={hasConfig ? "outline" : "default"}
-                              onClick={() => onConfigurePage({
-                                id: district.id,
-                                name: district.name,
-                                type: 'district',
-                                state: district.state,
-                                hasConfig,
-                              })}
-                            >
-                              <Settings className="h-4 w-4 mr-1" />
-                              {hasConfig ? 'Edit' : 'Configure'}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            {/* Bulk action button */}
+            {selectedEntities.size > 0 && (
+              <Button onClick={() => setBulkDialogOpen(true)}>
+                <Layers className="mr-2 h-4 w-4" />
+                Configure {selectedEntities.size} Selected
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Select value={entityType} onValueChange={handleEntityTypeChange}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Entity Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="school">
+                  <div className="flex items-center gap-2">
+                    <School className="h-4 w-4" />
+                    Schools
+                  </div>
+                </SelectItem>
+                <SelectItem value="district">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Districts
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages}
+            <Select value={stateFilter || 'all'} onValueChange={handleStateChange}>
+              <SelectTrigger className="w-full sm:w-32">
+                <SelectValue placeholder="State" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All States</SelectItem>
+                {US_STATES.map(state => (
+                  <SelectItem key={state} value={state}>{state}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder={`Search ${entityType === 'school' ? 'schools' : 'districts'}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
+
+          {/* Selection info bar */}
+          {selectedEntities.size > 0 && (
+            <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <span className="text-sm font-medium">
+                {selectedEntities.size} {entityType}{selectedEntities.size !== 1 ? 's' : ''} selected
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedEntities(new Map())}
+              >
+                Clear selection
+              </Button>
+            </div>
+          )}
+
+          {/* Results */}
+          {!hasActiveFilters ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Search className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Select a filter to begin</h3>
+              <p className="text-muted-foreground">
+                Choose a state or search by name to find {entityType === 'school' ? 'schools' : 'districts'}
+              </p>
+            </div>
+          ) : isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : data?.data.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <School className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No results found</h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search or filter criteria
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+                <span>
+                  Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount.toLocaleString()} {entityType === 'school' ? 'schools' : 'districts'}
                 </span>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
+                  onClick={allVisibleSelected ? deselectAllVisible : selectAllVisible}
+                  className="h-8"
                 >
-                  Next
+                  {allVisibleSelected ? (
+                    <>
+                      <CheckSquare className="mr-1 h-4 w-4" />
+                      Deselect page
+                    </>
+                  ) : (
+                    <>
+                      <Square className="mr-1 h-4 w-4" />
+                      Select page
+                    </>
+                  )}
                 </Button>
               </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+              
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={allVisibleSelected}
+                          onCheckedChange={(checked) => {
+                            if (checked) selectAllVisible();
+                            else deselectAllVisible();
+                          }}
+                          aria-label="Select all"
+                        />
+                      </TableHead>
+                      <TableHead>Name</TableHead>
+                      {entityType === 'school' && <TableHead>City</TableHead>}
+                      <TableHead>State</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {entityType === 'school' ? (
+                      (data?.data as any[])?.map((school) => {
+                        const hasConfig = checkHasConfig(school.id, 'school');
+                        const isSelected = selectedEntities.has(school.id);
+                        return (
+                          <TableRow key={school.id} className={isSelected ? "bg-primary/5" : ""}>
+                            <TableCell>
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => toggleSelection({
+                                  id: school.id,
+                                  name: school.school_name,
+                                  city: school.city,
+                                  state: school.state,
+                                })}
+                                aria-label={`Select ${school.school_name}`}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">{school.school_name}</TableCell>
+                            <TableCell>{school.city}</TableCell>
+                            <TableCell>{school.state}</TableCell>
+                            <TableCell>
+                              {hasConfig ? (
+                                <Badge variant="secondary" className="bg-primary/10 text-primary">
+                                  <Check className="h-3 w-3 mr-1" />
+                                  Configured
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline">Not Configured</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                variant={hasConfig ? "outline" : "default"}
+                                onClick={() => onConfigurePage({
+                                  id: school.id,
+                                  name: school.school_name,
+                                  type: 'school',
+                                  city: school.city,
+                                  state: school.state,
+                                  hasConfig,
+                                })}
+                              >
+                                <Settings className="h-4 w-4 mr-1" />
+                                {hasConfig ? 'Edit' : 'Configure'}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      (data?.data as any[])?.map((district) => {
+                        const hasConfig = checkHasConfig(district.id, 'district');
+                        const isSelected = selectedEntities.has(district.id);
+                        return (
+                          <TableRow key={district.id} className={isSelected ? "bg-primary/5" : ""}>
+                            <TableCell>
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => toggleSelection({
+                                  id: district.id,
+                                  name: district.name,
+                                  state: district.state,
+                                })}
+                                aria-label={`Select ${district.name}`}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">{district.name}</TableCell>
+                            <TableCell>{district.state}</TableCell>
+                            <TableCell>
+                              {hasConfig ? (
+                                <Badge variant="secondary" className="bg-primary/10 text-primary">
+                                  <Check className="h-3 w-3 mr-1" />
+                                  Configured
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline">Not Configured</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                variant={hasConfig ? "outline" : "default"}
+                                onClick={() => onConfigurePage({
+                                  id: district.id,
+                                  name: district.name,
+                                  type: 'district',
+                                  state: district.state,
+                                  hasConfig,
+                                })}
+                              >
+                                <Settings className="h-4 w-4 mr-1" />
+                                {hasConfig ? 'Edit' : 'Configure'}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Bulk Configuration Dialog */}
+      <BulkConfigDialog
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        entityType={entityType}
+        selectedEntities={Array.from(selectedEntities.values())}
+        onComplete={handleBulkComplete}
+      />
+    </>
   );
 }
