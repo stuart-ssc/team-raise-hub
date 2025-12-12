@@ -363,8 +363,8 @@ const SharedValueProposition = ({ schoolName, stateName }: { schoolName: string;
         {[
           {
             icon: Heart,
-            title: '100% to Your School',
-            description: 'Every dollar donated goes directly to your programs. We charge donors a small platform fee instead.',
+            title: '100% to Your School Team or Group',
+            description: 'Every dollar donated goes directly to your needs. Donors support you by paying a platform fee to make it free.',
           },
           {
             icon: Zap,
@@ -473,7 +473,7 @@ const SharedFeaturesList = ({ schoolName, stateName }: { schoolName: string; sta
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary mb-4">
             <Trophy className="h-4 w-4" />
-            <span className="text-sm font-medium">For Coaches & Sponsors</span>
+            <span className="text-sm font-medium">Coaches & Club Sponsors</span>
           </div>
           <h3 className="text-2xl font-bold text-foreground mb-4">
             Empower Your Team to Raise More
