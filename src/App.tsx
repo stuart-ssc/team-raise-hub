@@ -65,8 +65,9 @@ import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import { HubSpotTracker } from "./components/HubSpotTracker";
 import { GoogleAnalyticsTracker } from "./components/GoogleAnalyticsTracker";
 import ScrollToTop from "./components/ScrollToTop";
-import PublicLandingPage from "./pages/PublicLandingPage";
 import StateLandingPage from "./pages/StateLandingPage";
+import SchoolLandingPage from "./pages/SchoolLandingPage";
+import DistrictLandingPage from "./pages/DistrictLandingPage";
 
 const queryClient = new QueryClient();
 
@@ -124,8 +125,8 @@ const AppContent = () => {
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path="/c/:slug" element={<CampaignLanding />} />
         <Route path="/c/:slug/:rosterMemberSlug" element={<CampaignLanding />} />
-        <Route path="/schools/:state/:slug" element={<PublicLandingPage entityType="school" />} />
-        <Route path="/districts/:state/:slug" element={<PublicLandingPage entityType="district" />} />
+        <Route path="/schools/:state/:slug" element={<SchoolLandingPage />} />
+        <Route path="/districts/:state/:slug" element={<DistrictLandingPage />} />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
         <Route path="/donor-receipts" element={<DonorReceiptPortal />} />
         <Route path="/orders/:orderId" element={<OrderDetails />} />
