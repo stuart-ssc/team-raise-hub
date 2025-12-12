@@ -176,3 +176,6 @@ verify_jwt = true
 
 [functions.generate-landing-page-slugs]
 verify_jwt = true
+
+[functions.generate-sitemap]
+verify_jwt = false
