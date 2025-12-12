@@ -415,7 +415,7 @@ const SharedValueProposition = ({ schoolName, stateName }: { schoolName: string;
 );
 
 const SharedAdminLeadership = () => (
-  <section className="py-16 sm:py-20 bg-gradient-to-br from-primary/5 to-accent/5">
+  <section className="py-16 sm:py-20 bg-background">
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-10">
