@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, FileText, LayoutTemplate, Settings, Loader2, School } from "lucide-react";
+import { Plus, LayoutTemplate, Settings, Loader2, School } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { TemplateEditorDialog } from "@/components/LandingPageEditor/TemplateEdi
 import { CreateTemplateDialog } from "@/components/LandingPageEditor/CreateTemplateDialog";
 import { SchoolDistrictBrowser } from "@/components/LandingPageEditor/SchoolDistrictBrowser";
 import { ConfiguredPagesList } from "@/components/LandingPageEditor/ConfiguredPagesList";
+import { PageConfigDialog } from "@/components/LandingPageEditor/PageConfigDialog";
 
 export default function LandingPages() {
   const queryClient = useQueryClient();
@@ -47,8 +48,11 @@ export default function LandingPages() {
     type: 'school' | 'district';
     city?: string;
     state?: string;
+    slug?: string;
     hasConfig: boolean;
+    configId?: string;
   } | null>(null);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
 
   const { data: templates, isLoading: templatesLoading, refetch: refetchTemplates } = useQuery({
     queryKey: ["landing-page-templates"],
@@ -323,20 +327,28 @@ export default function LandingPages() {
             {/* School/District Browser */}
             <SchoolDistrictBrowser
               onConfigurePage={(entity) => {
-                setSelectedEntity(entity);
-                // TODO: Open PageConfigDialog in Phase 2
-                toast.info(`Configure page for ${entity.name} - Coming soon in Phase 2`);
+                setSelectedEntity({
+                  ...entity,
+                  configId: undefined,
+                });
+                setConfigDialogOpen(true);
               }}
             />
 
             {/* Configured Pages List */}
             <ConfiguredPagesList
               onEditPage={(config) => {
-                // TODO: Open PageConfigDialog in Phase 2
-                toast.info(`Edit page for ${config.entityName} - Coming soon in Phase 2`);
+                setSelectedEntity({
+                  id: config.entityId,
+                  name: config.entityName,
+                  type: config.entityType as 'school' | 'district',
+                  slug: config.slug,
+                  hasConfig: true,
+                  configId: config.id,
+                });
+                setConfigDialogOpen(true);
               }}
               onPreviewPage={(entityType, slug) => {
-                // TODO: Implement preview route in Phase 3
                 const previewUrl = entityType === 'school' 
                   ? `/schools/${slug}`
                   : `/districts/${slug}`;
@@ -425,6 +437,30 @@ export default function LandingPages() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Page Configuration Dialog */}
+      {selectedEntity && (
+        <PageConfigDialog
+          open={configDialogOpen}
+          onOpenChange={(open) => {
+            setConfigDialogOpen(open);
+            if (!open) setSelectedEntity(null);
+          }}
+          entityType={selectedEntity.type}
+          entity={{
+            id: selectedEntity.id,
+            name: selectedEntity.name,
+            city: selectedEntity.city,
+            state: selectedEntity.state,
+            slug: selectedEntity.slug,
+          }}
+          existingConfigId={selectedEntity.configId}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["landing-page-configs"] });
+            queryClient.invalidateQueries({ queryKey: ["landing-page-stats"] });
+          }}
+        />
+      )}
     </SystemAdminPageLayout>
   );
 }
