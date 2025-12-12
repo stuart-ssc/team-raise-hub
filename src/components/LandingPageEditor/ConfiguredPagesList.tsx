@@ -13,7 +13,9 @@ import {
   ExternalLink,
   CheckSquare,
   Square,
-  X
+  X,
+  Copy,
+  Link
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -115,6 +117,7 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
       const configsWithNames = await Promise.all((data || []).map(async (config) => {
         let entityName = 'Unknown';
         let slug = '';
+        let state = '';
         
         if (config.entity_type === 'school') {
           const { data: school } = await supabase
@@ -125,6 +128,7 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
           if (school) {
             entityName = school.school_name;
             slug = school.slug || '';
+            state = school.state || '';
           }
         } else if (config.entity_type === 'district') {
           const { data: district } = await supabase
@@ -135,10 +139,11 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
           if (district) {
             entityName = district.name;
             slug = district.slug || '';
+            state = district.state || '';
           }
         }
         
-        return { ...config, entityName, slug };
+        return { ...config, entityName, slug, state };
       }));
 
       // Filter by search query (client-side since we need entity names)
@@ -439,9 +444,8 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
                         />
                       </TableHead>
                       <TableHead>Entity</TableHead>
-                      <TableHead>Type</TableHead>
+                      <TableHead>URL</TableHead>
                       <TableHead>Template</TableHead>
-                      <TableHead>SEO Title</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Updated</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -457,24 +461,74 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
                           />
                         </TableCell>
                         <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {config.entity_type === 'school' ? (
-                              <School className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <Building2 className="h-4 w-4 text-muted-foreground" />
-                            )}
-                            {config.entityName}
-                          </div>
+                          {(() => {
+                            const publicUrl = config.slug && config.state
+                              ? `/${config.entity_type === 'school' ? 'schools' : 'districts'}/${config.state.toLowerCase()}/${config.slug}`
+                              : null;
+                            return (
+                              <div className="flex items-center gap-2">
+                                {config.entity_type === 'school' ? (
+                                  <School className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                ) : (
+                                  <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                )}
+                                {publicUrl && config.is_published ? (
+                                  <a
+                                    href={publicUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline flex items-center gap-1"
+                                  >
+                                    {config.entityName}
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                ) : (
+                                  <span>{config.entityName}</span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {config.entity_type}
-                          </Badge>
+                          {(() => {
+                            const publicUrl = config.slug && config.state
+                              ? `/${config.entity_type === 'school' ? 'schools' : 'districts'}/${config.state.toLowerCase()}/${config.slug}`
+                              : null;
+                            
+                            if (!publicUrl) {
+                              return <span className="text-muted-foreground italic text-sm">No slug</span>;
+                            }
+                            
+                            return (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(window.location.origin + publicUrl);
+                                    toast.success("URL copied to clipboard");
+                                  }}
+                                  className={`text-sm font-mono truncate max-w-[180px] hover:underline ${
+                                    config.is_published ? 'text-primary' : 'text-muted-foreground'
+                                  }`}
+                                  title="Click to copy"
+                                >
+                                  {publicUrl}
+                                </button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(window.location.origin + publicUrl);
+                                    toast.success("URL copied to clipboard");
+                                  }}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>{config.template?.name || 'Unknown'}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {config.seo_title || <span className="text-muted-foreground italic">Not set</span>}
-                        </TableCell>
                         <TableCell>
                           {config.is_published ? (
                             <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
