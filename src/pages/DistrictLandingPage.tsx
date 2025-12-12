@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import MarketingHeader from '@/components/MarketingHeader';
 import MarketingFooter from '@/components/MarketingFooter';
+import DistrictSchoolsList from '@/components/DistrictLandingPage/DistrictSchoolsList';
 import { supabase } from '@/integrations/supabase/client';
 import { getVariantForEntity, type LandingPageVariant } from '@/lib/abTestUtils';
 import { getStateFromSlug, getStateName } from '@/lib/stateUtils';
@@ -191,6 +192,12 @@ const VariantAContent = ({ district, stateSlug, stateName }: VariantContentProps
       </div>
     </section>
 
+    <SharedDistrictSchools 
+      districtId={district.id} 
+      districtName={district.name} 
+      stateSlug={stateSlug} 
+      schoolCount={district.school_count} 
+    />
     <SharedDistrictValueProposition districtName={district.name} stateName={stateName} />
     <SharedProgramTypes />
     <SharedDistrictFeatures districtName={district.name} stateName={stateName} />
@@ -259,6 +266,12 @@ const VariantBContent = ({ district, stateSlug, stateName }: VariantContentProps
       </div>
     </section>
 
+    <SharedDistrictSchools 
+      districtId={district.id} 
+      districtName={district.name} 
+      stateSlug={stateSlug} 
+      schoolCount={district.school_count} 
+    />
     <SharedDistrictValueProposition districtName={district.name} stateName={stateName} />
     <SharedProgramTypes />
     <SharedDistrictFeatures districtName={district.name} stateName={stateName} />
@@ -317,6 +330,12 @@ const VariantCContent = ({ district, stateSlug, stateName }: VariantContentProps
       </div>
     </section>
 
+    <SharedDistrictSchools 
+      districtId={district.id} 
+      districtName={district.name} 
+      stateSlug={stateSlug} 
+      schoolCount={district.school_count} 
+    />
     <SharedDistrictValueProposition districtName={district.name} stateName={stateName} />
     <SharedProgramTypes />
     <SharedDistrictFeatures districtName={district.name} stateName={stateName} />
@@ -325,6 +344,31 @@ const VariantCContent = ({ district, stateSlug, stateName }: VariantContentProps
 );
 
 // Shared Components
+interface SharedDistrictSchoolsProps {
+  districtId: string;
+  districtName: string;
+  stateSlug: string;
+  schoolCount: number;
+}
+
+const SharedDistrictSchools = ({ districtId, districtName, stateSlug, schoolCount }: SharedDistrictSchoolsProps) => (
+  <section className="py-16 sm:py-20 bg-accent/20">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="text-center mb-12">
+        <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+          Schools in {districtName}
+        </h2>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          {schoolCount > 0 
+            ? `Browse all ${schoolCount} schools in this district`
+            : 'Browse schools in this district'}
+        </p>
+      </div>
+      <DistrictSchoolsList districtId={districtId} stateSlug={stateSlug} />
+    </div>
+  </section>
+);
+
 const SharedDistrictValueProposition = ({ districtName, stateName }: { districtName: string; stateName: string }) => (
   <section className="py-16 sm:py-20">
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
