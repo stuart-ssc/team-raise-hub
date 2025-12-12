@@ -41,15 +41,15 @@ export function JsonLdSchema({
     url: pageUrl,
     ...(entity.logo && { logo: entity.logo }),
     ...(entity.website && { sameAs: [entity.website] }),
-    ...(entity.address || entity.city || entity.state) && {
+    ...((entity.address || entity.city || entity.state) ? {
       address: {
         '@type': 'PostalAddress',
-        ...(entity.address && { streetAddress: entity.address }),
-        ...(entity.city && { addressLocality: entity.city }),
-        ...(entity.state && { addressRegion: entity.state }),
+        ...(entity.address ? { streetAddress: entity.address } : {}),
+        ...(entity.city ? { addressLocality: entity.city } : {}),
+        ...(entity.state ? { addressRegion: entity.state } : {}),
         addressCountry: 'US',
       },
-    },
+    } : {}),
     ...(entity.phone && { telephone: entity.phone }),
     ...(entity.email && { email: entity.email }),
   };
