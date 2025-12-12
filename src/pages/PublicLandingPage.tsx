@@ -8,7 +8,7 @@ import { buildTemplateVariables } from '@/components/LandingPageEditor/resolveTe
 import { useEntityStats } from '@/hooks/useEntityStats';
 import { LandingPageBlock } from '@/components/LandingPageEditor/types';
 import NotFound from './NotFound';
-import { HelmetProvider, Helmet } from 'react-helmet-async';
+import { Helmet } from 'react-helmet-async';
 
 const BASE_URL = 'https://sponsorly.io';
 
@@ -182,14 +182,12 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
   // No template available - show basic info
   if (!template || blocks.length === 0) {
     return (
-      <HelmetProvider>
-        <BasicEntityPage 
-          entity={entity} 
-          entityType={entityType} 
-          stats={stats} 
-          canonicalUrl={canonicalUrl}
-        />
-      </HelmetProvider>
+      <BasicEntityPage 
+        entity={entity} 
+        entityType={entityType} 
+        stats={stats} 
+        canonicalUrl={canonicalUrl}
+      />
     );
   }
 
@@ -198,7 +196,7 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
     : (entity as DistrictEntity).name;
 
   return (
-    <HelmetProvider>
+    <>
       {entityData && (
         <JsonLdSchema
           entityType={entityType}
@@ -218,7 +216,7 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
         canonicalUrl={canonicalUrl}
         entityName={entityName}
       />
-    </HelmetProvider>
+    </>
   );
 }
 

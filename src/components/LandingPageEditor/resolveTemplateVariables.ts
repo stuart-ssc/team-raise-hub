@@ -30,6 +30,30 @@ export function resolveTemplateVariables(
   return blocks.map(block => resolveBlockVariables(block, variables));
 }
 
+// List of style properties that may contain template variables
+const TEXT_STYLE_PROPERTIES = [
+  'buttonUrl',
+  'buttonText',
+  'heroTitle',
+  'heroSubtitle',
+  'ctaTitle',
+  'ctaDescription',
+  'ctaButtonText',
+  'ctaButtonUrl',
+  'testimonialQuote',
+  'testimonialAuthor',
+  'testimonialRole',
+  'pricingTitle',
+  'pricingSubtitle',
+  'pricingDescription',
+  'pricingHighlight',
+  'campaignListTitle',
+  'contactTitle',
+  'contactEmail',
+  'contactPhone',
+  'contactAddress',
+] as const;
+
 function resolveBlockVariables(
   block: LandingPageBlock,
   variables: Partial<TemplateVariables>
@@ -43,23 +67,41 @@ function resolveBlockVariables(
   
   // Resolve styles that might contain variables
   if (resolved.styles) {
-    resolved.styles = { ...resolved.styles };
+    const resolvedStyles = { ...resolved.styles } as Record<string, unknown>;
     
-    // Button URL might have variables
-    if ('buttonUrl' in resolved.styles && resolved.styles.buttonUrl) {
-      resolved.styles.buttonUrl = resolveVariableString(
-        resolved.styles.buttonUrl as string,
-        variables
-      );
+    // Resolve all text style properties
+    for (const prop of TEXT_STYLE_PROPERTIES) {
+      if (prop in resolvedStyles && typeof resolvedStyles[prop] === 'string') {
+        resolvedStyles[prop] = resolveVariableString(resolvedStyles[prop] as string, variables);
+      }
     }
     
-    // Button text might have variables
-    if ('buttonText' in resolved.styles && resolved.styles.buttonText) {
-      resolved.styles.buttonText = resolveVariableString(
-        resolved.styles.buttonText as string,
-        variables
-      );
+    // Resolve nested arrays (features, steps, stats)
+    if ('features' in resolvedStyles && Array.isArray(resolvedStyles.features)) {
+      resolvedStyles.features = (resolvedStyles.features as Array<{ title?: string; description?: string; icon?: string }>).map(f => ({
+        ...f,
+        title: f.title ? resolveVariableString(f.title, variables) : f.title,
+        description: f.description ? resolveVariableString(f.description, variables) : f.description,
+      }));
     }
+    
+    if ('steps' in resolvedStyles && Array.isArray(resolvedStyles.steps)) {
+      resolvedStyles.steps = (resolvedStyles.steps as Array<{ title?: string; description?: string }>).map(s => ({
+        ...s,
+        title: s.title ? resolveVariableString(s.title, variables) : s.title,
+        description: s.description ? resolveVariableString(s.description, variables) : s.description,
+      }));
+    }
+    
+    if ('stats' in resolvedStyles && Array.isArray(resolvedStyles.stats)) {
+      resolvedStyles.stats = (resolvedStyles.stats as Array<{ label?: string; value?: string }>).map(stat => ({
+        ...stat,
+        label: stat.label ? resolveVariableString(stat.label, variables) : stat.label,
+        value: stat.value ? resolveVariableString(stat.value, variables) : stat.value,
+      }));
+    }
+    
+    resolved.styles = resolvedStyles;
   }
   
   return resolved;
