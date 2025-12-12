@@ -57,9 +57,9 @@ export const DistrictsAccordion = ({ stateAbbr, stateSlug }: DistrictsAccordionP
           <Link
             key={district.id}
             to={`/districts/${stateSlug}/${district.slug}`}
-            className="px-4 py-3 rounded-lg border border-border bg-background hover:bg-accent/50 hover:border-primary/30 transition-colors group"
+            className="px-4 py-3 rounded-lg border border-border bg-background hover:bg-primary hover:border-primary transition-colors group"
           >
-            <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2">
+            <p className="text-sm font-medium text-foreground group-hover:text-white transition-colors line-clamp-2">
               {district.name}
             </p>
           </Link>
