@@ -1,18 +1,45 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, FileText, LayoutTemplate, Settings } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, FileText, LayoutTemplate, Settings, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { LandingPageBlock } from "@/components/LandingPageEditor/types";
+import { TemplateCard } from "@/components/LandingPageEditor/TemplateCard";
+import { TemplateEditorDialog } from "@/components/LandingPageEditor/TemplateEditorDialog";
+import { CreateTemplateDialog } from "@/components/LandingPageEditor/CreateTemplateDialog";
 
 export default function LandingPages() {
+  const queryClient = useQueryClient();
   const [isGeneratingSlugs, setIsGeneratingSlugs] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editorDialogOpen, setEditorDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<{
+    id: string;
+    name: string;
+    description: string | null;
+    template_type: 'school' | 'district' | 'nonprofit';
+    blocks: LandingPageBlock[];
+    is_default: boolean;
+  } | null>(null);
+  const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: templates, isLoading: templatesLoading } = useQuery({
+  const { data: templates, isLoading: templatesLoading, refetch: refetchTemplates } = useQuery({
     queryKey: ["landing-page-templates"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -69,6 +96,128 @@ export default function LandingPages() {
     }
   };
 
+  const handleCreateTemplate = async (data: {
+    name: string;
+    templateType: 'school' | 'district' | 'nonprofit';
+    blocks: LandingPageBlock[];
+    sourceType: 'blank' | 'preset' | 'duplicate';
+  }) => {
+    try {
+      const { error } = await supabase.from("landing_page_templates").insert({
+        name: data.name,
+        template_type: data.templateType,
+        blocks: JSON.parse(JSON.stringify(data.blocks)),
+      });
+
+      if (error) throw error;
+
+      toast.success("Template created successfully");
+      setCreateDialogOpen(false);
+      refetchTemplates();
+
+      // Open editor for the new template
+      const { data: newTemplates } = await supabase
+        .from("landing_page_templates")
+        .select("*")
+        .eq("name", data.name)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (newTemplates && newTemplates[0]) {
+        setSelectedTemplate({
+          id: newTemplates[0].id,
+          name: newTemplates[0].name,
+          description: newTemplates[0].description,
+          template_type: newTemplates[0].template_type as 'school' | 'district' | 'nonprofit',
+          blocks: newTemplates[0].blocks as unknown as LandingPageBlock[],
+          is_default: newTemplates[0].is_default || false,
+        });
+        setEditorDialogOpen(true);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create template");
+    }
+  };
+
+  const handleEditTemplate = (template: any) => {
+    setSelectedTemplate({
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      template_type: template.template_type as 'school' | 'district' | 'nonprofit',
+      blocks: template.blocks as unknown as LandingPageBlock[],
+      is_default: template.is_default || false,
+    });
+    setEditorDialogOpen(true);
+  };
+
+  const handleDuplicateTemplate = async (template: any) => {
+    try {
+      const { error } = await supabase.from("landing_page_templates").insert({
+        name: `${template.name} (Copy)`,
+        description: template.description,
+        template_type: template.template_type,
+        blocks: JSON.parse(JSON.stringify(template.blocks)),
+      });
+
+      if (error) throw error;
+      toast.success("Template duplicated successfully");
+      refetchTemplates();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to duplicate template");
+    }
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!templateToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("landing_page_templates")
+        .delete()
+        .eq("id", templateToDelete);
+
+      if (error) throw error;
+      toast.success("Template deleted successfully");
+      setDeleteDialogOpen(false);
+      setTemplateToDelete(null);
+      refetchTemplates();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete template");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSetDefault = async (templateId: string, templateType: string) => {
+    try {
+      // First, unset any existing defaults for this type
+      await supabase
+        .from("landing_page_templates")
+        .update({ is_default: false })
+        .eq("template_type", templateType);
+
+      // Set new default
+      const { error } = await supabase
+        .from("landing_page_templates")
+        .update({ is_default: true })
+        .eq("id", templateId);
+
+      if (error) throw error;
+      toast.success("Default template updated");
+      refetchTemplates();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to set default");
+    }
+  };
+
+  const existingTemplates = templates?.map(t => ({
+    id: t.id,
+    name: t.name,
+    blocks: t.blocks as unknown as LandingPageBlock[],
+  })) || [];
+
   return (
     <SystemAdminPageLayout title="Landing Pages" subtitle="Manage dynamic landing page templates for schools and districts">
       <div className="space-y-6">
@@ -77,7 +226,7 @@ export default function LandingPages() {
             <h1 className="text-2xl font-bold">Landing Pages</h1>
             <p className="text-muted-foreground">Create and manage dynamic landing pages for schools and districts</p>
           </div>
-          <Button>
+          <Button onClick={() => setCreateDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             New Template
           </Button>
@@ -127,37 +276,46 @@ export default function LandingPages() {
           </TabsList>
 
           <TabsContent value="templates" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Page Templates</CardTitle>
-                <CardDescription>Reusable templates for school and district landing pages</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {templatesLoading ? (
-                  <p className="text-muted-foreground">Loading templates...</p>
-                ) : templates?.length === 0 ? (
-                  <p className="text-muted-foreground">No templates created yet. Click "New Template" to get started.</p>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {templates?.map((template: any) => (
-                      <Card key={template.id} className="cursor-pointer hover:border-primary transition-colors">
-                        <CardHeader className="pb-2">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-base">{template.name}</CardTitle>
-                            <Badge variant="secondary">{template.template_type}</Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {template.description || "No description"}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {templatesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : templates?.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <LayoutTemplate className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No templates yet</h3>
+                  <p className="text-muted-foreground mb-4">Get started by creating your first template</p>
+                  <Button onClick={() => setCreateDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Template
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {templates?.map((template: any) => (
+                  <TemplateCard
+                    key={template.id}
+                    id={template.id}
+                    name={template.name}
+                    description={template.description}
+                    templateType={template.template_type}
+                    blocks={template.blocks as unknown as LandingPageBlock[]}
+                    isDefault={template.is_default || false}
+                    createdAt={template.created_at}
+                    updatedAt={template.updated_at}
+                    onEdit={() => handleEditTemplate(template)}
+                    onDuplicate={() => handleDuplicateTemplate(template)}
+                    onDelete={() => {
+                      setTemplateToDelete(template.id);
+                      setDeleteDialogOpen(true);
+                    }}
+                    onSetDefault={() => handleSetDefault(template.id, template.template_type)}
+                  />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="pages" className="mt-4">
@@ -168,7 +326,9 @@ export default function LandingPages() {
               </CardHeader>
               <CardContent>
                 {configsLoading ? (
-                  <p className="text-muted-foreground">Loading...</p>
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
                 ) : configs?.length === 0 ? (
                   <p className="text-muted-foreground">No pages configured yet.</p>
                 ) : (
@@ -187,6 +347,7 @@ export default function LandingPages() {
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
                   <Button onClick={() => handleGenerateSlugs("schools")} disabled={isGeneratingSlugs}>
+                    {isGeneratingSlugs && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Generate School Slugs
                   </Button>
                   <Button onClick={() => handleGenerateSlugs("districts")} disabled={isGeneratingSlugs}>
@@ -204,6 +365,59 @@ export default function LandingPages() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Create Template Dialog */}
+      <CreateTemplateDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onCreateTemplate={handleCreateTemplate}
+        existingTemplates={existingTemplates}
+      />
+
+      {/* Template Editor Dialog */}
+      {selectedTemplate && (
+        <TemplateEditorDialog
+          open={editorDialogOpen}
+          onOpenChange={(open) => {
+            setEditorDialogOpen(open);
+            if (!open) setSelectedTemplate(null);
+          }}
+          templateId={selectedTemplate.id}
+          templateType={selectedTemplate.template_type}
+          initialData={{
+            name: selectedTemplate.name,
+            description: selectedTemplate.description,
+            blocks: selectedTemplate.blocks,
+          }}
+          onSave={() => {
+            refetchTemplates();
+            queryClient.invalidateQueries({ queryKey: ["landing-page-stats"] });
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this template? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteTemplate}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SystemAdminPageLayout>
   );
 }
