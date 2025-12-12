@@ -4,19 +4,22 @@ import {
   FileText, 
   Loader2, 
   Search, 
-  Eye, 
   Pencil, 
   Trash2, 
   Globe, 
   GlobeLock,
   School,
   Building2,
-  ExternalLink
+  ExternalLink,
+  CheckSquare,
+  Square,
+  X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -73,6 +76,12 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [configToDelete, setConfigToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [bulkAction, setBulkAction] = useState<'unpublish' | 'delete' | null>(null);
 
   // Fetch configured pages with entity names
   const { data: configsData, isLoading, refetch } = useQuery({
@@ -191,6 +200,101 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
     }
   };
 
+  // Bulk selection handlers
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const selectPage = () => {
+    const pageIds = configsData?.data.map((c: any) => c.id) || [];
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      pageIds.forEach((id: string) => newSet.add(id));
+      return newSet;
+    });
+  };
+
+  const deselectPage = () => {
+    const pageIds = configsData?.data.map((c: any) => c.id) || [];
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      pageIds.forEach((id: string) => newSet.delete(id));
+      return newSet;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkUnpublish = async () => {
+    if (selectedIds.size === 0) return;
+    
+    setIsBulkProcessing(true);
+    setBulkAction('unpublish');
+    
+    try {
+      const { error } = await supabase
+        .from("landing_page_configs")
+        .update({ 
+          is_published: false,
+          published_at: null,
+        })
+        .in("id", Array.from(selectedIds));
+      
+      if (error) throw error;
+      
+      toast.success(`${selectedIds.size} pages unpublished`);
+      clearSelection();
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["landing-page-stats"] });
+    } catch (error: any) {
+      toast.error(error.message || "Failed to unpublish pages");
+    } finally {
+      setIsBulkProcessing(false);
+      setBulkAction(null);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    
+    setIsBulkProcessing(true);
+    setBulkAction('delete');
+    
+    try {
+      const { error } = await supabase
+        .from("landing_page_configs")
+        .delete()
+        .in("id", Array.from(selectedIds));
+      
+      if (error) throw error;
+      
+      toast.success(`${selectedIds.size} pages deleted`);
+      clearSelection();
+      setBulkDeleteDialogOpen(false);
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["landing-page-stats"] });
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete pages");
+    } finally {
+      setIsBulkProcessing(false);
+      setBulkAction(null);
+    }
+  };
+
+  const allPageSelected = configsData?.data.length > 0 && 
+    configsData.data.every((c: any) => selectedIds.has(c.id));
+  const somePageSelected = configsData?.data.some((c: any) => selectedIds.has(c.id));
+
   return (
     <>
       <Card>
@@ -239,6 +343,49 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
             </div>
           </div>
 
+          {/* Bulk Selection Bar */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded-lg p-3">
+              <div className="flex items-center gap-3">
+                <Badge variant="secondary" className="font-medium">
+                  {selectedIds.size} selected
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={clearSelection}
+                  className="h-7 text-muted-foreground"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Clear
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleBulkUnpublish}
+                  disabled={isBulkProcessing}
+                >
+                  {isBulkProcessing && bulkAction === 'unpublish' && (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  )}
+                  <GlobeLock className="h-4 w-4 mr-1" />
+                  Unpublish
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setBulkDeleteDialogOpen(true)}
+                  disabled={isBulkProcessing}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Results */}
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -256,14 +403,41 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
             </div>
           ) : (
             <>
-              <div className="text-sm text-muted-foreground mb-2">
-                {totalCount} configured {totalCount === 1 ? 'page' : 'pages'}
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm text-muted-foreground">
+                  {totalCount} configured {totalCount === 1 ? 'page' : 'pages'}
+                </div>
+                <div className="flex items-center gap-2">
+                  {allPageSelected ? (
+                    <Button size="sm" variant="ghost" onClick={deselectPage}>
+                      <Square className="h-4 w-4 mr-1" />
+                      Deselect page
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="ghost" onClick={selectPage}>
+                      <CheckSquare className="h-4 w-4 mr-1" />
+                      Select page
+                    </Button>
+                  )}
+                </div>
               </div>
               
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[40px]">
+                        <Checkbox
+                          checked={allPageSelected}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              selectPage();
+                            } else {
+                              deselectPage();
+                            }
+                          }}
+                        />
+                      </TableHead>
                       <TableHead>Entity</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Template</TableHead>
@@ -275,7 +449,13 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
                   </TableHeader>
                   <TableBody>
                     {configsData?.data.map((config: any) => (
-                      <TableRow key={config.id}>
+                      <TableRow key={config.id} className={selectedIds.has(config.id) ? "bg-muted/50" : ""}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(config.id)}
+                            onCheckedChange={() => toggleSelection(config.id)}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             {config.entity_type === 'school' ? (
@@ -421,6 +601,30 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
             >
               {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} Page Configurations</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedIds.size} landing page configurations? 
+              These pages will no longer be accessible. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkProcessing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isBulkProcessing}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isBulkProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete {selectedIds.size} Pages
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
