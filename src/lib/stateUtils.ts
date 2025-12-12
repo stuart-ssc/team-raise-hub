@@ -115,11 +115,24 @@ export const allStates = Object.entries(stateNames).map(([abbr, name]) => ({
   slug: name.toLowerCase().replace(/\s+/g, '-'),
 }));
 
-// Convert URL slug to state info
+// Convert URL slug to state info (supports both full names like 'kentucky' and abbreviations like 'ky')
 export function getStateFromSlug(slug: string): { abbr: string; name: string } | null {
-  const abbr = stateAbbreviations[slug.toLowerCase()];
-  if (!abbr) return null;
-  return { abbr, name: stateNames[abbr] };
+  const normalizedSlug = slug.toLowerCase();
+  
+  // First, try to match as a full state name slug (e.g., 'kentucky')
+  const abbrFromName = stateAbbreviations[normalizedSlug];
+  if (abbrFromName) {
+    return { abbr: abbrFromName, name: stateNames[abbrFromName] };
+  }
+  
+  // Second, try to match as a state abbreviation (e.g., 'ky')
+  const upperAbbr = slug.toUpperCase();
+  const nameFromAbbr = stateNames[upperAbbr];
+  if (nameFromAbbr) {
+    return { abbr: upperAbbr, name: nameFromAbbr };
+  }
+  
+  return null;
 }
 
 // Convert abbreviation to URL slug
