@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, FileText, LayoutTemplate, Settings, Loader2, Trash2 } from "lucide-react";
+import { Plus, FileText, LayoutTemplate, Settings, Loader2, School } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,8 @@ import { LandingPageBlock } from "@/components/LandingPageEditor/types";
 import { TemplateCard } from "@/components/LandingPageEditor/TemplateCard";
 import { TemplateEditorDialog } from "@/components/LandingPageEditor/TemplateEditorDialog";
 import { CreateTemplateDialog } from "@/components/LandingPageEditor/CreateTemplateDialog";
+import { SchoolDistrictBrowser } from "@/components/LandingPageEditor/SchoolDistrictBrowser";
+import { ConfiguredPagesList } from "@/components/LandingPageEditor/ConfiguredPagesList";
 
 export default function LandingPages() {
   const queryClient = useQueryClient();
@@ -38,6 +40,15 @@ export default function LandingPages() {
   } | null>(null);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState("templates");
+  const [selectedEntity, setSelectedEntity] = useState<{
+    id: string;
+    name: string;
+    type: 'school' | 'district';
+    city?: string;
+    state?: string;
+    hasConfig: boolean;
+  } | null>(null);
 
   const { data: templates, isLoading: templatesLoading, refetch: refetchTemplates } = useQuery({
     queryKey: ["landing-page-templates"],
@@ -51,17 +62,7 @@ export default function LandingPages() {
     },
   });
 
-  const { data: configs, isLoading: configsLoading } = useQuery({
-    queryKey: ["landing-page-configs"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("landing_page_configs")
-        .select("*, template:landing_page_templates(name)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
+  // Note: Individual configs are now fetched by ConfiguredPagesList component
 
   const { data: stats } = useQuery({
     queryKey: ["landing-page-stats"],
@@ -259,14 +260,14 @@ export default function LandingPages() {
           </Card>
         </div>
 
-        <Tabs defaultValue="templates">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="templates">
               <LayoutTemplate className="mr-2 h-4 w-4" />
               Templates
             </TabsTrigger>
             <TabsTrigger value="pages">
-              <FileText className="mr-2 h-4 w-4" />
+              <School className="mr-2 h-4 w-4" />
               Configured Pages
             </TabsTrigger>
             <TabsTrigger value="settings">
@@ -318,24 +319,30 @@ export default function LandingPages() {
             )}
           </TabsContent>
 
-          <TabsContent value="pages" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configured Pages</CardTitle>
-                <CardDescription>Schools and districts with custom landing pages</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {configsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : configs?.length === 0 ? (
-                  <p className="text-muted-foreground">No pages configured yet.</p>
-                ) : (
-                  <p className="text-muted-foreground">{configs?.length} pages configured</p>
-                )}
-              </CardContent>
-            </Card>
+          <TabsContent value="pages" className="mt-4 space-y-6">
+            {/* School/District Browser */}
+            <SchoolDistrictBrowser
+              onConfigurePage={(entity) => {
+                setSelectedEntity(entity);
+                // TODO: Open PageConfigDialog in Phase 2
+                toast.info(`Configure page for ${entity.name} - Coming soon in Phase 2`);
+              }}
+            />
+
+            {/* Configured Pages List */}
+            <ConfiguredPagesList
+              onEditPage={(config) => {
+                // TODO: Open PageConfigDialog in Phase 2
+                toast.info(`Edit page for ${config.entityName} - Coming soon in Phase 2`);
+              }}
+              onPreviewPage={(entityType, slug) => {
+                // TODO: Implement preview route in Phase 3
+                const previewUrl = entityType === 'school' 
+                  ? `/schools/${slug}`
+                  : `/districts/${slug}`;
+                window.open(previewUrl, '_blank');
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="settings" className="mt-4">
