@@ -225,7 +225,8 @@ export default function LandingPages() {
 
   return (
     <SystemAdminPageLayout title="Landing Pages" subtitle="Manage dynamic landing page templates for schools and districts">
-      <div className="space-y-6">
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-end">
           <Button onClick={() => setCreateDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -379,6 +380,7 @@ export default function LandingPages() {
             </Card>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
 
       {/* Create Template Dialog */}
