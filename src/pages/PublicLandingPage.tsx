@@ -147,7 +147,7 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
   const variables = React.useMemo(() => {
     if (!entity) return {};
 
-    const entityData = entityType === 'school' 
+    const entityVars = entityType === 'school' 
       ? {
           name: (entity as SchoolEntity).school_name,
           city: (entity as SchoolEntity).city || undefined,
@@ -161,31 +161,12 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
         };
 
     const overrides = (config?.variable_overrides as Record<string, unknown>) || {};
-    const vars = buildTemplateVariables(entityType, entityData, stats || {}, overrides);
+    const vars = buildTemplateVariables(entityType, entityVars, stats || {}, overrides);
     console.log('[PublicLandingPage] Built variables:', vars);
     return vars;
   }, [entity, entityType, stats, config]);
 
-  // Loading state
-  if (entityLoading || configLoading) {
-    console.log('[PublicLandingPage] Loading...', { entityLoading, configLoading });
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  // Entity not found
-  if (!entity || entityError) {
-    console.log('[PublicLandingPage] Entity not found or error:', { entity, entityError });
-    return <NotFound />;
-  }
-
-  // Build canonical URL
-  const canonicalUrl = `${BASE_URL}/${entityType === 'school' ? 'schools' : 'districts'}/${state?.toLowerCase()}/${slug}`;
-
-  // Build entity data for JSON-LD
+  // Build entity data for JSON-LD (must be before early returns to satisfy Rules of Hooks)
   const entityData = React.useMemo(() => {
     if (!entity) return null;
     
@@ -206,6 +187,25 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
       };
     }
   }, [entity, entityType]);
+
+  // Build canonical URL
+  const canonicalUrl = `${BASE_URL}/${entityType === 'school' ? 'schools' : 'districts'}/${state?.toLowerCase()}/${slug}`;
+
+  // Loading state
+  if (entityLoading || configLoading) {
+    console.log('[PublicLandingPage] Loading...', { entityLoading, configLoading });
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  // Entity not found
+  if (!entity || entityError) {
+    console.log('[PublicLandingPage] Entity not found or error:', { entity, entityError });
+    return <NotFound />;
+  }
 
   // No template available - show basic info
   if (!template || blocks.length === 0) {
