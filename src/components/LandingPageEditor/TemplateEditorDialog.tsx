@@ -337,6 +337,35 @@ function getDefaultStylesForType(type: LandingPageBlockType): LandingPageBlock['
       return { showAddress: true, showPhone: true, showEmail: true, showWebsite: true, backgroundColor: '#f8fafc', padding: '2rem' };
     case 'two-column':
       return { columnRatio: '50-50', leftColumnContent: [], rightColumnContent: [], padding: '2rem' };
+    case 'feature-grid':
+      return {
+        features: [
+          { icon: 'dollar', title: 'Feature 1', description: 'Description of this feature' },
+          { icon: 'users', title: 'Feature 2', description: 'Description of this feature' },
+          { icon: 'bar-chart', title: 'Feature 3', description: 'Description of this feature' },
+          { icon: 'shield', title: 'Feature 4', description: 'Description of this feature' },
+        ],
+        featureColumns: 2,
+        backgroundColor: '#ffffff',
+      };
+    case 'how-it-works':
+      return {
+        steps: [
+          { stepNumber: 1, title: 'Step 1', description: 'First step description' },
+          { stepNumber: 2, title: 'Step 2', description: 'Second step description' },
+          { stepNumber: 3, title: 'Step 3', description: 'Third step description' },
+        ],
+        backgroundColor: '#f8fafc',
+      };
+    case 'pricing-highlight':
+      return {
+        pricingTitle: '100% of Donations',
+        pricingSubtitle: 'Go directly to your cause',
+        pricingHighlight: '100%',
+        pricingDescription: 'No hidden fees, no platform cuts.',
+        backgroundColor: '#f0fdf4',
+        textColor: '#166534',
+      };
     default:
       return {};
   }

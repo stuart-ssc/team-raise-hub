@@ -11,7 +11,10 @@ export type LandingPageBlockType =
   | 'testimonial'
   | 'campaign-list'
   | 'contact-info'
-  | 'two-column';
+  | 'two-column'
+  | 'feature-grid'
+  | 'how-it-works'
+  | 'pricing-highlight';
 
 export interface LandingPageBlock {
   id: string;
@@ -83,6 +86,27 @@ export interface LandingPageBlock {
     leftColumnContent?: LandingPageBlock[];
     rightColumnContent?: LandingPageBlock[];
     columnRatio?: '50-50' | '60-40' | '40-60' | '70-30' | '30-70';
+    
+    // Feature grid (marketing)
+    features?: Array<{
+      icon: string;
+      title: string;
+      description: string;
+    }>;
+    featureColumns?: 2 | 3 | 4;
+    
+    // How it works (marketing)
+    steps?: Array<{
+      stepNumber: number;
+      title: string;
+      description: string;
+    }>;
+    
+    // Pricing highlight (marketing)
+    pricingTitle?: string;
+    pricingSubtitle?: string;
+    pricingHighlight?: string;
+    pricingDescription?: string;
   };
 }
 
@@ -198,6 +222,14 @@ export const AVAILABLE_VARIABLES: { category: string; variables: { key: string; 
     category: 'Meta',
     variables: [
       { key: 'current_year', label: 'Current Year', example: '2025' },
+    ],
+  },
+  {
+    category: 'Marketing',
+    variables: [
+      { key: 'signup_url', label: 'Sign Up URL', example: '/signup' },
+      { key: 'contact_url', label: 'Contact URL', example: '/contact' },
+      { key: 'platform_name', label: 'Platform Name', example: 'Sponsorly' },
     ],
   },
 ];

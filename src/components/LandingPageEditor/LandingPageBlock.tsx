@@ -206,6 +206,70 @@ export function LandingPageBlock({
           </div>
         );
 
+      case 'feature-grid':
+        const features = block.styles.features || [
+          { icon: 'dollar', title: 'Feature 1', description: 'Description' },
+          { icon: 'users', title: 'Feature 2', description: 'Description' },
+        ];
+        const cols = block.styles.featureColumns || 2;
+        return (
+          <div 
+            className={`grid gap-4 p-4 rounded-lg ${cols === 2 ? 'grid-cols-2' : cols === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}
+            style={{ backgroundColor: block.styles.backgroundColor || '#ffffff' }}
+          >
+            {features.map((feature, i) => (
+              <div key={i} className="text-center p-4 border rounded-lg bg-background">
+                <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <span className="text-lg">●</span>
+                </div>
+                <h4 className="font-semibold mb-1">{feature.title}</h4>
+                <p className="text-sm text-muted-foreground">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        );
+
+      case 'how-it-works':
+        const steps = block.styles.steps || [
+          { stepNumber: 1, title: 'Step 1', description: 'Description' },
+          { stepNumber: 2, title: 'Step 2', description: 'Description' },
+          { stepNumber: 3, title: 'Step 3', description: 'Description' },
+        ];
+        return (
+          <div 
+            className="p-6 rounded-lg"
+            style={{ backgroundColor: block.styles.backgroundColor || '#f8fafc' }}
+          >
+            <div className="flex flex-col md:flex-row gap-4 justify-center">
+              {steps.map((step, i) => (
+                <div key={i} className="flex-1 text-center p-4">
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
+                    {step.stepNumber}
+                  </div>
+                  <h4 className="font-semibold mb-1">{step.title}</h4>
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'pricing-highlight':
+        return (
+          <div 
+            className="p-8 rounded-lg text-center"
+            style={{ 
+              backgroundColor: block.styles.backgroundColor || '#f0fdf4',
+              color: block.styles.textColor || '#166534'
+            }}
+          >
+            <p className="text-sm font-medium opacity-80 mb-2">{block.styles.pricingSubtitle || 'Subtitle'}</p>
+            <div className="text-6xl font-bold mb-2">{block.styles.pricingHighlight || '100%'}</div>
+            <h3 className="text-2xl font-bold mb-3">{block.styles.pricingTitle || 'Title'}</h3>
+            <p className="text-sm opacity-80 max-w-md mx-auto">{block.styles.pricingDescription || 'Description'}</p>
+          </div>
+        );
+
       default:
         return <div className="p-4 bg-muted rounded">Unknown block type: {block.type}</div>;
     }
@@ -577,6 +641,139 @@ export function LandingPageBlock({
                 onChange={(e) => updateStyles({ imageWidth: e.target.value })}
                 placeholder="e.g., 100%, 500px"
               />
+            </div>
+          </div>
+        );
+
+      case 'feature-grid':
+        return (
+          <div className="space-y-3">
+            <div>
+              <Label>Number of Columns</Label>
+              <Select
+                value={String(block.styles.featureColumns || 2)}
+                onValueChange={(v) => updateStyles({ featureColumns: parseInt(v) as 2 | 3 | 4 })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2">2 Columns</SelectItem>
+                  <SelectItem value="3">3 Columns</SelectItem>
+                  <SelectItem value="4">4 Columns</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Background Color</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={block.styles.backgroundColor || '#ffffff'}
+                  onChange={(e) => updateStyles({ backgroundColor: e.target.value })}
+                  className="w-16 h-10 p-1"
+                />
+                <Input
+                  value={block.styles.backgroundColor || '#ffffff'}
+                  onChange={(e) => updateStyles({ backgroundColor: e.target.value })}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Edit individual features in the template data</p>
+          </div>
+        );
+
+      case 'how-it-works':
+        return (
+          <div className="space-y-3">
+            <div>
+              <Label>Background Color</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={block.styles.backgroundColor || '#f8fafc'}
+                  onChange={(e) => updateStyles({ backgroundColor: e.target.value })}
+                  className="w-16 h-10 p-1"
+                />
+                <Input
+                  value={block.styles.backgroundColor || '#f8fafc'}
+                  onChange={(e) => updateStyles({ backgroundColor: e.target.value })}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Edit steps in the template data</p>
+          </div>
+        );
+
+      case 'pricing-highlight':
+        return (
+          <div className="space-y-3">
+            <div>
+              <Label>Highlight Text (Large)</Label>
+              <Input
+                value={block.styles.pricingHighlight || ''}
+                onChange={(e) => updateStyles({ pricingHighlight: e.target.value })}
+                placeholder="e.g., 100%, $0, FREE"
+              />
+            </div>
+            <div>
+              <Label>Title</Label>
+              <Input
+                value={block.styles.pricingTitle || ''}
+                onChange={(e) => updateStyles({ pricingTitle: e.target.value })}
+                placeholder="Main message"
+              />
+            </div>
+            <div>
+              <Label>Subtitle</Label>
+              <Input
+                value={block.styles.pricingSubtitle || ''}
+                onChange={(e) => updateStyles({ pricingSubtitle: e.target.value })}
+                placeholder="Secondary message"
+              />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea
+                value={block.styles.pricingDescription || ''}
+                onChange={(e) => updateStyles({ pricingDescription: e.target.value })}
+                placeholder="Supporting text"
+                rows={2}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Background</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={block.styles.backgroundColor || '#f0fdf4'}
+                    onChange={(e) => updateStyles({ backgroundColor: e.target.value })}
+                    className="w-12 h-10 p-1"
+                  />
+                  <Input
+                    value={block.styles.backgroundColor || '#f0fdf4'}
+                    onChange={(e) => updateStyles({ backgroundColor: e.target.value })}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Text Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={block.styles.textColor || '#166534'}
+                    onChange={(e) => updateStyles({ textColor: e.target.value })}
+                    className="w-12 h-10 p-1"
+                  />
+                  <Input
+                    value={block.styles.textColor || '#166534'}
+                    onChange={(e) => updateStyles({ textColor: e.target.value })}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         );
