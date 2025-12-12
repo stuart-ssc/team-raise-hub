@@ -7,6 +7,7 @@ import { JsonLdSchema } from '@/components/LandingPageEditor/JsonLdSchema';
 import { buildTemplateVariables } from '@/components/LandingPageEditor/resolveTemplateVariables';
 import { useEntityStats } from '@/hooks/useEntityStats';
 import { LandingPageBlock } from '@/components/LandingPageEditor/types';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import NotFound from './NotFound';
 import { Helmet } from 'react-helmet-async';
 
@@ -38,10 +39,13 @@ type Entity = SchoolEntity | DistrictEntity;
 export default function PublicLandingPage({ entityType }: PublicLandingPageProps) {
   const { state, slug } = useParams<{ state: string; slug: string }>();
 
+  console.log('[PublicLandingPage] Rendering with:', { entityType, state, slug });
+
   // Fetch entity by state and slug
   const { data: entity, isLoading: entityLoading, error: entityError } = useQuery({
     queryKey: ['public-entity', entityType, state, slug],
     queryFn: async (): Promise<Entity | null> => {
+      console.log('[PublicLandingPage] Fetching entity:', { entityType, state, slug });
       if (!state || !slug) return null;
 
       const stateUpper = state.toUpperCase();
@@ -54,7 +58,11 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
           .eq('slug', slug)
           .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          console.error('[PublicLandingPage] Error fetching school:', error);
+          throw error;
+        }
+        console.log('[PublicLandingPage] Fetched school:', data);
         return data as SchoolEntity | null;
       } else {
         const { data, error } = await supabase
@@ -64,7 +72,11 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
           .eq('slug', slug)
           .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          console.error('[PublicLandingPage] Error fetching district:', error);
+          throw error;
+        }
+        console.log('[PublicLandingPage] Fetched district:', data);
         return data as DistrictEntity | null;
       }
     },
@@ -72,11 +84,12 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
   });
 
   // Fetch landing page config
-  const { data: config, isLoading: configLoading } = useQuery({
+  const { data: config, isLoading: configLoading, error: configError } = useQuery({
     queryKey: ['public-landing-config', entityType, entity?.id],
     queryFn: async () => {
       if (!entity?.id) return null;
 
+      console.log('[PublicLandingPage] Fetching config for entity:', entity.id);
       const { data, error } = await supabase
         .from('landing_page_configs')
         .select(`
@@ -88,16 +101,21 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
         .eq('is_published', true)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[PublicLandingPage] Error fetching config:', error);
+        throw error;
+      }
+      console.log('[PublicLandingPage] Fetched config:', data);
       return data;
     },
     enabled: !!entity?.id,
   });
 
   // Fetch default template if no config exists
-  const { data: defaultTemplate } = useQuery({
+  const { data: defaultTemplate, error: defaultTemplateError } = useQuery({
     queryKey: ['default-template', entityType],
     queryFn: async () => {
+      console.log('[PublicLandingPage] Fetching default template for:', entityType);
       const { data, error } = await supabase
         .from('landing_page_templates')
         .select('*')
@@ -105,7 +123,11 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
         .eq('is_default', true)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[PublicLandingPage] Error fetching default template:', error);
+        throw error;
+      }
+      console.log('[PublicLandingPage] Fetched default template:', data);
       return data;
     },
     enabled: !!entity && !config,
@@ -117,6 +139,9 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
   // Determine which template and blocks to use
   const template = config?.template || defaultTemplate;
   const blocks: LandingPageBlock[] = (template?.blocks as unknown as LandingPageBlock[]) || [];
+
+  console.log('[PublicLandingPage] Template:', template);
+  console.log('[PublicLandingPage] Blocks count:', blocks.length);
 
   // Build variables
   const variables = React.useMemo(() => {
@@ -136,12 +161,14 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
         };
 
     const overrides = (config?.variable_overrides as Record<string, unknown>) || {};
-
-    return buildTemplateVariables(entityType, entityData, stats || {}, overrides);
+    const vars = buildTemplateVariables(entityType, entityData, stats || {}, overrides);
+    console.log('[PublicLandingPage] Built variables:', vars);
+    return vars;
   }, [entity, entityType, stats, config]);
 
   // Loading state
   if (entityLoading || configLoading) {
+    console.log('[PublicLandingPage] Loading...', { entityLoading, configLoading });
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
@@ -151,6 +178,7 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
 
   // Entity not found
   if (!entity || entityError) {
+    console.log('[PublicLandingPage] Entity not found or error:', { entity, entityError });
     return <NotFound />;
   }
 
@@ -181,6 +209,7 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
 
   // No template available - show basic info
   if (!template || blocks.length === 0) {
+    console.log('[PublicLandingPage] No template or blocks, showing BasicEntityPage');
     return (
       <BasicEntityPage 
         entity={entity} 
@@ -195,8 +224,10 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
     ? (entity as SchoolEntity).school_name 
     : (entity as DistrictEntity).name;
 
+  console.log('[PublicLandingPage] Rendering full page with template:', template.name);
+
   return (
-    <>
+    <ErrorBoundary>
       {entityData && (
         <JsonLdSchema
           entityType={entityType}
@@ -216,7 +247,7 @@ export default function PublicLandingPage({ entityType }: PublicLandingPageProps
         canonicalUrl={canonicalUrl}
         entityName={entityName}
       />
-    </>
+    </ErrorBoundary>
   );
 }
 
