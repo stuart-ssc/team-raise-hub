@@ -57,6 +57,7 @@ interface ConfiguredPagesListProps {
     seoTitle: string | null;
     seoDescription: string | null;
     isPublished: boolean;
+    slug: string;
   }) => void;
   onPreviewPage: (entityType: 'school' | 'district', slug: string) => void;
 }
@@ -325,7 +326,7 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => onEditPage({
+                            onClick={() => onEditPage({
                                 id: config.id,
                                 entityId: config.entity_id,
                                 entityType: config.entity_type,
@@ -335,6 +336,7 @@ export function ConfiguredPagesList({ onEditPage, onPreviewPage }: ConfiguredPag
                                 seoTitle: config.seo_title,
                                 seoDescription: config.seo_description,
                                 isPublished: config.is_published,
+                                slug: config.slug,
                               })}
                               title="Edit"
                             >
