@@ -226,11 +226,7 @@ export default function LandingPages() {
   return (
     <SystemAdminPageLayout title="Landing Pages" subtitle="Manage dynamic landing page templates for schools and districts">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Landing Pages</h1>
-            <p className="text-muted-foreground">Create and manage dynamic landing pages for schools and districts</p>
-          </div>
+        <div className="flex justify-end">
           <Button onClick={() => setCreateDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             New Template
