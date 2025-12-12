@@ -459,14 +459,14 @@ const SharedAdminLeadership = () => (
               description: 'Identify partnership opportunities with sponsors investing in your school community',
             },
           ].map((item, index) => (
-            <Card key={index} className="bg-background hover:shadow-lg transition-shadow">
+            <Card key={index} className="bg-primary text-primary-foreground hover:shadow-lg transition-shadow border-0">
               <CardContent className="pt-6 flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <item.icon className="h-5 w-5 text-primary" />
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <item.icon className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground mb-1">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                  <h3 className="font-semibold text-white mb-1">{item.title}</h3>
+                  <p className="text-sm text-white/80">{item.description}</p>
                 </div>
               </CardContent>
             </Card>
