@@ -40,6 +40,7 @@ import EmailManagement from "./pages/SystemAdmin/EmailManagement";
 import ABTestManagement from "./pages/SystemAdmin/ABTestManagement";
 import SystemAdminReports from "./pages/SystemAdmin/Reports";
 import SchoolImport from "./pages/SystemAdmin/SchoolImport";
+import LandingPages from "./pages/SystemAdmin/LandingPages";
 import DonorSegmentation from "./pages/DonorSegmentation";
 import DonorAnalytics from "./pages/DonorAnalytics";
 import NurtureCampaigns from "./pages/NurtureCampaigns";
@@ -152,6 +153,7 @@ const AppContent = () => {
         <Route path="/system-admin/businesses" element={<ProtectedRoute><SystemAdminGuard><BusinessesList /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/businesses/:businessId" element={<ProtectedRoute><SystemAdminGuard><BusinessDetail /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/school-import" element={<ProtectedRoute><SystemAdminGuard><SchoolImport /></SystemAdminGuard></ProtectedRoute>} />
+        <Route path="/system-admin/landing-pages" element={<ProtectedRoute><SystemAdminGuard><LandingPages /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/verification" element={<ProtectedRoute><SystemAdminGuard><VerificationQueue /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/emails" element={<ProtectedRoute><SystemAdminGuard><EmailManagement /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/ab-tests" element={<ProtectedRoute><SystemAdminGuard><ABTestManagement /></SystemAdminGuard></ProtectedRoute>} />

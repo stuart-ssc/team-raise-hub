@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Building2, FileCheck, Mail, FlaskConical, Briefcase, BarChart3, MessageSquare, GraduationCap } from "lucide-react";
+import { Home, Building2, FileCheck, Mail, FlaskConical, Briefcase, BarChart3, MessageSquare, GraduationCap, FileText } from "lucide-react";
 import SponsorlyLogo from "./SponsorlyLogo";
 
 const sidebarItems = [
@@ -18,6 +18,11 @@ const sidebarItems = [
     title: "Businesses",
     icon: Briefcase,
     url: "/system-admin/businesses",
+  },
+  {
+    title: "Landing Pages",
+    icon: FileText,
+    url: "/system-admin/landing-pages",
   },
   {
     title: "School Import",

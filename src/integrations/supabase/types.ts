@@ -1693,6 +1693,116 @@ export type Database = {
           },
         ]
       }
+      landing_page_configs: {
+        Row: {
+          created_at: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          is_published: boolean | null
+          og_image_url: string | null
+          published_at: string | null
+          published_by: string | null
+          seo_description: string | null
+          seo_title: string | null
+          template_id: string
+          updated_at: string | null
+          variable_overrides: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          is_published?: boolean | null
+          og_image_url?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          template_id: string
+          updated_at?: string | null
+          variable_overrides?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          is_published?: boolean | null
+          og_image_url?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          template_id?: string
+          updated_at?: string | null
+          variable_overrides?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_configs_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_configs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "landing_page_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_page_templates: {
+        Row: {
+          blocks: Json
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          preview_image_url: string | null
+          template_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          blocks?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          preview_image_url?: string | null
+          template_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          blocks?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          preview_image_url?: string | null
+          template_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       launch_interest: {
         Row: {
           created_at: string
@@ -2532,6 +2642,8 @@ export type Database = {
           id: string
           name: string
           nces_district_id: string | null
+          slug: string | null
+          state: string | null
           state_district_id: string | null
           state_id: number | null
           updated_at: string
@@ -2541,6 +2653,8 @@ export type Database = {
           id?: string
           name: string
           nces_district_id?: string | null
+          slug?: string | null
+          state?: string | null
           state_district_id?: string | null
           state_id?: number | null
           updated_at?: string
@@ -2550,6 +2664,8 @@ export type Database = {
           id?: string
           name?: string
           nces_district_id?: string | null
+          slug?: string | null
+          state?: string | null
           state_district_id?: string | null
           state_id?: number | null
           updated_at?: string
@@ -2677,6 +2793,7 @@ export type Database = {
           school_type: string | null
           school_type_id: string | null
           "Secondary Color": string | null
+          slug: string | null
           state: string | null
           state_id: number | null
           state_school_ID: string | null
@@ -2715,6 +2832,7 @@ export type Database = {
           school_type?: string | null
           school_type_id?: string | null
           "Secondary Color"?: string | null
+          slug?: string | null
           state?: string | null
           state_id?: number | null
           state_school_ID?: string | null
@@ -2753,6 +2871,7 @@ export type Database = {
           school_type?: string | null
           school_type_id?: string | null
           "Secondary Color"?: string | null
+          slug?: string | null
           state?: string | null
           state_id?: number | null
           state_school_ID?: string | null
@@ -3174,6 +3293,7 @@ export type Database = {
         Args: { campaign_id?: string; campaign_name: string }
         Returns: string
       }
+      generate_slug: { Args: { input_text: string }; Returns: string }
       get_ab_test_results: {
         Args: { test_uuid: string }
         Returns: {
