@@ -70,7 +70,7 @@ export default function LandingPages() {
   };
 
   return (
-    <SystemAdminPageLayout>
+    <SystemAdminPageLayout title="Landing Pages" subtitle="Manage dynamic landing page templates for schools and districts">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
