@@ -146,6 +146,7 @@ const PrivacyPolicy = () => {
                     <li><strong>Supabase:</strong> Cloud database and authentication services</li>
                     <li><strong>Resend:</strong> Transactional email delivery</li>
                     <li><strong>HubSpot:</strong> Marketing analytics and tracking (on public marketing pages only)</li>
+                    <li><strong>RB2B (Reveal):</strong> B2B visitor identification and analytics (on public marketing pages only)</li>
                     <li><strong>Payment Processor:</strong> Secure payment processing (provider to be determined)</li>
                   </ul>
                   <p className="text-muted-foreground mt-2">
@@ -363,6 +364,13 @@ const PrivacyPolicy = () => {
                   <h3 className="text-lg font-semibold mb-2">HubSpot Analytics</h3>
                   <p className="text-muted-foreground">
                     We use HubSpot tracking on our public marketing pages (homepage, features, pricing, contact) to analyze visitor behavior and improve our marketing efforts. HubSpot may place cookies on your browser to track page views, referral sources, and user journeys. This tracking is <strong>disabled on dashboard and system administration pages</strong> where users manage sensitive information.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">RB2B (Reveal) Analytics</h3>
+                  <p className="text-muted-foreground">
+                    We use RB2B (also known as Reveal) on our public marketing pages to identify business visitors and understand which companies are interested in our services. RB2B helps us identify the organizations behind website visits for B2B marketing purposes. Like HubSpot, this tracking is <strong>disabled on dashboard and system administration pages</strong> where users manage sensitive information.
                   </p>
                 </div>
 

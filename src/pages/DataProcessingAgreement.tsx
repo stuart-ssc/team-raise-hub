@@ -231,6 +231,7 @@ const DataProcessingAgreement = () => {
                     <li><strong>Supabase, Inc.</strong> - Cloud database, authentication, and storage services</li>
                     <li><strong>Resend, Inc.</strong> - Transactional and marketing email delivery</li>
                     <li><strong>HubSpot, Inc.</strong> - Marketing analytics and visitor tracking (on public pages only)</li>
+                    <li><strong>RB2B, Inc. (Reveal)</strong> - B2B visitor identification and analytics (on public marketing pages only)</li>
                     <li><strong>Payment Processor</strong> - Secure payment processing (specific provider to be determined and disclosed)</li>
                   </ul>
                 </div>
