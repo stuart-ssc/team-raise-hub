@@ -1803,6 +1803,60 @@ export type Database = {
           },
         ]
       }
+      landing_page_views: {
+        Row: {
+          created_at: string | null
+          district_id: string | null
+          id: string
+          page_path: string
+          page_type: string
+          referrer: string | null
+          school_id: string | null
+          session_id: string | null
+          state: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          district_id?: string | null
+          id?: string
+          page_path: string
+          page_type: string
+          referrer?: string | null
+          school_id?: string | null
+          session_id?: string | null
+          state?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          district_id?: string | null
+          id?: string
+          page_path?: string
+          page_type?: string
+          referrer?: string | null
+          school_id?: string | null
+          session_id?: string | null
+          state?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_views_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "school_districts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_views_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       launch_interest: {
         Row: {
           created_at: string

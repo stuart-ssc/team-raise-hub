@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Building2, FileCheck, Mail, FlaskConical, Briefcase, BarChart3, MessageSquare, GraduationCap, FileText } from "lucide-react";
+import { Home, Building2, FileCheck, Mail, FlaskConical, Briefcase, BarChart3, MessageSquare, GraduationCap, FileText, TrendingUp } from "lucide-react";
 import SponsorlyLogo from "./SponsorlyLogo";
 
 const sidebarItems = [
@@ -48,6 +48,11 @@ const sidebarItems = [
     title: "Reports",
     icon: BarChart3,
     url: "/system-admin/reports",
+  },
+  {
+    title: "Marketing Analytics",
+    icon: TrendingUp,
+    url: "/system-admin/marketing-analytics",
   },
   {
     title: "Contact Submissions",

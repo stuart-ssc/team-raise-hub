@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import MarketingFooter from '@/components/MarketingFooter';
 import { supabase } from '@/integrations/supabase/client';
 import { getVariantForEntity, type LandingPageVariant } from '@/lib/abTestUtils';
 import { getStateFromSlug, getStateName } from '@/lib/stateUtils';
+import { useLandingPageTracking } from '@/hooks/useLandingPageTracking';
 import {
   GraduationCap,
   Trophy,
@@ -40,9 +41,18 @@ interface SchoolData {
 
 const SchoolLandingPage = () => {
   const { state: stateSlug, slug } = useParams<{ state: string; slug: string }>();
+  const location = useLocation();
   const [school, setSchool] = useState<SchoolData | null>(null);
   const [loading, setLoading] = useState(true);
   const [variant, setVariant] = useState<LandingPageVariant>('A');
+
+  // Track page view
+  useLandingPageTracking({
+    pageType: 'school',
+    pagePath: location.pathname,
+    schoolId: school?.id,
+    state: school?.state || undefined,
+  });
 
   useEffect(() => {
     window.scrollTo(0, 0);

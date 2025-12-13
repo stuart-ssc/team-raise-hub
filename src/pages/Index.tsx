@@ -2,9 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
+import { useLandingPageTracking } from "@/hooks/useLandingPageTracking";
 import { 
   ArrowRight,
   Shield, 
@@ -25,6 +26,13 @@ import heroImage from "@/assets/hero-celebration.jpg";
 
 const Index = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Track page view
+  useLandingPageTracking({
+    pageType: 'home',
+    pagePath: location.pathname,
+  });
 
   const features = [
     {

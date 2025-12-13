@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import MarketingFooter from '@/components/MarketingFooter';
 import { StateStats } from '@/components/StateLandingPage/StateStats';
 import { DistrictsAccordion } from '@/components/StateLandingPage/DistrictsAccordion';
 import { getStateFromSlug } from '@/lib/stateUtils';
+import { useLandingPageTracking } from '@/hooks/useLandingPageTracking';
 import {
   GraduationCap,
   Trophy,
@@ -26,7 +27,15 @@ import {
 
 const StateLandingPage = () => {
   const { state: stateSlug } = useParams<{ state: string }>();
+  const location = useLocation();
   const stateInfo = stateSlug ? getStateFromSlug(stateSlug) : null;
+
+  // Track page view
+  useLandingPageTracking({
+    pageType: 'state',
+    pagePath: location.pathname,
+    state: stateInfo?.abbr,
+  });
 
   useEffect(() => {
     window.scrollTo(0, 0);
