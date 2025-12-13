@@ -50,10 +50,12 @@ export const StateStats = ({ stateAbbr, stateName }: StateStatsProps) => {
     },
   });
 
+  const showActiveCount = stats?.publishedPages && stats.publishedPages >= 10;
+
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[...Array(3)].map((_, i) => (
           <Skeleton key={i} className="h-24" />
         ))}
       </div>
@@ -71,11 +73,11 @@ export const StateStats = ({ stateAbbr, stateName }: StateStatsProps) => {
       value: stats?.districts.toLocaleString() || '0',
       label: 'Districts',
     },
-    {
+    ...(showActiveCount ? [{
       icon: Users,
-      value: stats?.publishedPages.toLocaleString() || '0',
+      value: stats.publishedPages.toLocaleString(),
       label: 'Active on Sponsorly',
-    },
+    }] : []),
     {
       icon: MapPin,
       value: stateName,
@@ -83,8 +85,12 @@ export const StateStats = ({ stateAbbr, stateName }: StateStatsProps) => {
     },
   ];
 
+  const gridCols = statItems.length === 4 
+    ? 'grid-cols-2 md:grid-cols-4' 
+    : 'grid-cols-1 sm:grid-cols-3';
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className={`grid ${gridCols} gap-4`}>
       {statItems.map((item, index) => (
         <Card key={index} className="bg-background/80 backdrop-blur-sm border-primary/20">
           <CardContent className="pt-6 text-center">
