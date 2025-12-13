@@ -119,7 +119,7 @@ const StateLandingPage = () => {
           <img 
             src={`/state-outlines/${stateAbbr.toLowerCase()}.svg`}
             alt=""
-            className="h-[80%] max-h-[500px] w-auto object-contain opacity-[0.06] translate-x-[10%]"
+            className="h-[80%] max-h-[500px] w-auto object-contain opacity-[0.12] translate-x-[10%]"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
             }}
