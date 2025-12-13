@@ -48,8 +48,8 @@ function getStateInfo(stateSlug: string): { abbr: string; name: string } | null 
 }
 
 const BASE_URL = 'https://sponsorly.io';
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const OG_IMAGE_URL = `${SUPABASE_URL}/functions/v1/generate-og-image`;
+// Use static Sponsorly logo for reliable OG images that always work
+const STATIC_OG_IMAGE = `${BASE_URL}/lovable-uploads/Sponsorly-Logo.png`;
 
 interface PageMeta {
   title: string;
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
     const defaultMeta: PageMeta = {
       title: 'Sponsorly - 100% Fundraising for Schools & Non-Profits',
       description: 'The only fundraising platform where 100% of donations go directly to your organization. Perfect for schools, teams, clubs, and non-profits.',
-      image: `${BASE_URL}/lovable-uploads/Sponsorly-Logo.png`,
+      image: STATIC_OG_IMAGE,
       url: BASE_URL
     };
 
@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
         const meta: PageMeta = {
           title: `School Fundraising in ${stateInfo.name} | Sponsorly`,
           description: `Empowering ${stateInfo.name} schools and districts with modern fundraising tools. 100% of donations go directly to your school.`,
-          image: `${OG_IMAGE_URL}?type=state&name=${encodeURIComponent(stateInfo.name)}&location=`,
+          image: STATIC_OG_IMAGE,
           url: `${BASE_URL}/schools/${pathParts[1]}`
         };
         return new Response(JSON.stringify(meta), {
@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
           const meta: PageMeta = {
             title: `${school.school_name} Fundraising | Sponsorly`,
             description: `Support ${school.school_name} in ${location}. 100% of your donation goes directly to the school. No platform fees for organizations.`,
-            image: `${OG_IMAGE_URL}?type=school&name=${encodeURIComponent(school.school_name)}&location=${encodeURIComponent(location)}`,
+            image: STATIC_OG_IMAGE,
             url: `${BASE_URL}/schools/${pathParts[1]}/${schoolSlug}`
           };
           return new Response(JSON.stringify(meta), {
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
           const meta: PageMeta = {
             title: `${district.name} Fundraising | Sponsorly`,
             description: `Empower schools in ${district.name}, ${stateInfo.name} with modern fundraising. 100% of donations go directly to schools.`,
-            image: `${OG_IMAGE_URL}?type=district&name=${encodeURIComponent(district.name)}&location=${encodeURIComponent(stateInfo.name)}`,
+            image: STATIC_OG_IMAGE,
             url: `${BASE_URL}/districts/${pathParts[1]}/${districtSlug}`
           };
           return new Response(JSON.stringify(meta), {
