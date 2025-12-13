@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { Resvg } from "npm:@resvg/resvg-js@2.6.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,31 +60,31 @@ function generateOGImage(type: string, name: string, location: string): string {
   
   <!-- Type badge -->
   <rect x="60" y="80" width="${typeLabel.length * 18 + 80}" height="50" rx="25" fill="rgba(255,255,255,0.15)"/>
-  <text x="90" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="white">
+  <text x="90" y="115" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="white">
     ${typeIcon} ${typeLabel} Fundraising
   </text>
   
   <!-- Main name -->
-  <text x="60" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="${nameFontSize}" font-weight="bold" fill="white">
+  <text x="60" y="280" font-family="Arial, Helvetica, sans-serif" font-size="${nameFontSize}" font-weight="bold" fill="white">
     ${displayName}
   </text>
   
   <!-- Location -->
-  ${location ? `<text x="60" y="340" font-family="system-ui, -apple-system, sans-serif" font-size="32" fill="rgba(255,255,255,0.8)">
+  ${location ? `<text x="60" y="340" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="rgba(255,255,255,0.8)">
     📍 ${escapedLocation}
   </text>` : ""}
   
   <!-- Value prop -->
   <rect x="60" y="400" width="500" height="60" rx="8" fill="url(#accent)"/>
-  <text x="85" y="440" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="600" fill="white">
+  <text x="85" y="440" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="600" fill="white">
     ✓ 100% of Donations to Programs
   </text>
   
   <!-- Sponsorly branding -->
-  <text x="60" y="570" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="bold" fill="white">
+  <text x="60" y="570" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="bold" fill="white">
     Sponsorly
   </text>
-  <text x="245" y="570" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="rgba(255,255,255,0.7)">
+  <text x="245" y="570" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="rgba(255,255,255,0.7)">
     Modern Fundraising for Schools
   </text>
 </svg>`;
@@ -107,13 +108,24 @@ serve(async (req) => {
 
     const svg = generateOGImage(type, name, location);
 
-    // Return SVG directly (browsers and social media crawlers handle SVG well)
-    // For maximum compatibility, we return as SVG with proper headers
-    return new Response(svg, {
+    // Convert SVG to PNG using resvg
+    const resvg = new Resvg(svg, {
+      fitTo: {
+        mode: 'width',
+        value: 1200,
+      },
+    });
+    
+    const pngData = resvg.render();
+    const pngBuffer = pngData.asPng();
+
+    console.log(`Generated PNG image: ${pngBuffer.length} bytes`);
+
+    return new Response(pngBuffer, {
       headers: {
         ...corsHeaders,
-        "Content-Type": "image/svg+xml",
-        "Cache-Control": "public, max-age=86400, s-maxage=604800", // Cache for 1 day client, 1 week CDN
+        "Content-Type": "image/png",
+        "Cache-Control": "public, max-age=86400, s-maxage=604800",
       },
     });
   } catch (error) {
