@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
@@ -114,7 +114,19 @@ const StateLandingPage = () => {
 
       {/* Hero Section */}
       <section className="relative py-16 sm:py-24 bg-gradient-to-br from-primary/10 via-background to-accent/10 overflow-hidden">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        {/* State outline background */}
+        <div className="absolute inset-0 flex items-center justify-end overflow-hidden pointer-events-none">
+          <img 
+            src={`/state-outlines/${stateAbbr.toLowerCase()}.svg`}
+            alt=""
+            className="h-[80%] max-h-[500px] w-auto object-contain opacity-[0.06] translate-x-[10%]"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </div>
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6">
               <GraduationCap className="h-5 w-5" />
