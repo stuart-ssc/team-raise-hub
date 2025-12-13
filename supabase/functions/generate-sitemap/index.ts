@@ -52,20 +52,20 @@ function getStateSlug(stateAbbrev: string): string {
 // Generate sitemap index pointing to all sub-sitemaps
 function generateSitemapIndex(): string {
   const today = new Date().toISOString().split('T')[0];
-  const functionUrl = 'https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap';
+  const sitemapBaseUrl = 'https://sponsorly.io/sitemaps';
   
   const sitemaps: string[] = [];
   
   // Static sitemap
   sitemaps.push(`  <sitemap>
-    <loc>${escapeXml(functionUrl)}?type=static</loc>
+    <loc>${escapeXml(sitemapBaseUrl)}/static</loc>
     <lastmod>${today}</lastmod>
   </sitemap>`);
   
   // Schools sitemaps by state
   for (const state of ALL_STATES) {
     sitemaps.push(`  <sitemap>
-    <loc>${escapeXml(functionUrl)}?type=schools&amp;state=${state}</loc>
+    <loc>${escapeXml(sitemapBaseUrl)}/schools?state=${state}</loc>
     <lastmod>${today}</lastmod>
   </sitemap>`);
   }
@@ -73,7 +73,7 @@ function generateSitemapIndex(): string {
   // Districts sitemaps by state
   for (const state of ALL_STATES) {
     sitemaps.push(`  <sitemap>
-    <loc>${escapeXml(functionUrl)}?type=districts&amp;state=${state}</loc>
+    <loc>${escapeXml(sitemapBaseUrl)}/districts?state=${state}</loc>
     <lastmod>${today}</lastmod>
   </sitemap>`);
   }
@@ -81,7 +81,7 @@ function generateSitemapIndex(): string {
   // Campaigns sitemaps by state
   for (const state of ALL_STATES) {
     sitemaps.push(`  <sitemap>
-    <loc>${escapeXml(functionUrl)}?type=campaigns&amp;state=${state}</loc>
+    <loc>${escapeXml(sitemapBaseUrl)}/campaigns?state=${state}</loc>
     <lastmod>${today}</lastmod>
   </sitemap>`);
   }
