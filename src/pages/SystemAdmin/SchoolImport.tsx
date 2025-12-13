@@ -74,7 +74,8 @@ const SchoolImport = () => {
 
   return (
     <SystemAdminPageLayout title="School Import" subtitle="Import public school data from CSV files">
-      <div className="space-y-6">
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
@@ -159,6 +160,7 @@ const SchoolImport = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
 
       <ImportSchoolsDialog

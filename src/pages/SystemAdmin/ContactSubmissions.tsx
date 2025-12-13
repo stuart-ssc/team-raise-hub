@@ -188,7 +188,8 @@ export default function ContactSubmissions() {
 
   return (
     <SystemAdminPageLayout title="Contact Submissions">
-      <div className="space-y-6">
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
@@ -410,6 +411,7 @@ export default function ContactSubmissions() {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
     </SystemAdminPageLayout>
   );
