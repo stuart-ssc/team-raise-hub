@@ -42,6 +42,7 @@ import ABTestManagement from "./pages/SystemAdmin/ABTestManagement";
 import SystemAdminReports from "./pages/SystemAdmin/Reports";
 import SchoolImport from "./pages/SystemAdmin/SchoolImport";
 import LandingPages from "./pages/SystemAdmin/LandingPages";
+import MarketingAnalytics from "./pages/SystemAdmin/MarketingAnalytics";
 import DonorSegmentation from "./pages/DonorSegmentation";
 import DonorAnalytics from "./pages/DonorAnalytics";
 import NurtureCampaigns from "./pages/NurtureCampaigns";
@@ -165,6 +166,7 @@ const AppContent = () => {
         <Route path="/system-admin/emails" element={<ProtectedRoute><SystemAdminGuard><EmailManagement /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/ab-tests" element={<ProtectedRoute><SystemAdminGuard><ABTestManagement /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/reports" element={<ProtectedRoute><SystemAdminGuard><SystemAdminReports /></SystemAdminGuard></ProtectedRoute>} />
+        <Route path="/system-admin/marketing-analytics" element={<ProtectedRoute><SystemAdminGuard><MarketingAnalytics /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/contact-submissions" element={<ProtectedRoute><SystemAdminGuard><ContactSubmissions /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -99,6 +99,9 @@ verify_jwt = false
 [functions.track-campaign-view]
 verify_jwt = false
 
+[functions.track-landing-page-view]
+verify_jwt = false
+
 [functions.import-donors]
 verify_jwt = true
 
