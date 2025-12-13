@@ -13,7 +13,7 @@ Allow: /
 User-agent: *
 Allow: /
 
-# Sitemap - points to sitemap index containing all sub-sitemaps
+# Sitemap
 Sitemap: https://sponsorly.io/sitemap.xml
 
 # Disallow admin and dashboard areas
@@ -21,5 +21,3 @@ Disallow: /dashboard
 Disallow: /dashboard/*
 Disallow: /system-admin
 Disallow: /system-admin/*
-Disallow: /login
-Disallow: /signup
