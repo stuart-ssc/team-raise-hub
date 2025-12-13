@@ -1,33 +1,29 @@
 [build]
   publish = "dist"
+  functions = "netlify/functions"
 
-# Sitemap redirects - proxy to Supabase edge function
+# Sitemap routes to Netlify function
 [[redirects]]
   from = "/sitemap.xml"
-  to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=index"
+  to = "/.netlify/functions/sitemap?type=index"
   status = 200
-  force = true
 
 [[redirects]]
   from = "/sitemaps/static"
-  to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=static"
+  to = "/.netlify/functions/sitemap?type=static"
   status = 200
-  force = true
 
 [[redirects]]
   from = "/sitemaps/schools/:state"
-  to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=schools&state=:state"
+  to = "/.netlify/functions/sitemap?type=schools&state=:state"
   status = 200
-  force = true
 
 [[redirects]]
   from = "/sitemaps/districts/:state"
-  to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=districts&state=:state"
+  to = "/.netlify/functions/sitemap?type=districts&state=:state"
   status = 200
-  force = true
 
 [[redirects]]
   from = "/sitemaps/campaigns/:state"
-  to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=campaigns&state=:state"
+  to = "/.netlify/functions/sitemap?type=campaigns&state=:state"
   status = 200
-  force = true
