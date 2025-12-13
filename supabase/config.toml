@@ -185,3 +185,6 @@ verify_jwt = true
 
 [functions.generate-og-image]
 verify_jwt = false
+
+[functions.get-page-meta]
+verify_jwt = false
