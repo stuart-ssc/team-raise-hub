@@ -13,8 +13,8 @@ Allow: /
 User-agent: *
 Allow: /
 
-# Sitemap
-Sitemap: https://sponsorly.io/api/sitemap.xml
+# Sitemap - points to sitemap index containing all sub-sitemaps
+Sitemap: https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=index
 
 # Disallow admin and dashboard areas
 Disallow: /dashboard
