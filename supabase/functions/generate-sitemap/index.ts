@@ -42,19 +42,22 @@ function xmlResponse(xml: string): Response {
   });
 }
 
+// Supabase edge function base URL for sitemap references
+const SITEMAP_BASE = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap";
+
 function generateSitemapIndex(): string {
   const today = new Date().toISOString().split("T")[0];
   
   let sitemaps = `
-    <sitemap><loc>${DOMAIN}/sitemap-static.xml</loc><lastmod>${today}</lastmod></sitemap>
-    <sitemap><loc>${DOMAIN}/sitemap-states.xml</loc><lastmod>${today}</lastmod></sitemap>
-    <sitemap><loc>${DOMAIN}/sitemap-districts.xml</loc><lastmod>${today}</lastmod></sitemap>
-    <sitemap><loc>${DOMAIN}/sitemap-campaigns.xml</loc><lastmod>${today}</lastmod></sitemap>
+    <sitemap><loc>${SITEMAP_BASE}?file=static</loc><lastmod>${today}</lastmod></sitemap>
+    <sitemap><loc>${SITEMAP_BASE}?file=states</loc><lastmod>${today}</lastmod></sitemap>
+    <sitemap><loc>${SITEMAP_BASE}?file=districts</loc><lastmod>${today}</lastmod></sitemap>
+    <sitemap><loc>${SITEMAP_BASE}?file=campaigns</loc><lastmod>${today}</lastmod></sitemap>
   `;
   
   // Add state-specific school sitemaps
   for (const state of STATES) {
-    sitemaps += `<sitemap><loc>${DOMAIN}/sitemap-schools-${state}.xml</loc><lastmod>${today}</lastmod></sitemap>\n`;
+    sitemaps += `<sitemap><loc>${SITEMAP_BASE}?file=schools-${state}</loc><lastmod>${today}</lastmod></sitemap>\n`;
   }
   
   return `<?xml version="1.0" encoding="UTF-8"?>
