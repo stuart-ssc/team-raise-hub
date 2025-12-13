@@ -65,7 +65,7 @@ function generateSitemapIndex(): string {
   // Schools sitemaps by state
   for (const state of ALL_STATES) {
     sitemaps.push(`  <sitemap>
-    <loc>${escapeXml(sitemapBaseUrl)}/schools?state=${state}</loc>
+    <loc>${escapeXml(sitemapBaseUrl)}/schools/${state}</loc>
     <lastmod>${today}</lastmod>
   </sitemap>`);
   }
@@ -73,7 +73,7 @@ function generateSitemapIndex(): string {
   // Districts sitemaps by state
   for (const state of ALL_STATES) {
     sitemaps.push(`  <sitemap>
-    <loc>${escapeXml(sitemapBaseUrl)}/districts?state=${state}</loc>
+    <loc>${escapeXml(sitemapBaseUrl)}/districts/${state}</loc>
     <lastmod>${today}</lastmod>
   </sitemap>`);
   }
@@ -81,7 +81,7 @@ function generateSitemapIndex(): string {
   // Campaigns sitemaps by state
   for (const state of ALL_STATES) {
     sitemaps.push(`  <sitemap>
-    <loc>${escapeXml(sitemapBaseUrl)}/campaigns?state=${state}</loc>
+    <loc>${escapeXml(sitemapBaseUrl)}/campaigns/${state}</loc>
     <lastmod>${today}</lastmod>
   </sitemap>`);
   }
