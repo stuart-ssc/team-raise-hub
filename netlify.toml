@@ -1,43 +1,33 @@
 [build]
   publish = "dist"
 
-# Sitemap redirects - proxy to Supabase edge function with apikey header
+# Sitemap redirects - proxy to Supabase edge function
 [[redirects]]
   from = "/sitemap.xml"
   to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=index"
   status = 200
   force = true
-  [redirects.headers]
-    apikey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcmVibWhpb25wdW93cHplZHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMDA0NTksImV4cCI6MjA2ODg3NjQ1OX0.Jw7c0qDfsdvxF3U6IQrjddVxbbRATTLz-RlPw5yYmxY"
 
 [[redirects]]
   from = "/sitemaps/static"
   to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=static"
   status = 200
   force = true
-  [redirects.headers]
-    apikey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcmVibWhpb25wdW93cHplZHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMDA0NTksImV4cCI6MjA2ODg3NjQ1OX0.Jw7c0qDfsdvxF3U6IQrjddVxbbRATTLz-RlPw5yYmxY"
 
 [[redirects]]
   from = "/sitemaps/schools/:state"
   to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=schools&state=:state"
   status = 200
   force = true
-  [redirects.headers]
-    apikey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcmVibWhpb25wdW93cHplZHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMDA0NTksImV4cCI6MjA2ODg3NjQ1OX0.Jw7c0qDfsdvxF3U6IQrjddVxbbRATTLz-RlPw5yYmxY"
 
 [[redirects]]
   from = "/sitemaps/districts/:state"
   to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=districts&state=:state"
   status = 200
   force = true
-  [redirects.headers]
-    apikey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcmVibWhpb25wdW93cHplZHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMDA0NTksImV4cCI6MjA2ODg3NjQ1OX0.Jw7c0qDfsdvxF3U6IQrjddVxbbRATTLz-RlPw5yYmxY"
 
 [[redirects]]
   from = "/sitemaps/campaigns/:state"
   to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=campaigns&state=:state"
   status = 200
   force = true
-  [redirects.headers]
-    apikey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcmVibWhpb25wdW93cHplZHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMDA0NTksImV4cCI6MjA2ODg3NjQ1OX0.Jw7c0qDfsdvxF3U6IQrjddVxbbRATTLz-RlPw5yYmxY"
