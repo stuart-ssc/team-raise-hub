@@ -14,7 +14,7 @@ User-agent: *
 Allow: /
 
 # Sitemap - points to sitemap index containing all sub-sitemaps
-Sitemap: https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=index
+Sitemap: https://sponsorly.io/sitemap.xml
 
 # Disallow admin and dashboard areas
 Disallow: /dashboard
