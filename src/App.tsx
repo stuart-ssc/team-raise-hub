@@ -65,6 +65,7 @@ import { SystemAdminGuard } from "./components/SystemAdminGuard";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import { HubSpotTracker } from "./components/HubSpotTracker";
 import { GoogleAnalyticsTracker } from "./components/GoogleAnalyticsTracker";
+import { RB2BTracker } from "./components/RB2BTracker";
 import ScrollToTop from "./components/ScrollToTop";
 import StateLandingPage from "./pages/StateLandingPage";
 import SchoolLandingPage from "./pages/SchoolLandingPage";
@@ -106,6 +107,7 @@ const AppContent = () => {
       <ScrollToTop />
       <HubSpotTracker />
       <GoogleAnalyticsTracker />
+      <RB2BTracker />
       <PWAInstallPrompt />
       <Routes>
         <Route path="/" element={<Index />} />
