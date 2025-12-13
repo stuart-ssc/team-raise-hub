@@ -1,5 +1,8 @@
 project_id = "tfrebmhionpuowpzedvz"
 
+[functions.generate-sitemap]
+verify_jwt = false
+
 [functions.generate-business-outreach-queue]
 verify_jwt = true
 
@@ -179,4 +182,3 @@ verify_jwt = true
 
 [functions.generate-landing-page-slugs]
 verify_jwt = true
-
