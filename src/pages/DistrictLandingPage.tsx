@@ -147,6 +147,23 @@ const DistrictLandingPage = () => {
           content={`Modern fundraising platform for ${district.name} schools. Sports teams, clubs, band, theater, PTOs - all in one place.`}
         />
         <meta property="og:url" content={`https://sponsorly.io/districts/${stateSlug}/${slug}`} />
+        <meta property="og:type" content="website" />
+        <meta 
+          property="og:image" 
+          content={`https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-og-image?type=district&name=${encodeURIComponent(district.name)}&location=${encodeURIComponent(stateName)}`} 
+        />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${district.name} Fundraising | Sponsorly`} />
+        <meta 
+          name="twitter:description" 
+          content={`Modern fundraising platform for ${district.name} schools. Sports teams, clubs, band, theater, PTOs - all in one place.`} 
+        />
+        <meta 
+          name="twitter:image" 
+          content={`https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-og-image?type=district&name=${encodeURIComponent(district.name)}&location=${encodeURIComponent(stateName)}`} 
+        />
         <link rel="canonical" href={`https://sponsorly.io/districts/${stateSlug}/${slug}`} />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>

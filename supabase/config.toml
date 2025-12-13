@@ -182,3 +182,6 @@ verify_jwt = true
 
 [functions.generate-landing-page-slugs]
 verify_jwt = true
+
+[functions.generate-og-image]
+verify_jwt = false
