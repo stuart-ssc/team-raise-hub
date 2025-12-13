@@ -167,6 +167,23 @@ const SchoolLandingPage = () => {
           content={`Modern fundraising platform for ${school.school_name}. Sports teams, clubs, band, theater, PTOs - all in one place.`}
         />
         <meta property="og:url" content={`https://sponsorly.io/schools/${stateSlug}/${slug}`} />
+        <meta property="og:type" content="website" />
+        <meta 
+          property="og:image" 
+          content={`https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-og-image?type=school&name=${encodeURIComponent(school.school_name)}&location=${encodeURIComponent(locationText)}`} 
+        />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${school.school_name} Fundraising | Sponsorly`} />
+        <meta 
+          name="twitter:description" 
+          content={`Modern fundraising platform for ${school.school_name}. Sports teams, clubs, band, theater, PTOs - all in one place.`} 
+        />
+        <meta 
+          name="twitter:image" 
+          content={`https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-og-image?type=school&name=${encodeURIComponent(school.school_name)}&location=${encodeURIComponent(locationText)}`} 
+        />
         <link rel="canonical" href={`https://sponsorly.io/schools/${stateSlug}/${slug}`} />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
