@@ -66,6 +66,7 @@ import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import { HubSpotTracker } from "./components/HubSpotTracker";
 import { GoogleAnalyticsTracker } from "./components/GoogleAnalyticsTracker";
 import { RB2BTracker } from "./components/RB2BTracker";
+import { CookieYesTracker } from "./components/CookieYesTracker";
 import ScrollToTop from "./components/ScrollToTop";
 import StateLandingPage from "./pages/StateLandingPage";
 import SchoolLandingPage from "./pages/SchoolLandingPage";
@@ -105,6 +106,7 @@ const AppContent = () => {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <CookieYesTracker />
       <HubSpotTracker />
       <GoogleAnalyticsTracker />
       <RB2BTracker />
