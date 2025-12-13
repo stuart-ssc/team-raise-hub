@@ -1,6 +1,6 @@
 # Sitemap redirects - proxy to Supabase edge function
 /sitemap.xml https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=index 200
 /sitemaps/static https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=static 200
-/sitemaps/schools https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=schools 200!
-/sitemaps/districts https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=districts 200!
-/sitemaps/campaigns https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=campaigns 200!
+/sitemaps/schools/:state https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=schools&state=:state 200
+/sitemaps/districts/:state https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=districts&state=:state 200
+/sitemaps/campaigns/:state https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?type=campaigns&state=:state 200
