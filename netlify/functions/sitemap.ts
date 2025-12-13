@@ -1,15 +1,7 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Type': 'application/xml',
-  'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
-};
+import { createClient } from '@supabase/supabase-js';
 
 const BASE_URL = 'https://sponsorly.io';
 
-// All 50 US states + DC
 const ALL_STATES = [
   'alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado', 'connecticut',
   'delaware', 'district-of-columbia', 'florida', 'georgia', 'hawaii', 'idaho', 'illinois',
@@ -21,7 +13,6 @@ const ALL_STATES = [
   'wisconsin', 'wyoming',
 ];
 
-// State abbreviation to slug mapping
 const STATE_ABBREV_TO_SLUG: Record<string, string> = {
   'AL': 'alabama', 'AK': 'alaska', 'AZ': 'arizona', 'AR': 'arkansas', 'CA': 'california',
   'CO': 'colorado', 'CT': 'connecticut', 'DE': 'delaware', 'DC': 'district-of-columbia',
@@ -45,24 +36,17 @@ function escapeXml(unsafe: string): string {
     .replace(/'/g, '&apos;');
 }
 
-function getStateSlug(stateAbbrev: string): string {
-  return STATE_ABBREV_TO_SLUG[stateAbbrev.toUpperCase()] || stateAbbrev.toLowerCase();
-}
-
-// Generate sitemap index pointing to all sub-sitemaps
 function generateSitemapIndex(): string {
   const today = new Date().toISOString().split('T')[0];
-  const sitemapBaseUrl = 'https://sponsorly.io/sitemaps';
+  const sitemapBaseUrl = `${BASE_URL}/sitemaps`;
   
   const sitemaps: string[] = [];
   
-  // Static sitemap
   sitemaps.push(`  <sitemap>
     <loc>${escapeXml(sitemapBaseUrl)}/static</loc>
     <lastmod>${today}</lastmod>
   </sitemap>`);
   
-  // Schools sitemaps by state
   for (const state of ALL_STATES) {
     sitemaps.push(`  <sitemap>
     <loc>${escapeXml(sitemapBaseUrl)}/schools/${state}</loc>
@@ -70,7 +54,6 @@ function generateSitemapIndex(): string {
   </sitemap>`);
   }
   
-  // Districts sitemaps by state
   for (const state of ALL_STATES) {
     sitemaps.push(`  <sitemap>
     <loc>${escapeXml(sitemapBaseUrl)}/districts/${state}</loc>
@@ -78,7 +61,6 @@ function generateSitemapIndex(): string {
   </sitemap>`);
   }
   
-  // Campaigns sitemaps by state
   for (const state of ALL_STATES) {
     sitemaps.push(`  <sitemap>
     <loc>${escapeXml(sitemapBaseUrl)}/campaigns/${state}</loc>
@@ -92,7 +74,6 @@ ${sitemaps.join('\n')}
 </sitemapindex>`;
 }
 
-// Generate static pages sitemap
 function generateStaticSitemap(): string {
   const today = new Date().toISOString().split('T')[0];
   
@@ -110,7 +91,6 @@ function generateStaticSitemap(): string {
   
   const urls: string[] = [];
   
-  // Static pages
   for (const page of staticPages) {
     urls.push(`  <url>
     <loc>${escapeXml(BASE_URL + page.path)}</loc>
@@ -120,7 +100,6 @@ function generateStaticSitemap(): string {
   </url>`);
   }
   
-  // State landing pages
   for (const stateSlug of ALL_STATES) {
     urls.push(`  <url>
     <loc>${escapeXml(BASE_URL + '/schools/' + stateSlug)}</loc>
@@ -136,19 +115,14 @@ ${urls.join('\n')}
 </urlset>`;
 }
 
-// Generate schools sitemap for a specific state
-async function generateSchoolsSitemap(supabase: any, stateSlug: string): Promise<string> {
+async function generateSchoolsSitemap(supabase: ReturnType<typeof createClient>, stateSlug: string): Promise<string> {
   const today = new Date().toISOString().split('T')[0];
   const stateAbbrev = Object.entries(STATE_ABBREV_TO_SLUG).find(([_, slug]) => slug === stateSlug)?.[0];
   
   if (!stateAbbrev) {
-    console.log(`Invalid state slug: ${stateSlug}`);
     return generateEmptySitemap();
   }
   
-  console.log(`Fetching schools for state: ${stateAbbrev}`);
-  
-  // Fetch all schools for this state (paginated to handle large datasets)
   const urls: string[] = [];
   let page = 0;
   const pageSize = 1000;
@@ -162,12 +136,7 @@ async function generateSchoolsSitemap(supabase: any, stateSlug: string): Promise
       .not('slug', 'is', null)
       .range(page * pageSize, (page + 1) * pageSize - 1);
     
-    if (error) {
-      console.error(`Error fetching schools for ${stateAbbrev}:`, error);
-      break;
-    }
-    
-    if (!schools || schools.length === 0) {
+    if (error || !schools || schools.length === 0) {
       hasMore = false;
       break;
     }
@@ -186,15 +155,11 @@ async function generateSchoolsSitemap(supabase: any, stateSlug: string): Promise
       }
     }
     
-    console.log(`Fetched ${schools.length} schools for ${stateAbbrev} (page ${page + 1})`);
-    
     if (schools.length < pageSize) {
       hasMore = false;
     }
     page++;
   }
-  
-  console.log(`Total schools for ${stateAbbrev}: ${urls.length}`);
   
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -202,17 +167,13 @@ ${urls.join('\n')}
 </urlset>`;
 }
 
-// Generate districts sitemap for a specific state
-async function generateDistrictsSitemap(supabase: any, stateSlug: string): Promise<string> {
+async function generateDistrictsSitemap(supabase: ReturnType<typeof createClient>, stateSlug: string): Promise<string> {
   const today = new Date().toISOString().split('T')[0];
   const stateAbbrev = Object.entries(STATE_ABBREV_TO_SLUG).find(([_, slug]) => slug === stateSlug)?.[0];
   
   if (!stateAbbrev) {
-    console.log(`Invalid state slug: ${stateSlug}`);
     return generateEmptySitemap();
   }
-  
-  console.log(`Fetching districts for state: ${stateAbbrev}`);
   
   const urls: string[] = [];
   let page = 0;
@@ -227,12 +188,7 @@ async function generateDistrictsSitemap(supabase: any, stateSlug: string): Promi
       .not('slug', 'is', null)
       .range(page * pageSize, (page + 1) * pageSize - 1);
     
-    if (error) {
-      console.error(`Error fetching districts for ${stateAbbrev}:`, error);
-      break;
-    }
-    
-    if (!districts || districts.length === 0) {
+    if (error || !districts || districts.length === 0) {
       hasMore = false;
       break;
     }
@@ -251,15 +207,11 @@ async function generateDistrictsSitemap(supabase: any, stateSlug: string): Promi
       }
     }
     
-    console.log(`Fetched ${districts.length} districts for ${stateAbbrev} (page ${page + 1})`);
-    
     if (districts.length < pageSize) {
       hasMore = false;
     }
     page++;
   }
-  
-  console.log(`Total districts for ${stateAbbrev}: ${urls.length}`);
   
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -267,21 +219,13 @@ ${urls.join('\n')}
 </urlset>`;
 }
 
-// Generate campaigns sitemap for a specific state
-async function generateCampaignsSitemap(supabase: any, stateSlug?: string): Promise<string> {
+async function generateCampaignsSitemap(supabase: ReturnType<typeof createClient>, stateSlug: string): Promise<string> {
   const today = new Date().toISOString().split('T')[0];
+  const stateAbbrev = Object.entries(STATE_ABBREV_TO_SLUG).find(([_, slug]) => slug === stateSlug)?.[0];
   
-  // Get state abbreviation from slug if provided
-  let stateAbbrev: string | undefined;
-  if (stateSlug) {
-    stateAbbrev = Object.entries(STATE_ABBREV_TO_SLUG).find(([_, slug]) => slug === stateSlug)?.[0];
-    if (!stateAbbrev) {
-      console.log(`Invalid state slug for campaigns: ${stateSlug}`);
-      return generateEmptySitemap();
-    }
+  if (!stateAbbrev) {
+    return generateEmptySitemap();
   }
-  
-  console.log(`Fetching published campaigns${stateAbbrev ? ` for state: ${stateAbbrev}` : ''}`);
   
   const urls: string[] = [];
   let page = 0;
@@ -289,8 +233,7 @@ async function generateCampaignsSitemap(supabase: any, stateSlug?: string): Prom
   let hasMore = true;
   
   while (hasMore) {
-    // Build query - campaigns → groups → organizations → state
-    let query = supabase
+    const { data: campaigns, error } = await supabase
       .from('campaigns')
       .select(`
         slug,
@@ -301,21 +244,11 @@ async function generateCampaignsSitemap(supabase: any, stateSlug?: string): Prom
         )
       `)
       .eq('publication_status', 'published')
-      .not('slug', 'is', null);
+      .eq('groups.organizations.state', stateAbbrev)
+      .not('slug', 'is', null)
+      .range(page * pageSize, (page + 1) * pageSize - 1);
     
-    // Filter by state if provided
-    if (stateAbbrev) {
-      query = query.eq('groups.organizations.state', stateAbbrev);
-    }
-    
-    const { data: campaigns, error } = await query.range(page * pageSize, (page + 1) * pageSize - 1);
-    
-    if (error) {
-      console.error(`Error fetching campaigns${stateAbbrev ? ` for ${stateAbbrev}` : ''}:`, error);
-      break;
-    }
-    
-    if (!campaigns || campaigns.length === 0) {
+    if (error || !campaigns || campaigns.length === 0) {
       hasMore = false;
       break;
     }
@@ -334,15 +267,11 @@ async function generateCampaignsSitemap(supabase: any, stateSlug?: string): Prom
       }
     }
     
-    console.log(`Fetched ${campaigns.length} campaigns${stateAbbrev ? ` for ${stateAbbrev}` : ''} (page ${page + 1})`);
-    
     if (campaigns.length < pageSize) {
       hasMore = false;
     }
     page++;
   }
-  
-  console.log(`Total campaigns${stateAbbrev ? ` for ${stateAbbrev}` : ''}: ${urls.length}`);
   
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -356,25 +285,44 @@ function generateEmptySitemap(): string {
 </urlset>`;
 }
 
-Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+// Netlify Function handler
+export const handler = async (event: { queryStringParameters: Record<string, string | undefined>, path: string }) => {
+  const headers = {
+    'Content-Type': 'application/xml',
+    'Cache-Control': 'public, max-age=86400',
+  };
 
   try {
-    const url = new URL(req.url);
-    const type = url.searchParams.get('type') || 'index';
-    const state = url.searchParams.get('state');
+    // Parse type and state from query params or path
+    let type = event.queryStringParameters?.type || 'index';
+    let state = event.queryStringParameters?.state;
     
-    console.log(`Generating sitemap: type=${type}, state=${state}`);
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
+    // Also parse from path for /sitemaps/schools/kentucky style URLs
+    const pathMatch = event.path.match(/\/sitemaps\/(schools|districts|campaigns)\/([^/]+)/);
+    if (pathMatch) {
+      type = pathMatch[1];
+      state = pathMatch[2];
+    } else if (event.path.includes('/sitemaps/static')) {
+      type = 'static';
+    }
+    
+    // Initialize Supabase client
+    const supabaseUrl = process.env.SUPABASE_URL || 'https://tfrebmhionpuowpzedvz.supabase.co';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
+    
+    if (!supabaseKey) {
+      console.error('Missing Supabase key');
+      return {
+        statusCode: 500,
+        headers,
+        body: generateEmptySitemap(),
+      };
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
     let sitemap: string;
-
+    
     switch (type) {
       case 'index':
         sitemap = generateSitemapIndex();
@@ -384,35 +332,37 @@ Deno.serve(async (req) => {
         break;
       case 'schools':
         if (!state) {
-          return new Response('Missing state parameter', { status: 400 });
+          return { statusCode: 400, headers, body: 'Missing state parameter' };
         }
         sitemap = await generateSchoolsSitemap(supabase, state);
         break;
       case 'districts':
         if (!state) {
-          return new Response('Missing state parameter', { status: 400 });
+          return { statusCode: 400, headers, body: 'Missing state parameter' };
         }
         sitemap = await generateDistrictsSitemap(supabase, state);
         break;
       case 'campaigns':
         if (!state) {
-          return new Response('Missing state parameter', { status: 400 });
+          return { statusCode: 400, headers, body: 'Missing state parameter' };
         }
         sitemap = await generateCampaignsSitemap(supabase, state);
         break;
       default:
         sitemap = generateSitemapIndex();
     }
-
-    return new Response(sitemap, {
-      headers: corsHeaders,
-      status: 200,
-    });
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: sitemap,
+    };
   } catch (error) {
     console.error('Error generating sitemap:', error);
-    return new Response(generateEmptySitemap(), { 
-      headers: corsHeaders, 
-      status: 200 
-    });
+    return {
+      statusCode: 200,
+      headers,
+      body: generateEmptySitemap(),
+    };
   }
-});
+};
