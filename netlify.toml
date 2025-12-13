@@ -1,32 +1,45 @@
 [build]
   publish = "dist"
 
+# Sitemap redirects (must come FIRST and use force)
 [[redirects]]
   from = "/sitemap.xml"
   to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=index"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/sitemap-static.xml"
   to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=static"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/sitemap-states.xml"
   to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=states"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/sitemap-districts.xml"
   to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=districts"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/sitemap-campaigns.xml"
   to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=campaigns"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/sitemap-schools-*.xml"
   to = "https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-:splat"
+  status = 200
+  force = true
+
+# SPA fallback (must come LAST)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
   status = 200
