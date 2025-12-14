@@ -48,14 +48,17 @@ function getStateInfo(stateSlug: string): { abbr: string; name: string } | null 
 }
 
 const BASE_URL = 'https://sponsorly.io';
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 // Use static Sponsorly logo for reliable OG images that always work
 const STATIC_OG_IMAGE = `${BASE_URL}/lovable-uploads/Sponsorly-Logo.png`;
+const FB_APP_ID = '622618607437522';
 
 interface PageMeta {
   title: string;
   description: string;
   image: string;
   url: string;
+  fb_app_id: string;
 }
 
 Deno.serve(async (req) => {
@@ -74,7 +77,8 @@ Deno.serve(async (req) => {
       title: 'Sponsorly - 100% Fundraising for Schools & Non-Profits',
       description: 'The only fundraising platform where 100% of donations go directly to your organization. Perfect for schools, teams, clubs, and non-profits.',
       image: STATIC_OG_IMAGE,
-      url: BASE_URL
+      url: BASE_URL,
+      fb_app_id: FB_APP_ID
     };
 
     // Parse path
@@ -88,7 +92,8 @@ Deno.serve(async (req) => {
           title: `School Fundraising in ${stateInfo.name} | Sponsorly`,
           description: `Empowering ${stateInfo.name} schools and districts with modern fundraising tools. 100% of donations go directly to your school.`,
           image: STATIC_OG_IMAGE,
-          url: `${BASE_URL}/schools/${pathParts[1]}`
+          url: `${BASE_URL}/schools/${pathParts[1]}`,
+          fb_app_id: FB_APP_ID
         };
         return new Response(JSON.stringify(meta), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -121,7 +126,8 @@ Deno.serve(async (req) => {
             title: `${school.school_name} Fundraising | Sponsorly`,
             description: `Support ${school.school_name} in ${location}. 100% of your donation goes directly to the school. No platform fees for organizations.`,
             image: STATIC_OG_IMAGE,
-            url: `${BASE_URL}/schools/${pathParts[1]}/${schoolSlug}`
+            url: `${BASE_URL}/schools/${pathParts[1]}/${schoolSlug}`,
+            fb_app_id: FB_APP_ID
           };
           return new Response(JSON.stringify(meta), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -154,7 +160,8 @@ Deno.serve(async (req) => {
             title: `${district.name} Fundraising | Sponsorly`,
             description: `Empower schools in ${district.name}, ${stateInfo.name} with modern fundraising. 100% of donations go directly to schools.`,
             image: STATIC_OG_IMAGE,
-            url: `${BASE_URL}/districts/${pathParts[1]}/${districtSlug}`
+            url: `${BASE_URL}/districts/${pathParts[1]}/${districtSlug}`,
+            fb_app_id: FB_APP_ID
           };
           return new Response(JSON.stringify(meta), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
