@@ -51,7 +51,7 @@ const BASE_URL = 'https://sponsorly.io';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 // Use static Sponsorly logo for reliable OG images that always work
 const STATIC_OG_IMAGE = `${BASE_URL}/lovable-uploads/Sponsorly-Logo.png`;
-const FB_APP_ID = '622618607437522';
+const FB_APP_ID = '2577576499294352';
 
 interface PageMeta {
   title: string;
