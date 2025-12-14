@@ -50,16 +50,13 @@ export default function PlayerDashboard() {
 
   const fetchPlayerData = async () => {
     try {
-      // Get user's roster memberships and their group IDs
+      // Step 1: Get user's roster memberships with roster IDs
       const { data: rosterMemberships, error: rosterError } = await supabase
         .from('organization_user')
-        .select(`
-          id,
-          roster_id,
-          rosters(group_id)
-        `)
+        .select('id, roster_id')
         .eq('user_id', user?.id)
-        .eq('active_user', true);
+        .eq('active_user', true)
+        .not('roster_id', 'is', null);
 
       if (rosterError) throw rosterError;
 
@@ -68,10 +65,16 @@ export default function PlayerDashboard() {
         return;
       }
 
-      // Get all unique group IDs for this user
-      const groupIds = rosterMemberships
-        .map(m => (m as any).rosters?.group_id)
-        .filter(Boolean);
+      // Step 2: Get group IDs from rosters table
+      const rosterIds = rosterMemberships.map(m => m.roster_id).filter(Boolean);
+      const { data: rosters, error: rostersError } = await supabase
+        .from('rosters')
+        .select('id, group_id')
+        .in('id', rosterIds);
+
+      if (rostersError) throw rostersError;
+
+      const groupIds = rosters?.map(r => r.group_id).filter(Boolean) || [];
 
       if (groupIds.length === 0) {
         setLoading(false);
