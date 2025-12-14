@@ -15,10 +15,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 210 24% 16%;
 
-    /* Blue primary theme matching the School Sponsor Connect brand */
-    --primary: 217 91% 60%;
+    /* Sponsorly brand blue #1c6dbe */
+    --primary: 210 74% 43%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 217 91% 55%;
+    --primary-hover: 210 74% 38%;
 
     --secondary: 210 40% 98%;
     --secondary-foreground: 210 24% 16%;
@@ -34,22 +34,22 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 217 91% 60%;
+    --ring: 210 74% 43%;
 
     --radius: 0.5rem;
 
     /* Dark sidebar design from the dashboard */
     --sidebar-background: 210 24% 16%;
     --sidebar-foreground: 0 0% 85%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 210 74% 43%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 24% 20%;
     --sidebar-accent-foreground: 0 0% 85%;
     --sidebar-border: 210 24% 20%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-ring: 210 74% 43%;
 
     /* Blue gradient for login page */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 45%));
+    --gradient-primary: linear-gradient(135deg, hsl(210 74% 43%), hsl(210 74% 33%));
     --gradient-dots: radial-gradient(circle, hsl(0 0% 100% / 0.2) 1px, transparent 1px);
     
     /* Success and status colors */
