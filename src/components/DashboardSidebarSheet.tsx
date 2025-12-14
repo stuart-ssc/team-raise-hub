@@ -69,7 +69,7 @@ const DashboardSidebarSheet = ({
       <SheetContent side="left" className="w-64 p-0 md:hidden">
         <div className="bg-sidebar text-sidebar-foreground h-full flex flex-col">
           {/* Header */}
-          <div className="border-b border-sidebar-border p-4">
+          <div className="p-4">
             <SponsorlyLogo variant="full" theme="dark" className="text-sidebar-foreground" />
           </div>
 
