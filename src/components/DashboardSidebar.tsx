@@ -44,7 +44,7 @@ const DashboardSidebar = () => {
   return (
     <aside className="hidden md:flex md:w-16 lg:w-64 bg-sidebar text-sidebar-foreground transition-all duration-300 flex-col border-r border-sidebar-border">
       {/* Header */}
-      <div className="border-b border-sidebar-border p-4 flex items-center justify-between">
+      <div className="p-4 flex items-center justify-between">
         <SponsorlyLogo variant="mark" theme="dark" className="lg:hidden" />
         <SponsorlyLogo variant="full" theme="dark" className="hidden lg:block text-sidebar-foreground" />
       </div>
