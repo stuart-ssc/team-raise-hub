@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users, Copy, Share2, DollarSign, Target, Calendar, CheckCircle, Clock } from "lucide-react";
+import { Trophy, Users, Copy, Share2, DollarSign, Calendar, Clock, Medal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -34,12 +34,21 @@ interface AttributedCampaign extends Campaign {
   percentToGoal: number;
 }
 
+interface LeaderboardEntry {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  totalRaised: number;
+  donationCount: number;
+  isCurrentUser: boolean;
+}
+
 export default function PlayerDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [currentCampaigns, setCurrentCampaigns] = useState<Campaign[]>([]);
-  const [pastCampaigns, setPastCampaigns] = useState<Campaign[]>([]);
   const [attributedCampaigns, setAttributedCampaigns] = useState<AttributedCampaign[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,7 +62,7 @@ export default function PlayerDashboard() {
       // Step 1: Get user's roster memberships with roster IDs
       const { data: rosterMemberships, error: rosterError } = await supabase
         .from('organization_user')
-        .select('id, roster_id')
+        .select('id, roster_id, organization_id')
         .eq('user_id', user?.id)
         .eq('active_user', true)
         .not('roster_id', 'is', null);
@@ -98,9 +107,8 @@ export default function PlayerDashboard() {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Categorize campaigns
+      // Categorize campaigns - only active ones
       const current: Campaign[] = [];
-      const past: Campaign[] = [];
 
       allCampaigns.forEach(campaign => {
         const endDate = campaign.end_date ? new Date(campaign.end_date) : null;
@@ -109,13 +117,10 @@ export default function PlayerDashboard() {
 
         if (isActive && !isPast) {
           current.push(campaign);
-        } else {
-          past.push(campaign);
         }
       });
 
       setCurrentCampaigns(current);
-      setPastCampaigns(past);
 
       // Fetch attributed campaign stats (campaigns where user has roster_member_campaign_links)
       const rosterMembership = rosterMemberships[0];
@@ -164,10 +169,91 @@ export default function PlayerDashboard() {
         const resolvedAttributed = (await Promise.all(attributedPromises)).filter(Boolean) as AttributedCampaign[];
         setAttributedCampaigns(resolvedAttributed);
       }
+
+      // Fetch leaderboard data - top 10 fundraisers on the same roster(s)
+      await fetchLeaderboard(rosterIds, rosterMemberships[0].organization_id);
+
     } catch (error) {
       console.error('Error fetching player data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLeaderboard = async (rosterIds: number[], organizationId: string) => {
+    try {
+      // Get all teammates on the same rosters
+      const { data: teammates, error: teammatesError } = await supabase
+        .from('organization_user')
+        .select('id, user_id')
+        .in('roster_id', rosterIds)
+        .eq('active_user', true);
+
+      if (teammatesError) throw teammatesError;
+
+      if (!teammates || teammates.length === 0) return;
+
+      // Get all roster member IDs and user IDs
+      const rosterMemberIds = teammates.map(t => t.id);
+      const userIds = teammates.map(t => t.user_id).filter(Boolean);
+
+      // Fetch profiles for all users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      const profilesMap: Record<string, { first_name: string | null; last_name: string | null }> = {};
+      profiles?.forEach(p => {
+        profilesMap[p.id] = { first_name: p.first_name, last_name: p.last_name };
+      });
+
+      // Get donation totals for each roster member from orders
+      const { data: donationData, error: donationError } = await supabase
+        .from('orders')
+        .select('attributed_roster_member_id, total_amount')
+        .in('attributed_roster_member_id', rosterMemberIds)
+        .in('status', ['succeeded', 'completed']);
+
+      if (donationError) throw donationError;
+
+      // Aggregate donations by roster member
+      const donationsByMember: Record<string, { total: number; count: number }> = {};
+      donationData?.forEach(order => {
+        const memberId = order.attributed_roster_member_id;
+        if (memberId) {
+          if (!donationsByMember[memberId]) {
+            donationsByMember[memberId] = { total: 0, count: 0 };
+          }
+          donationsByMember[memberId].total += order.total_amount || 0;
+          donationsByMember[memberId].count += 1;
+        }
+      });
+
+      // Build leaderboard entries
+      const leaderboardEntries: LeaderboardEntry[] = teammates
+        .map(teammate => {
+          const profile = profilesMap[teammate.user_id] || null;
+          const donations = donationsByMember[teammate.id] || { total: 0, count: 0 };
+          
+          return {
+            userId: teammate.user_id,
+            firstName: profile?.first_name || 'Unknown',
+            lastName: profile?.last_name || '',
+            totalRaised: donations.total,
+            donationCount: donations.count,
+            isCurrentUser: teammate.user_id === user?.id,
+          };
+        })
+        .filter(entry => entry.totalRaised > 0) // Only include those with donations
+        .sort((a, b) => b.totalRaised - a.totalRaised)
+        .slice(0, 10);
+
+      setLeaderboard(leaderboardEntries);
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
     }
   };
 
@@ -203,6 +289,13 @@ export default function PlayerDashboard() {
     return `${window.location.origin}/c/${campaign.slug}`;
   };
 
+  const getRankIcon = (rank: number) => {
+    if (rank === 1) return <span className="text-lg">🥇</span>;
+    if (rank === 2) return <span className="text-lg">🥈</span>;
+    if (rank === 3) return <span className="text-lg">🥉</span>;
+    return <span className="w-6 text-center text-muted-foreground">{rank}</span>;
+  };
+
   // Stats for attributed campaigns only
   const totalRaisedAll = attributedCampaigns.reduce((sum, s) => sum + (s.totalRaised || 0), 0);
   const totalSupportersAll = attributedCampaigns.reduce((sum, s) => sum + (s.uniqueSupporters || 0), 0);
@@ -223,17 +316,17 @@ export default function PlayerDashboard() {
     );
   }
 
-  const hasNoCampaigns = currentCampaigns.length === 0 && pastCampaigns.length === 0;
+  const hasNoCampaigns = currentCampaigns.length === 0 && attributedCampaigns.length === 0;
 
   if (hasNoCampaigns) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Trophy className="h-16 w-16 text-muted-foreground mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No Campaigns Yet</h3>
+          <h3 className="text-xl font-semibold mb-2">No Active Campaigns</h3>
           <p className="text-muted-foreground text-center max-w-md mb-4">
-            Your team doesn't have any active or past campaigns.
-            Contact your coach or team manager to get started!
+            Your team doesn't have any active campaigns right now.
+            Contact your coach or team manager when fundraising begins!
           </p>
         </CardContent>
       </Card>
@@ -282,6 +375,53 @@ export default function PlayerDashboard() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Team Leaderboard */}
+      {leaderboard.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Medal className="h-5 w-5 text-primary" />
+              <div>
+                <CardTitle>Team Leaderboard</CardTitle>
+                <CardDescription>Top fundraisers on your roster</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {leaderboard.map((entry, index) => (
+                <div
+                  key={entry.userId}
+                  className={`flex items-center justify-between p-3 rounded-lg ${
+                    entry.isCurrentUser 
+                      ? 'bg-primary/10 border border-primary/20' 
+                      : 'bg-muted/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {getRankIcon(index + 1)}
+                    <div>
+                      <p className="font-medium">
+                        {entry.firstName} {entry.lastName}
+                        {entry.isCurrentUser && (
+                          <span className="text-primary ml-2 text-sm">(You)</span>
+                        )}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {entry.donationCount} donation{entry.donationCount !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="font-semibold">
+                    ${(entry.totalRaised / 100).toFixed(2)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* My Fundraising - Attributed Campaigns */}
@@ -424,55 +564,6 @@ export default function PlayerDashboard() {
                 </Card>
               );
             })}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Past Campaigns */}
-      {pastCampaigns.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <CardTitle>Past Campaigns</CardTitle>
-                <CardDescription>Completed campaigns from your team</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {pastCampaigns.slice(0, 5).map((campaign) => {
-                const goalAmount = campaign.goal_amount || 0;
-                const amountRaised = campaign.amount_raised || 0;
-
-                return (
-                  <div key={campaign.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <div>
-                      <h4 className="font-medium">{campaign.name}</h4>
-                      {campaign.end_date && (
-                        <p className="text-sm text-muted-foreground">
-                          Ended {new Date(campaign.end_date).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold">${(amountRaised / 100).toFixed(2)}</div>
-                      {goalAmount > 0 && (
-                        <p className="text-xs text-muted-foreground">
-                          of ${(goalAmount / 100).toFixed(2)} goal
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              {pastCampaigns.length > 5 && (
-                <p className="text-sm text-muted-foreground text-center pt-2">
-                  + {pastCampaigns.length - 5} more past campaigns
-                </p>
-              )}
-            </div>
           </CardContent>
         </Card>
       )}
