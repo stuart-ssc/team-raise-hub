@@ -385,7 +385,7 @@ export default function PlayerDashboard() {
                           </p>
                         )}
                       </div>
-                      <Badge variant="outline">Active</Badge>
+                      <Badge className="bg-success text-success-foreground border-success">Active</Badge>
                     </div>
 
                     {goalAmount > 0 && (
