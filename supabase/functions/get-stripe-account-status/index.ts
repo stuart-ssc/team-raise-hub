@@ -97,6 +97,40 @@ Deno.serve(async (req) => {
       console.error('Error updating account status:', updateError);
     }
 
+    // Sync payment_processor_config to groups or organizations table
+    const isAccountEnabled = stripeAccount.charges_enabled && stripeAccount.payouts_enabled;
+    const paymentConfig = {
+      processor: 'stripe',
+      account_id: stripeAccount.id,
+      account_enabled: isAccountEnabled,
+    };
+
+    if (groupId) {
+      // Update group payment config
+      const { error: groupUpdateError } = await supabaseAdmin
+        .from('groups')
+        .update({ payment_processor_config: paymentConfig })
+        .eq('id', groupId);
+
+      if (groupUpdateError) {
+        console.error('Error syncing group payment config:', groupUpdateError);
+      } else {
+        console.log('Synced payment config to group:', groupId, paymentConfig);
+      }
+    } else if (organizationId) {
+      // Update organization payment config
+      const { error: orgUpdateError } = await supabaseAdmin
+        .from('organizations')
+        .update({ payment_processor_config: paymentConfig })
+        .eq('id', organizationId);
+
+      if (orgUpdateError) {
+        console.error('Error syncing organization payment config:', orgUpdateError);
+      } else {
+        console.log('Synced payment config to organization:', organizationId, paymentConfig);
+      }
+    }
+
     // Determine account status
     let status = 'pending';
     if (stripeAccount.charges_enabled && stripeAccount.payouts_enabled) {
