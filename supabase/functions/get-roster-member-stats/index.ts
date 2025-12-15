@@ -21,19 +21,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Auth header present, creating client...');
-
-    const supabaseClient = createClient(
+    // Extract JWT token from Bearer header
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Create admin client to verify user
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Verify the JWT token and get user
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError) {
       console.error('Auth error:', authError.message);
@@ -52,6 +50,9 @@ Deno.serve(async (req) => {
     }
     
     console.log('Authenticated user:', user.id);
+
+    // Use admin client for database queries (bypasses RLS)
+    const supabaseClient = supabaseAdmin;
 
     const { campaignId, rosterMemberId } = await req.json();
 
