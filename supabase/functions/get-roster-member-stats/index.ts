@@ -62,10 +62,12 @@ Deno.serve(async (req) => {
 
     console.log('Fetching stats for roster member:', rosterMemberId, 'campaign:', campaignId);
 
-    // Refresh materialized view
-    await supabaseClient.rpc('refresh_roster_fundraising_stats').catch(() => {
-      // Ignore errors, view might be refreshing already
-    });
+    // Refresh materialized view (ignore errors, view might be refreshing already)
+    try {
+      await supabaseClient.rpc('refresh_roster_fundraising_stats');
+    } catch (e) {
+      // Ignore refresh errors
+    }
 
     // Get fundraising stats from materialized view
     const { data: stats, error: statsError } = await supabaseClient
