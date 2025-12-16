@@ -26,7 +26,7 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Fetch order details with campaign and organization info
+    // Fetch order details with campaign and group info
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select(`
@@ -40,10 +40,7 @@ const handler = async (req: Request): Promise<Response> => {
           name,
           groups (
             group_name,
-            organizations (
-              name,
-              organization_type
-            )
+            organization_id
           )
         )
       `)
@@ -67,9 +64,24 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const campaign = order.campaigns as any;
-    const organizationName = campaign?.groups?.organizations?.name || "the organization";
-    const campaignName = campaign?.name || "Campaign";
     const groupName = campaign?.groups?.group_name || "";
+    const campaignName = campaign?.name || "Campaign";
+    
+    // Fetch organization name separately (no FK constraint)
+    let organizationName = "";
+    if (campaign?.groups?.organization_id) {
+      const { data: orgData } = await supabase
+        .from("organizations")
+        .select("name")
+        .eq("id", campaign.groups.organization_id)
+        .single();
+      organizationName = orgData?.name || "";
+    }
+    
+    // Display name for emails: "Organization Name Group Name"
+    const displayName = organizationName && groupName 
+      ? `${organizationName} ${groupName}` 
+      : groupName || organizationName || "the organization";
 
     // Parse items for display
     const items = order.items as any[];
@@ -86,7 +98,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "Sponsorly <onboarding@resend.dev>",
       to: [order.customer_email],
-      subject: `Thank you for your donation to ${campaignName}!`,
+      subject: `Thank you for your donation to ${displayName}!`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #333; font-size: 24px; margin-bottom: 20px;">Thank You for Your Donation!</h1>
@@ -96,7 +108,7 @@ const handler = async (req: Request): Promise<Response> => {
           </p>
           
           <p style="color: #555; font-size: 16px; line-height: 1.5;">
-            Thank you for supporting <strong>${groupName}</strong> through the <strong>${campaignName}</strong> campaign on Sponsorly!
+            Thank you for supporting <strong>${displayName}</strong> through the <strong>${campaignName}</strong> campaign on Sponsorly!
           </p>
           
           <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0;">
@@ -130,7 +142,7 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
           
           <p style="color: #555; font-size: 16px; line-height: 1.5;">
-            Your contribution makes a real difference. 100% of your donation goes directly to support ${organizationName}.
+            Your contribution makes a real difference. 100% of your donation goes directly to support ${displayName}.
           </p>
           
           <div style="background-color: #EEF2FF; border-left: 4px solid #4F46E5; padding: 15px; margin: 20px 0;">
