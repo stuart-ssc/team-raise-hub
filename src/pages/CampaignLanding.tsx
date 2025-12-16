@@ -284,13 +284,18 @@ const CampaignLanding = () => {
       
       // Step 2: Process business data and custom fields if they exist
       if ((businessData || Object.keys(customFieldValues).length > 0) && checkoutData.orderId) {
+        // Handle groups as potential array (FK relationships may return arrays)
+        const groupData = Array.isArray(campaign.groups) 
+          ? campaign.groups[0] 
+          : campaign.groups;
+        
         const { error: processError } = await supabase.functions.invoke(
           'process-checkout-business',
           {
             body: {
               orderId: checkoutData.orderId,
               businessId: businessData?.businessId,
-              organizationId: campaign.groups?.organization_id,
+              organizationId: groupData?.organization_id,
               customFieldValues: customFieldValues,
               campaignId: campaign.id
             }
