@@ -167,19 +167,6 @@ Deno.serve(async (req) => {
       throw orderError;
     }
 
-    // Insert order items
-    const { error: orderItemsError } = await supabaseAdmin
-      .from('order_items')
-      .insert(orderItems.map((item: any) => ({
-        ...item,
-        order_id: order.id,
-      })));
-
-    if (orderItemsError) {
-      console.error('Order items error:', orderItemsError);
-      throw orderItemsError;
-    }
-
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',

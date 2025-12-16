@@ -57,7 +57,7 @@ interface BusinessMatch {
 
 interface BusinessInfoFormProps {
   organizationId: string;
-  onBusinessSelected: (businessId: string, isNew: boolean) => void;
+  onBusinessSelected: (businessId: string, isNew: boolean, businessName: string) => void;
   onSkip?: () => void;
 }
 
@@ -112,8 +112,8 @@ export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }:
     }
   };
 
-  const handleSelectBusiness = async (businessId: string) => {
-    onBusinessSelected(businessId, false);
+  const handleSelectBusiness = async (match: BusinessMatch) => {
+    onBusinessSelected(match.id, false, match.business_name);
   };
 
   const handleCreateBusiness = async () => {
@@ -141,7 +141,7 @@ export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }:
 
       if (error) throw error;
 
-      onBusinessSelected(data.businessId, true);
+      onBusinessSelected(data.businessId, true, formData.business_name);
 
       toast({
         title: "Success",
@@ -189,7 +189,7 @@ export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }:
                   <Card 
                     key={match.id}
                     className="p-4 cursor-pointer hover:bg-accent transition-colors"
-                    onClick={() => handleSelectBusiness(match.id)}
+                    onClick={() => handleSelectBusiness(match)}
                   >
                     <div className="flex items-start justify-between">
                       <div>

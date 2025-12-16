@@ -669,10 +669,11 @@ const CampaignLanding = () => {
             <CardContent className="space-y-6">
               <BusinessInfoForm
                 organizationId={campaign.groups?.organization_id || ''}
-                onBusinessSelected={(businessId, isNew) => {
+                onBusinessSelected={(businessId, isNew, businessName) => {
                   setBusinessData({
                     businessId,
-                    isNew
+                    isNew,
+                    businessName
                   });
                   // Auto-advance to next step after business is selected/created
                   if (customFields.length > 0) {
@@ -792,11 +793,9 @@ const CampaignLanding = () => {
                 {businessData && (
                   <div className="border-t pt-4">
                     <h3 className="font-semibold mb-2">Business Information</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {businessData.isNew 
-                        ? 'New business information added'
-                        : 'Business linked to order'
-                      }
+                    <p className="text-sm font-medium">{businessData.businessName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {businessData.isNew ? 'New business' : 'Existing business'}
                     </p>
                   </div>
                 )}
