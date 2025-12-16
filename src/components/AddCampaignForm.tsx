@@ -21,6 +21,7 @@ import { FormDescription } from "@/components/ui/form";
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
   description: z.string().optional(),
+  thankYouMessage: z.string().optional(),
   goalAmount: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
@@ -55,6 +56,7 @@ interface AddCampaignFormProps {
     id: string;
     name: string;
     description: string | null;
+    thank_you_message: string | null;
     goal_amount: number | null;
     start_date: string | null;
     end_date: string | null;
@@ -132,6 +134,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     defaultValues: {
       name: "",
       description: "",
+      thankYouMessage: "",
       goalAmount: "",
       startDate: "",
       endDate: "",
@@ -455,6 +458,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         campaignForm.reset({
           name: editCampaign.name,
           description: editCampaign.description || "",
+          thankYouMessage: editCampaign.thank_you_message || "",
           goalAmount: editCampaign.goal_amount?.toString() || "",
           startDate: editCampaign.start_date || "",
           endDate: editCampaign.end_date || "",
@@ -520,6 +524,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       const campaignData = {
         name: values.name,
         description: values.description || null,
+        thank_you_message: values.thankYouMessage || null,
         goal_amount: values.goalAmount ? parseFloat(values.goalAmount) : null,
         start_date: values.startDate || null,
         end_date: values.endDate || null,
@@ -878,6 +883,29 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                         {...field} 
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Thank You Message */}
+              <FormField
+                control={campaignForm.control}
+                name="thankYouMessage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Thank You Message (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter a custom thank you message to display on the checkout success page (e.g., 'Thank you for supporting our team! Your contribution makes a difference.')" 
+                        className="resize-none"
+                        rows={3}
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      This message will be shown to donors after they complete their donation.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

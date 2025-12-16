@@ -662,6 +662,7 @@ export default function Campaigns() {
                 id: editingCampaign.id,
                 name: editingCampaign.name,
                 description: editingCampaign.description,
+                thank_you_message: (editingCampaign as any).thank_you_message || null,
                 goal_amount: editingCampaign.goal_amount,
                 start_date: editingCampaign.start_date,
                 end_date: editingCampaign.end_date,
