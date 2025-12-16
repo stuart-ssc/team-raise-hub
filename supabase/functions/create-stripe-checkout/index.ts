@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
         customer_email: customerInfo?.email || 'pending@example.com',
         customer_name: customerInfo?.name || 'Pending',
         attributed_roster_member_id: attributedRosterMemberId || null,
-        is_business_purchase: false,
+        business_purchase: false,
       })
       .select()
       .single();
