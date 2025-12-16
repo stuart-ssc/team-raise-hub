@@ -274,7 +274,8 @@ const CampaignLanding = () => {
             campaignSlug: slug,
             items: items,
             customerInfo: null,
-            attributedRosterMemberId: attributedRosterMember?.id || null
+            attributedRosterMemberId: attributedRosterMember?.id || null,
+            origin: window.location.origin
           }
         }
       );
