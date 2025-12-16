@@ -1,11 +1,50 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Building2 } from "lucide-react";
+
+const INDUSTRIES = [
+  "Agriculture",
+  "Automotive",
+  "Banking & Finance",
+  "Construction",
+  "Education",
+  "Entertainment",
+  "Food & Beverage",
+  "Healthcare",
+  "Hospitality",
+  "Insurance",
+  "Legal Services",
+  "Manufacturing",
+  "Media",
+  "Non-Profit",
+  "Professional Services",
+  "Real Estate",
+  "Retail",
+  "Technology",
+  "Transportation",
+  "Utilities",
+  "Other"
+];
+
+const US_STATES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+];
 
 interface BusinessMatch {
   id: string;
@@ -28,6 +67,7 @@ export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }:
   const [matches, setMatches] = useState<BusinessMatch[]>([]);
   const [showNewBusinessForm, setShowNewBusinessForm] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [formData, setFormData] = useState({
     business_name: "",
     ein: "",
@@ -77,37 +117,31 @@ export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }:
   };
 
   const handleCreateBusiness = async () => {
+    setCreating(true);
     try {
-      // Create new business
-      const { data: business, error: businessError } = await supabase
-        .from('businesses')
-        .insert({
-          business_name: formData.business_name,
-          ein: formData.ein || null,
-          business_email: formData.business_email,
-          business_phone: formData.business_phone || null,
-          website_url: formData.website_url || null,
-          industry: formData.industry || null,
-          address_line1: formData.address_line1 || null,
-          address_line2: formData.address_line2 || null,
-          city: formData.city || null,
-          state: formData.state || null,
-          zip: formData.zip || null,
-        })
-        .select()
-        .single();
+      // Use edge function to bypass RLS
+      const { data, error } = await supabase.functions.invoke('process-checkout-business', {
+        body: {
+          organizationId,
+          newBusinessData: {
+            business_name: formData.business_name,
+            ein: formData.ein || null,
+            business_email: formData.business_email,
+            business_phone: formData.business_phone || null,
+            website_url: formData.website_url || null,
+            industry: formData.industry || null,
+            address_line1: formData.address_line1 || null,
+            address_line2: formData.address_line2 || null,
+            city: formData.city || null,
+            state: formData.state || null,
+            zip: formData.zip || null,
+          }
+        }
+      });
 
-      if (businessError) throw businessError;
+      if (error) throw error;
 
-      // Link to organization
-      await supabase
-        .from('organization_businesses')
-        .insert({
-          organization_id: organizationId,
-          business_id: business.id,
-        });
-
-      onBusinessSelected(business.id, true);
+      onBusinessSelected(data.businessId, true);
 
       toast({
         title: "Success",
@@ -120,6 +154,8 @@ export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }:
         description: "Failed to create business",
         variant: "destructive"
       });
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -240,10 +276,21 @@ export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }:
 
               <div className="col-span-2">
                 <Label>Industry</Label>
-                <Input
+                <Select
                   value={formData.industry}
-                  onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                />
+                  onValueChange={(value) => setFormData({ ...formData, industry: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select industry" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INDUSTRIES.map((industry) => (
+                      <SelectItem key={industry} value={industry}>
+                        {industry}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="col-span-2">
@@ -272,10 +319,21 @@ export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }:
 
               <div>
                 <Label>State</Label>
-                <Input
+                <Select
                   value={formData.state}
-                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                />
+                  onValueChange={(value) => setFormData({ ...formData, state: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {US_STATES.map((state) => (
+                      <SelectItem key={state} value={state}>
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -299,10 +357,10 @@ export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }:
             <div className="flex gap-2">
               <Button 
                 onClick={handleCreateBusiness}
-                disabled={!formData.business_name || !formData.business_email}
+                disabled={!formData.business_name || !formData.business_email || creating}
                 className="flex-1"
               >
-                Create Business
+                {creating ? "Creating..." : "Create Business"}
               </Button>
               <Button 
                 variant="outline" 
