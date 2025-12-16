@@ -112,10 +112,15 @@ const CheckoutSuccess = () => {
         if (orderError) throw orderError;
 
         if (orderData) {
+          // Handle campaign as array (isOneToOne: false can return array)
+          const campaignData = Array.isArray(orderData.campaign) 
+            ? orderData.campaign[0] 
+            : orderData.campaign;
+          
           // Handle group as array (no FK constraint returns array)
-          const groupData = Array.isArray(orderData.campaign?.group) 
-            ? orderData.campaign.group[0] 
-            : orderData.campaign?.group;
+          const groupData = Array.isArray(campaignData?.group) 
+            ? campaignData.group[0] 
+            : campaignData?.group;
           
           const groupName = groupData?.group_name || '';
           
@@ -134,7 +139,7 @@ const CheckoutSuccess = () => {
           const { data: fieldsData, error: fieldsError } = await supabase
             .from('campaign_custom_fields')
             .select('id, field_name, field_type, is_required, help_text')
-            .eq('campaign_id', orderData.campaign.id)
+            .eq('campaign_id', campaignData.id)
             .eq('field_type', 'file')
             .order('display_order');
 
@@ -170,6 +175,7 @@ const CheckoutSuccess = () => {
 
           setOrder({
             ...orderData,
+            campaign: campaignData,
             items: enrichedItems,
             organizationName,
             groupName,
