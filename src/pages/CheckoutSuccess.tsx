@@ -45,6 +45,7 @@ interface OrderDetails {
   files_complete: boolean;
   items: OrderItem[];
   organizationName: string;
+  groupName: string;
   campaign: {
     id: string;
     name: string;
@@ -52,10 +53,6 @@ interface OrderDetails {
     requires_business_info: boolean;
     file_upload_deadline_days: number;
     thank_you_message: string | null;
-    group: {
-      group_name: string;
-      organization_id: string | null;
-    };
   };
   fileFields: Array<{
     id: string;
@@ -115,13 +112,20 @@ const CheckoutSuccess = () => {
         if (orderError) throw orderError;
 
         if (orderData) {
+          // Handle group as array (no FK constraint returns array)
+          const groupData = Array.isArray(orderData.campaign?.group) 
+            ? orderData.campaign.group[0] 
+            : orderData.campaign?.group;
+          
+          const groupName = groupData?.group_name || '';
+          
           // Fetch organization name separately (no FK constraint)
           let organizationName = '';
-          if (orderData.campaign?.group?.organization_id) {
+          if (groupData?.organization_id) {
             const { data: orgData } = await supabase
               .from('organizations')
               .select('name')
-              .eq('id', orderData.campaign.group.organization_id)
+              .eq('id', groupData.organization_id)
               .single();
             organizationName = orgData?.name || '';
           }
@@ -168,8 +172,9 @@ const CheckoutSuccess = () => {
             ...orderData,
             items: enrichedItems,
             organizationName,
+            groupName,
             fileFields: fieldsData || []
-          });
+          } as OrderDetails);
           setFilesCompleted(orderData.files_complete || false);
         }
       } catch (error) {
@@ -242,7 +247,7 @@ const CheckoutSuccess = () => {
             <CardTitle className="text-2xl text-green-600">Payment Successful!</CardTitle>
             <p className="text-muted-foreground">
               {order ? (
-                <>Thank you{order.customer_name ? `, ${order.customer_name}` : ''}! Your donation to <span className="font-semibold">{order.organizationName} {order.campaign.group?.group_name}</span> has been confirmed.</>
+                <>Thank you{order.customer_name ? `, ${order.customer_name}` : ''}! Your donation to <span className="font-semibold">{order.organizationName} {order.groupName}</span> has been confirmed.</>
               ) : (
                 <>Thank you for your donation. Your payment has been processed successfully.</>
               )}

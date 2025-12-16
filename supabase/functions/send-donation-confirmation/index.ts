@@ -64,16 +64,20 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const campaign = order.campaigns as any;
-    const groupName = campaign?.groups?.group_name || "";
+    // Handle groups as array (no FK constraint returns array)
+    const groupData = Array.isArray(campaign?.groups) 
+      ? campaign.groups[0] 
+      : campaign?.groups;
+    const groupName = groupData?.group_name || "";
     const campaignName = campaign?.name || "Campaign";
     
     // Fetch organization name separately (no FK constraint)
     let organizationName = "";
-    if (campaign?.groups?.organization_id) {
+    if (groupData?.organization_id) {
       const { data: orgData } = await supabase
         .from("organizations")
         .select("name")
-        .eq("id", campaign.groups.organization_id)
+        .eq("id", groupData.organization_id)
         .single();
       organizationName = orgData?.name || "";
     }
