@@ -157,6 +157,7 @@ Deno.serve(async (req) => {
         customer_name: customerInfo?.name || 'Pending',
         attributed_roster_member_id: attributedRosterMemberId || null,
         business_purchase: false,
+        items: orderItems,
       })
       .select()
       .single();
