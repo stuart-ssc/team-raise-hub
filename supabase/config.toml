@@ -163,7 +163,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.match-business]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-file-upload-reminder]
 verify_jwt = false

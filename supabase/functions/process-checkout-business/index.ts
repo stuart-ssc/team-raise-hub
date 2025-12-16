@@ -17,12 +17,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    const authHeader = req.headers.get('Authorization')!;
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user } } = await supabaseClient.auth.getUser(token);
-
-    if (!user) {
-      throw new Error('Unauthorized');
+    // Auth is optional - allows unauthenticated checkout
+    const authHeader = req.headers.get('Authorization');
+    let user = null;
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data } = await supabaseClient.auth.getUser(token);
+      user = data?.user;
     }
 
     const {
@@ -73,8 +74,8 @@ serve(async (req) => {
       console.log('Created new business:', finalBusinessId);
     }
 
-    // Link donor to business
-    if (finalBusinessId) {
+    // Link donor to business (only if authenticated and have orderId)
+    if (finalBusinessId && user && authHeader && orderId) {
       await supabaseClient.functions.invoke('link-business-donor', {
         body: {
           businessId: finalBusinessId,
@@ -95,6 +96,8 @@ serve(async (req) => {
         .eq('id', orderId);
 
       console.log('Linked business to order:', orderId);
+    } else if (finalBusinessId) {
+      console.log('Business created without order linking (unauthenticated):', finalBusinessId);
     }
 
     // Save custom field values
