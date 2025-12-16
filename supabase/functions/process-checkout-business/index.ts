@@ -74,19 +74,8 @@ serve(async (req) => {
       console.log('Created new business:', finalBusinessId);
     }
 
-    // Link donor to business (only if authenticated and have orderId)
-    if (finalBusinessId && user && authHeader && orderId) {
-      await supabaseClient.functions.invoke('link-business-donor', {
-        body: {
-          businessId: finalBusinessId,
-          organizationId,
-          role: newBusinessData?.role || 'Contact',
-          autoLinked: !businessId, // true if newly created
-        },
-        headers: { Authorization: authHeader }
-      });
-
-      // Update order with business info
+    // ALWAYS update order with business info (regardless of auth status)
+    if (finalBusinessId && orderId) {
       await supabaseClient
         .from('orders')
         .update({
@@ -96,8 +85,20 @@ serve(async (req) => {
         .eq('id', orderId);
 
       console.log('Linked business to order:', orderId);
-    } else if (finalBusinessId) {
-      console.log('Business created without order linking (unauthenticated):', finalBusinessId);
+    }
+
+    // Link donor to business (only if authenticated)
+    if (finalBusinessId && user && authHeader) {
+      await supabaseClient.functions.invoke('link-business-donor', {
+        body: {
+          businessId: finalBusinessId,
+          organizationId,
+          role: newBusinessData?.role || 'Contact',
+          autoLinked: !businessId, // true if newly created
+        },
+        headers: { Authorization: authHeader }
+      });
+      console.log('Linked donor to business');
     }
 
     // Save custom field values
