@@ -51,6 +51,12 @@ interface OrderDetails {
     requires_business_info: boolean;
     file_upload_deadline_days: number;
     thank_you_message: string | null;
+    group: {
+      group_name: string;
+      organization: {
+        name: string;
+      };
+    };
   };
   fileFields: Array<{
     id: string;
@@ -97,7 +103,13 @@ const CheckoutSuccess = () => {
               slug,
               requires_business_info,
               file_upload_deadline_days,
-              thank_you_message
+              thank_you_message,
+              group:groups (
+                group_name,
+                organization:organizations (
+                  name
+                )
+              )
             )
           `)
           .eq('processor_session_id', sessionId)
@@ -221,7 +233,7 @@ const CheckoutSuccess = () => {
             <CardTitle className="text-2xl text-green-600">Payment Successful!</CardTitle>
             <p className="text-muted-foreground">
               {order ? (
-                <>Thank you{order.customer_name ? `, ${order.customer_name}` : ''}! Your donation to <span className="font-semibold">{order.campaign.name}</span> has been confirmed.</>
+                <>Thank you{order.customer_name ? `, ${order.customer_name}` : ''}! Your donation to <span className="font-semibold">{order.campaign.group?.organization?.name} {order.campaign.group?.group_name}</span> has been confirmed.</>
               ) : (
                 <>Thank you for your donation. Your payment has been processed successfully.</>
               )}
