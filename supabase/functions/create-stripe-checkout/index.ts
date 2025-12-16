@@ -52,21 +52,35 @@ Deno.serve(async (req) => {
       throw new Error('Campaign not found');
     }
 
-    const group = campaign.groups as any;
-    const organization = group?.organizations;
+    // Handle groups as array (FK relationships may return arrays)
+    const groupData = Array.isArray(campaign.groups) 
+      ? campaign.groups[0] 
+      : campaign.groups;
+    
+    const organizationData = Array.isArray(groupData?.organizations)
+      ? groupData?.organizations[0]
+      : groupData?.organizations;
+
+    console.log('Group data:', JSON.stringify(groupData, null, 2));
+    console.log('Organization data:', JSON.stringify(organizationData, null, 2));
 
     // Determine which Stripe account to use
     let stripeAccountId: string | null = null;
     
-    if (group?.use_org_payment_account && organization?.payment_processor_config?.account_id) {
-      stripeAccountId = organization.payment_processor_config.account_id;
-    } else if (group?.payment_processor_config?.account_id) {
-      stripeAccountId = group.payment_processor_config.account_id;
+    if (groupData?.use_org_payment_account && organizationData?.payment_processor_config?.account_id) {
+      stripeAccountId = organizationData.payment_processor_config.account_id;
+      console.log('Using organization Stripe account:', stripeAccountId);
+    } else if (groupData?.payment_processor_config?.account_id) {
+      stripeAccountId = groupData.payment_processor_config.account_id;
+      console.log('Using group Stripe account:', stripeAccountId);
     }
 
     if (!stripeAccountId) {
+      console.error('No Stripe account found. Group config:', groupData?.payment_processor_config, 'Org config:', organizationData?.payment_processor_config);
       throw new Error('Payment account not configured for this campaign');
     }
+
+    console.log('Creating Connect checkout with stripeAccountId:', stripeAccountId);
 
     // Validate attributed roster member if provided
     if (attributedRosterMemberId) {
