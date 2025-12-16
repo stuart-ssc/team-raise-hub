@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
             description: campaignItem.description || undefined,
             images: campaignItem.image ? [campaignItem.image] : undefined,
           },
-          unit_amount: Math.round(itemCost), // Already in cents
+          unit_amount: Math.round(itemCost * 100), // Convert dollars to cents for Stripe
         },
         quantity: item.quantity,
       });
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
           name: 'Platform Fee',
           description: 'Sponsorly processing and platform fee',
         },
-        unit_amount: platformFeeAmount,
+        unit_amount: Math.round(platformFeeAmount * 100), // Convert dollars to cents for Stripe
       },
       quantity: 1,
     });
@@ -181,8 +181,8 @@ Deno.serve(async (req) => {
       customer_email: customerInfo?.email || undefined,
       success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/c/${campaignSlug}?canceled=true`,
-      payment_intent_data: {
-        application_fee_amount: platformFeeAmount,
+    payment_intent_data: {
+        application_fee_amount: Math.round(platformFeeAmount * 100), // Convert dollars to cents for Stripe
         transfer_data: {
           destination: stripeAccountId,
         },
