@@ -47,6 +47,8 @@ serve(async (req) => {
       .from('businesses')
       .select('*');
 
+    console.log('Total businesses in database:', allBusinesses?.length || 0);
+
     const matches: any[] = [];
 
     if (allBusinesses && business_name) {
@@ -95,7 +97,8 @@ serve(async (req) => {
           }
         }
 
-        if (confidence >= 60) {
+        // Lower threshold to 30 to include partial name matches
+        if (confidence >= 30) {
           matches.push({
             ...business,
             confidence,
@@ -104,6 +107,8 @@ serve(async (req) => {
         }
       }
     }
+
+    console.log('Matches found above threshold:', matches.length);
 
     // Sort by confidence and return top 3
     matches.sort((a, b) => b.confidence - a.confidence);
