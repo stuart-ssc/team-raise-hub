@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
-    const { campaignSlug, items, customerInfo, attributedRosterMemberId } = await req.json();
+    const { campaignSlug, items, customerInfo, attributedRosterMemberId, origin } = await req.json();
 
     console.log('Creating checkout session for campaign:', campaignSlug);
 
@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
     });
 
     // Create Stripe Checkout Session
-    const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'https://sponsorly.io';
+    const baseUrl = origin || 'https://sponsorly.io';
     
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
