@@ -674,6 +674,12 @@ const CampaignLanding = () => {
                     businessId,
                     isNew
                   });
+                  // Auto-advance to next step after business is selected/created
+                  if (customFields.length > 0) {
+                    setCheckoutStep('custom-fields');
+                  } else {
+                    setCheckoutStep('payment');
+                  }
                 }}
                 onSkip={() => {
                   toast({
