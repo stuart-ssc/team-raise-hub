@@ -12,14 +12,11 @@ serve(async (req) => {
   }
 
   try {
+    // Use service role key to bypass RLS for business search
+    // This allows unauthenticated checkout users to find existing businesses
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const { businessData } = await req.json();
