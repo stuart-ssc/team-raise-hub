@@ -57,11 +57,19 @@ Deno.serve(async (req) => {
           break;
         }
 
-        // Update order status
+        // Extract customer details from Stripe session
+        const customerEmail = session.customer_details?.email || session.customer_email || null;
+        const customerName = session.customer_details?.name || null;
+
+        console.log('Customer details from Stripe:', { customerEmail, customerName });
+
+        // Update order status and customer info
         const { error: orderError } = await supabaseAdmin
           .from('orders')
           .update({
             status: 'succeeded',
+            customer_email: customerEmail,
+            customer_name: customerName,
             stripe_payment_intent_id: session.payment_intent as string,
             updated_at: new Date().toISOString(),
           })

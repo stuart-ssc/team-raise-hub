@@ -779,6 +779,7 @@ export type Database = {
           slug: string | null
           start_date: string | null
           status: boolean | null
+          thank_you_message: string | null
           updated_at: string
         }
         Insert: {
@@ -800,6 +801,7 @@ export type Database = {
           slug?: string | null
           start_date?: string | null
           status?: boolean | null
+          thank_you_message?: string | null
           updated_at?: string
         }
         Update: {
@@ -821,6 +823,7 @@ export type Database = {
           slug?: string | null
           start_date?: string | null
           status?: boolean | null
+          thank_you_message?: string | null
           updated_at?: string
         }
         Relationships: [

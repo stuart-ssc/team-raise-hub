@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { SponsorshipFileUploader } from "@/components/SponsorshipFileUploader";
+import SponsorlyLogo from "@/components/SponsorlyLogo";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,17 +21,29 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface OrderItem {
+  itemId: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
 interface OrderDetails {
   id: string;
   created_at: string;
   customer_name: string;
+  customer_email: string;
   total_amount: number;
   files_complete: boolean;
+  items: OrderItem[];
   campaign: {
     id: string;
     name: string;
+    slug: string;
     requires_business_info: boolean;
     file_upload_deadline_days: number;
+    thank_you_message: string | null;
   };
   fileFields: Array<{
     id: string;
@@ -67,13 +80,17 @@ const CheckoutSuccess = () => {
             id,
             created_at,
             customer_name,
+            customer_email,
             total_amount,
             files_complete,
+            items,
             campaign:campaigns (
               id,
               name,
+              slug,
               requires_business_info,
-              file_upload_deadline_days
+              file_upload_deadline_days,
+              thank_you_message
             )
           `)
           .eq('processor_session_id', sessionId)
@@ -92,8 +109,14 @@ const CheckoutSuccess = () => {
 
           if (fieldsError) throw fieldsError;
 
+          // Parse items from JSON
+          const parsedItems = Array.isArray(orderData.items) 
+            ? (orderData.items as unknown as OrderItem[])
+            : [];
+
           setOrder({
             ...orderData,
+            items: parsedItems,
             fileFields: fieldsData || []
           });
           setFilesCompleted(orderData.files_complete || false);
@@ -154,6 +177,11 @@ const CheckoutSuccess = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 py-12">
       <div className="w-full max-w-3xl space-y-6">
+        {/* Sponsorly Logo */}
+        <div className="flex justify-center">
+          <SponsorlyLogo theme="light" className="h-16" />
+        </div>
+
         {/* Success Header */}
         <Card>
           <CardHeader className="text-center">
@@ -163,25 +191,51 @@ const CheckoutSuccess = () => {
             <CardTitle className="text-2xl text-green-600">Payment Successful!</CardTitle>
             <p className="text-muted-foreground">
               {order ? (
-                <>Thank you, {order.customer_name}! Your order for <span className="font-semibold">{order.campaign.name}</span> has been confirmed.</>
+                <>Thank you{order.customer_name ? `, ${order.customer_name}` : ''}! Your donation to <span className="font-semibold">{order.campaign.name}</span> has been confirmed.</>
               ) : (
-                <>Thank you for your purchase. Your payment has been processed successfully.</>
+                <>Thank you for your donation. Your payment has been processed successfully.</>
               )}
             </p>
           </CardHeader>
 
           <CardContent className="space-y-4">
+            {/* Custom Thank You Message */}
+            {order?.campaign.thank_you_message && (
+              <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-4 rounded-lg">
+                <p className="text-green-800 dark:text-green-200 text-center italic">
+                  "{order.campaign.thank_you_message}"
+                </p>
+              </div>
+            )}
+
             {/* Order Summary */}
             {order && (
-              <div className="bg-muted p-4 rounded-lg space-y-2">
+              <div className="bg-muted p-4 rounded-lg space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Order Total:</span>
-                  <span className="text-lg font-bold">${(order.total_amount / 100).toFixed(2)}</span>
+                  <span className="text-lg font-bold">${order.total_amount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Campaign:</span>
                   <span>{order.campaign.name}</span>
                 </div>
+                
+                {/* Items Purchased */}
+                {order.items && order.items.length > 0 && (
+                  <div className="pt-3 border-t border-border">
+                    <h4 className="text-sm font-medium mb-2">Items:</h4>
+                    <div className="space-y-1">
+                      {order.items.map((item, index) => (
+                        <div key={index} className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {item.name} × {item.quantity}
+                          </span>
+                          <span>${item.totalPrice.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -289,7 +343,7 @@ const CheckoutSuccess = () => {
               
               {order && (
                 <Button variant="outline" asChild className="w-full">
-                  <Link to={`/c/${order.campaign.id}`}>
+                  <Link to={`/c/${order.campaign.slug || order.campaign.id}`}>
                     View Campaign Details
                   </Link>
                 </Button>
