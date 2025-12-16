@@ -21,8 +21,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+// Stored format in database
+interface StoredOrderItem {
+  campaign_item_id: string;
+  price_at_purchase: number;
+  quantity: number;
+}
+
+// Display format for UI
 interface OrderItem {
-  itemId: string;
   name: string;
   quantity: number;
   unitPrice: number;
@@ -109,14 +116,37 @@ const CheckoutSuccess = () => {
 
           if (fieldsError) throw fieldsError;
 
-          // Parse items from JSON
-          const parsedItems = Array.isArray(orderData.items) 
-            ? (orderData.items as unknown as OrderItem[])
+          // Parse items from JSON (stored format)
+          const storedItems = Array.isArray(orderData.items) 
+            ? (orderData.items as unknown as StoredOrderItem[])
             : [];
+
+          // Fetch item names from campaign_items table
+          let enrichedItems: OrderItem[] = [];
+          if (storedItems.length > 0) {
+            const itemIds = storedItems.map(item => item.campaign_item_id).filter(Boolean);
+            
+            if (itemIds.length > 0) {
+              const { data: campaignItemsData } = await supabase
+                .from('campaign_items')
+                .select('id, name')
+                .in('id', itemIds);
+
+              enrichedItems = storedItems.map(item => {
+                const itemDetails = campaignItemsData?.find(i => i.id === item.campaign_item_id);
+                return {
+                  name: itemDetails?.name || 'Item',
+                  quantity: item.quantity || 1,
+                  unitPrice: item.price_at_purchase || 0,
+                  totalPrice: (item.price_at_purchase || 0) * (item.quantity || 1)
+                };
+              });
+            }
+          }
 
           setOrder({
             ...orderData,
-            items: parsedItems,
+            items: enrichedItems,
             fileFields: fieldsData || []
           });
           setFilesCompleted(orderData.files_complete || false);
