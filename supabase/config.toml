@@ -188,3 +188,6 @@ verify_jwt = false
 
 [functions.get-page-meta]
 verify_jwt = false
+
+[functions.get-roster-member-by-slug]
+verify_jwt = false

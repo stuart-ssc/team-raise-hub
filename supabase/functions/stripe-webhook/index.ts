@@ -80,10 +80,20 @@ Deno.serve(async (req) => {
           throw orderError;
         }
 
-        // Get order to update campaign amount_raised
+        // Get order with campaign info for donor profile creation
         const { data: order } = await supabaseAdmin
           .from('orders')
-          .select('campaign_id, total_amount, platform_fee_amount')
+          .select(`
+            campaign_id, 
+            total_amount, 
+            platform_fee_amount,
+            customer_email,
+            customer_name,
+            campaigns!inner(
+              group_id,
+              groups!inner(organization_id)
+            )
+          `)
           .eq('id', orderId)
           .single();
 
@@ -100,6 +110,67 @@ Deno.serve(async (req) => {
           if (campaignError) {
             console.error('Error updating campaign amount:', campaignError);
             // Non-fatal, continue
+          }
+
+          // Create or update donor profile
+          if (customerEmail) {
+            const organizationId = (order.campaigns as any)?.groups?.organization_id;
+            
+            if (organizationId) {
+              // Parse first and last name from customer name
+              const nameParts = (customerName || '').split(' ');
+              const firstName = nameParts[0] || null;
+              const lastName = nameParts.slice(1).join(' ') || null;
+
+              // Check if donor profile exists
+              const { data: existingDonor } = await supabaseAdmin
+                .from('donor_profiles')
+                .select('id, donation_count, total_donations, lifetime_value')
+                .eq('email', customerEmail)
+                .eq('organization_id', organizationId)
+                .single();
+
+              if (existingDonor) {
+                // Update existing donor profile
+                await supabaseAdmin
+                  .from('donor_profiles')
+                  .update({
+                    donation_count: (existingDonor.donation_count || 0) + 1,
+                    total_donations: (existingDonor.total_donations || 0) + netAmount,
+                    lifetime_value: (existingDonor.lifetime_value || 0) + netAmount,
+                    last_donation_date: new Date().toISOString(),
+                    first_name: existingDonor.first_name || firstName,
+                    last_name: existingDonor.last_name || lastName,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', existingDonor.id);
+                
+                console.log('Updated existing donor profile:', existingDonor.id);
+              } else {
+                // Create new donor profile
+                const { data: newDonor, error: donorError } = await supabaseAdmin
+                  .from('donor_profiles')
+                  .insert({
+                    email: customerEmail,
+                    first_name: firstName,
+                    last_name: lastName,
+                    organization_id: organizationId,
+                    donation_count: 1,
+                    total_donations: netAmount,
+                    lifetime_value: netAmount,
+                    first_donation_date: new Date().toISOString(),
+                    last_donation_date: new Date().toISOString(),
+                  })
+                  .select('id')
+                  .single();
+
+                if (donorError) {
+                  console.error('Error creating donor profile:', donorError);
+                } else {
+                  console.log('Created new donor profile:', newDonor?.id);
+                }
+              }
+            }
           }
         }
 
