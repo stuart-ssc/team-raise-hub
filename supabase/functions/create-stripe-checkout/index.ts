@@ -85,13 +85,16 @@ Deno.serve(async (req) => {
     // Validate attributed roster member if provided
     if (attributedRosterMemberId) {
       const { data: rosterMember, error: memberError } = await supabaseClient
-        .from('school_user')
-        .select('rosters(group_id)')
+        .from('organization_user')
+        .select('roster_id, rosters(group_id)')
         .eq('id', attributedRosterMemberId)
         .eq('active_user', true)
         .single();
 
+      console.log('Roster member validation:', { rosterMember, memberError, campaignGroupId: campaign.group_id });
+
       if (memberError || (rosterMember as any)?.rosters?.group_id !== campaign.group_id) {
+        console.error('Roster member validation failed:', memberError || 'Group ID mismatch');
         throw new Error('Invalid roster member for this campaign');
       }
     }
