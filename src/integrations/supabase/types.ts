@@ -2307,14 +2307,7 @@ export type Database = {
             foreignKeyName: "orders_attributed_roster_member_id_fkey"
             columns: ["attributed_roster_member_id"]
             isOneToOne: false
-            referencedRelation: "roster_member_fundraising_stats"
-            referencedColumns: ["roster_member_id"]
-          },
-          {
-            foreignKeyName: "orders_attributed_roster_member_id_fkey"
-            columns: ["attributed_roster_member_id"]
-            isOneToOne: false
-            referencedRelation: "school_user"
+            referencedRelation: "organization_user"
             referencedColumns: ["id"]
           },
           {
