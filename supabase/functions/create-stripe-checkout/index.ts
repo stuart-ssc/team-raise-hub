@@ -169,6 +169,7 @@ Deno.serve(async (req) => {
         status: 'pending',
         customer_email: customerInfo?.email || 'pending@example.com',
         customer_name: customerInfo?.name || 'Pending',
+        customer_phone: customerInfo?.phone || null,
         attributed_roster_member_id: attributedRosterMemberId || null,
         business_purchase: false,
         items: orderItems,

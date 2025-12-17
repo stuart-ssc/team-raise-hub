@@ -2223,6 +2223,7 @@ export type Database = {
           currency: string | null
           customer_email: string | null
           customer_name: string | null
+          customer_phone: string | null
           files_complete: boolean | null
           id: string
           items: Json
@@ -2252,6 +2253,7 @@ export type Database = {
           currency?: string | null
           customer_email?: string | null
           customer_name?: string | null
+          customer_phone?: string | null
           files_complete?: boolean | null
           id?: string
           items: Json
@@ -2281,6 +2283,7 @@ export type Database = {
           currency?: string | null
           customer_email?: string | null
           customer_name?: string | null
+          customer_phone?: string | null
           files_complete?: boolean | null
           id?: string
           items?: Json
