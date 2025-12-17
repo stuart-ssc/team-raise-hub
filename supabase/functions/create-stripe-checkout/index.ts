@@ -20,6 +20,12 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
+    // Create admin client early for queries that need to bypass RLS
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     const { campaignSlug, items, customerInfo, attributedRosterMemberId, origin } = await req.json();
 
     console.log('Creating checkout session for campaign:', campaignSlug);
@@ -82,9 +88,9 @@ Deno.serve(async (req) => {
 
     console.log('Creating Connect checkout with stripeAccountId:', stripeAccountId);
 
-    // Validate attributed roster member if provided
+    // Validate attributed roster member if provided (use admin client to bypass RLS on rosters table)
     if (attributedRosterMemberId) {
-      const { data: rosterMember, error: memberError } = await supabaseClient
+      const { data: rosterMember, error: memberError } = await supabaseAdmin
         .from('organization_user')
         .select('roster_id, rosters(group_id)')
         .eq('id', attributedRosterMemberId)
@@ -158,11 +164,6 @@ Deno.serve(async (req) => {
     });
 
     // Create order record using admin client
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
