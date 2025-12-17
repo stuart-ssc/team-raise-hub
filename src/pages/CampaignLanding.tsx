@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BusinessInfoForm } from "@/components/BusinessInfoForm";
 import { CustomFieldsRenderer } from "@/components/CustomFieldsRenderer";
+import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
 
 interface CampaignData {
   id: string;
@@ -86,7 +87,8 @@ const CampaignLanding = () => {
   const [userEmail, setUserEmail] = useState<string | undefined>();
   
   // Multi-step checkout state
-  const [checkoutStep, setCheckoutStep] = useState<'cart' | 'business-info' | 'custom-fields' | 'payment'>('cart');
+  const [checkoutStep, setCheckoutStep] = useState<'cart' | 'donor-info' | 'business-info' | 'custom-fields' | 'payment'>('cart');
+  const [donorInfo, setDonorInfo] = useState<DonorInfo | null>(null);
   const [businessData, setBusinessData] = useState<any>(null);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -213,8 +215,15 @@ const CampaignLanding = () => {
       return;
     }
 
+    // Always go to donor info first
+    setCheckoutStep('donor-info');
+  };
+
+  const handleDonorInfoNext = (info: DonorInfo) => {
+    setDonorInfo(info);
+    
     // Determine next step based on campaign requirements
-    if (campaign.requires_business_info) {
+    if (campaign?.requires_business_info) {
       setCheckoutStep('business-info');
     } else if (customFields.length > 0) {
       setCheckoutStep('custom-fields');
@@ -266,14 +275,18 @@ const CampaignLanding = () => {
         quantity: item.selectedQuantity
       }));
       
-      // Step 1: Create Stripe checkout session
+      // Step 1: Create Stripe checkout session with donor info
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
         'create-stripe-checkout',
         {
           body: {
             campaignSlug: slug,
             items: items,
-            customerInfo: null,
+            customerInfo: donorInfo ? {
+              email: donorInfo.email,
+              name: `${donorInfo.firstName} ${donorInfo.lastName}`,
+              phone: donorInfo.phone,
+            } : null,
             attributedRosterMemberId: attributedRosterMember?.id || null,
             origin: window.location.origin
           }
@@ -317,6 +330,7 @@ const CampaignLanding = () => {
         
         // Reset checkout state
         setCheckoutStep('cart');
+        setDonorInfo(null);
         setBusinessData(null);
         setCustomFieldValues({});
         
@@ -664,12 +678,33 @@ const CampaignLanding = () => {
         )}
 
         {/* Business Info Step */}
+        {/* Donor Information Step */}
+        {checkoutStep === 'donor-info' && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Your Information</CardTitle>
+              <CardDescription>
+                Please provide your contact information to complete your donation.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DonorInfoForm
+                onComplete={handleDonorInfoNext}
+                onBack={() => setCheckoutStep('cart')}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Business Information Step */}
         {checkoutStep === 'business-info' && campaign && (
           <Card className="mt-8">
             <CardHeader>
               <CardTitle>Business Information</CardTitle>
               <CardDescription>
-                This campaign requires business/sponsor information for recognition purposes.
+                {campaign.requires_business_info 
+                  ? "This campaign requires business/sponsor information for recognition purposes."
+                  : "Optional: Add your business information for recognition purposes."}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -688,7 +723,8 @@ const CampaignLanding = () => {
                     setCheckoutStep('payment');
                   }
                 }}
-                onSkip={() => {
+                // Only allow skip if business info is NOT required
+                onSkip={campaign.requires_business_info ? undefined : () => {
                   toast({
                     title: "Skipped",
                     description: "You can add business information later if needed."
@@ -704,9 +740,9 @@ const CampaignLanding = () => {
               <div className="flex gap-4">
                 <Button
                   variant="outline"
-                  onClick={() => setCheckoutStep('cart')}
+                  onClick={() => setCheckoutStep('donor-info')}
                 >
-                  Back to Cart
+                  Back
                 </Button>
                 <Button
                   onClick={handleBusinessInfoNext}
@@ -757,7 +793,7 @@ const CampaignLanding = () => {
               <div className="flex gap-4">
                 <Button
                   variant="outline"
-                  onClick={() => setCheckoutStep(campaign?.requires_business_info ? 'business-info' : 'cart')}
+                  onClick={() => setCheckoutStep(campaign?.requires_business_info ? 'business-info' : 'donor-info')}
                 >
                   Back
                 </Button>
@@ -795,6 +831,19 @@ const CampaignLanding = () => {
                     ))}
                   </div>
                 </div>
+                
+                {donorInfo && (
+                  <div className="border-t pt-4">
+                    <h3 className="font-semibold mb-2">Contact Information</h3>
+                    <div className="space-y-1 text-sm">
+                      <p className="font-medium">{donorInfo.firstName} {donorInfo.lastName}</p>
+                      <p className="text-muted-foreground">{donorInfo.email}</p>
+                      {donorInfo.phone && (
+                        <p className="text-muted-foreground">{donorInfo.phone}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 {businessData && (
                   <div className="border-t pt-4">
@@ -846,7 +895,7 @@ const CampaignLanding = () => {
                 <Button
                   variant="outline"
                   onClick={() => setCheckoutStep(customFields.length > 0 ? 'custom-fields' : 
-                    (campaign?.requires_business_info ? 'business-info' : 'cart'))}
+                    (campaign?.requires_business_info ? 'business-info' : 'donor-info'))}
                   disabled={processingCheckout}
                 >
                   Back
