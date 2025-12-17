@@ -27,6 +27,7 @@ interface CampaignData {
   image_url: string | null;
   requires_business_info: boolean | null;
   file_upload_deadline_days: number | null;
+  roster_id: number | null;
   groups: {
     id: string;
     organization_id: string;
@@ -114,6 +115,71 @@ const CampaignLanding = () => {
       fetchCampaignData();
     }
   }, [slug]);
+
+  // Fetch attributed roster member when slug is present
+  useEffect(() => {
+    const fetchRosterMember = async () => {
+      if (!rosterMemberSlug || !campaign?.roster_id) return;
+      
+      // Convert slug to name parts (e.g., "taylor-player" -> "Taylor", "Player")
+      const nameParts = rosterMemberSlug.split('-').map(
+        part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+      );
+      
+      if (nameParts.length < 2) return;
+      
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ');
+      
+      console.log('Looking up roster member:', firstName, lastName, 'for roster:', campaign.roster_id);
+      
+      // Query organization_user to get roster members
+      const { data: rosterMembers, error } = await supabase
+        .from('organization_user')
+        .select('id, user_id, roster_id')
+        .eq('roster_id', campaign.roster_id)
+        .eq('active_user', true);
+      
+      if (error || !rosterMembers?.length) {
+        console.error('Error fetching roster members:', error);
+        return;
+      }
+      
+      // Get profile data for all roster members
+      const userIds = rosterMembers.map(m => m.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+      
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return;
+      }
+      
+      // Find matching member (case-insensitive)
+      const matchingProfile = profiles?.find(profile => 
+        profile.first_name?.toLowerCase() === firstName.toLowerCase() &&
+        profile.last_name?.toLowerCase() === lastName.toLowerCase()
+      );
+      
+      if (matchingProfile) {
+        const matchingMember = rosterMembers.find(m => m.user_id === matchingProfile.id);
+        if (matchingMember) {
+          console.log('Found roster member:', matchingMember, matchingProfile);
+          setAttributedRosterMember({
+            id: matchingMember.id,
+            firstName: matchingProfile.first_name,
+            lastName: matchingProfile.last_name,
+          });
+        }
+      } else {
+        console.log('No matching roster member found for:', firstName, lastName);
+      }
+    };
+    
+    fetchRosterMember();
+  }, [rosterMemberSlug, campaign?.roster_id]);
 
   const fetchCampaignData = async () => {
     try {
@@ -521,6 +587,17 @@ const CampaignLanding = () => {
           </div>
         </div>
       </div>
+
+      {/* Attribution Banner */}
+      {attributedRosterMember && (
+        <div className="max-w-6xl mx-auto px-6 pt-6">
+          <Alert className="bg-primary/10 border-primary/20">
+            <AlertDescription className="text-center font-medium">
+              🎉 You're supporting <span className="font-bold">{attributedRosterMember.firstName} {attributedRosterMember.lastName}</span>!
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {/* Campaign Items and Checkout Steps */}
       <div className="max-w-6xl mx-auto p-6">
