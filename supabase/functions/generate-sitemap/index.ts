@@ -1,3 +1,4 @@
+// Sitemap Generator v2.0 - Updated 2025-12-19 to use sponsorly.io domain URLs
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
