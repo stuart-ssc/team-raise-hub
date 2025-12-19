@@ -1,222 +1,211 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Static main pages -->
   <sitemap>
     <loc>https://sponsorly.io/sitemap-main.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
-  
-  <!-- Dynamic sitemaps served by edge function -->
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=districts</loc>
-    <lastmod>2024-12-19</lastmod>
-  </sitemap>
-  
-  <!-- School sitemaps by state (50 states) -->
-  <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-alabama</loc>
+    <loc>https://sponsorly.io/sitemap-districts.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-alaska</loc>
+    <loc>https://sponsorly.io/sitemap-schools-alaska.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-arizona</loc>
+    <loc>https://sponsorly.io/sitemap-schools-alabama.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-arkansas</loc>
+    <loc>https://sponsorly.io/sitemap-schools-arkansas.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-california</loc>
+    <loc>https://sponsorly.io/sitemap-schools-arizona.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-colorado</loc>
+    <loc>https://sponsorly.io/sitemap-schools-california.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-connecticut</loc>
+    <loc>https://sponsorly.io/sitemap-schools-colorado.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-delaware</loc>
+    <loc>https://sponsorly.io/sitemap-schools-connecticut.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-florida</loc>
+    <loc>https://sponsorly.io/sitemap-schools-district-of-columbia.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-georgia</loc>
+    <loc>https://sponsorly.io/sitemap-schools-delaware.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-hawaii</loc>
+    <loc>https://sponsorly.io/sitemap-schools-florida.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-idaho</loc>
+    <loc>https://sponsorly.io/sitemap-schools-georgia.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-illinois</loc>
+    <loc>https://sponsorly.io/sitemap-schools-hawaii.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-indiana</loc>
+    <loc>https://sponsorly.io/sitemap-schools-iowa.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-iowa</loc>
+    <loc>https://sponsorly.io/sitemap-schools-idaho.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-kansas</loc>
+    <loc>https://sponsorly.io/sitemap-schools-illinois.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-kentucky</loc>
+    <loc>https://sponsorly.io/sitemap-schools-indiana.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-louisiana</loc>
+    <loc>https://sponsorly.io/sitemap-schools-kansas.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-maine</loc>
+    <loc>https://sponsorly.io/sitemap-schools-kentucky.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-maryland</loc>
+    <loc>https://sponsorly.io/sitemap-schools-louisiana.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-massachusetts</loc>
+    <loc>https://sponsorly.io/sitemap-schools-maryland.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-michigan</loc>
+    <loc>https://sponsorly.io/sitemap-schools-maine.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-minnesota</loc>
+    <loc>https://sponsorly.io/sitemap-schools-michigan.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-mississippi</loc>
+    <loc>https://sponsorly.io/sitemap-schools-minnesota.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-missouri</loc>
+    <loc>https://sponsorly.io/sitemap-schools-missouri.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-montana</loc>
+    <loc>https://sponsorly.io/sitemap-schools-mississippi.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-nebraska</loc>
+    <loc>https://sponsorly.io/sitemap-schools-montana.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-nevada</loc>
+    <loc>https://sponsorly.io/sitemap-schools-north-carolina.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-new-hampshire</loc>
+    <loc>https://sponsorly.io/sitemap-schools-north-dakota.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-new-jersey</loc>
+    <loc>https://sponsorly.io/sitemap-schools-nebraska.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-new-mexico</loc>
+    <loc>https://sponsorly.io/sitemap-schools-new-hampshire.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-new-york</loc>
+    <loc>https://sponsorly.io/sitemap-schools-new-jersey.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-north-carolina</loc>
+    <loc>https://sponsorly.io/sitemap-schools-new-mexico.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-north-dakota</loc>
+    <loc>https://sponsorly.io/sitemap-schools-nevada.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-ohio</loc>
+    <loc>https://sponsorly.io/sitemap-schools-new-york.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-oklahoma</loc>
+    <loc>https://sponsorly.io/sitemap-schools-ohio.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-oregon</loc>
+    <loc>https://sponsorly.io/sitemap-schools-oklahoma.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-pennsylvania</loc>
+    <loc>https://sponsorly.io/sitemap-schools-oregon.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-rhode-island</loc>
+    <loc>https://sponsorly.io/sitemap-schools-pennsylvania.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-south-carolina</loc>
+    <loc>https://sponsorly.io/sitemap-schools-rhode-island.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-south-dakota</loc>
+    <loc>https://sponsorly.io/sitemap-schools-south-carolina.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-tennessee</loc>
+    <loc>https://sponsorly.io/sitemap-schools-south-dakota.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-texas</loc>
+    <loc>https://sponsorly.io/sitemap-schools-tennessee.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-utah</loc>
+    <loc>https://sponsorly.io/sitemap-schools-texas.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-vermont</loc>
+    <loc>https://sponsorly.io/sitemap-schools-utah.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-virginia</loc>
+    <loc>https://sponsorly.io/sitemap-schools-virginia.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-washington</loc>
+    <loc>https://sponsorly.io/sitemap-schools-vermont.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-west-virginia</loc>
+    <loc>https://sponsorly.io/sitemap-schools-washington.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-wisconsin</loc>
+    <loc>https://sponsorly.io/sitemap-schools-wisconsin.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=schools-wyoming</loc>
+    <loc>https://sponsorly.io/sitemap-schools-west-virginia.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
-  
-  <!-- Campaigns sitemap -->
   <sitemap>
-    <loc>https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=campaigns</loc>
+    <loc>https://sponsorly.io/sitemap-schools-wyoming.xml</loc>
     <lastmod>2024-12-19</lastmod>
   </sitemap>
 </sitemapindex>
