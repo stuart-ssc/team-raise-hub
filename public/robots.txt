@@ -13,8 +13,8 @@ Allow: /
 User-agent: *
 Allow: /
 
-# Sitemap (direct Supabase edge function URL for Lovable hosting)
-Sitemap: https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/generate-sitemap?file=index
+# Sitemap
+Sitemap: https://sponsorly.io/sitemap.xml
 
 # Disallow admin and dashboard areas
 Disallow: /dashboard
