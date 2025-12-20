@@ -201,10 +201,10 @@ Deno.serve(async (req) => {
       success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/c/${campaignSlug}?canceled=true`,
     payment_intent_data: {
-        application_fee_amount: Math.round(platformFeeAmount * 100), // Platform fee in cents
+        // Using transfer_data.amount to specify exact org payout (mutually exclusive with application_fee_amount)
         transfer_data: {
           destination: stripeAccountId,
-          amount: Math.round(totalAmount * 100), // Org receives full item price, Sponsorly absorbs Stripe fees
+          amount: Math.round(totalAmount * 100), // Org receives exactly the item price, Sponsorly absorbs Stripe fees from platform fee
         },
         transfer_group: `order_${order.id}`, // For refund/dispute correlation
         statement_descriptor_suffix: campaign.name.substring(0, 22).replace(/[<>"']/g, ''), // Max 22 chars, no special chars
