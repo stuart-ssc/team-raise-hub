@@ -94,7 +94,7 @@ export const BusinessActivityTimeline = ({ businessId }: BusinessActivityTimelin
         return (
           <>
             <span className="font-medium">{data.donor_name}</span> donated{' '}
-            <span className="font-semibold text-primary">${(data.amount / 100).toFixed(2)}</span>
+            <span className="font-semibold text-primary">${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             {data.campaign_name && <span className="text-muted-foreground"> to {data.campaign_name}</span>}
           </>
         );

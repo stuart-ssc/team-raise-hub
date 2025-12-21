@@ -308,7 +308,7 @@ const OutreachQueue = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-muted-foreground" />
-                          <span>Suggested: ${(insight.suggested_ask_amount / 100).toFixed(2)}</span>
+                          <span>Suggested: ${insight.suggested_ask_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <TrendingUp className="h-4 w-4 text-muted-foreground" />

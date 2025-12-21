@@ -861,7 +861,7 @@ const BusinessProfile = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">
-                ${(totalDonated / 100).toFixed(2)}
+                ${totalDonated.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
@@ -945,7 +945,7 @@ const BusinessProfile = () => {
                             )}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            ${(donor.total_donations / 100).toFixed(2)}
+                            ${donor.total_donations.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </TableCell>
                           {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
                             organizationUser?.user_type?.permission_level === 'program_manager') && (
@@ -1132,7 +1132,7 @@ const BusinessProfile = () => {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">${(donation.total_amount / 100).toFixed(2)}</p>
+                          <p className="font-semibold">${donation.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         </div>
                       </div>
                     ))}
