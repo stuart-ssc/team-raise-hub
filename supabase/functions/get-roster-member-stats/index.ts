@@ -128,9 +128,9 @@ Deno.serve(async (req) => {
         supporters: supporters?.map(s => ({
           name: s.customer_name || s.customer_email,
           email: s.customer_email,
-          // Calculate amount from items (cost * quantity for each item)
+          // Calculate amount from items (price_at_purchase * quantity for each item)
           amount: (s.items as any[])?.reduce((sum: number, item: any) => 
-            sum + (item.cost || 0) * (item.quantity || 1), 0) || 0,
+            sum + (item.price_at_purchase || 0) * (item.quantity || 1), 0) || 0,
           date: s.created_at,
         })) || [],
         campaignName: campaign.name,
