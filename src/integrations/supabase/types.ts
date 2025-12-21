@@ -3402,6 +3402,16 @@ export type Database = {
         Returns: undefined
       }
       is_system_admin: { Args: { user_id: string }; Returns: boolean }
+      recalculate_donor_stats: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          email: string
+          new_count: number
+          new_total: number
+          old_count: number
+          old_total: number
+        }[]
+      }
       restore_email_layout_version: {
         Args: { p_layout_id: string; p_version_number: number }
         Returns: undefined
