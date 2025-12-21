@@ -504,7 +504,7 @@ const Businesses = () => {
       case "rejected":
         return <Badge variant="destructive">Rejected</Badge>;
       default:
-        return <Badge variant="secondary">Pending</Badge>;
+        return <Badge className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-500/20">Pending</Badge>;
     }
   };
 
@@ -860,20 +860,17 @@ const Businesses = () => {
                         className="flex items-center gap-3 flex-1 cursor-pointer"
                         onClick={() => navigate(`/dashboard/businesses/${business.id}`)}
                       >
-                        {business.logo_url ? (
+                        {business.logo_url && (
                           <img
                             src={business.logo_url}
                             alt={business.business_name}
                             className="h-10 w-10 rounded-lg object-cover"
                           />
-                        ) : (
-                          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Building2 className="h-5 w-5 text-primary" />
-                          </div>
                         )}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <CardTitle className="text-base">{business.business_name}</CardTitle>
+                            {getVerificationBadge(business.verification_status)}
                             {business.archived_at && (
                               <Badge variant="secondary" className="bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
                                 Archived
@@ -994,7 +991,6 @@ const Businesses = () => {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
-                      {getVerificationBadge(business.verification_status)}
                     </div>
                   </div>
                 </CardHeader>
