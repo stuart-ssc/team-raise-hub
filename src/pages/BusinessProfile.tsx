@@ -135,6 +135,8 @@ const BusinessProfile = () => {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [enrollmentToCancel, setEnrollmentToCancel] = useState<CampaignEnrollment | null>(null);
   const [engagementExpanded, setEngagementExpanded] = useState(false);
+  const [enrollmentsExpanded, setEnrollmentsExpanded] = useState(true);
+  const [donationsExpanded, setDonationsExpanded] = useState(true);
 
   useEffect(() => {
     if (businessId && organizationUser?.organization_id) {
@@ -899,147 +901,156 @@ const BusinessProfile = () => {
               </CardContent>
             </Card>
 
-            {/* Campaign Enrollments */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5" />
-                    Campaign Enrollments
-                  </CardTitle>
-                  <Badge variant="outline">
-                    {enrollments.filter(e => e.status === 'active').length} Active
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {loadingEnrollments ? (
-                  <div className="space-y-4">
-                    {[1, 2].map((i) => (
-                      <div key={i} className="space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
-                        <Skeleton className="h-2 w-full" />
-                        <Skeleton className="h-8 w-32" />
+            {/* Campaign Enrollments - Collapsible */}
+            <Collapsible open={enrollmentsExpanded} onOpenChange={setEnrollmentsExpanded}>
+              <Card>
+                <CollapsibleTrigger className="w-full text-left">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-5 w-5 text-muted-foreground" />
+                        <CardTitle className="text-lg">Campaign Enrollments</CardTitle>
                       </div>
-                    ))}
-                  </div>
-                ) : enrollments.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground mb-4">
-                      This business is not enrolled in any campaigns yet
-                    </p>
-                    {canManageEnrollments && !business.archived_at && (
-                      <Button onClick={() => setShowEnrollmentDialog(true)}>
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Enroll in Campaign
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {enrollments.map((enrollment) => (
-                      <div key={enrollment.id} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-semibold">{enrollment.campaign_name}</h4>
-                              {getStatusBadge(enrollment.status)}
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {getCampaignTypeLabel(enrollment.campaign_type)} • Enrolled {new Date(enrollment.enrolled_at).toLocaleDateString()}
-                            </p>
-                            {enrollment.status === 'completed' && enrollment.completed_at && (
-                              <p className="text-sm text-muted-foreground">
-                                Completed {new Date(enrollment.completed_at).toLocaleDateString()}
-                              </p>
-                            )}
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">
+                          {enrollments.filter(e => e.status === 'active').length} Active
+                        </Badge>
+                        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${enrollmentsExpanded ? 'rotate-180' : ''}`} />
+                      </div>
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="pt-0">
+                    {loadingEnrollments ? (
+                      <div className="space-y-4">
+                        {[1, 2].map((i) => (
+                          <div key={i} className="space-y-2">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-3 w-1/2" />
+                            <Skeleton className="h-2 w-full" />
+                            <Skeleton className="h-8 w-32" />
                           </div>
-                        </div>
-
-                        <div>
-                          <div className="flex items-center justify-between text-sm mb-2">
-                            <span className="text-muted-foreground">Progress</span>
-                            <span className="font-medium">
-                              {enrollment.current_sequence_order} of {enrollment.total_sequences} emails
-                            </span>
-                          </div>
-                          <Progress 
-                            value={getProgressPercentage(enrollment.current_sequence_order, enrollment.total_sequences)} 
-                            className="h-2"
-                          />
-                          {enrollment.status === 'active' && enrollment.next_send_at && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Next email: {formatNextSend(enrollment.next_send_at)}
-                            </p>
-                          )}
-                          {enrollment.status === 'paused' && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Campaign is paused
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="flex items-center gap-1">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            <span>{enrollment.emails_sent} sent</span>
-                          </div>
-                          {enrollment.emails_sent > 0 && (
-                            <>
-                              <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-                                <span>👁</span>
-                                <span>{enrollment.emails_opened} opened ({Math.round((enrollment.emails_opened / enrollment.emails_sent) * 100)}%)</span>
-                              </div>
-                              <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                                <span>🖱</span>
-                                <span>{enrollment.emails_clicked} clicked ({Math.round((enrollment.emails_clicked / enrollment.emails_sent) * 100)}%)</span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-
-                        {canManageEnrollments && (enrollment.status === 'active' || enrollment.status === 'paused') && (
-                          <div className="flex gap-2 pt-2">
-                            {enrollment.status === 'active' ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handlePauseEnrollment(enrollment)}
-                                disabled={pausingId === enrollment.id}
-                              >
-                                <Pause className="h-4 w-4 mr-2" />
-                                {pausingId === enrollment.id ? "Pausing..." : "Pause"}
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleResumeEnrollment(enrollment)}
-                                disabled={resumingId === enrollment.id}
-                              >
-                                <Play className="h-4 w-4 mr-2" />
-                                {resumingId === enrollment.id ? "Resuming..." : "Resume"}
-                              </Button>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => confirmCancelEnrollment(enrollment)}
-                              disabled={cancellingId === enrollment.id}
-                            >
-                              <XCircle className="h-4 w-4 mr-2" />
-                              Cancel
-                            </Button>
-                          </div>
+                        ))}
+                      </div>
+                    ) : enrollments.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                        <p className="text-muted-foreground mb-4">
+                          This business is not enrolled in any campaigns yet
+                        </p>
+                        {canManageEnrollments && !business.archived_at && (
+                          <Button onClick={() => setShowEnrollmentDialog(true)}>
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Enroll in Campaign
+                          </Button>
                         )}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    ) : (
+                      <div className="space-y-4">
+                        {enrollments.map((enrollment) => (
+                          <div key={enrollment.id} className="border rounded-lg p-4 space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="font-semibold">{enrollment.campaign_name}</h4>
+                                  {getStatusBadge(enrollment.status)}
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {getCampaignTypeLabel(enrollment.campaign_type)} • Enrolled {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                                </p>
+                                {enrollment.status === 'completed' && enrollment.completed_at && (
+                                  <p className="text-sm text-muted-foreground">
+                                    Completed {new Date(enrollment.completed_at).toLocaleDateString()}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div>
+                              <div className="flex items-center justify-between text-sm mb-2">
+                                <span className="text-muted-foreground">Progress</span>
+                                <span className="font-medium">
+                                  {enrollment.current_sequence_order} of {enrollment.total_sequences} emails
+                                </span>
+                              </div>
+                              <Progress 
+                                value={getProgressPercentage(enrollment.current_sequence_order, enrollment.total_sequences)} 
+                                className="h-2"
+                              />
+                              {enrollment.status === 'active' && enrollment.next_send_at && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Next email: {formatNextSend(enrollment.next_send_at)}
+                                </p>
+                              )}
+                              {enrollment.status === 'paused' && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Campaign is paused
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-4 text-sm">
+                              <div className="flex items-center gap-1">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <span>{enrollment.emails_sent} sent</span>
+                              </div>
+                              {enrollment.emails_sent > 0 && (
+                                <>
+                                  <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                                    <span>👁</span>
+                                    <span>{enrollment.emails_opened} opened ({Math.round((enrollment.emails_opened / enrollment.emails_sent) * 100)}%)</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                                    <span>🖱</span>
+                                    <span>{enrollment.emails_clicked} clicked ({Math.round((enrollment.emails_clicked / enrollment.emails_sent) * 100)}%)</span>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+
+                            {canManageEnrollments && (enrollment.status === 'active' || enrollment.status === 'paused') && (
+                              <div className="flex gap-2 pt-2">
+                                {enrollment.status === 'active' ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePauseEnrollment(enrollment)}
+                                    disabled={pausingId === enrollment.id}
+                                  >
+                                    <Pause className="h-4 w-4 mr-2" />
+                                    {pausingId === enrollment.id ? "Pausing..." : "Pause"}
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleResumeEnrollment(enrollment)}
+                                    disabled={resumingId === enrollment.id}
+                                  >
+                                    <Play className="h-4 w-4 mr-2" />
+                                    {resumingId === enrollment.id ? "Resuming..." : "Resume"}
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => confirmCancelEnrollment(enrollment)}
+                                  disabled={cancellingId === enrollment.id}
+                                >
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  Cancel
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
             {/* Partnership Engagement - Collapsible */}
             {(business.engagement_score !== null || business.engagement_segment) && (
@@ -1117,34 +1128,51 @@ const BusinessProfile = () => {
               </Collapsible>
             )}
 
-            {/* Donation History */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Donation History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {donations.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">No donations yet</p>
-                ) : (
-                  <div className="space-y-4">
-                    {donations.map((donation) => (
-                      <div key={donation.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                        <div>
-                          <p className="font-medium">{donation.customer_name}</p>
-                          <p className="text-sm text-muted-foreground">{donation.campaign_name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(donation.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">${donation.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                        </div>
+            {/* Donation History - Collapsible */}
+            <Collapsible open={donationsExpanded} onOpenChange={setDonationsExpanded}>
+              <Card>
+                <CollapsibleTrigger className="w-full text-left">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5 text-muted-foreground" />
+                        <CardTitle className="text-lg">Donation History</CardTitle>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">
+                          {donations.length} {donations.length === 1 ? 'donation' : 'donations'}
+                        </Badge>
+                        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${donationsExpanded ? 'rotate-180' : ''}`} />
+                      </div>
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="pt-0">
+                    {donations.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-4">No donations yet</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {donations.map((donation) => (
+                          <div key={donation.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                            <div>
+                              <p className="font-medium">{donation.customer_name}</p>
+                              <p className="text-sm text-muted-foreground">{donation.campaign_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(donation.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold">${donation.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
             {/* Activity Timeline */}
             <BusinessActivityTimeline businessId={businessId} />
