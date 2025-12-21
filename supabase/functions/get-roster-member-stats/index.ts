@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     // Get individual supporters
     const { data: supporters, error: supportersError } = await supabaseClient
       .from('orders')
-      .select('customer_name, customer_email, total_amount, platform_fee_amount, created_at')
+      .select('customer_name, customer_email, items, created_at')
       .eq('attributed_roster_member_id', rosterMemberId)
       .eq('campaign_id', campaignId)
       .in('status', ['succeeded', 'completed'])
@@ -128,7 +128,9 @@ Deno.serve(async (req) => {
         supporters: supporters?.map(s => ({
           name: s.customer_name || s.customer_email,
           email: s.customer_email,
-          amount: Number(s.total_amount) - Number(s.platform_fee_amount || 0),
+          // Calculate amount from items (cost * quantity for each item)
+          amount: (s.items as any[])?.reduce((sum: number, item: any) => 
+            sum + (item.cost || 0) * (item.quantity || 1), 0) || 0,
           date: s.created_at,
         })) || [],
         campaignName: campaign.name,

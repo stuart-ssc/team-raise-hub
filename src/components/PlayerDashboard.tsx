@@ -213,7 +213,7 @@ export default function PlayerDashboard() {
       // Get donation totals for each roster member from orders
       const { data: donationData, error: donationError } = await supabase
         .from('orders')
-        .select('attributed_roster_member_id, total_amount, platform_fee_amount')
+        .select('attributed_roster_member_id, items')
         .in('attributed_roster_member_id', rosterMemberIds)
         .in('status', ['succeeded', 'completed']);
 
@@ -227,8 +227,10 @@ export default function PlayerDashboard() {
           if (!donationsByMember[memberId]) {
             donationsByMember[memberId] = { total: 0, count: 0 };
           }
-            const netAmount = (order.total_amount || 0) - (order.platform_fee_amount || 0);
-            donationsByMember[memberId].total += netAmount;
+          // Calculate total from items (cost * quantity for each item)
+          const itemsTotal = (order.items as any[])?.reduce((sum, item) => 
+            sum + (item.cost || 0) * (item.quantity || 1), 0) || 0;
+          donationsByMember[memberId].total += itemsTotal;
           donationsByMember[memberId].count += 1;
         }
       });
