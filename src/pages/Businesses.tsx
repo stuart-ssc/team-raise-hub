@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -901,104 +901,6 @@ const Businesses = () => {
                           )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {canManageBusinesses && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMenuBusinessId(business.id);
-                                setShowSingleEmailDialog(true);
-                              }}
-                            >
-                              <Mail className="h-4 w-4 mr-2" />
-                              Send Email
-                            </DropdownMenuItem>
-                            
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMenuBusinessId(business.id);
-                                setShowSingleEnrollDialog(true);
-                              }}
-                            >
-                              <Target className="h-4 w-4 mr-2" />
-                              Enroll in Campaign
-                            </DropdownMenuItem>
-                            
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMenuBusinessId(business.id);
-                                setShowSingleTagDialog(true);
-                              }}
-                            >
-                              <Tag className="h-4 w-4 mr-2" />
-                              Add Tags
-                            </DropdownMenuItem>
-                            
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingBusiness(business);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit Details
-                            </DropdownMenuItem>
-                            
-                            <DropdownMenuSeparator />
-                            
-                            {!business.archived_at ? (
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setMenuBusinessId(business.id);
-                                  setShowSingleArchiveDialog(true);
-                                }}
-                              >
-                                <Archive className="h-4 w-4 mr-2" />
-                                Archive
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setMenuBusinessId(business.id);
-                                  setShowSingleRestoreDialog(true);
-                                }}
-                              >
-                                <RotateCcw className="h-4 w-4 mr-2" />
-                                Restore
-                              </DropdownMenuItem>
-                            )}
-                            
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMenuBusinessId(business.id);
-                                setShowSingleDeleteDialog(true);
-                              }}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1045,6 +947,104 @@ const Businesses = () => {
                     </div>
                   )}
                 </CardContent>
+                {canManageBusinesses && (
+                  <CardFooter className="pt-0 pb-4 px-6 justify-end">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4 mr-2" />
+                          Actions
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuBusinessId(business.id);
+                            setShowSingleEmailDialog(true);
+                          }}
+                        >
+                          <Mail className="h-4 w-4 mr-2" />
+                          Send Email
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuBusinessId(business.id);
+                            setShowSingleEnrollDialog(true);
+                          }}
+                        >
+                          <Target className="h-4 w-4 mr-2" />
+                          Enroll in Campaign
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuBusinessId(business.id);
+                            setShowSingleTagDialog(true);
+                          }}
+                        >
+                          <Tag className="h-4 w-4 mr-2" />
+                          Add Tags
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingBusiness(business);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit Details
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuSeparator />
+                        
+                        {!business.archived_at ? (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuBusinessId(business.id);
+                              setShowSingleArchiveDialog(true);
+                            }}
+                          >
+                            <Archive className="h-4 w-4 mr-2" />
+                            Archive
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuBusinessId(business.id);
+                              setShowSingleRestoreDialog(true);
+                            }}
+                          >
+                            <RotateCcw className="h-4 w-4 mr-2" />
+                            Restore
+                          </DropdownMenuItem>
+                        )}
+                        
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuBusinessId(business.id);
+                            setShowSingleDeleteDialog(true);
+                          }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </CardFooter>
+                )}
               </Card>
             ))}
           </div>
