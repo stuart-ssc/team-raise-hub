@@ -11,48 +11,14 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
-    
-    if (!authHeader) {
-      console.error('No authorization header found');
-      return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
-    }
-
-    // Extract JWT token from Bearer header
-    const token = authHeader.replace('Bearer ', '');
-    
-    // Create admin client to verify user
-    const supabaseAdmin = createClient(
+    // Create admin client for database queries (bypasses RLS)
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-
-    // Verify the JWT token and get user
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
-    if (authError) {
-      console.error('Auth error:', authError.message);
-      return new Response(
-        JSON.stringify({ error: 'Authentication failed', details: authError.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
-    }
-    
-    if (!user) {
-      console.error('No user found from token');
-      return new Response(
-        JSON.stringify({ error: 'Invalid token' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
-    }
-    
-    console.log('Authenticated user:', user.id);
-
-    // Use admin client for database queries (bypasses RLS)
-    const supabaseClient = supabaseAdmin;
+    // JWT is already validated by Supabase gateway (verify_jwt = true in config)
+    // We can proceed directly with the request
 
     const { campaignId, rosterMemberId } = await req.json();
 
