@@ -546,7 +546,7 @@ export default function PlayerDashboard() {
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">Team Progress</span>
                           <span className="font-medium">
-                            ${(amountRaised / 100).toFixed(2)} / ${(goalAmount / 100).toFixed(2)}
+                            ${amountRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${goalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                         <Progress value={Math.min(progress, 100)} className="h-2" />

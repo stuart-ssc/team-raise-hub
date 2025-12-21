@@ -452,7 +452,7 @@ export default function DonorSegmentation() {
                             <p className="text-sm text-muted-foreground mt-1">{stat.description}</p>
                             <div className="mt-3 space-y-1">
                               <p className="text-xs text-muted-foreground">
-                                Avg. Lifetime: ${(stat.avgLifetimeValue / 100).toFixed(2)}
+                                Avg. Lifetime: ${stat.avgLifetimeValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 Avg. Donations: {stat.avgDonationCount.toFixed(1)}

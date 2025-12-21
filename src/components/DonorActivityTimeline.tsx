@@ -84,7 +84,7 @@ const DonorActivityTimeline = ({ donorId }: DonorActivityTimelineProps) => {
     
     switch (activity.activity_type) {
       case "donation":
-        return `Donated $${((data.amount || 0) / 100).toFixed(2)} to ${data.campaign_name || "campaign"}`;
+        return `Donated $${(data.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to ${data.campaign_name || "campaign"}`;
       case "email_sent":
         return `Received email: "${data.subject || "Unknown subject"}"`;
       case "email_opened":

@@ -209,10 +209,10 @@ const DonorAnalytics = () => {
 
     return last12Months.map(month => ({
       month,
-      amount: monthlyData[month].amount / 100,
+      amount: monthlyData[month].amount,
       count: monthlyData[month].count,
       avgDonation: monthlyData[month].count > 0 
-        ? (monthlyData[month].amount / monthlyData[month].count) / 100 
+        ? monthlyData[month].amount / monthlyData[month].count
         : 0
     }));
   };
@@ -343,7 +343,7 @@ const DonorAnalytics = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-primary">
-                    {formatCurrency(givingTrends.reduce((sum, m) => sum + m.amount * 100, 0))}
+                    {formatCurrency(givingTrends.reduce((sum, m) => sum + m.amount, 0))}
                   </div>
                 </CardContent>
               </Card>
@@ -368,8 +368,8 @@ const DonorAnalytics = () => {
                 <CardContent>
                   <div className="text-3xl font-bold text-warning">
                     {formatCurrency(
-                      (givingTrends.reduce((sum, m) => sum + m.amount, 0) / 
-                      Math.max(1, givingTrends.reduce((sum, m) => sum + m.count, 0))) * 100
+                      givingTrends.reduce((sum, m) => sum + m.amount, 0) / 
+                      Math.max(1, givingTrends.reduce((sum, m) => sum + m.count, 0))
                     )}
                   </div>
                 </CardContent>
@@ -408,8 +408,8 @@ const DonorAnalytics = () => {
                         borderRadius: '8px'
                       }}
                       formatter={(value: number, name: string) => {
-                        if (name === 'amount') return [formatCurrency(value * 100), 'Revenue'];
-                        if (name === 'avgDonation') return [formatCurrency(value * 100), 'Avg Donation'];
+                        if (name === 'amount') return [formatCurrency(value), 'Revenue'];
+                        if (name === 'avgDonation') return [formatCurrency(value), 'Avg Donation'];
                         return [value, 'Count'];
                       }}
                     />

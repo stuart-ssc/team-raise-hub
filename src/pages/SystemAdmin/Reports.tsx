@@ -276,7 +276,7 @@ const SystemAdminReports = () => {
       recentOrdersResult.data?.forEach(order => {
         activities.push({
           type: 'donation',
-          description: `${order.customer_name || 'Anonymous'} donated $${((order.total_amount || 0) / 100).toFixed(2)}`,
+          description: `${order.customer_name || 'Anonymous'} donated $${(order.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           timestamp: order.created_at
         });
       });
@@ -498,7 +498,7 @@ const SystemAdminReports = () => {
                   <AreaChart data={monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
-                    <YAxis tickFormatter={(value) => `$${(value / 100).toFixed(0)}`} />
+                    <YAxis tickFormatter={(value) => `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} />
                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
                     <Legend />
                     <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.6} name="Revenue" />

@@ -221,7 +221,7 @@ const MyOrders = () => {
                           <TableCell>
                             {new Date(order.created_at).toLocaleDateString()}
                           </TableCell>
-                          <TableCell>${(order.total_amount / 100).toFixed(2)}</TableCell>
+                          <TableCell>${order.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                           <TableCell>
                             {order.fileFieldsCount === 0 ? (
                               <span className="text-muted-foreground text-sm">N/A</span>

@@ -259,7 +259,7 @@ const OrderDetails = () => {
               </div>
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-1">Amount</h4>
-                <p className="text-2xl font-bold">${(order.total_amount / 100).toFixed(2)}</p>
+                <p className="text-2xl font-bold">${order.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               </div>
             </div>
 

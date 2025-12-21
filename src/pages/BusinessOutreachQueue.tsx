@@ -292,7 +292,7 @@ export default function BusinessOutreachQueue() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Total Value</p>
-              <p className="text-2xl font-bold">${(stats.totalValue / 100).toFixed(0)}</p>
+              <p className="text-2xl font-bold">${stats.totalValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
             </div>
             <DollarSign className="h-8 w-8 text-green-500" />
           </div>
@@ -422,7 +422,7 @@ export default function BusinessOutreachQueue() {
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
                       <div>
                         <p className="text-muted-foreground">Partnership Value</p>
-                        <p className="font-medium">${((metrics.total_partnership_value || 0) / 100).toFixed(0)}</p>
+                        <p className="font-medium">${(metrics.total_partnership_value || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
