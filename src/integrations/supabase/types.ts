@@ -2311,6 +2311,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "orders_attributed_roster_member_id_fkey"
+            columns: ["attributed_roster_member_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["roster_member_id"]
+          },
+          {
             foreignKeyName: "orders_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
@@ -2439,6 +2446,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organization_user"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_user_linked_organization_user_id_fkey"
+            columns: ["linked_organization_user_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["roster_member_id"]
           },
           {
             foreignKeyName: "organization_user_organization_id_fkey"
@@ -2647,6 +2661,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organization_user"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roster_member_campaign_links_roster_member_id_fkey"
+            columns: ["roster_member_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["roster_member_id"]
           },
         ]
       }
@@ -3305,17 +3326,17 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "organization_user_roster_id_fkey"
+            columns: ["roster_id"]
+            isOneToOne: false
+            referencedRelation: "rosters"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "Rosters_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "school_user_roster_id_fkey"
-            columns: ["roster_id"]
-            isOneToOne: false
-            referencedRelation: "rosters"
             referencedColumns: ["id"]
           },
         ]
