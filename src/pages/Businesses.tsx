@@ -190,12 +190,18 @@ const Businesses = () => {
               // Calculate total donations from orders
               const { data: orders } = await supabase
                 .from("orders")
-                .select("total_amount, created_at")
+                .select("items, created_at")
                 .in("customer_email", emails)
-                .eq("status", "completed");
+                .eq("status", "succeeded");
 
               if (orders) {
-                totalDonations = orders.reduce((sum, order) => sum + order.total_amount, 0);
+                // Calculate net amount using items (price_at_purchase * quantity) to exclude platform fees
+                totalDonations = orders.reduce((sum, order) => {
+                  const items = order.items as Array<{ price_at_purchase: number; quantity: number }> | null;
+                  const orderTotal = items?.reduce((itemSum, item) => 
+                    itemSum + (item.price_at_purchase * item.quantity), 0) || 0;
+                  return sum + orderTotal;
+                }, 0);
                 const sortedOrders = orders.sort((a, b) => 
                   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
                 );
