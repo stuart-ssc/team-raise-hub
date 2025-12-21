@@ -876,7 +876,7 @@ const Businesses = () => {
                               </Badge>
                             )}
                           </div>
-                          {typeof business.engagement_score === 'number' && business.engagement_score > 0 && (
+                          {(typeof business.engagement_score === 'number' || business.engagement_segment) && (
                             <div className="mt-1">
                               <TooltipProvider>
                                 <Tooltip>
