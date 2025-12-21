@@ -14,7 +14,9 @@ const ActiveGroupContext = createContext<ActiveGroupContextType | undefined>(und
 export const useActiveGroup = () => {
   const context = useContext(ActiveGroupContext);
   if (!context) {
-    throw new Error("useActiveGroup must be used within ActiveGroupProvider");
+    // Return a safe default when used outside the provider
+    // This can happen during initial render before provider mounts
+    return { activeGroup: null, groups: [], handleGroupClick: () => {} };
   }
   return context;
 };
