@@ -344,7 +344,7 @@ export default function PlayerDashboard() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${(totalRaisedAll / 100).toFixed(2)}</div>
+              <div className="text-2xl font-bold">${totalRaisedAll.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
                 From {attributedCampaigns.length} attributed campaign{attributedCampaigns.length !== 1 ? 's' : ''}
               </p>
@@ -415,7 +415,7 @@ export default function PlayerDashboard() {
                     </div>
                   </div>
                   <div className="font-semibold">
-                    ${(entry.totalRaised / 100).toFixed(2)}
+                    ${entry.totalRaised.toFixed(2)}
                   </div>
                 </div>
               ))}
@@ -456,7 +456,7 @@ export default function PlayerDashboard() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">My Progress</span>
                       <span className="font-medium">
-                        ${(campaign.totalRaised / 100).toFixed(2)} / ${(campaign.personalGoal / 100).toFixed(2)}
+                        ${campaign.totalRaised.toFixed(2)} / ${campaign.personalGoal.toFixed(2)}
                       </span>
                     </div>
                     <Progress value={campaign.percentToGoal} className="h-2" />
