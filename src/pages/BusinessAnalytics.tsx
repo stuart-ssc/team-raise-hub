@@ -171,7 +171,7 @@ const BusinessAnalytics = () => {
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount / 100);
+    }).format(amount);
   };
 
   // Calculate summary statistics

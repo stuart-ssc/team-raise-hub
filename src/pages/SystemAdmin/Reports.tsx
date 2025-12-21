@@ -316,7 +316,7 @@ const SystemAdminReports = () => {
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount / 100);
+    }).format(amount);
   };
 
   const formatPercentage = (value: number) => {
