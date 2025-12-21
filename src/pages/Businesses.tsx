@@ -178,15 +178,24 @@ const Businesses = () => {
           if (linkedDonors && linkedDonors.length > 0) {
             const donorIds = linkedDonors.map(d => d.donor_id);
             
-            // Get donor emails
-            const { data: donors } = await supabase
+            // First try to get emails from donor_profiles (for proper donor_profile links)
+            const { data: donorProfileEmails } = await supabase
               .from("donor_profiles")
               .select("email")
               .in("id", donorIds);
 
-            if (donors && donors.length > 0) {
-              const emails = donors.map(d => d.email);
-              
+            let emails: string[] = donorProfileEmails?.map(d => d.email) || [];
+            
+            // If no matches in donor_profiles, the donor_ids might point to profiles table
+            // Call edge function to get emails from auth.users
+            if (emails.length === 0) {
+              const { data: profileEmailsData } = await supabase.functions.invoke("get-profile-emails", {
+                body: { profileIds: donorIds }
+              });
+              emails = profileEmailsData?.emails || [];
+            }
+
+            if (emails.length > 0) {
               // Calculate total donations from orders
               const { data: orders } = await supabase
                 .from("orders")
