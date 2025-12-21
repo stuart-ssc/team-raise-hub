@@ -31,6 +31,8 @@ const Dashboard = () => {
   const [editCampaign, setEditCampaign] = useState<any>(null);
   const [manageCampaignId, setManageCampaignId] = useState<string | null>(null);
   const [isSystemAdmin, setIsSystemAdmin] = useState<boolean | null>(null);
+  const [donors, setDonors] = useState<any[]>([]);
+  const [donorCount, setDonorCount] = useState(0);
 
   // Check if user is system admin
   useEffect(() => {
@@ -145,6 +147,47 @@ const Dashboard = () => {
     fetchCampaigns();
   }, [activeGroup?.id]);
 
+  // Fetch donors from database
+  const fetchDonors = async () => {
+    if (!organizationUser?.organization_id) return;
+
+    try {
+      // Get donors for this organization
+      let query = supabase
+        .from('donor_profiles')
+        .select('*')
+        .eq('organization_id', organizationUser.organization_id)
+        .order('total_donations', { ascending: false })
+        .limit(10);
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching donors:', error);
+        return;
+      }
+
+      setDonors(data || []);
+
+      // Get total count
+      const { count } = await supabase
+        .from('donor_profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organizationUser.organization_id);
+
+      setDonorCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching donors:', error);
+    }
+  };
+
+  // Fetch donors when component mounts or dependencies change
+  useEffect(() => {
+    if (organizationUser?.organization_id) {
+      fetchDonors();
+    }
+  }, [organizationUser?.organization_id]);
+
   // Calculate stats from campaigns data
   const activeCampaignsCount = campaigns.length;
   const totalAmountRaised = campaigns.reduce((sum, campaign) => sum + (campaign.amount_raised || 0), 0);
@@ -173,23 +216,23 @@ const Dashboard = () => {
     return `${format(start, 'MMM d, yyyy')}-${format(end, 'MMM d, yyyy')}`;
   };
 
-  // Mock data for donors
-  const donors = [{
-    name: "Jeff Conner",
-    email: "jconner@testemail.com",
-    title: "jconner@testemail.com",
-    role: "Standard"
-  }, {
-    name: "Emma Perez",
-    email: "eperez@testemail.com",
-    title: "eperez@testemail.com",
-    role: "Standard"
-  }, {
-    name: "Raj Mishra",
-    email: "rmishra@testemail.com",
-    title: "rmishra@testemail.com",
-    role: "Standard"
-  }];
+  // Helper function to get donor display name
+  const getDonorName = (donor: any) => {
+    if (donor.first_name || donor.last_name) {
+      return `${donor.first_name || ''} ${donor.last_name || ''}`.trim();
+    }
+    return donor.email.split('@')[0];
+  };
+
+  // Helper function to get donor initials
+  const getDonorInitials = (donor: any) => {
+    if (donor.first_name && donor.last_name) {
+      return `${donor.first_name[0]}${donor.last_name[0]}`.toUpperCase();
+    }
+    if (donor.first_name) return donor.first_name[0].toUpperCase();
+    if (donor.last_name) return donor.last_name[0].toUpperCase();
+    return donor.email[0].toUpperCase();
+  };
   // Check if user is a participant/supporter to show player dashboard
   const permissionLevel = organizationUser?.user_type?.permission_level || 
     getPermissionLevel(organizationUser?.user_type?.name || '');
@@ -222,8 +265,8 @@ const Dashboard = () => {
             
             <Card>
               <CardContent className="p-4 md:p-6">
-                <div className="text-lg md:text-2xl font-bold">1,250</div>
-                <div className="text-xs md:text-sm text-muted-foreground">2025 Donors</div>
+                <div className="text-lg md:text-2xl font-bold">{donorCount.toLocaleString()}</div>
+                <div className="text-xs md:text-sm text-muted-foreground">Total Donors</div>
               </CardContent>
             </Card>
             
@@ -401,28 +444,36 @@ const Dashboard = () => {
             <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <CardTitle>Donors</CardTitle>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-muted-foreground">6 results</span>
-                <Button variant="outline" size="sm">Sort</Button>
-                <Button variant="outline" size="sm">Filter</Button>
-                <Button size="sm">New</Button>
+                <span className="text-sm text-muted-foreground">{donorCount} results</span>
+                <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/donors')}>View All</Button>
               </div>
             </CardHeader>
             <CardContent>
-              {isMobile ? (
+              {donors.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-lg font-medium mb-2">No donors yet</div>
+                  <div className="text-muted-foreground mb-4">Donors will appear here once they contribute to your campaigns</div>
+                  <Button variant="outline" onClick={() => navigate('/dashboard/donors')}>
+                    View Donor Management
+                  </Button>
+                </div>
+              ) : isMobile ? (
                 // Mobile Card View for Donors
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {donors.map((donor, index) => (
-                    <Card key={index} className="hover:shadow-md transition-shadow">
+                  {donors.map((donor) => (
+                    <Card key={donor.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/dashboard/donors/${donor.id}`)}>
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm truncate">{donor.name}</h4>
+                            <h4 className="font-semibold text-sm truncate">{getDonorName(donor)}</h4>
                             <p className="text-xs text-muted-foreground truncate">{donor.email}</p>
-                            <p className="text-xs text-muted-foreground mt-1">{donor.role}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              ${(donor.total_donations || 0).toLocaleString()} donated
+                            </p>
                           </div>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <Badge variant="secondary" className="text-xs">
+                            {donor.rfm_segment || 'New'}
+                          </Badge>
                         </div>
                       </CardContent>
                     </Card>
@@ -432,36 +483,39 @@ const Dashboard = () => {
                 // Desktop Table View
                 <div className="overflow-x-auto">
                   <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[150px]">Name</TableHead>
-                      <TableHead className="min-w-[200px]">Email</TableHead>
-                      <TableHead className="min-w-[150px]">Title</TableHead>
-                      <TableHead className="min-w-[100px]">Role</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                <TableBody>
-                  {donors.map((donor, index) => <TableRow key={index}>
-                      <TableCell className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src="/placeholder.svg" />
-                          <AvatarFallback>{donor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{donor.name}</span>
-                      </TableCell>
-                      <TableCell>{donor.email}</TableCell>
-                      <TableCell>{donor.title}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{donor.role}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm">⋮</Button>
-                      </TableCell>
-                    </TableRow>)}
-                </TableBody>
-                </Table>
-              </div>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[150px]">Name</TableHead>
+                        <TableHead className="min-w-[200px]">Email</TableHead>
+                        <TableHead className="min-w-[120px]">Total Donated</TableHead>
+                        <TableHead className="min-w-[100px]">Segment</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {donors.map((donor) => (
+                        <TableRow key={donor.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/dashboard/donors/${donor.id}`)}>
+                          <TableCell className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback>{getDonorInitials(donor)}</AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{getDonorName(donor)}</span>
+                          </TableCell>
+                          <TableCell>{donor.email}</TableCell>
+                          <TableCell>${(donor.total_donations || 0).toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{donor.rfm_segment || 'New'}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
