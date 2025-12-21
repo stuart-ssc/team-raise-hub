@@ -713,7 +713,7 @@ const Businesses = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">
-                ${(stats.avgDonation / 100).toFixed(2)}
+                ${stats.avgDonation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
