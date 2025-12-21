@@ -28,7 +28,7 @@ interface BusinessActivityTimelineProps {
   defaultExpanded?: boolean;
 }
 
-export const BusinessActivityTimeline = ({ businessId, defaultExpanded = true }: BusinessActivityTimelineProps) => {
+export const BusinessActivityTimeline = ({ businessId, defaultExpanded = false }: BusinessActivityTimelineProps) => {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(defaultExpanded);
