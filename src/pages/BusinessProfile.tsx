@@ -17,7 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore, TrendingUp, Activity, Play, Pause, XCircle } from "lucide-react";
+import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore, TrendingUp, Activity, Play, Pause, XCircle, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getSegmentInfo } from "@/lib/businessEngagement";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -133,6 +134,7 @@ const BusinessProfile = () => {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [enrollmentToCancel, setEnrollmentToCancel] = useState<CampaignEnrollment | null>(null);
+  const [engagementExpanded, setEngagementExpanded] = useState(false);
 
   useEffect(() => {
     if (businessId && organizationUser?.organization_id) {
@@ -777,80 +779,6 @@ const BusinessProfile = () => {
             )}
         </div>
 
-        {/* Engagement Score Card */}
-        {(business.engagement_score !== null || business.engagement_segment) && (
-          <Card className="border-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Partnership Engagement
-                </CardTitle>
-                {business.engagement_segment && (
-                  <Badge className={`${getSegmentInfo(business.engagement_segment).bgColor} ${getSegmentInfo(business.engagement_segment).color} border-0`}>
-                    {(() => {
-                      const Icon = getSegmentInfo(business.engagement_segment).icon;
-                      return <Icon className="h-3 w-3 mr-1" />;
-                    })()}
-                    {getSegmentInfo(business.engagement_segment).label}
-                  </Badge>
-                )}
-              </div>
-              {business.engagement_segment && (
-                <p className="text-sm text-muted-foreground">
-                  {getSegmentInfo(business.engagement_segment).description}
-                </p>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Overall Score</p>
-                  <p className="text-3xl font-bold text-foreground">{business.engagement_score}/100</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-muted-foreground" />
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium">Breadth (Linked Donors)</p>
-                    <Badge variant="outline">{business.engagement_breadth_score}/5</Badge>
-                  </div>
-                  <Progress value={(business.engagement_breadth_score || 0) * 20} className="h-2" />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {business.linked_donors_count || 0} linked donors
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium">Performance (Total Value)</p>
-                    <Badge variant="outline">{business.engagement_performance_score}/5</Badge>
-                  </div>
-                  <Progress value={(business.engagement_performance_score || 0) * 20} className="h-2" />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ${((business.total_partnership_value || 0) / 100).toLocaleString()} total value
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium">Vitality (Recent Activity)</p>
-                    <Badge variant="outline">{business.engagement_vitality_score}/5</Badge>
-                  </div>
-                  <Progress value={(business.engagement_vitality_score || 0) * 20} className="h-2" />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {business.last_donor_activity_date
-                      ? `Last activity: ${new Date(business.last_donor_activity_date).toLocaleDateString()}`
-                      : "No activity recorded"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
@@ -1112,6 +1040,82 @@ const BusinessProfile = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Partnership Engagement - Collapsible */}
+            {(business.engagement_score !== null || business.engagement_segment) && (
+              <Collapsible open={engagementExpanded} onOpenChange={setEngagementExpanded}>
+                <Card>
+                  <CollapsibleTrigger className="w-full text-left">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Activity className="h-5 w-5 text-muted-foreground" />
+                          <CardTitle className="text-lg">Partnership Engagement</CardTitle>
+                          <span className="text-xl font-bold">{business.engagement_score}/100</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {business.engagement_segment && (
+                            <Badge className={`${getSegmentInfo(business.engagement_segment).bgColor} ${getSegmentInfo(business.engagement_segment).color} border-0`}>
+                              {(() => {
+                                const Icon = getSegmentInfo(business.engagement_segment).icon;
+                                return <Icon className="h-3 w-3 mr-1" />;
+                              })()}
+                              {getSegmentInfo(business.engagement_segment).label}
+                            </Badge>
+                          )}
+                          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${engagementExpanded ? 'rotate-180' : ''}`} />
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0 space-y-4">
+                      {business.engagement_segment && (
+                        <p className="text-sm text-muted-foreground">
+                          {getSegmentInfo(business.engagement_segment).description}
+                        </p>
+                      )}
+                      <div className="space-y-4">
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-medium">Breadth (Linked Donors)</p>
+                            <Badge variant="outline">{business.engagement_breadth_score}/5</Badge>
+                          </div>
+                          <Progress value={(business.engagement_breadth_score || 0) * 20} className="h-2" />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {business.linked_donors_count || 0} linked donors
+                          </p>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-medium">Performance (Total Value)</p>
+                            <Badge variant="outline">{business.engagement_performance_score}/5</Badge>
+                          </div>
+                          <Progress value={(business.engagement_performance_score || 0) * 20} className="h-2" />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            ${((business.total_partnership_value || 0) / 100).toLocaleString()} total value
+                          </p>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-medium">Vitality (Recent Activity)</p>
+                            <Badge variant="outline">{business.engagement_vitality_score}/5</Badge>
+                          </div>
+                          <Progress value={(business.engagement_vitality_score || 0) * 20} className="h-2" />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {business.last_donor_activity_date
+                              ? `Last activity: ${new Date(business.last_donor_activity_date).toLocaleDateString()}`
+                              : "No activity recorded"}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            )}
 
             {/* Donation History */}
             <Card>
