@@ -847,29 +847,30 @@ const Businesses = () => {
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3 flex-1">
+                    <div className="flex items-start gap-3 flex-1">
                       {canManageBusinesses && (
                         <Checkbox
                           checked={selectedBusinessIds.includes(business.id)}
                           onCheckedChange={(checked) => handleSelectBusiness(business.id, checked as boolean)}
                           onClick={(e) => e.stopPropagation()}
                           aria-label={`Select ${business.business_name}`}
+                          className="mt-1"
                         />
                       )}
                       <div 
-                        className="flex items-center gap-3 flex-1 cursor-pointer"
+                        className="flex items-start gap-3 flex-1 cursor-pointer"
                         onClick={() => navigate(`/dashboard/businesses/${business.id}`)}
                       >
                         {business.logo_url && (
                           <img
                             src={business.logo_url}
                             alt={business.business_name}
-                            className="h-10 w-10 rounded-lg object-cover"
+                            className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
                           />
                         )}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <CardTitle className="text-base">{business.business_name}</CardTitle>
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-base">{business.business_name}</CardTitle>
+                          <div className="flex items-center gap-2 flex-wrap mt-1">
                             {getVerificationBadge(business.verification_status)}
                             {business.archived_at && (
                               <Badge variant="secondary" className="bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
