@@ -194,7 +194,7 @@ const BusinessProfile = () => {
               .from("orders")
               .select("total_amount")
               .eq("customer_email", donor.email)
-              .eq("status", "completed");
+              .eq("status", "succeeded");
 
             const totalDonations = orders?.reduce((sum, o) => sum + o.total_amount, 0) || 0;
 
@@ -219,7 +219,7 @@ const BusinessProfile = () => {
           .from("orders")
           .select("id, created_at, total_amount, customer_name, campaign_id")
           .in("customer_email", donorEmails)
-          .eq("status", "completed")
+          .eq("status", "succeeded")
           .order("created_at", { ascending: false });
 
         if (ordersData && ordersData.length > 0) {
