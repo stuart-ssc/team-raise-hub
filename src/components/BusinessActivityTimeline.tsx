@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatDistanceToNow } from "date-fns";
 import { 
   UserPlus, 
@@ -10,7 +12,8 @@ import {
   TrendingDown,
   Activity, 
   Shield,
-  FileText
+  FileText,
+  ChevronDown
 } from "lucide-react";
 
 interface ActivityLog {
@@ -22,11 +25,13 @@ interface ActivityLog {
 
 interface BusinessActivityTimelineProps {
   businessId: string;
+  defaultExpanded?: boolean;
 }
 
-export const BusinessActivityTimeline = ({ businessId }: BusinessActivityTimelineProps) => {
+export const BusinessActivityTimeline = ({ businessId, defaultExpanded = true }: BusinessActivityTimelineProps) => {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   useEffect(() => {
     fetchActivities();
@@ -136,68 +141,91 @@ export const BusinessActivityTimeline = ({ businessId }: BusinessActivityTimelin
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Activity Timeline</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex gap-3 animate-pulse">
-                <div className="w-8 h-8 rounded-full bg-muted" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-muted rounded w-3/4" />
-                  <div className="h-3 bg-muted rounded w-1/4" />
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <Card>
+          <CollapsibleTrigger className="w-full text-left">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-muted-foreground" />
+                  <CardTitle className="text-lg">Activity Timeline</CardTitle>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">Loading...</Badge>
+                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (activities.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Activity Timeline</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            No activity recorded yet. Activity will appear here as employees are linked, donations are made, and engagement scores change.
-          </p>
-        </CardContent>
-      </Card>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex gap-3 animate-pulse">
+                    <div className="w-8 h-8 rounded-full bg-muted" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted rounded w-3/4" />
+                      <div className="h-3 bg-muted rounded w-1/4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Activity Timeline</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {activities.map((activity) => (
-            <div key={activity.id} className="flex gap-3 pb-4 border-b last:border-0 last:pb-0">
-              <div className="flex items-start justify-center mt-0.5">
-                <div className="p-1.5 rounded-full bg-muted">
-                  {getActivityIcon(activity.activity_type)}
-                </div>
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <Card>
+        <CollapsibleTrigger className="w-full text-left">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-lg">Activity Timeline</CardTitle>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm">
-                  {formatActivityMessage(activity)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
-                </p>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {activities.length} {activities.length === 1 ? 'event' : 'events'}
+                </Badge>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
               </div>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="pt-0">
+            {activities.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No activity recorded yet. Activity will appear here as employees are linked, donations are made, and engagement scores change.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {activities.map((activity) => (
+                  <div key={activity.id} className="flex gap-3 pb-4 border-b last:border-0 last:pb-0">
+                    <div className="flex items-start justify-center mt-0.5">
+                      <div className="p-1.5 rounded-full bg-muted">
+                        {getActivityIcon(activity.activity_type)}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm">
+                        {formatActivityMessage(activity)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 };
