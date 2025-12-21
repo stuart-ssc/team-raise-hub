@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,6 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import QRCode from "react-qr-code";
-
 interface CampaignStat {
   campaignId: string;
   campaignName: string;
@@ -27,6 +27,7 @@ interface CampaignStat {
 
 export default function MyFundraising() {
   const { user } = useAuth();
+  const { activeGroup } = useActiveGroup();
   const { toast } = useToast();
   const [stats, setStats] = useState<CampaignStat[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +37,7 @@ export default function MyFundraising() {
     if (user) {
       fetchFundraisingStats();
     }
-  }, [user]);
+  }, [user, activeGroup?.id]);
 
   const fetchFundraisingStats = async () => {
     try {
@@ -60,9 +61,20 @@ export default function MyFundraising() {
       }
 
       // Get campaigns with roster attribution enabled for these groups
-      const groupIds = rosterMemberships
+      let groupIds = rosterMemberships
         .map(m => (m as any).rosters?.group_id)
         .filter(Boolean);
+
+      // Filter by active group if one is selected
+      if (activeGroup) {
+        groupIds = groupIds.filter((id: string) => id === activeGroup.id);
+      }
+
+      if (groupIds.length === 0) {
+        setStats([]);
+        setLoading(false);
+        return;
+      }
 
       const { data: campaigns, error: campaignError } = await supabase
         .from('campaigns')

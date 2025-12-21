@@ -50,7 +50,7 @@ export const ActiveGroupProvider = ({ children }: ActiveGroupProviderProps) => {
             setActiveGroup(group);
           }
         }
-      } else if (permissionLevel === 'program_manager') {
+      } else if (permissionLevel === 'program_manager' || permissionLevel === 'participant' || permissionLevel === 'supporter') {
         if (organizationUser.groups) {
           setGroups([organizationUser.groups]);
           setActiveGroup(organizationUser.groups);

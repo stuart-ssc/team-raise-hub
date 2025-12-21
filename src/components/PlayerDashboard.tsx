@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-
 interface Campaign {
   id: string;
   name: string;
@@ -45,6 +45,7 @@ interface LeaderboardEntry {
 
 export default function PlayerDashboard() {
   const { user } = useAuth();
+  const { activeGroup } = useActiveGroup();
   const { toast } = useToast();
   const [currentCampaigns, setCurrentCampaigns] = useState<Campaign[]>([]);
   const [attributedCampaigns, setAttributedCampaigns] = useState<AttributedCampaign[]>([]);
@@ -55,7 +56,7 @@ export default function PlayerDashboard() {
     if (user) {
       fetchPlayerData();
     }
-  }, [user]);
+  }, [user, activeGroup?.id]);
 
   const fetchPlayerData = async () => {
     try {
@@ -83,9 +84,18 @@ export default function PlayerDashboard() {
 
       if (rostersError) throw rostersError;
 
-      const groupIds = rosters?.map(r => r.group_id).filter(Boolean) || [];
+      // Filter by active group if one is selected
+      let filteredRosters = rosters || [];
+      if (activeGroup) {
+        filteredRosters = filteredRosters.filter(r => r.group_id === activeGroup.id);
+      }
+
+      const groupIds = filteredRosters.map(r => r.group_id).filter(Boolean);
 
       if (groupIds.length === 0) {
+        setCurrentCampaigns([]);
+        setAttributedCampaigns([]);
+        setLeaderboard([]);
         setLoading(false);
         return;
       }
