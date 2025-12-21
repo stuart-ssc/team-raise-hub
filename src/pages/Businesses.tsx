@@ -876,15 +876,15 @@ const Businesses = () => {
                               </Badge>
                             )}
                           </div>
-                          {business.engagement_segment && business.engagement_score && business.engagement_score > 0 && (
+                          {typeof business.engagement_score === 'number' && business.engagement_score > 0 && (
                             <div className="mt-1">
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Badge 
-                                      className={`${getSegmentInfo(business.engagement_segment).bgColor} ${getSegmentInfo(business.engagement_segment).color} border-0 text-xs cursor-help`}
+                                      className={`${business.engagement_segment ? getSegmentInfo(business.engagement_segment).bgColor : 'bg-muted'} ${business.engagement_segment ? getSegmentInfo(business.engagement_segment).color : 'text-muted-foreground'} border-0 text-xs cursor-help`}
                                     >
-                                      {(() => {
+                                      {business.engagement_segment && (() => {
                                         const Icon = getSegmentInfo(business.engagement_segment).icon;
                                         return <Icon className="h-3 w-3 mr-1" />;
                                       })()}
