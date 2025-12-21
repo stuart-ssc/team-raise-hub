@@ -199,7 +199,7 @@ export default function MyFundraising() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    ${(totalRaisedAll / 100).toFixed(2)}
+                    ${totalRaisedAll.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Across {stats.length} campaign{stats.length !== 1 ? 's' : ''}
@@ -259,7 +259,7 @@ export default function MyFundraising() {
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium">Personal Goal Progress</span>
                         <span className="text-sm text-muted-foreground">
-                          ${(stat.totalRaised / 100).toFixed(2)} / ${(stat.personalGoal / 100).toFixed(2)}
+                          ${stat.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${stat.personalGoal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
                       <Progress value={stat.percentToGoal} className="h-2" />
@@ -272,7 +272,7 @@ export default function MyFundraising() {
                     <div className="grid grid-cols-3 gap-4 py-3 border-y">
                       <div>
                         <p className="text-sm text-muted-foreground">Raised</p>
-                        <p className="text-lg font-semibold">${(stat.totalRaised / 100).toFixed(2)}</p>
+                        <p className="text-lg font-semibold">${stat.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Supporters</p>
@@ -281,7 +281,7 @@ export default function MyFundraising() {
                       <div>
                         <p className="text-sm text-muted-foreground">Avg. Gift</p>
                         <p className="text-lg font-semibold">
-                          ${stat.donationCount > 0 ? ((stat.totalRaised / stat.donationCount) / 100).toFixed(2) : '0.00'}
+                          ${stat.donationCount > 0 ? (stat.totalRaised / stat.donationCount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
                         </p>
                       </div>
                     </div>
