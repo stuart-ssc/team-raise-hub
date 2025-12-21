@@ -3372,6 +3372,10 @@ export type Database = {
           variant_name: string
         }[]
       }
+      increment_campaign_amount: {
+        Args: { amount: number; campaign_id: string }
+        Returns: undefined
+      }
       is_system_admin: { Args: { user_id: string }; Returns: boolean }
       restore_email_layout_version: {
         Args: { p_layout_id: string; p_version_number: number }
