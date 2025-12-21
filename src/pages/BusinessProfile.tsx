@@ -192,11 +192,11 @@ const BusinessProfile = () => {
 
             const { data: orders } = await supabase
               .from("orders")
-              .select("total_amount")
+              .select("total_amount, platform_fee_amount")
               .eq("customer_email", donor.email)
               .eq("status", "succeeded");
 
-            const totalDonations = orders?.reduce((sum, o) => sum + o.total_amount, 0) || 0;
+            const totalDonations = orders?.reduce((sum, o) => sum + (o.total_amount - (o.platform_fee_amount || 0)), 0) || 0;
 
             return {
               donor_id: bd.donor_id,
@@ -217,7 +217,7 @@ const BusinessProfile = () => {
         
         const { data: ordersData } = await supabase
           .from("orders")
-          .select("id, created_at, total_amount, customer_name, campaign_id")
+          .select("id, created_at, total_amount, platform_fee_amount, customer_name, campaign_id")
           .in("customer_email", donorEmails)
           .eq("status", "succeeded")
           .order("created_at", { ascending: false });
@@ -231,6 +231,7 @@ const BusinessProfile = () => {
 
           const donationHistory = ordersData.map(order => ({
             ...order,
+            total_amount: order.total_amount - (order.platform_fee_amount || 0),
             campaign_name: campaigns?.find(c => c.id === order.campaign_id)?.name || "Unknown Campaign",
           }));
 
