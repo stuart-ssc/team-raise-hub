@@ -227,9 +227,9 @@ export default function PlayerDashboard() {
           if (!donationsByMember[memberId]) {
             donationsByMember[memberId] = { total: 0, count: 0 };
           }
-          // Calculate total from items (cost * quantity for each item)
+          // Calculate total from items (price_at_purchase * quantity for each item)
           const itemsTotal = (order.items as any[])?.reduce((sum, item) => 
-            sum + (item.cost || 0) * (item.quantity || 1), 0) || 0;
+            sum + (item.price_at_purchase || 0) * (item.quantity || 1), 0) || 0;
           donationsByMember[memberId].total += itemsTotal;
           donationsByMember[memberId].count += 1;
         }
