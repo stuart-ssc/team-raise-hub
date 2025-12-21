@@ -3326,6 +3326,10 @@ export type Database = {
         Args: { org_id: string }
         Returns: undefined
       }
+      calculate_order_items_total: {
+        Args: { items_json: Json }
+        Returns: number
+      }
       calculate_rfm_scores: { Args: { org_id: string }; Returns: undefined }
       can_update_organization_user: {
         Args: { target_org_user_id: string }
