@@ -1,4 +1,10 @@
 import { useEffect, useState } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -858,17 +864,9 @@ const Businesses = () => {
                         />
                       )}
                       <div 
-                        className="flex items-start gap-3 flex-1 cursor-pointer"
+                        className="flex-1 min-w-0 cursor-pointer"
                         onClick={() => navigate(`/dashboard/businesses/${business.id}`)}
                       >
-                        {business.logo_url && (
-                          <img
-                            src={business.logo_url}
-                            alt={business.business_name}
-                            className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
                           <CardTitle className="text-base">{business.business_name}</CardTitle>
                           <div className="flex items-center gap-2 flex-wrap mt-1">
                             {getVerificationBadge(business.verification_status)}
@@ -877,22 +875,30 @@ const Businesses = () => {
                                 Archived
                               </Badge>
                             )}
-                            {business.engagement_segment && business.engagement_score && business.engagement_score > 0 && (
-                              <Badge 
-                                className={`${getSegmentInfo(business.engagement_segment).bgColor} ${getSegmentInfo(business.engagement_segment).color} border-0 text-xs`}
-                              >
-                                {(() => {
-                                  const Icon = getSegmentInfo(business.engagement_segment).icon;
-                                  return <Icon className="h-3 w-3 mr-1" />;
-                                })()}
-                                {business.engagement_score}
-                              </Badge>
-                            )}
+                          {business.engagement_segment && business.engagement_score && business.engagement_score > 0 && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge 
+                                    className={`${getSegmentInfo(business.engagement_segment).bgColor} ${getSegmentInfo(business.engagement_segment).color} border-0 text-xs cursor-help`}
+                                  >
+                                    {(() => {
+                                      const Icon = getSegmentInfo(business.engagement_segment).icon;
+                                      return <Icon className="h-3 w-3 mr-1" />;
+                                    })()}
+                                    Engagement: {business.engagement_score}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="max-w-xs">Engagement score reflects how actively this business partners with your organization, based on donation frequency, recency, and total value.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           </div>
                           {business.industry && (
                             <Badge variant="outline" className="mt-1">{business.industry}</Badge>
                           )}
-                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
