@@ -687,7 +687,7 @@ const Businesses = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground">
-                ${(stats.totalValue / 100).toFixed(2)}
+                ${stats.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
@@ -1002,7 +1002,7 @@ const Businesses = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Total Donated:</span>
-                      <span className="font-semibold">${(business.total_donations / 100).toFixed(2)}</span>
+                      <span className="font-semibold">${business.total_donations.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Linked Employees:</span>
