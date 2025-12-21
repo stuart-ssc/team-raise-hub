@@ -777,7 +777,7 @@ const BusinessProfile = () => {
         </div>
 
         {/* Engagement Score Card */}
-        {business.engagement_score !== null && business.engagement_score > 0 && (
+        {(business.engagement_score !== null || business.engagement_segment) && (
           <Card className="border-2">
             <CardHeader>
               <div className="flex items-center justify-between">
