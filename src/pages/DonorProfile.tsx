@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { 
-  ArrowLeft, 
   Mail, 
   Phone, 
   Calendar, 
@@ -317,14 +316,6 @@ const DonorProfile = () => {
       <div className="max-w-5xl mx-auto space-y-6">
             {/* Header */}
             <div>
-              <Button
-                variant="ghost"
-                onClick={() => navigate("/dashboard/donors")}
-                className="mb-4"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Donors
-              </Button>
               <div className="flex items-start justify-between">
                 <div>
                   <h1 className="text-3xl font-bold text-foreground">
