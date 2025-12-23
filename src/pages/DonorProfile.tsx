@@ -49,12 +49,20 @@ interface DonorProfile {
   preferred_communication: string;
 }
 
+interface DonationHistoryItem {
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 interface DonationHistory {
   id: string;
   total_amount: number;
+  platform_fee_amount: number | null;
   created_at: string;
   campaign_name: string;
   group_name: string;
+  items: DonationHistoryItem[];
 }
 
 interface BusinessAffiliation {
@@ -110,6 +118,8 @@ const DonorProfile = () => {
         .select(`
           id,
           total_amount,
+          platform_fee_amount,
+          items,
           created_at,
           campaigns!inner(
             name,
@@ -124,13 +134,42 @@ const DonorProfile = () => {
 
       if (ordersError) throw ordersError;
 
-      const formattedDonations: DonationHistory[] = (ordersData || []).map((order: any) => ({
-        id: order.id,
-        total_amount: order.total_amount,
-        created_at: order.created_at,
-        campaign_name: order.campaigns?.name || "Unknown Campaign",
-        group_name: order.campaigns?.groups?.group_name || "Unknown Group",
-      }));
+      // Collect all unique campaign_item_ids from all orders
+      const allItemIds = new Set<string>();
+      (ordersData || []).forEach((order: any) => {
+        const orderItems = order.items as Array<{ campaign_item_id: string; price_at_purchase: number; quantity: number }> || [];
+        orderItems.forEach(item => allItemIds.add(item.campaign_item_id));
+      });
+
+      // Fetch item names
+      let itemNamesMap: Record<string, string> = {};
+      if (allItemIds.size > 0) {
+        const { data: itemsData } = await supabase
+          .from("campaign_items")
+          .select("id, name")
+          .in("id", Array.from(allItemIds));
+        
+        if (itemsData) {
+          itemNamesMap = Object.fromEntries(itemsData.map(item => [item.id, item.name]));
+        }
+      }
+
+      const formattedDonations: DonationHistory[] = (ordersData || []).map((order: any) => {
+        const orderItems = order.items as Array<{ campaign_item_id: string; price_at_purchase: number; quantity: number }> || [];
+        return {
+          id: order.id,
+          total_amount: order.total_amount,
+          platform_fee_amount: order.platform_fee_amount,
+          created_at: order.created_at,
+          campaign_name: order.campaigns?.name || "Unknown Campaign",
+          group_name: order.campaigns?.groups?.group_name || "Unknown Group",
+          items: orderItems.map(item => ({
+            name: itemNamesMap[item.campaign_item_id] || "Item",
+            price: item.price_at_purchase,
+            quantity: item.quantity,
+          })),
+        };
+      });
 
       setDonations(formattedDonations);
 
@@ -382,8 +421,18 @@ const DonorProfile = () => {
                             </div>
                             <div className="text-right ml-4">
                               <p className="font-bold text-primary text-lg">
-                                {formatCurrency(donation.total_amount)}
+                                Total: {formatCurrency(donation.total_amount)}
                               </p>
+                              {donation.items.map((item, idx) => (
+                                <p key={idx} className="text-sm text-muted-foreground">
+                                  {item.name} - {formatCurrency(item.price * item.quantity)}
+                                </p>
+                              ))}
+                              {donation.platform_fee_amount && donation.platform_fee_amount > 0 && (
+                                <p className="text-sm text-muted-foreground">
+                                  Sponsorly Fee {formatCurrency(donation.platform_fee_amount)}
+                                </p>
+                              )}
                             </div>
                           </div>
                         ))}
