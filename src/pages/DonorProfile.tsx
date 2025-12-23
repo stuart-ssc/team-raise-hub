@@ -526,11 +526,12 @@ const DonorProfile = () => {
                           organizationUser?.user_type?.permission_level === 'program_manager') && (
                           <Button
                             variant="outline"
-                            size="sm"
+                            size="icon"
+                            className="h-8 w-8"
                             onClick={() => setShowLinkDialog(true)}
+                            title="Link to Business"
                           >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Link
+                            <Plus className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
