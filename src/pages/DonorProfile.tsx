@@ -423,7 +423,7 @@ const DonorProfile = () => {
                               <p className="font-bold text-primary text-lg">
                                 Total: {formatCurrency(donation.total_amount)}
                               </p>
-                              {donation.items.map((item, idx) => (
+                              {(donation.items || []).map((item, idx) => (
                                 <p key={idx} className="text-sm text-muted-foreground">
                                   {item.name} - {formatCurrency(item.price * item.quantity)}
                                 </p>
