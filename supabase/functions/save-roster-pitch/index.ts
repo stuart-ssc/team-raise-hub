@@ -30,19 +30,15 @@ Deno.serve(async (req) => {
 
     console.log('Saving roster pitch:', { campaignId, hasMessage: !!pitchMessage, hasImage: !!pitchImageUrl, hasVideo: !!pitchVideoUrl });
 
-    // Create client with user's token for authentication
-    const supabaseUser = createClient(
+    // Use service role client for all operations
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get the authenticated user
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    // Extract JWT token and validate user
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
     
     if (userError || !user) {
       console.error('User auth error:', userError);
@@ -51,12 +47,6 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Use service role for database operations
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     // Get user's roster membership
     const { data: membership, error: membershipError } = await supabaseAdmin
