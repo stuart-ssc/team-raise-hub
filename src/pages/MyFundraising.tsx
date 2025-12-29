@@ -5,15 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trophy, TrendingUp, Users, Copy, Share2, ExternalLink, MessageSquare, Edit } from "lucide-react";
+import { Trophy, TrendingUp, Users, Copy, Share2, ExternalLink, MessageSquare, Edit, ChevronUp } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PitchEditor } from "@/components/PitchEditor";
 import QRCode from "react-qr-code";
+import { Separator } from "@/components/ui/separator";
 interface CampaignStat {
   campaignId: string;
   campaignName: string;
@@ -40,7 +40,7 @@ export default function MyFundraising() {
   const [stats, setStats] = useState<CampaignStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [showQRCode, setShowQRCode] = useState<string | null>(null);
-  const [editingPitch, setEditingPitch] = useState<CampaignStat | null>(null);
+  const [editingPitchId, setEditingPitchId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -364,11 +364,20 @@ export default function MyFundraising() {
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => setEditingPitch(stat)}
+                          onClick={() => setEditingPitchId(editingPitchId === stat.campaignId ? null : stat.campaignId)}
                           className="flex-1"
                         >
-                          <Edit className="h-4 w-4 mr-2" />
-                          {stat.pitchMessage ? 'Edit' : 'Add'} Personal Pitch
+                          {editingPitchId === stat.campaignId ? (
+                            <>
+                              <ChevronUp className="h-4 w-4 mr-2" />
+                              Close Pitch Editor
+                            </>
+                          ) : (
+                            <>
+                              <Edit className="h-4 w-4 mr-2" />
+                              {stat.pitchMessage ? 'Edit' : 'Add'} Personal Pitch
+                            </>
+                          )}
                         </Button>
                       </div>
                       {showQRCode === stat.personalUrl && (
@@ -377,6 +386,28 @@ export default function MyFundraising() {
                         </div>
                       )}
                     </div>
+
+                    {/* Inline Pitch Editor */}
+                    {editingPitchId === stat.campaignId && (
+                      <>
+                        <Separator className="my-4" />
+                        <PitchEditor
+                          campaignId={stat.campaignId}
+                          campaignName={stat.campaignName}
+                          initialPitch={{
+                            message: stat.pitchMessage,
+                            imageUrl: stat.pitchImageUrl,
+                            videoUrl: stat.pitchVideoUrl,
+                            recordedVideoUrl: stat.pitchRecordedVideoUrl,
+                          }}
+                          onSave={() => {
+                            setEditingPitchId(null);
+                            fetchFundraisingStats();
+                          }}
+                          onClose={() => setEditingPitchId(null)}
+                        />
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -384,29 +415,6 @@ export default function MyFundraising() {
           </>
         )}
       </div>
-
-      {/* Pitch Editor Dialog */}
-      <Dialog open={!!editingPitch} onOpenChange={(open) => !open && setEditingPitch(null)}>
-        <DialogContent className="max-w-lg">
-          {editingPitch && (
-            <PitchEditor
-              campaignId={editingPitch.campaignId}
-              campaignName={editingPitch.campaignName}
-              initialPitch={{
-                message: editingPitch.pitchMessage,
-                imageUrl: editingPitch.pitchImageUrl,
-                videoUrl: editingPitch.pitchVideoUrl,
-                recordedVideoUrl: editingPitch.pitchRecordedVideoUrl,
-              }}
-              onSave={() => {
-                setEditingPitch(null);
-                fetchFundraisingStats();
-              }}
-              onClose={() => setEditingPitch(null)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </DashboardPageLayout>
   );
 }

@@ -159,15 +159,10 @@ export function PitchEditor({
   const embedUrl = getVideoEmbedUrl(pitchVideoUrl);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Edit Your Pitch</h3>
-          <p className="text-sm text-muted-foreground">{campaignName}</p>
-        </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold">Edit Your Pitch</h3>
+        <p className="text-sm text-muted-foreground">Personalize your fundraising page for {campaignName}</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -356,11 +351,11 @@ export function PitchEditor({
         </TabsContent>
       </Tabs>
 
-      <div className="flex gap-2 pt-4 border-t">
-        <Button variant="outline" onClick={onClose} className="flex-1">
+      <div className="flex gap-3 pt-4">
+        <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={saving} className="flex-1">
+        <Button onClick={handleSave} disabled={saving}>
           {saving ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
