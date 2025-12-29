@@ -2678,6 +2678,7 @@ export type Database = {
           id: string
           pitch_image_url: string | null
           pitch_message: string | null
+          pitch_recorded_video_url: string | null
           pitch_video_url: string | null
           roster_member_id: string
           slug: string
@@ -2689,6 +2690,7 @@ export type Database = {
           id?: string
           pitch_image_url?: string | null
           pitch_message?: string | null
+          pitch_recorded_video_url?: string | null
           pitch_video_url?: string | null
           roster_member_id: string
           slug: string
@@ -2700,6 +2702,7 @@ export type Database = {
           id?: string
           pitch_image_url?: string | null
           pitch_message?: string | null
+          pitch_recorded_video_url?: string | null
           pitch_video_url?: string | null
           roster_member_id?: string
           slug?: string

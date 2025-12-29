@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
     // Get pitch data from roster_member_campaign_links
     const { data: linkData, error: linkError } = await supabaseAdmin
       .from('roster_member_campaign_links')
-      .select('pitch_message, pitch_image_url, pitch_video_url')
+      .select('pitch_message, pitch_image_url, pitch_video_url, pitch_recorded_video_url')
       .eq('campaign_id', campaign.id)
       .eq('roster_member_id', matchingMember.id)
       .single();
@@ -142,6 +142,7 @@ Deno.serve(async (req) => {
       firstName: matchingProfile.first_name,
       lastName: matchingProfile.last_name,
       hasPitch: !!linkData?.pitch_message,
+      hasRecordedVideo: !!linkData?.pitch_recorded_video_url,
     });
 
     return new Response(
@@ -153,6 +154,7 @@ Deno.serve(async (req) => {
           pitchMessage: linkData?.pitch_message || null,
           pitchImageUrl: linkData?.pitch_image_url || null,
           pitchVideoUrl: linkData?.pitch_video_url || null,
+          pitchRecordedVideoUrl: linkData?.pitch_recorded_video_url || null,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

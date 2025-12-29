@@ -30,6 +30,7 @@ interface CampaignStat {
   pitchMessage: string | null;
   pitchImageUrl: string | null;
   pitchVideoUrl: string | null;
+  pitchRecordedVideoUrl: string | null;
 }
 
 export default function MyFundraising() {
@@ -105,7 +106,7 @@ export default function MyFundraising() {
         
         const { data: linkData } = await supabase
           .from('roster_member_campaign_links')
-          .select('slug, pitch_message, pitch_image_url, pitch_video_url')
+          .select('slug, pitch_message, pitch_image_url, pitch_video_url, pitch_recorded_video_url')
           .eq('campaign_id', campaign.id)
           .eq('roster_member_id', rosterMembership.id)
           .single();
@@ -136,6 +137,7 @@ export default function MyFundraising() {
           pitchMessage: linkData.pitch_message,
           pitchImageUrl: linkData.pitch_image_url,
           pitchVideoUrl: linkData.pitch_video_url,
+          pitchRecordedVideoUrl: linkData.pitch_recorded_video_url,
           ...statsData,
         };
       });
@@ -394,6 +396,7 @@ export default function MyFundraising() {
                 message: editingPitch.pitchMessage,
                 imageUrl: editingPitch.pitchImageUrl,
                 videoUrl: editingPitch.pitchVideoUrl,
+                recordedVideoUrl: editingPitch.pitchRecordedVideoUrl,
               }}
               onSave={() => {
                 setEditingPitch(null);
