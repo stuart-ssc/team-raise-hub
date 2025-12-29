@@ -48,6 +48,7 @@ export default function Campaigns() {
   const [showAddCampaign, setShowAddCampaign] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [managingCampaignId, setManagingCampaignId] = useState<string | null>(null);
+  const [publishingCampaign, setPublishingCampaign] = useState<Campaign | null>(null);
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup, groups } = useActiveGroup();
   const { toast } = useToast();
@@ -604,6 +605,22 @@ export default function Campaigns() {
                                   Preview Campaign Page
                                 </DropdownMenuItem>
                               )}
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
+                                onClick={() => setPublishingCampaign(campaign)}
+                              >
+                                {campaign.publication_status === 'published' ? (
+                                  <>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Unpublish Campaign
+                                  </>
+                                ) : (
+                                  <>
+                                    <Globe className="mr-2 h-4 w-4" />
+                                    Publish Campaign
+                                  </>
+                                )}
+                              </DropdownMenuItem>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <DropdownMenuItem 
@@ -677,6 +694,23 @@ export default function Campaigns() {
                 publication_status: editingCampaign.publication_status || 'draft',
               } : null}
               manageCampaignId={managingCampaignId}
+            />
+          )}
+          
+          {publishingCampaign && (
+            <CampaignPublicationControl
+              campaignId={publishingCampaign.id}
+              campaignName={publishingCampaign.name}
+              groupId={publishingCampaign.group_id || ""}
+              currentStatus={publishingCampaign.publication_status}
+              enableRosterAttribution={publishingCampaign.enable_roster_attribution}
+              onStatusChange={() => {
+                fetchCampaigns();
+                setPublishingCampaign(null);
+              }}
+              triggerOpen={true}
+              onClose={() => setPublishingCampaign(null)}
+              hideButton={true}
             />
           )}
         </div>

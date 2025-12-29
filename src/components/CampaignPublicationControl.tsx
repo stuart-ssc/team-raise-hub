@@ -21,6 +21,9 @@ interface CampaignPublicationControlProps {
   currentStatus: string;
   enableRosterAttribution?: boolean;
   onStatusChange: () => void;
+  triggerOpen?: boolean;
+  onClose?: () => void;
+  hideButton?: boolean;
 }
 
 interface PublicationRequirement {
@@ -36,8 +39,11 @@ export const CampaignPublicationControl = ({
   currentStatus,
   enableRosterAttribution,
   onStatusChange,
+  triggerOpen = false,
+  onClose,
+  hideButton = false,
 }: CampaignPublicationControlProps) => {
-  const [showDialog, setShowDialog] = useState(false);
+  const [showDialog, setShowDialog] = useState(triggerOpen);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
   const [requirements, setRequirements] = useState<PublicationRequirement[]>([]);
@@ -200,20 +206,29 @@ export const CampaignPublicationControl = ({
     }
   };
 
+  const handleDialogChange = (open: boolean) => {
+    setShowDialog(open);
+    if (!open && onClose) {
+      onClose();
+    }
+  };
+
   return (
     <>
-      <div className="flex items-center gap-2">
-        {getStatusBadge(currentStatus)}
-        <Button
-          variant={currentStatus === 'published' ? 'outline' : 'default'}
-          size="sm"
-          onClick={() => setShowDialog(true)}
-        >
-          {currentStatus === 'published' ? 'Unpublish' : 'Publish'}
-        </Button>
-      </div>
+      {!hideButton && (
+        <div className="flex items-center gap-2">
+          {getStatusBadge(currentStatus)}
+          <Button
+            variant={currentStatus === 'published' ? 'outline' : 'default'}
+            size="sm"
+            onClick={() => setShowDialog(true)}
+          >
+            {currentStatus === 'published' ? 'Unpublish' : 'Publish'}
+          </Button>
+        </div>
+      )}
 
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      <Dialog open={showDialog} onOpenChange={handleDialogChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
