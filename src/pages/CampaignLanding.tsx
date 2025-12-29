@@ -81,7 +81,14 @@ interface CustomField {
 const CampaignLanding = () => {
   const { slug, rosterMemberSlug } = useParams<{ slug: string; rosterMemberSlug?: string }>();
   const { toast } = useToast();
-  const [attributedRosterMember, setAttributedRosterMember] = useState<any>(null);
+  const [attributedRosterMember, setAttributedRosterMember] = useState<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    pitchMessage?: string | null;
+    pitchImageUrl?: string | null;
+    pitchVideoUrl?: string | null;
+  } | null>(null);
   const [campaign, setCampaign] = useState<CampaignData | null>(null);
   const [campaignItems, setCampaignItems] = useState<CampaignItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -141,6 +148,9 @@ const CampaignLanding = () => {
             id: data.rosterMember.id,
             firstName: data.rosterMember.firstName,
             lastName: data.rosterMember.lastName,
+            pitchMessage: data.rosterMember.pitchMessage,
+            pitchImageUrl: data.rosterMember.pitchImageUrl,
+            pitchVideoUrl: data.rosterMember.pitchVideoUrl,
           });
         } else {
           console.log('No matching roster member found');
@@ -573,14 +583,65 @@ const CampaignLanding = () => {
         </div>
       </div>
 
-      {/* Attribution Banner */}
+      {/* Personal Pitch Section */}
       {attributedRosterMember && (
         <div className="max-w-6xl mx-auto px-6 pt-6">
-          <Alert className="bg-primary/10 border-primary/20">
-            <AlertDescription className="text-center font-medium">
-              🎉 You're supporting <span className="font-bold">{attributedRosterMember.firstName} {attributedRosterMember.lastName}</span>!
-            </AlertDescription>
-          </Alert>
+          <Card className="bg-primary/5 border-primary/20 overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row gap-6 items-center">
+                {/* Photo */}
+                {attributedRosterMember.pitchImageUrl && (
+                  <div className="flex-shrink-0">
+                    <img 
+                      src={attributedRosterMember.pitchImageUrl} 
+                      alt={`${attributedRosterMember.firstName} ${attributedRosterMember.lastName}`}
+                      className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-background shadow-lg"
+                    />
+                  </div>
+                )}
+                
+                <div className="flex-1 text-center md:text-left">
+                  {/* Attribution */}
+                  <p className="text-sm text-muted-foreground mb-1">
+                    🎉 You're supporting
+                  </p>
+                  <h3 className="text-xl font-bold mb-3">
+                    {attributedRosterMember.firstName} {attributedRosterMember.lastName}
+                  </h3>
+                  
+                  {/* Personal Message */}
+                  {attributedRosterMember.pitchMessage && (
+                    <blockquote className="italic text-muted-foreground border-l-4 border-primary/30 pl-4 py-2">
+                      "{attributedRosterMember.pitchMessage}"
+                    </blockquote>
+                  )}
+                </div>
+              </div>
+              
+              {/* Video */}
+              {attributedRosterMember.pitchVideoUrl && (() => {
+                const url = attributedRosterMember.pitchVideoUrl;
+                const ytMatch = url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/);
+                const vimeoMatch = url?.match(/(?:vimeo\.com\/)(\d+)/);
+                const embedUrl = ytMatch 
+                  ? `https://www.youtube.com/embed/${ytMatch[1]}` 
+                  : vimeoMatch 
+                    ? `https://player.vimeo.com/video/${vimeoMatch[1]}`
+                    : null;
+                
+                return embedUrl ? (
+                  <div className="mt-4 aspect-video rounded-lg overflow-hidden max-w-2xl mx-auto">
+                    <iframe
+                      src={embedUrl}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                ) : null;
+              })()}
+            </CardContent>
+          </Card>
         </div>
       )}
 
