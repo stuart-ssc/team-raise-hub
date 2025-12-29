@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FormDescription } from "@/components/ui/form";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { SizeVariantsEditor, SizeVariant } from "@/components/SizeVariantsEditor";
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
   description: z.string().optional(),
@@ -102,6 +103,14 @@ interface CampaignType {
   name: string;
 }
 
+interface SizeVariantData {
+  id?: string;
+  size: string;
+  quantity_offered: number;
+  quantity_available: number;
+  display_order: number;
+}
+
 interface CampaignItem {
   id?: string;
   name: string;
@@ -116,6 +125,8 @@ interface CampaignItem {
   image?: string;
   isRecurring?: boolean;
   recurringInterval?: 'month' | 'year';
+  hasVariants?: boolean;
+  variants?: SizeVariantData[];
 }
 
 interface CustomField {
@@ -152,6 +163,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [originalQuantityOffered, setOriginalQuantityOffered] = useState<number | null>(null);
+  const [sizeVariants, setSizeVariants] = useState<SizeVariant[]>([]);
+  const [hasVariants, setHasVariants] = useState(false);
   const { organizationUser } = useOrganizationUser();
   const { toast } = useToast();
   const campaignForm = useForm<z.infer<typeof campaignSchema>>({
@@ -264,23 +277,37 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         return;
       }
 
-      const formattedItems: CampaignItem[] = (data || []).map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        cost: item.cost,
-        quantityOffered: item.quantity_offered,
-        quantityAvailable: item.quantity_available,
-        maxItemsPurchased: item.max_items_purchased,
-        size: item.size,
-        eventStartDate: item.event_start_date,
-        eventEndDate: item.event_end_date,
-        image: item.image,
-        isRecurring: item.is_recurring || false,
-        recurringInterval: item.recurring_interval,
+      // Fetch variants for items that have them
+      const itemsWithVariants = await Promise.all((data || []).map(async (item: any) => {
+        let variants: SizeVariantData[] = [];
+        if (item.has_variants) {
+          const { data: variantsData } = await supabase
+            .from("campaign_item_variants")
+            .select("*")
+            .eq("campaign_item_id", item.id)
+            .order("display_order");
+          variants = variantsData || [];
+        }
+        return {
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          cost: item.cost,
+          quantityOffered: item.quantity_offered,
+          quantityAvailable: item.quantity_available,
+          maxItemsPurchased: item.max_items_purchased,
+          size: item.size,
+          eventStartDate: item.event_start_date,
+          eventEndDate: item.event_end_date,
+          image: item.image,
+          isRecurring: item.is_recurring || false,
+          recurringInterval: item.recurring_interval,
+          hasVariants: item.has_variants || false,
+          variants: variants,
+        };
       }));
 
-      setCampaignItems(formattedItems);
+      setCampaignItems(itemsWithVariants);
     } catch (error) {
       console.error("Error fetching campaign items:", error);
     }
@@ -665,23 +692,29 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         imageUrl = await uploadImage(imageFile);
       }
 
-      const quantityOffered = parseInt(values.quantityOffered);
-      let quantityAvailable = parseInt(values.quantityAvailable);
+      // Calculate totals from variants if using size variants
+      let quantityOffered = parseInt(values.quantityOffered) || 0;
+      let quantityAvailable = parseInt(values.quantityAvailable) || 0;
 
-      // Auto-fill logic for quantity available
-      if (editingItem && originalQuantityOffered !== null) {
-        // Editing existing item - calculate delta if offered increased
-        const delta = quantityOffered - originalQuantityOffered;
-        if (delta > 0) {
-          // More inventory added - increase available by the delta
-          const currentAvailable = editingItem.quantityAvailable;
-          quantityAvailable = currentAvailable + delta;
-        }
-      } else if (!editingItem) {
-        // New item - auto-fill available to match offered if not manually set differently
-        // If the user didn't change available from offered, keep them in sync
-        if (values.quantityAvailable === values.quantityOffered) {
-          quantityAvailable = quantityOffered;
+      if (hasVariants && sizeVariants.length > 0) {
+        // Sum up from variants
+        quantityOffered = sizeVariants.reduce((sum, v) => sum + v.quantity_offered, 0);
+        quantityAvailable = sizeVariants.reduce((sum, v) => sum + v.quantity_available, 0);
+      } else {
+        // Auto-fill logic for quantity available (non-variant items)
+        if (editingItem && originalQuantityOffered !== null) {
+          // Editing existing item - calculate delta if offered increased
+          const delta = quantityOffered - originalQuantityOffered;
+          if (delta > 0) {
+            // More inventory added - increase available by the delta
+            const currentAvailable = editingItem.quantityAvailable;
+            quantityAvailable = currentAvailable + delta;
+          }
+        } else if (!editingItem) {
+          // New item - auto-fill available to match offered if not manually set differently
+          if (values.quantityAvailable === values.quantityOffered) {
+            quantityAvailable = quantityOffered;
+          }
         }
       }
 
@@ -692,13 +725,16 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         quantity_offered: quantityOffered,
         quantity_available: quantityAvailable,
         max_items_purchased: values.maxItemsPurchased ? parseInt(values.maxItemsPurchased) : null,
-        size: values.size || null,
+        size: hasVariants ? null : (values.size || null), // Don't use size field if using variants
         event_start_date: values.eventStartDate || null,
         event_end_date: values.eventEndDate || null,
         image: imageUrl || null,
         is_recurring: values.isRecurring || false,
         recurring_interval: values.isRecurring ? values.recurringInterval : null,
+        has_variants: hasVariants,
       };
+
+      let savedItemId: string | null = null;
 
       if (editingItem) {
         // Update existing item
@@ -716,6 +752,16 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
           });
           return;
         }
+        savedItemId = editingItem.id!;
+
+        // Handle variants for existing item
+        if (hasVariants) {
+          // Delete existing variants and re-insert
+          await supabase
+            .from("campaign_item_variants")
+            .delete()
+            .eq("campaign_item_id", savedItemId);
+        }
 
         toast({
           title: "Success",
@@ -723,11 +769,13 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         });
       } else {
         // Create new item
-        const { error } = await supabase
+        const { data: newItem, error } = await supabase
           .from("campaign_items")
-          .insert([{ ...itemData, campaign_id: createdCampaignId }]);
+          .insert([{ ...itemData, campaign_id: createdCampaignId }])
+          .select("id")
+          .single();
 
-        if (error) {
+        if (error || !newItem) {
           console.error("Error creating campaign item:", error);
           toast({
             title: "Error",
@@ -736,11 +784,36 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
           });
           return;
         }
+        savedItemId = newItem.id;
 
         toast({
           title: "Success",
           description: "Campaign item added successfully!",
         });
+      }
+
+      // Save variants if using size variants
+      if (hasVariants && sizeVariants.length > 0 && savedItemId) {
+        const variantsToInsert = sizeVariants.map((v, index) => ({
+          campaign_item_id: savedItemId,
+          size: v.size,
+          quantity_offered: v.quantity_offered,
+          quantity_available: v.quantity_available,
+          display_order: index,
+        }));
+
+        const { error: variantError } = await supabase
+          .from("campaign_item_variants")
+          .insert(variantsToInsert);
+
+        if (variantError) {
+          console.error("Error saving variants:", variantError);
+          toast({
+            title: "Warning",
+            description: "Item saved but size variants may not have saved correctly.",
+            variant: "destructive",
+          });
+        }
       }
 
       // Refresh items list, clear form, and reset editing state
@@ -762,6 +835,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       setEditingItem(null);
       setImageFile(null);
       setOriginalQuantityOffered(null);
+      setSizeVariants([]);
+      setHasVariants(false);
     } catch (error) {
       console.error("Error with campaign item:", error);
       toast({
@@ -778,6 +853,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     setEditingItem(item);
     setImageFile(null);
     setOriginalQuantityOffered(item.quantityOffered);
+    setHasVariants(item.hasVariants || false);
+    setSizeVariants(item.variants || []);
     setAccordionValue("add-item"); // Expand accordion when editing
     itemForm.reset({
       name: item.name,
@@ -1767,57 +1844,86 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                               </div>
                             )}
 
-                            <div className="grid grid-cols-3 gap-4">
-                              {/* Size field - only show for Merchandise Sales */}
-                              {campaignTypeName === "Merchandise Sale" && (
+                            {/* Size variants toggle and editor - only show for Merchandise Sales */}
+                            {campaignTypeName === "Merchandise Sale" && (
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between rounded-lg border p-4">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-base">This item has size variants</FormLabel>
+                                    <FormDescription>
+                                      Enable to track inventory per size (e.g., S, M, L, XL)
+                                    </FormDescription>
+                                  </div>
+                                  <Switch
+                                    checked={hasVariants}
+                                    onCheckedChange={(checked) => {
+                                      setHasVariants(checked);
+                                      if (!checked) {
+                                        setSizeVariants([]);
+                                      }
+                                    }}
+                                  />
+                                </div>
+
+                                {hasVariants ? (
+                                  <SizeVariantsEditor
+                                    variants={sizeVariants}
+                                    onChange={setSizeVariants}
+                                    disabled={uploading}
+                                  />
+                                ) : (
+                                  <FormField
+                                    control={itemForm.control}
+                                    name="size"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Size (Optional)</FormLabel>
+                                        <FormControl>
+                                          <Input placeholder="e.g. One Size, Adult" {...field} />
+                                        </FormControl>
+                                        <FormDescription>
+                                          Use this for items that have a single size or no size variation
+                                        </FormDescription>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                )}
+                              </div>
+                            )}
+
+                            {/* Event dates - only show for Events */}
+                            {campaignTypeName === "Event" && (
+                              <div className="grid grid-cols-2 gap-4">
                                 <FormField
                                   control={itemForm.control}
-                                  name="size"
+                                  name="eventStartDate"
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Size</FormLabel>
+                                      <FormLabel>Event Start Date</FormLabel>
                                       <FormControl>
-                                        <Input placeholder="e.g. Small, Medium, Large" {...field} />
+                                        <Input type="date" {...field} />
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
                                   )}
                                 />
-                              )}
 
-                              {/* Event dates - only show for Events */}
-                              {campaignTypeName === "Event" && (
-                                <>
-                                  <FormField
-                                    control={itemForm.control}
-                                    name="eventStartDate"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Event Start Date</FormLabel>
-                                        <FormControl>
-                                          <Input type="date" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-
-                                  <FormField
-                                    control={itemForm.control}
-                                    name="eventEndDate"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Event End Date</FormLabel>
-                                        <FormControl>
-                                          <Input type="date" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                </>
-                              )}
-                            </div>
+                                <FormField
+                                  control={itemForm.control}
+                                  name="eventEndDate"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Event End Date</FormLabel>
+                                      <FormControl>
+                                        <Input type="date" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            )}
                           </>
                         );
                       })()}
