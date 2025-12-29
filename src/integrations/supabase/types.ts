@@ -2676,22 +2676,34 @@ export type Database = {
           campaign_id: string
           created_at: string | null
           id: string
+          pitch_image_url: string | null
+          pitch_message: string | null
+          pitch_video_url: string | null
           roster_member_id: string
           slug: string
+          updated_at: string | null
         }
         Insert: {
           campaign_id: string
           created_at?: string | null
           id?: string
+          pitch_image_url?: string | null
+          pitch_message?: string | null
+          pitch_video_url?: string | null
           roster_member_id: string
           slug: string
+          updated_at?: string | null
         }
         Update: {
           campaign_id?: string
           created_at?: string | null
           id?: string
+          pitch_image_url?: string | null
+          pitch_message?: string | null
+          pitch_video_url?: string | null
           roster_member_id?: string
           slug?: string
+          updated_at?: string | null
         }
         Relationships: [
           {

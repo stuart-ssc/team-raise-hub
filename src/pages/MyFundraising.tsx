@@ -5,12 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trophy, TrendingUp, Users, Copy, Share2, ExternalLink, MessageSquare } from "lucide-react";
+import { Trophy, TrendingUp, Users, Copy, Share2, ExternalLink, MessageSquare, Edit } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { PitchEditor } from "@/components/PitchEditor";
 import QRCode from "react-qr-code";
 interface CampaignStat {
   campaignId: string;
@@ -25,6 +27,9 @@ interface CampaignStat {
   totalParticipants: number;
   personalGoal: number;
   percentToGoal: number;
+  pitchMessage: string | null;
+  pitchImageUrl: string | null;
+  pitchVideoUrl: string | null;
 }
 
 export default function MyFundraising() {
@@ -34,6 +39,7 @@ export default function MyFundraising() {
   const [stats, setStats] = useState<CampaignStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [showQRCode, setShowQRCode] = useState<string | null>(null);
+  const [editingPitch, setEditingPitch] = useState<CampaignStat | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -99,7 +105,7 @@ export default function MyFundraising() {
         
         const { data: linkData } = await supabase
           .from('roster_member_campaign_links')
-          .select('slug')
+          .select('slug, pitch_message, pitch_image_url, pitch_video_url')
           .eq('campaign_id', campaign.id)
           .eq('roster_member_id', rosterMembership.id)
           .single();
@@ -127,6 +133,9 @@ export default function MyFundraising() {
           campaignSlug: campaign.slug,
           groupDirections: campaign.group_directions,
           personalUrl: `${window.location.origin}/c/${campaign.slug}/${linkData.slug}`,
+          pitchMessage: linkData.pitch_message,
+          pitchImageUrl: linkData.pitch_image_url,
+          pitchVideoUrl: linkData.pitch_video_url,
           ...statsData,
         };
       });
@@ -341,14 +350,25 @@ export default function MyFundraising() {
                           <ExternalLink className="h-4 w-4" />
                         </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowQRCode(showQRCode === stat.personalUrl ? null : stat.personalUrl)}
-                        className="w-full"
-                      >
-                        {showQRCode === stat.personalUrl ? 'Hide' : 'Show'} QR Code
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowQRCode(showQRCode === stat.personalUrl ? null : stat.personalUrl)}
+                          className="flex-1"
+                        >
+                          {showQRCode === stat.personalUrl ? 'Hide' : 'Show'} QR Code
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setEditingPitch(stat)}
+                          className="flex-1"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          {stat.pitchMessage ? 'Edit' : 'Add'} Personal Pitch
+                        </Button>
+                      </div>
                       {showQRCode === stat.personalUrl && (
                         <div className="flex justify-center p-4 bg-white rounded-md">
                           <QRCode value={stat.personalUrl} size={200} />
@@ -362,6 +382,28 @@ export default function MyFundraising() {
           </>
         )}
       </div>
+
+      {/* Pitch Editor Dialog */}
+      <Dialog open={!!editingPitch} onOpenChange={(open) => !open && setEditingPitch(null)}>
+        <DialogContent className="max-w-lg">
+          {editingPitch && (
+            <PitchEditor
+              campaignId={editingPitch.campaignId}
+              campaignName={editingPitch.campaignName}
+              initialPitch={{
+                message: editingPitch.pitchMessage,
+                imageUrl: editingPitch.pitchImageUrl,
+                videoUrl: editingPitch.pitchVideoUrl,
+              }}
+              onSave={() => {
+                setEditingPitch(null);
+                fetchFundraisingStats();
+              }}
+              onClose={() => setEditingPitch(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardPageLayout>
   );
 }

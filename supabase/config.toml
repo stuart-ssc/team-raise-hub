@@ -194,3 +194,6 @@ verify_jwt = false
 
 [functions.get-profile-emails]
 verify_jwt = true
+
+[functions.save-roster-pitch]
+verify_jwt = true
