@@ -13,12 +13,12 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Edit, Plus, Info, RefreshCw } from "lucide-react";
+import { Trash2, Edit, Plus, Info, RefreshCw, HelpCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FormDescription } from "@/components/ui/form";
-
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
   description: z.string().optional(),
@@ -131,9 +131,9 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
   const [slugExists, setSlugExists] = useState(false);
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [originalQuantityOffered, setOriginalQuantityOffered] = useState<number | null>(null);
   const { organizationUser } = useOrganizationUser();
   const { toast } = useToast();
-
   const campaignForm = useForm<z.infer<typeof campaignSchema>>({
     resolver: zodResolver(campaignSchema),
     defaultValues: {
@@ -645,12 +645,32 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         imageUrl = await uploadImage(imageFile);
       }
 
+      const quantityOffered = parseInt(values.quantityOffered);
+      let quantityAvailable = parseInt(values.quantityAvailable);
+
+      // Auto-fill logic for quantity available
+      if (editingItem && originalQuantityOffered !== null) {
+        // Editing existing item - calculate delta if offered increased
+        const delta = quantityOffered - originalQuantityOffered;
+        if (delta > 0) {
+          // More inventory added - increase available by the delta
+          const currentAvailable = editingItem.quantityAvailable;
+          quantityAvailable = currentAvailable + delta;
+        }
+      } else if (!editingItem) {
+        // New item - auto-fill available to match offered if not manually set differently
+        // If the user didn't change available from offered, keep them in sync
+        if (values.quantityAvailable === values.quantityOffered) {
+          quantityAvailable = quantityOffered;
+        }
+      }
+
       const itemData = {
         name: values.name,
         description: values.description || null,
         cost: parseFloat(values.cost),
-        quantity_offered: parseInt(values.quantityOffered),
-        quantity_available: parseInt(values.quantityAvailable),
+        quantity_offered: quantityOffered,
+        quantity_available: quantityAvailable,
         max_items_purchased: values.maxItemsPurchased ? parseInt(values.maxItemsPurchased) : null,
         size: values.size || null,
         event_start_date: values.eventStartDate || null,
@@ -721,6 +741,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       });
       setEditingItem(null);
       setImageFile(null);
+      setOriginalQuantityOffered(null);
     } catch (error) {
       console.error("Error with campaign item:", error);
       toast({
@@ -736,6 +757,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
   const editCampaignItem = (item: CampaignItem) => {
     setEditingItem(item);
     setImageFile(null);
+    setOriginalQuantityOffered(item.quantityOffered);
     setAccordionValue("add-item"); // Expand accordion when editing
     itemForm.reset({
       name: item.name,
@@ -1504,12 +1526,31 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                           name="quantityOffered"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Quantity Offered *</FormLabel>
+                              <div className="flex items-center gap-1">
+                                <FormLabel>Quantity Offered *</FormLabel>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="max-w-xs">Total inventory you have available to sell. This is your full stock count.</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
                               <FormControl>
                                 <Input 
                                   type="number" 
                                   placeholder="0" 
-                                  {...field} 
+                                  {...field}
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    // Auto-fill available when creating new items
+                                    if (!editingItem) {
+                                      itemForm.setValue("quantityAvailable", e.target.value);
+                                    }
+                                  }}
                                 />
                               </FormControl>
                               <FormMessage />
@@ -1522,7 +1563,19 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                           name="quantityAvailable"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Quantity Available *</FormLabel>
+                              <div className="flex items-center gap-1">
+                                <FormLabel>Quantity Available *</FormLabel>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="max-w-xs">Current stock remaining. Auto-fills when adding items. When you increase "Quantity Offered", the difference is added here.</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
                               <FormControl>
                                 <Input 
                                   type="number" 
@@ -1540,7 +1593,19 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                           name="maxItemsPurchased"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Max Items per Purchase</FormLabel>
+                              <div className="flex items-center gap-1">
+                                <FormLabel>Max per Purchase</FormLabel>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="max-w-xs">Optional limit on how many of this item a single customer can buy in one order.</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
                               <FormControl>
                                 <Input 
                                   type="number" 
