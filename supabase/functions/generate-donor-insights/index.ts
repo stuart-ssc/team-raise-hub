@@ -6,6 +6,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Calculate net amount from order items (excludes platform fees)
+// Amounts are stored in dollars, not cents
+function calculateItemsTotal(items: any[] | null): number {
+  if (!items || !Array.isArray(items)) return 0;
+  return items.reduce((total, item) => {
+    const price = Number(item.price_at_purchase) || 0;
+    const quantity = Number(item.quantity) || 1;
+    return total + (price * quantity);
+  }, 0);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -49,10 +60,10 @@ serve(async (req) => {
       });
     }
 
-    // Fetch donation history
+    // Fetch donation history with items for accurate amount calculation
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('total_amount, created_at, campaigns(name, group_id)')
+      .select('total_amount, items, created_at, campaigns(name, group_id)')
       .eq('customer_email', donor.email)
       .in('status', ['succeeded', 'completed'])
       .order('created_at', { ascending: false })
@@ -74,8 +85,8 @@ serve(async (req) => {
       console.error('Error fetching activities:', activitiesError);
     }
 
-    // Analyze donation patterns
-    const donationAmounts = orders?.map(o => o.total_amount / 100) || [];
+    // Analyze donation patterns - use items total (excludes platform fees)
+    const donationAmounts = orders?.map(o => calculateItemsTotal(o.items)) || [];
     const avgDonation = donationAmounts.length > 0 
       ? donationAmounts.reduce((a, b) => a + b, 0) / donationAmounts.length 
       : 0;
@@ -110,12 +121,12 @@ serve(async (req) => {
       a.activity_type === 'email_opened' || a.activity_type === 'email_clicked'
     ) || [];
 
-    // Build context for AI
+    // Build context for AI - amounts are already in dollars, no conversion needed
     const donorContext = {
       profile: {
         name: `${donor.first_name || ''} ${donor.last_name || ''}`.trim() || 'Anonymous',
         email: donor.email,
-        lifetimeValue: donor.lifetime_value / 100,
+        lifetimeValue: donor.lifetime_value || 0,
         donationCount: donor.donation_count,
         firstDonation: donor.first_donation_date,
         lastDonation: donor.last_donation_date,
