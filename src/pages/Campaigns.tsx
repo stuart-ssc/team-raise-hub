@@ -332,7 +332,7 @@ export default function Campaigns() {
                   </SelectContent>
                 </Select>
 
-                <Button onClick={() => setShowAddCampaign(true)} className="flex items-center gap-2 col-span-2 sm:col-span-1 w-full sm:w-auto sm:justify-self-end">
+                <Button onClick={() => setShowAddCampaign(true)} className="flex items-center gap-2 col-span-2 sm:col-span-1 lg:col-start-4 w-full sm:w-auto sm:justify-self-end">
                   <Plus className="h-4 w-4" />
                   Add Campaign
                 </Button>
