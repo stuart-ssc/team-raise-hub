@@ -88,6 +88,7 @@ const CampaignLanding = () => {
     pitchMessage?: string | null;
     pitchImageUrl?: string | null;
     pitchVideoUrl?: string | null;
+    pitchRecordedVideoUrl?: string | null;
   } | null>(null);
   const [campaign, setCampaign] = useState<CampaignData | null>(null);
   const [campaignItems, setCampaignItems] = useState<CampaignItem[]>([]);
@@ -151,6 +152,7 @@ const CampaignLanding = () => {
             pitchMessage: data.rosterMember.pitchMessage,
             pitchImageUrl: data.rosterMember.pitchImageUrl,
             pitchVideoUrl: data.rosterMember.pitchVideoUrl,
+            pitchRecordedVideoUrl: data.rosterMember.pitchRecordedVideoUrl,
           });
         } else {
           console.log('No matching roster member found');
@@ -618,8 +620,17 @@ const CampaignLanding = () => {
                 </div>
               </div>
               
-              {/* Video */}
-              {attributedRosterMember.pitchVideoUrl && (() => {
+              {/* Video - prioritize recorded video over external link */}
+              {attributedRosterMember.pitchRecordedVideoUrl ? (
+                <div className="mt-4 aspect-video rounded-lg overflow-hidden max-w-2xl mx-auto">
+                  <video
+                    src={attributedRosterMember.pitchRecordedVideoUrl}
+                    className="w-full h-full object-cover"
+                    controls
+                    playsInline
+                  />
+                </div>
+              ) : attributedRosterMember.pitchVideoUrl && (() => {
                 const url = attributedRosterMember.pitchVideoUrl;
                 const ytMatch = url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/);
                 const vimeoMatch = url?.match(/(?:vimeo\.com\/)(\d+)/);

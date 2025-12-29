@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { campaignId, pitchMessage, pitchImageUrl, pitchVideoUrl } = await req.json();
+    const { campaignId, pitchMessage, pitchImageUrl, pitchVideoUrl, pitchRecordedVideoUrl } = await req.json();
 
     if (!campaignId) {
       return new Response(
@@ -28,7 +28,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Saving roster pitch:', { campaignId, hasMessage: !!pitchMessage, hasImage: !!pitchImageUrl, hasVideo: !!pitchVideoUrl });
+    console.log('Saving roster pitch:', { 
+      campaignId, 
+      hasMessage: !!pitchMessage, 
+      hasImage: !!pitchImageUrl, 
+      hasVideo: !!pitchVideoUrl,
+      hasRecordedVideo: !!pitchRecordedVideoUrl 
+    });
 
     // Use service role client for all operations
     const supabaseAdmin = createClient(
@@ -89,6 +95,7 @@ Deno.serve(async (req) => {
         pitch_message: pitchMessage || null,
         pitch_image_url: pitchImageUrl || null,
         pitch_video_url: pitchVideoUrl || null,
+        pitch_recorded_video_url: pitchRecordedVideoUrl || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', existingLink.id);

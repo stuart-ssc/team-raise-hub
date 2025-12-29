@@ -8,7 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, X, Image, Video, MessageSquare, Eye } from "lucide-react";
+import { Loader2, Upload, X, Image, Video, MessageSquare, Eye, Link } from "lucide-react";
+import { VideoRecorder } from "@/components/VideoRecorder";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface PitchEditorProps {
   campaignId: string;
@@ -17,6 +19,7 @@ interface PitchEditorProps {
     message: string | null;
     imageUrl: string | null;
     videoUrl: string | null;
+    recordedVideoUrl?: string | null;
   };
   onSave: () => void;
   onClose: () => void;
@@ -35,6 +38,10 @@ export function PitchEditor({
   const [pitchMessage, setPitchMessage] = useState(initialPitch?.message || "");
   const [pitchImageUrl, setPitchImageUrl] = useState(initialPitch?.imageUrl || "");
   const [pitchVideoUrl, setPitchVideoUrl] = useState(initialPitch?.videoUrl || "");
+  const [pitchRecordedVideoUrl, setPitchRecordedVideoUrl] = useState(initialPitch?.recordedVideoUrl || "");
+  const [videoOption, setVideoOption] = useState<'record' | 'link'>(
+    initialPitch?.recordedVideoUrl ? 'record' : 'link'
+  );
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("edit");
@@ -110,7 +117,8 @@ export function PitchEditor({
           campaignId,
           pitchMessage: pitchMessage.trim() || null,
           pitchImageUrl: pitchImageUrl || null,
-          pitchVideoUrl: pitchVideoUrl || null,
+          pitchVideoUrl: videoOption === 'link' ? (pitchVideoUrl || null) : null,
+          pitchRecordedVideoUrl: videoOption === 'record' ? (pitchRecordedVideoUrl || null) : null,
         },
       });
 
@@ -239,21 +247,48 @@ export function PitchEditor({
             />
           </div>
 
-          {/* Video URL */}
-          <div className="space-y-2">
-            <Label htmlFor="video-url" className="flex items-center gap-2">
+          {/* Video Options */}
+          <div className="space-y-4">
+            <Label className="flex items-center gap-2">
               <Video className="h-4 w-4" />
-              Video Link (optional)
+              Video (optional)
             </Label>
-            <Input
-              id="video-url"
-              placeholder="Paste a YouTube or Vimeo link"
-              value={pitchVideoUrl}
-              onChange={(e) => setPitchVideoUrl(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Supports YouTube and Vimeo links
-            </p>
+            
+            <RadioGroup
+              value={videoOption}
+              onValueChange={(value) => setVideoOption(value as 'record' | 'link')}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="record" id="record" />
+                <Label htmlFor="record" className="cursor-pointer font-normal">Record a video</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="link" id="link" />
+                <Label htmlFor="link" className="cursor-pointer font-normal">Paste a link</Label>
+              </div>
+            </RadioGroup>
+
+            {videoOption === 'record' ? (
+              <VideoRecorder
+                campaignId={campaignId}
+                existingVideoUrl={pitchRecordedVideoUrl || null}
+                onVideoChange={(url) => setPitchRecordedVideoUrl(url || "")}
+                maxDuration={30}
+              />
+            ) : (
+              <div className="space-y-2">
+                <Input
+                  id="video-url"
+                  placeholder="Paste a YouTube or Vimeo link"
+                  value={pitchVideoUrl}
+                  onChange={(e) => setPitchVideoUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Supports YouTube and Vimeo links
+                </p>
+              </div>
+            )}
           </div>
         </TabsContent>
 
@@ -286,7 +321,19 @@ export function PitchEditor({
                 </p>
               )}
 
-              {embedUrl && (
+              {/* Show recorded video or embedded video */}
+              {videoOption === 'record' && pitchRecordedVideoUrl && (
+                <div className="aspect-video rounded-lg overflow-hidden">
+                  <video
+                    src={pitchRecordedVideoUrl}
+                    className="w-full h-full object-cover"
+                    controls
+                    playsInline
+                  />
+                </div>
+              )}
+
+              {videoOption === 'link' && embedUrl && (
                 <div className="aspect-video rounded-lg overflow-hidden">
                   <iframe
                     src={embedUrl}
@@ -297,7 +344,7 @@ export function PitchEditor({
                 </div>
               )}
 
-              {!pitchMessage && !pitchImageUrl && !pitchVideoUrl && (
+              {!pitchMessage && !pitchImageUrl && !pitchVideoUrl && !pitchRecordedVideoUrl && (
                 <Alert>
                   <AlertDescription>
                     Add a message, photo, or video to personalize your fundraising page!
