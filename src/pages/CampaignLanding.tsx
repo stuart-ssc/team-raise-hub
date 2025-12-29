@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Minus, Plus, ShoppingCart, Calendar, Target, MapPin, Info } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Calendar, Target, MapPin, Info, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BusinessInfoForm } from "@/components/BusinessInfoForm";
@@ -60,6 +60,8 @@ interface CampaignItem {
   max_items_purchased: number | null;
   image: string | null;
   size: string | null;
+  is_recurring: boolean | null;
+  recurring_interval: string | null;
 }
 
 interface CartItem extends CampaignItem {
@@ -246,6 +248,19 @@ const CampaignLanding = () => {
       toast({
         title: "No items selected",
         description: "Please select at least one item to proceed to checkout.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check for mixed cart (recurring and one-time items)
+    const hasRecurring = items.some(item => item.is_recurring);
+    const hasOneTime = items.some(item => !item.is_recurring);
+    
+    if (hasRecurring && hasOneTime) {
+      toast({
+        title: "Mixed cart not supported",
+        description: "Please checkout recurring and one-time items separately.",
         variant: "destructive"
       });
       return;
@@ -600,7 +615,15 @@ const CampaignLanding = () => {
                       </div>
                     )}
                     <CardHeader>
-                      <CardTitle className="line-clamp-2">{item.name}</CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="line-clamp-2">{item.name}</CardTitle>
+                        {item.is_recurring && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <RefreshCw className="h-3 w-3" />
+                            {item.recurring_interval === 'month' ? 'Monthly' : 'Annual'}
+                          </Badge>
+                        )}
+                      </div>
                       {item.description && (
                         <CardDescription className="line-clamp-3">
                           {item.description}
@@ -614,9 +637,16 @@ const CampaignLanding = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold">
-                          ${(item.cost || 0).toFixed(2)}
-                        </span>
+                        <div>
+                          <span className="text-2xl font-bold">
+                            ${(item.cost || 0).toFixed(2)}
+                          </span>
+                          {item.is_recurring && (
+                            <span className="text-sm text-muted-foreground ml-1">
+                              /{item.recurring_interval === 'month' ? 'mo' : 'yr'}
+                            </span>
+                          )}
+                        </div>
                         {item.quantity_available !== null && (
                           <span className="text-sm text-muted-foreground">
                             {item.quantity_available} available
@@ -669,17 +699,45 @@ const CampaignLanding = () => {
                     <span className="font-semibold">
                       {getSelectedItemsCount()} item{getSelectedItemsCount() !== 1 ? 's' : ''} selected
                     </span>
+                    {cart.some(item => item.selectedQuantity > 0 && item.is_recurring) && (
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <RefreshCw className="h-3 w-3" />
+                        Subscription
+                      </Badge>
+                    )}
                   </div>
                   
                   {/* Selected Items */}
                   <div className="space-y-2 mb-4">
                     {cart.filter(item => item.selectedQuantity > 0).map(item => (
                       <div key={item.id} className="flex justify-between text-sm">
-                        <span>{item.name} × {item.selectedQuantity}</span>
-                        <span>${((item.cost || 0) * item.selectedQuantity).toFixed(2)}</span>
+                        <span className="flex items-center gap-1">
+                          {item.name} × {item.selectedQuantity}
+                          {item.is_recurring && (
+                            <span className="text-muted-foreground text-xs">
+                              ({item.recurring_interval === 'month' ? 'monthly' : 'annually'})
+                            </span>
+                          )}
+                        </span>
+                        <span>
+                          ${((item.cost || 0) * item.selectedQuantity).toFixed(2)}
+                          {item.is_recurring && <span className="text-muted-foreground">/{item.recurring_interval === 'month' ? 'mo' : 'yr'}</span>}
+                        </span>
                       </div>
                     ))}
                   </div>
+
+                  {/* Recurring notice */}
+                  {cart.some(item => item.selectedQuantity > 0 && item.is_recurring) && (
+                    <Alert className="mb-4">
+                      <RefreshCw className="h-4 w-4" />
+                      <AlertDescription>
+                        This is a recurring donation. You will be charged{' '}
+                        {cart.find(item => item.selectedQuantity > 0 && item.is_recurring)?.recurring_interval === 'month' 
+                          ? 'monthly' : 'annually'} until you cancel.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   {/* Cost Breakdown */}
                   <div className="space-y-2 border-t pt-4">
@@ -707,7 +765,14 @@ const CampaignLanding = () => {
                     </div>
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
                       <span>Total</span>
-                      <span>${getTotalAmount().toFixed(2)}</span>
+                      <span>
+                        ${getTotalAmount().toFixed(2)}
+                        {cart.some(item => item.selectedQuantity > 0 && item.is_recurring) && (
+                          <span className="text-sm font-normal text-muted-foreground">
+                            /{cart.find(item => item.selectedQuantity > 0 && item.is_recurring)?.recurring_interval === 'month' ? 'mo' : 'yr'}
+                          </span>
+                        )}
+                      </span>
                     </div>
                   </div>
 
@@ -716,7 +781,9 @@ const CampaignLanding = () => {
                     className="w-full mt-4"
                     size="lg"
                   >
-                    Proceed to Checkout
+                    {cart.some(item => item.selectedQuantity > 0 && item.is_recurring) 
+                      ? 'Subscribe Now' 
+                      : 'Proceed to Checkout'}
                   </Button>
                 </CardContent>
               </Card>

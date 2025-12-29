@@ -634,10 +634,12 @@ export type Database = {
           event_start_date: string | null
           id: string
           image: string | null
+          is_recurring: boolean | null
           max_items_purchased: number | null
           name: string
           quantity_available: number | null
           quantity_offered: number | null
+          recurring_interval: string | null
           size: string | null
           updated_at: string
         }
@@ -650,10 +652,12 @@ export type Database = {
           event_start_date?: string | null
           id?: string
           image?: string | null
+          is_recurring?: boolean | null
           max_items_purchased?: number | null
           name: string
           quantity_available?: number | null
           quantity_offered?: number | null
+          recurring_interval?: string | null
           size?: string | null
           updated_at?: string
         }
@@ -666,10 +670,12 @@ export type Database = {
           event_start_date?: string | null
           id?: string
           image?: string | null
+          is_recurring?: boolean | null
           max_items_purchased?: number | null
           name?: string
           quantity_available?: number | null
           quantity_offered?: number | null
+          recurring_interval?: string | null
           size?: string | null
           updated_at?: string
         }
@@ -3191,6 +3197,102 @@ export type Database = {
             columns: ["stripe_connect_account_id"]
             isOneToOne: false
             referencedRelation: "stripe_connect_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          amount: number
+          campaign_id: string | null
+          campaign_item_id: string | null
+          cancel_at_period_end: boolean | null
+          canceled_at: string | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          donor_profile_id: string | null
+          id: string
+          interval: string
+          order_id: string | null
+          status: string
+          stripe_customer_id: string
+          stripe_price_id: string | null
+          stripe_subscription_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          campaign_id?: string | null
+          campaign_item_id?: string | null
+          cancel_at_period_end?: boolean | null
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          donor_profile_id?: string | null
+          id?: string
+          interval: string
+          order_id?: string | null
+          status?: string
+          stripe_customer_id: string
+          stripe_price_id?: string | null
+          stripe_subscription_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          campaign_id?: string | null
+          campaign_item_id?: string | null
+          cancel_at_period_end?: boolean | null
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          donor_profile_id?: string | null
+          id?: string
+          interval?: string
+          order_id?: string | null
+          status?: string
+          stripe_customer_id?: string
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "subscriptions_campaign_item_id_fkey"
+            columns: ["campaign_item_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_donor_profile_id_fkey"
+            columns: ["donor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "donor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
