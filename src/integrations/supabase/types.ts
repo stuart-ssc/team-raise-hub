@@ -624,6 +624,47 @@ export type Database = {
           },
         ]
       }
+      campaign_item_variants: {
+        Row: {
+          campaign_item_id: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          quantity_available: number
+          quantity_offered: number
+          size: string
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_item_id: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          quantity_available?: number
+          quantity_offered?: number
+          size: string
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_item_id?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          quantity_available?: number
+          quantity_offered?: number
+          size?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_item_variants_campaign_item_id_fkey"
+            columns: ["campaign_item_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_items: {
         Row: {
           campaign_id: string
@@ -632,6 +673,7 @@ export type Database = {
           description: string | null
           event_end_date: string | null
           event_start_date: string | null
+          has_variants: boolean | null
           id: string
           image: string | null
           is_recurring: boolean | null
@@ -650,6 +692,7 @@ export type Database = {
           description?: string | null
           event_end_date?: string | null
           event_start_date?: string | null
+          has_variants?: boolean | null
           id?: string
           image?: string | null
           is_recurring?: boolean | null
@@ -668,6 +711,7 @@ export type Database = {
           description?: string | null
           event_end_date?: string | null
           event_start_date?: string | null
+          has_variants?: boolean | null
           id?: string
           image?: string | null
           is_recurring?: boolean | null
