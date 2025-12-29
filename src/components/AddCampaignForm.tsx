@@ -49,6 +49,26 @@ const campaignItemSchema = z.object({
   image: z.string().optional(),
   isRecurring: z.boolean().optional(),
   recurringInterval: z.enum(['month', 'year']).optional(),
+}).superRefine((data, ctx) => {
+  const offered = parseInt(data.quantityOffered) || 0;
+  const available = parseInt(data.quantityAvailable) || 0;
+  const maxPerPurchase = data.maxItemsPurchased ? parseInt(data.maxItemsPurchased) : null;
+
+  if (available > offered) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Cannot exceed quantity offered",
+      path: ["quantityAvailable"],
+    });
+  }
+
+  if (maxPerPurchase !== null && maxPerPurchase > offered) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Cannot exceed quantity offered",
+      path: ["maxItemsPurchased"],
+    });
+  }
 });
 
 interface AddCampaignFormProps {
@@ -1571,7 +1591,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                                       <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p className="max-w-xs">Current stock remaining. Auto-fills when adding items. When you increase "Quantity Offered", the difference is added here.</p>
+                                      <p className="max-w-xs">Current stock remaining. Cannot exceed Quantity Offered. Auto-fills when adding items.</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
@@ -1601,7 +1621,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                                       <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p className="max-w-xs">Optional limit on how many of this item a single customer can buy in one order.</p>
+                                      <p className="max-w-xs">Optional limit per order. Cannot exceed Quantity Offered.</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
