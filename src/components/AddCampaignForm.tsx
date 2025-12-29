@@ -23,6 +23,7 @@ import { SizeVariantsEditor, SizeVariant } from "@/components/SizeVariantsEditor
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
   description: z.string().optional(),
+  groupDirections: z.string().optional(),
   thankYouMessage: z.string().optional(),
   goalAmount: z.string().optional(),
   startDate: z.string().optional(),
@@ -80,6 +81,7 @@ interface AddCampaignFormProps {
     id: string;
     name: string;
     description: string | null;
+    group_directions: string | null;
     thank_you_message: string | null;
     goal_amount: number | null;
     start_date: string | null;
@@ -172,6 +174,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     defaultValues: {
       name: "",
       description: "",
+      groupDirections: "",
       thankYouMessage: "",
       goalAmount: "",
       startDate: "",
@@ -514,6 +517,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         campaignForm.reset({
           name: editCampaign.name,
           description: editCampaign.description || "",
+          groupDirections: editCampaign.group_directions || "",
           thankYouMessage: editCampaign.thank_you_message || "",
           goalAmount: editCampaign.goal_amount?.toString() || "",
           startDate: editCampaign.start_date || "",
@@ -580,6 +584,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       const campaignData = {
         name: values.name,
         description: values.description || null,
+        group_directions: values.groupDirections || null,
         thank_you_message: values.thankYouMessage || null,
         goal_amount: values.goalAmount ? parseFloat(values.goalAmount) : null,
         start_date: values.startDate || null,
@@ -1017,6 +1022,32 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                         {...field} 
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Participant Directions - Internal Only */}
+              <FormField
+                control={campaignForm.control}
+                name="groupDirections"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Participant Directions
+                      <Badge variant="secondary" className="ml-2 text-xs">Internal Only</Badge>
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter instructions for your team (e.g., 'Each player should aim to sell 10 items by November 15th')" 
+                        className="resize-none"
+                        rows={3}
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      These instructions are only visible to your team members, not to donors.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -819,6 +819,7 @@ export type Database = {
           end_date: string | null
           file_upload_deadline_days: number | null
           goal_amount: number | null
+          group_directions: string | null
           group_id: string | null
           id: string
           image_url: string | null
@@ -841,6 +842,7 @@ export type Database = {
           end_date?: string | null
           file_upload_deadline_days?: number | null
           goal_amount?: number | null
+          group_directions?: string | null
           group_id?: string | null
           id?: string
           image_url?: string | null
@@ -863,6 +865,7 @@ export type Database = {
           end_date?: string | null
           file_upload_deadline_days?: number | null
           goal_amount?: number | null
+          group_directions?: string | null
           group_id?: string | null
           id?: string
           image_url?: string | null
