@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trophy, TrendingUp, Users, Copy, Share2, ExternalLink } from "lucide-react";
+import { Trophy, TrendingUp, Users, Copy, Share2, ExternalLink, MessageSquare } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ interface CampaignStat {
   campaignId: string;
   campaignName: string;
   campaignSlug: string;
+  groupDirections: string | null;
   personalUrl: string;
   totalRaised: number;
   donationCount: number;
@@ -78,7 +80,7 @@ export default function MyFundraising() {
 
       const { data: campaigns, error: campaignError } = await supabase
         .from('campaigns')
-        .select('id, name, slug')
+        .select('id, name, slug, group_directions')
         .in('group_id', groupIds)
         .eq('enable_roster_attribution', true)
         .eq('status', true);
@@ -123,6 +125,7 @@ export default function MyFundraising() {
           campaignId: campaign.id,
           campaignName: campaign.name,
           campaignSlug: campaign.slug,
+          groupDirections: campaign.group_directions,
           personalUrl: `${window.location.origin}/c/${campaign.slug}/${linkData.slug}`,
           ...statsData,
         };
@@ -266,6 +269,17 @@ export default function MyFundraising() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {/* Group Directions */}
+                    {stat.groupDirections && (
+                      <Alert className="bg-muted/50 border-primary/20">
+                        <MessageSquare className="h-4 w-4" />
+                        <AlertTitle className="text-sm font-medium">Instructions from your coach</AlertTitle>
+                        <AlertDescription className="text-sm whitespace-pre-wrap">
+                          {stat.groupDirections}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     {/* Progress */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
