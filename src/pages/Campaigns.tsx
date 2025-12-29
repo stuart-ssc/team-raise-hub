@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { AddCampaignForm } from "@/components/AddCampaignForm";
 import { CampaignPublicationControl } from "@/components/CampaignPublicationControl";
-import { ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Package, X, ExternalLink, Link as LinkIcon } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Package, X, ExternalLink, Link as LinkIcon, Globe, Eye, AlertCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Campaign {
@@ -501,7 +501,7 @@ export default function Campaigns() {
                         )}
                       </div>
                     </TableHead>
-                    <TableHead>Publication Status</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -543,14 +543,18 @@ export default function Campaigns() {
                           }
                         </TableCell>
                         <TableCell>
-                          <CampaignPublicationControl
-                            campaignId={campaign.id}
-                            campaignName={campaign.name}
-                            groupId={campaign.group_id || ""}
-                            currentStatus={campaign.publication_status}
-                            enableRosterAttribution={campaign.enable_roster_attribution}
-                            onStatusChange={fetchCampaigns}
-                          />
+                          <Badge 
+                            variant={campaign.publication_status === 'published' ? 'default' : 'outline'}
+                            className="gap-1"
+                          >
+                            {campaign.publication_status === 'published' ? (
+                              <><Globe className="h-3 w-3" /> Published</>
+                            ) : campaign.publication_status === 'pending_verification' ? (
+                              <><AlertCircle className="h-3 w-3" /> Pending</>
+                            ) : (
+                              <><Eye className="h-3 w-3" /> Draft</>
+                            )}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
