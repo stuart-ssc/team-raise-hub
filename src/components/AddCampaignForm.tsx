@@ -13,7 +13,8 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Edit, Plus, Info } from "lucide-react";
+import { Trash2, Edit, Plus, Info, RefreshCw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FormDescription } from "@/components/ui/form";
@@ -46,6 +47,8 @@ const campaignItemSchema = z.object({
   eventStartDate: z.string().optional(),
   eventEndDate: z.string().optional(),
   image: z.string().optional(),
+  isRecurring: z.boolean().optional(),
+  recurringInterval: z.enum(['month', 'year']).optional(),
 });
 
 interface AddCampaignFormProps {
@@ -91,6 +94,8 @@ interface CampaignItem {
   eventStartDate?: string;
   eventEndDate?: string;
   image?: string;
+  isRecurring?: boolean;
+  recurringInterval?: 'month' | 'year';
 }
 
 interface CustomField {
@@ -162,6 +167,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       eventStartDate: "",
       eventEndDate: "",
       image: "",
+      isRecurring: false,
+      recurringInterval: undefined,
     },
   });
 
@@ -249,6 +256,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         eventStartDate: item.event_start_date,
         eventEndDate: item.event_end_date,
         image: item.image,
+        isRecurring: item.is_recurring || false,
+        recurringInterval: item.recurring_interval,
       }));
 
       setCampaignItems(formattedItems);
@@ -647,6 +656,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         event_start_date: values.eventStartDate || null,
         event_end_date: values.eventEndDate || null,
         image: imageUrl || null,
+        is_recurring: values.isRecurring || false,
+        recurring_interval: values.isRecurring ? values.recurringInterval : null,
       };
 
       if (editingItem) {
@@ -705,6 +716,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         eventStartDate: "",
         eventEndDate: "",
         image: "",
+        isRecurring: false,
+        recurringInterval: undefined,
       });
       setEditingItem(null);
       setImageFile(null);
@@ -735,6 +748,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       eventStartDate: item.eventStartDate || "",
       eventEndDate: item.eventEndDate || "",
       image: item.image || "",
+      isRecurring: item.isRecurring || false,
+      recurringInterval: item.recurringInterval,
     });
   };
 
@@ -1375,6 +1390,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Cost</TableHead>
+                      <TableHead>Type</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1383,6 +1399,15 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                       <TableRow key={item.id}>
                         <TableCell>{item.name}</TableCell>
                         <TableCell>${item.cost.toFixed(2)}</TableCell>
+                        <TableCell>
+                          {item.isRecurring ? (
+                            <Badge variant="secondary">
+                              {item.recurringInterval === 'month' ? 'Monthly' : 'Annual'}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">One-time</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button
@@ -1597,57 +1622,118 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                         const campaignTypeName = currentCampaignType?.name;
 
                         return (
-                          <div className="grid grid-cols-3 gap-4">
-                            {/* Size field - only show for Merchandise Sales */}
-                            {campaignTypeName === "Merchandise Sale" && (
-                              <FormField
-                                control={itemForm.control}
-                                name="size"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Size</FormLabel>
-                                    <FormControl>
-                                      <Input placeholder="e.g. Small, Medium, Large" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
+                          <>
+                            {/* Recurring donation toggle - only show for Donations */}
+                            {campaignTypeName === "Donation" && (
+                              <div className="rounded-lg border p-4 space-y-4">
+                                <FormField
+                                  control={itemForm.control}
+                                  name="isRecurring"
+                                  render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between">
+                                      <div className="space-y-0.5">
+                                        <FormLabel className="text-base flex items-center gap-2">
+                                          <RefreshCw className="h-4 w-4" />
+                                          Recurring Donation
+                                        </FormLabel>
+                                        <FormDescription>
+                                          Allow donors to contribute on a recurring basis
+                                        </FormDescription>
+                                      </div>
+                                      <FormControl>
+                                        <Switch
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                        />
+                                      </FormControl>
+                                    </FormItem>
+                                  )}
+                                />
+
+                                {itemForm.watch("isRecurring") && (
+                                  <FormField
+                                    control={itemForm.control}
+                                    name="recurringInterval"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Billing Interval</FormLabel>
+                                        <Select 
+                                          onValueChange={field.onChange} 
+                                          value={field.value}
+                                        >
+                                          <FormControl>
+                                            <SelectTrigger>
+                                              <SelectValue placeholder="Select interval" />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            <SelectItem value="month">Monthly</SelectItem>
+                                            <SelectItem value="year">Annually</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                        <FormDescription>
+                                          How often the donor will be charged
+                                        </FormDescription>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
                                 )}
-                              />
+                              </div>
                             )}
 
-                            {/* Event dates - only show for Events */}
-                            {campaignTypeName === "Event" && (
-                              <>
+                            <div className="grid grid-cols-3 gap-4">
+                              {/* Size field - only show for Merchandise Sales */}
+                              {campaignTypeName === "Merchandise Sale" && (
                                 <FormField
                                   control={itemForm.control}
-                                  name="eventStartDate"
+                                  name="size"
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Event Start Date</FormLabel>
+                                      <FormLabel>Size</FormLabel>
                                       <FormControl>
-                                        <Input type="date" {...field} />
+                                        <Input placeholder="e.g. Small, Medium, Large" {...field} />
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
                                   )}
                                 />
+                              )}
 
-                                <FormField
-                                  control={itemForm.control}
-                                  name="eventEndDate"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Event End Date</FormLabel>
-                                      <FormControl>
-                                        <Input type="date" {...field} />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </>
-                            )}
-                          </div>
+                              {/* Event dates - only show for Events */}
+                              {campaignTypeName === "Event" && (
+                                <>
+                                  <FormField
+                                    control={itemForm.control}
+                                    name="eventStartDate"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Event Start Date</FormLabel>
+                                        <FormControl>
+                                          <Input type="date" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  <FormField
+                                    control={itemForm.control}
+                                    name="eventEndDate"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Event End Date</FormLabel>
+                                        <FormControl>
+                                          <Input type="date" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </>
+                              )}
+                            </div>
+                          </>
                         );
                       })()}
 

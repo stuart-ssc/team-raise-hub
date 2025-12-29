@@ -60,8 +60,9 @@ Deno.serve(async (req) => {
         // Extract customer details from Stripe session
         const customerEmail = session.customer_details?.email || session.customer_email || null;
         const customerName = session.customer_details?.name || null;
+        const isSubscription = session.metadata?.is_subscription === 'true';
 
-        console.log('Customer details from Stripe:', { customerEmail, customerName });
+        console.log('Customer details from Stripe:', { customerEmail, customerName, isSubscription });
 
         // Update order status and customer info
         const { error: orderError } = await supabaseAdmin
@@ -89,6 +90,7 @@ Deno.serve(async (req) => {
             platform_fee_amount,
             customer_email,
             customer_name,
+            items,
             campaigns!inner(
               group_id,
               groups!inner(organization_id)
@@ -109,7 +111,6 @@ Deno.serve(async (req) => {
 
           if (campaignError) {
             console.error('Error updating campaign amount:', campaignError);
-            // Non-fatal, continue
           }
 
           // Create or update donor profile
@@ -117,12 +118,10 @@ Deno.serve(async (req) => {
             const organizationId = (order.campaigns as any)?.groups?.organization_id;
             
             if (organizationId) {
-              // Parse first and last name from customer name
               const nameParts = (customerName || '').split(' ');
               const firstName = nameParts[0] || null;
               const lastName = nameParts.slice(1).join(' ') || null;
 
-              // Check if donor profile exists
               const { data: existingDonor } = await supabaseAdmin
                 .from('donor_profiles')
                 .select('id, donation_count, total_donations, lifetime_value')
@@ -130,8 +129,9 @@ Deno.serve(async (req) => {
                 .eq('organization_id', organizationId)
                 .single();
 
+              let donorProfileId: string | null = null;
+
               if (existingDonor) {
-                // Update existing donor profile
                 await supabaseAdmin
                   .from('donor_profiles')
                   .update({
@@ -145,9 +145,9 @@ Deno.serve(async (req) => {
                   })
                   .eq('id', existingDonor.id);
                 
+                donorProfileId = existingDonor.id;
                 console.log('Updated existing donor profile:', existingDonor.id);
               } else {
-                // Create new donor profile
                 const { data: newDonor, error: donorError } = await supabaseAdmin
                   .from('donor_profiles')
                   .insert({
@@ -167,7 +167,39 @@ Deno.serve(async (req) => {
                 if (donorError) {
                   console.error('Error creating donor profile:', donorError);
                 } else {
+                  donorProfileId = newDonor?.id;
                   console.log('Created new donor profile:', newDonor?.id);
+                }
+              }
+
+              // Create subscription record if this was a subscription checkout
+              if (isSubscription && session.subscription && donorProfileId) {
+                const subscriptionId = session.subscription as string;
+                const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+                
+                // Find the first recurring item from order
+                const recurringItem = (order.items as any[])?.find(item => item.is_recurring);
+                
+                const { error: subError } = await supabaseAdmin
+                  .from('subscriptions')
+                  .insert({
+                    order_id: orderId,
+                    donor_profile_id: donorProfileId,
+                    campaign_id: order.campaign_id,
+                    campaign_item_id: recurringItem?.campaign_item_id,
+                    stripe_subscription_id: subscriptionId,
+                    stripe_customer_id: session.customer as string,
+                    status: subscription.status,
+                    amount: netAmount,
+                    interval: recurringItem?.recurring_interval || 'month',
+                    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+                    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                  });
+
+                if (subError) {
+                  console.error('Error creating subscription record:', subError);
+                } else {
+                  console.log('Created subscription record for:', subscriptionId);
                 }
               }
             }
@@ -178,11 +210,105 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log('Processing customer.subscription.updated:', subscription.id);
+
+        const { error } = await supabaseAdmin
+          .from('subscriptions')
+          .update({
+            status: subscription.status,
+            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('stripe_subscription_id', subscription.id);
+
+        if (error) {
+          console.error('Error updating subscription:', error);
+        } else {
+          console.log('Subscription updated:', subscription.id);
+        }
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log('Processing customer.subscription.deleted:', subscription.id);
+
+        const { error } = await supabaseAdmin
+          .from('subscriptions')
+          .update({
+            status: 'canceled',
+            canceled_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('stripe_subscription_id', subscription.id);
+
+        if (error) {
+          console.error('Error canceling subscription:', error);
+        } else {
+          console.log('Subscription canceled:', subscription.id);
+        }
+        break;
+      }
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        console.log('Processing invoice.payment_succeeded:', invoice.id);
+
+        // Only process subscription renewal invoices (not the first one)
+        if (invoice.billing_reason === 'subscription_cycle' && invoice.subscription) {
+          const { data: sub } = await supabaseAdmin
+            .from('subscriptions')
+            .select('*, campaigns(group_id, groups(organization_id))')
+            .eq('stripe_subscription_id', invoice.subscription)
+            .single();
+
+          if (sub) {
+            // Update campaign amount_raised for recurring payment
+            const { error: campaignError } = await supabaseAdmin.rpc('increment_campaign_amount', {
+              campaign_id: sub.campaign_id,
+              amount: sub.amount,
+            });
+
+            if (campaignError) {
+              console.error('Error updating campaign amount for renewal:', campaignError);
+            }
+
+            // Update donor profile stats
+            if (sub.donor_profile_id) {
+              const { data: donor } = await supabaseAdmin
+                .from('donor_profiles')
+                .select('donation_count, total_donations, lifetime_value')
+                .eq('id', sub.donor_profile_id)
+                .single();
+
+              if (donor) {
+                await supabaseAdmin
+                  .from('donor_profiles')
+                  .update({
+                    donation_count: (donor.donation_count || 0) + 1,
+                    total_donations: (donor.total_donations || 0) + sub.amount,
+                    lifetime_value: (donor.lifetime_value || 0) + sub.amount,
+                    last_donation_date: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', sub.donor_profile_id);
+              }
+            }
+
+            console.log('Processed subscription renewal for:', invoice.subscription);
+          }
+        }
+        break;
+      }
+
       case 'account.updated': {
         const account = event.data.object as Stripe.Account;
         console.log('Processing account.updated:', account.id);
 
-        // Update stripe_connect_accounts
         const { error: updateError } = await supabaseAdmin
           .from('stripe_connect_accounts')
           .update({
@@ -198,7 +324,6 @@ Deno.serve(async (req) => {
           console.error('Error updating connect account:', updateError);
         }
 
-        // Also update payment_processor_config in organization/group
         if (account.charges_enabled) {
           const { data: connectAccount } = await supabaseAdmin
             .from('stripe_connect_accounts')
@@ -238,7 +363,6 @@ Deno.serve(async (req) => {
         const payout = event.data.object as Stripe.Payout;
         console.log('Processing payout event:', event.type, payout.id);
 
-        // Find the connected account
         const stripeAccountId = event.account;
         if (!stripeAccountId) {
           console.error('No account ID in payout event');
@@ -256,7 +380,6 @@ Deno.serve(async (req) => {
           break;
         }
 
-        // Upsert payout record
         const { error: payoutError } = await supabaseAdmin
           .from('stripe_payouts')
           .upsert({
@@ -284,7 +407,6 @@ Deno.serve(async (req) => {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         console.log('Processing payment_intent.succeeded:', paymentIntent.id);
         
-        // Update order with payment intent ID if not already set
         const orderId = paymentIntent.metadata?.order_id;
         if (orderId) {
           await supabaseAdmin
@@ -302,7 +424,6 @@ Deno.serve(async (req) => {
         const transfer = event.data.object as Stripe.Transfer;
         console.log('Processing transfer.created:', transfer.id);
         
-        // Update order with transfer ID
         const orderId = transfer.metadata?.order_id;
         if (orderId) {
           await supabaseAdmin
