@@ -15,8 +15,14 @@ const donorInfoSchema = z.object({
   email: z.string().email("Invalid email address").max(255),
   phone: z.string().max(20).optional(),
   createAccount: z.boolean(),
-  password: z.string().min(8, "Password must be at least 8 characters").optional(),
-  confirmPassword: z.string().optional(),
+  password: z.union([
+    z.string().length(0),
+    z.string().min(8, "Password must be at least 8 characters")
+  ]).optional(),
+  confirmPassword: z.union([
+    z.string().length(0),
+    z.string()
+  ]).optional(),
 }).refine((data) => {
   if (data.createAccount && !data.password) {
     return false;
