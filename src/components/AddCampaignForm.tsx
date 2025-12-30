@@ -873,6 +873,13 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       quantityAvailable = totalAvailable.toString();
     }
     
+    // Fix data integrity: available cannot exceed offered
+    const numOffered = parseInt(quantityOffered) || 0;
+    const numAvailable = parseInt(quantityAvailable) || 0;
+    if (numAvailable > numOffered) {
+      quantityAvailable = quantityOffered;
+    }
+    
     itemForm.reset({
       name: item.name,
       description: item.description || "",
@@ -1605,7 +1612,15 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                 </AccordionTrigger>
                 <AccordionContent>
                   <Form {...itemForm}>
-                    <form onSubmit={itemForm.handleSubmit(onItemSubmit)} className="space-y-4 border rounded-lg p-4">
+                    <form onSubmit={itemForm.handleSubmit(onItemSubmit, (errors) => {
+                      console.error("Form validation errors:", errors);
+                      const errorMessages = Object.values(errors).map(e => e?.message).filter(Boolean);
+                      toast({
+                        title: "Validation Error",
+                        description: errorMessages.length > 0 ? errorMessages.join(", ") : "Please check the form fields",
+                        variant: "destructive",
+                      });
+                    })} className="space-y-4 border rounded-lg p-4">
                       <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={itemForm.control}
