@@ -304,7 +304,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
           eventEndDate: item.event_end_date,
           image: item.image,
           isRecurring: item.is_recurring || false,
-          recurringInterval: item.recurring_interval,
+          recurringInterval: item.recurring_interval ?? undefined,
           hasVariants: item.has_variants || false,
           variants: variants,
         };
@@ -892,7 +892,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       eventEndDate: item.eventEndDate || "",
       image: item.image || "",
       isRecurring: item.isRecurring || false,
-      recurringInterval: item.recurringInterval,
+      recurringInterval: item.recurringInterval ?? undefined,
     });
   };
 
