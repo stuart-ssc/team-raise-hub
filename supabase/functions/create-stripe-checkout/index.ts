@@ -131,12 +131,17 @@ Deno.serve(async (req) => {
       const subtotal = itemCost * item.quantity;
       totalAmount += subtotal;
 
+      // Build product name - include size if variant
+      const productName = item.size 
+        ? `${campaignItem.name} (${item.size})`
+        : campaignItem.name;
+
       // Build Stripe line item
       const lineItem: any = {
         price_data: {
           currency: 'usd',
           product_data: {
-            name: campaignItem.name,
+            name: productName,
             description: campaignItem.description || undefined,
             images: campaignItem.image ? [campaignItem.image] : undefined,
           },
@@ -156,6 +161,8 @@ Deno.serve(async (req) => {
 
       return {
         campaign_item_id: item.id,
+        variant_id: item.variantId || null,
+        size: item.size || null,
         quantity: item.quantity,
         price_at_purchase: itemCost,
         is_recurring: campaignItem.is_recurring || false,
