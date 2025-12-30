@@ -499,6 +499,16 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     return () => subscription.unsubscribe();
   }, []);
 
+  // Sync size variant totals with form quantity fields for validation
+  useEffect(() => {
+    if (hasVariants && sizeVariants.length > 0) {
+      const totalOffered = sizeVariants.reduce((sum, v) => sum + v.quantity_offered, 0);
+      const totalAvailable = sizeVariants.reduce((sum, v) => sum + v.quantity_available, 0);
+      itemForm.setValue("quantityOffered", totalOffered.toString());
+      itemForm.setValue("quantityAvailable", totalAvailable.toString());
+    }
+  }, [hasVariants, sizeVariants]);
+
   useEffect(() => {
     if (open) {
       fetchGroups();
