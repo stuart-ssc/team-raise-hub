@@ -499,16 +499,6 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     return () => subscription.unsubscribe();
   }, []);
 
-  // Sync size variant totals with form quantity fields for validation
-  useEffect(() => {
-    if (hasVariants && sizeVariants.length > 0) {
-      const totalOffered = sizeVariants.reduce((sum, v) => sum + v.quantity_offered, 0);
-      const totalAvailable = sizeVariants.reduce((sum, v) => sum + v.quantity_available, 0);
-      itemForm.setValue("quantityOffered", totalOffered.toString());
-      itemForm.setValue("quantityAvailable", totalAvailable.toString());
-    }
-  }, [hasVariants, sizeVariants]);
-
   useEffect(() => {
     if (open) {
       fetchGroups();
@@ -871,12 +861,24 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     setHasVariants(item.hasVariants || false);
     setSizeVariants(item.variants || []);
     setAccordionValue("add-item"); // Expand accordion when editing
+    
+    // Calculate totals from variants if they exist (sync before reset)
+    let quantityOffered = item.quantityOffered.toString();
+    let quantityAvailable = item.quantityAvailable.toString();
+    
+    if (item.hasVariants && item.variants && item.variants.length > 0) {
+      const totalOffered = item.variants.reduce((sum, v) => sum + v.quantity_offered, 0);
+      const totalAvailable = item.variants.reduce((sum, v) => sum + v.quantity_available, 0);
+      quantityOffered = totalOffered.toString();
+      quantityAvailable = totalAvailable.toString();
+    }
+    
     itemForm.reset({
       name: item.name,
       description: item.description || "",
       cost: item.cost.toString(),
-      quantityOffered: item.quantityOffered.toString(),
-      quantityAvailable: item.quantityAvailable.toString(),
+      quantityOffered: quantityOffered,
+      quantityAvailable: quantityAvailable,
       maxItemsPurchased: item.maxItemsPurchased?.toString() || "",
       size: item.size || "",
       eventStartDate: item.eventStartDate || "",
@@ -1909,7 +1911,14 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                                 {hasVariants ? (
                                   <SizeVariantsEditor
                                     variants={sizeVariants}
-                                    onChange={setSizeVariants}
+                                    onChange={(newVariants) => {
+                                      setSizeVariants(newVariants);
+                                      // Synchronously update form fields for validation
+                                      const totalOffered = newVariants.reduce((sum, v) => sum + v.quantity_offered, 0);
+                                      const totalAvailable = newVariants.reduce((sum, v) => sum + v.quantity_available, 0);
+                                      itemForm.setValue("quantityOffered", totalOffered.toString());
+                                      itemForm.setValue("quantityAvailable", totalAvailable.toString());
+                                    }}
                                     disabled={uploading}
                                   />
                                 ) : (
