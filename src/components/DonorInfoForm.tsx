@@ -68,6 +68,7 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   
   // Login state
   const [showLoginForm, setShowLoginForm] = useState(false);
@@ -86,6 +87,8 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
         setIsLoggedIn(true);
         setLoggedInUserId(session.user.id);
         await populateFormFromUser(session.user.id, session.user.email || "");
+      } else {
+        setIsCheckingProfile(false);
       }
     };
     checkSession();
@@ -102,6 +105,7 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
       } else if (event === 'SIGNED_OUT') {
         setIsLoggedIn(false);
         setLoggedInUserId(null);
+        setIsCheckingProfile(false);
       }
     });
 
@@ -109,6 +113,7 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
   }, []);
 
   const populateFormFromUser = async (userId: string, email: string) => {
+    setIsCheckingProfile(true);
     try {
       // Get profile data
       const { data: profile } = await supabase
@@ -129,11 +134,33 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
         phone = donorProfile?.phone || "";
       }
 
+      const firstName = profile?.first_name || "";
+      const lastName = profile?.last_name || "";
+
+      // If we have all required info, auto-continue
+      if (firstName && lastName && email) {
+        toast({
+          title: "Welcome back!",
+          description: "Continuing with your saved information...",
+        });
+        
+        // Auto-proceed to next step
+        onComplete({
+          firstName,
+          lastName,
+          email,
+          phone: phone || undefined,
+          userId,
+        });
+        return;
+      }
+
+      // If profile is incomplete, show form with what we have
       setFormData(prev => ({
         ...prev,
-        firstName: profile?.first_name || prev.firstName,
-        lastName: profile?.last_name || prev.lastName,
-        email: email,
+        firstName,
+        lastName,
+        email,
         phone: phone || prev.phone,
         createAccount: false,
         password: "",
@@ -142,7 +169,7 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
 
       toast({
         title: "Welcome back!",
-        description: "Your information has been filled in.",
+        description: "Please complete your information below.",
       });
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -152,6 +179,8 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
         email: email,
         createAccount: false,
       }));
+    } finally {
+      setIsCheckingProfile(false);
     }
   };
 
@@ -297,6 +326,16 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
       setIsSubmitting(false);
     }
   };
+
+  // Show loading while checking profile
+  if (isCheckingProfile) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Checking your account...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
