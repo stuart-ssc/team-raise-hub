@@ -1916,8 +1916,8 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                                       // Synchronously update form fields for validation
                                       const totalOffered = newVariants.reduce((sum, v) => sum + v.quantity_offered, 0);
                                       const totalAvailable = newVariants.reduce((sum, v) => sum + v.quantity_available, 0);
-                                      itemForm.setValue("quantityOffered", totalOffered.toString());
-                                      itemForm.setValue("quantityAvailable", totalAvailable.toString());
+                                      itemForm.setValue("quantityOffered", totalOffered.toString(), { shouldValidate: true });
+                                      itemForm.setValue("quantityAvailable", totalAvailable.toString(), { shouldValidate: true });
                                     }}
                                     disabled={uploading}
                                   />
