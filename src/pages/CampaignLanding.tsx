@@ -1,3 +1,4 @@
+// Updated: Size variant selector feature - Dec 2024
 import { useState, useEffect } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
