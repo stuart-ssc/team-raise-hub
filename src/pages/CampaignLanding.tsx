@@ -50,6 +50,15 @@ interface CampaignData {
   } | null;
 }
 
+interface ItemVariant {
+  id: string;
+  campaign_item_id: string;
+  size: string;
+  quantity_offered: number;
+  quantity_available: number;
+  display_order: number | null;
+}
+
 interface CampaignItem {
   id: string;
   name: string;
@@ -62,10 +71,13 @@ interface CampaignItem {
   size: string | null;
   is_recurring: boolean | null;
   recurring_interval: string | null;
+  has_variants: boolean | null;
+  variants?: ItemVariant[];
 }
 
 interface CartItem extends CampaignItem {
   selectedQuantity: number;
+  selectedVariants?: { [variantId: string]: number };
 }
 
 interface CustomField {
@@ -201,8 +213,36 @@ const CampaignLanding = () => {
       if (itemsError) {
         console.error("Error fetching campaign items:", itemsError);
       } else {
-        setCampaignItems(itemsData || []);
-        setCart(itemsData?.map(item => ({ ...item, selectedQuantity: 0 })) || []);
+        // Fetch variants for items that have them
+        const itemsWithVariantFlag = (itemsData || []).filter(item => item.has_variants);
+        let variantsData: ItemVariant[] = [];
+        
+        if (itemsWithVariantFlag.length > 0) {
+          const { data: fetchedVariants, error: variantsError } = await supabase
+            .from("campaign_item_variants")
+            .select("*")
+            .in("campaign_item_id", itemsWithVariantFlag.map(i => i.id))
+            .order("display_order", { ascending: true });
+          
+          if (variantsError) {
+            console.error("Error fetching item variants:", variantsError);
+          } else {
+            variantsData = fetchedVariants || [];
+          }
+        }
+        
+        // Merge variants into items
+        const itemsWithVariants = (itemsData || []).map(item => ({
+          ...item,
+          variants: variantsData.filter(v => v.campaign_item_id === item.id)
+        }));
+        
+        setCampaignItems(itemsWithVariants);
+        setCart(itemsWithVariants.map(item => ({ 
+          ...item, 
+          selectedQuantity: 0,
+          selectedVariants: {}
+        })));
       }
 
       // Fetch custom fields
@@ -231,6 +271,35 @@ const CampaignLanding = () => {
         ? { ...item, selectedQuantity: Math.max(0, newQuantity) }
         : item
     ));
+  };
+
+  const updateVariantQuantity = (itemId: string, variantId: string, newQuantity: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.id !== itemId) return item;
+      
+      const variant = item.variants?.find(v => v.id === variantId);
+      if (!variant) return item;
+      
+      const clampedQty = Math.max(0, Math.min(newQuantity, variant.quantity_available));
+      
+      const updatedVariants = {
+        ...item.selectedVariants,
+        [variantId]: clampedQty
+      };
+      
+      // Clean up zero quantities
+      if (updatedVariants[variantId] === 0) {
+        delete updatedVariants[variantId];
+      }
+      
+      const totalSelected = Object.values(updatedVariants).reduce((sum, q) => sum + q, 0);
+      
+      return {
+        ...item,
+        selectedVariants: updatedVariants,
+        selectedQuantity: totalSelected
+      };
+    }));
   };
 
   const getSubtotal = () => {
@@ -333,10 +402,19 @@ const CampaignLanding = () => {
     setProcessingCheckout(true);
     
     try {
-      const items = cart.filter(item => item.selectedQuantity > 0).map(item => ({
-        id: item.id,
-        quantity: item.selectedQuantity
-      }));
+      const items = cart.filter(item => item.selectedQuantity > 0).flatMap(item => {
+        // For items with variants, create separate line items for each selected variant
+        if (item.has_variants && item.selectedVariants && Object.keys(item.selectedVariants).length > 0) {
+          return Object.entries(item.selectedVariants).map(([variantId, quantity]) => ({
+            id: item.id,
+            variantId,
+            quantity,
+            size: item.variants?.find(v => v.id === variantId)?.size
+          }));
+        }
+        // For regular items without variants
+        return [{ id: item.id, quantity: item.selectedQuantity }];
+      });
       
       // Step 1: Create Stripe checkout session with donor info
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
@@ -719,37 +797,83 @@ const CampaignLanding = () => {
                             </span>
                           )}
                         </div>
-                        {item.quantity_available !== null && (
+                        {!item.has_variants && item.quantity_available !== null && (
                           <span className="text-sm text-muted-foreground">
                             {item.quantity_available} available
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateQuantity(item.id, item.selectedQuantity - 1)}
-                          disabled={item.selectedQuantity === 0}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-12 text-center font-medium">
-                          {item.selectedQuantity}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateQuantity(item.id, item.selectedQuantity + 1)}
-                          disabled={
-                            (item.quantity_available && item.selectedQuantity >= item.quantity_available) ||
-                            (item.max_items_purchased && item.selectedQuantity >= item.max_items_purchased)
-                          }
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {/* Size Selector for Variant Items */}
+                      {item.has_variants && item.variants && item.variants.length > 0 ? (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-muted-foreground">Select Size</p>
+                          {item.variants.map((variant) => {
+                            const selectedQty = item.selectedVariants?.[variant.id] || 0;
+                            const isAvailable = variant.quantity_available > 0;
+                            
+                            return (
+                              <div key={variant.id} className="flex items-center justify-between gap-2 p-2 border rounded-md">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={isAvailable ? "outline" : "secondary"} className={!isAvailable ? "opacity-50" : ""}>
+                                    {variant.size}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground">
+                                    {variant.quantity_available} left
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => updateVariantQuantity(item.id, variant.id, selectedQty - 1)}
+                                    disabled={selectedQty === 0}
+                                  >
+                                    <Minus className="h-3 w-3" />
+                                  </Button>
+                                  <span className="w-8 text-center text-sm font-medium">{selectedQty}</span>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => updateVariantQuantity(item.id, variant.id, selectedQty + 1)}
+                                    disabled={!isAvailable || selectedQty >= variant.quantity_available}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        /* Standard Quantity Selector for Non-Variant Items */
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateQuantity(item.id, item.selectedQuantity - 1)}
+                            disabled={item.selectedQuantity === 0}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-12 text-center font-medium">
+                            {item.selectedQuantity}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateQuantity(item.id, item.selectedQuantity + 1)}
+                            disabled={
+                              (item.quantity_available && item.selectedQuantity >= item.quantity_available) ||
+                              (item.max_items_purchased && item.selectedQuantity >= item.max_items_purchased)
+                            }
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
 
                       {item.max_items_purchased && (
                         <p className="text-xs text-muted-foreground">
@@ -782,20 +906,44 @@ const CampaignLanding = () => {
                   {/* Selected Items */}
                   <div className="space-y-2 mb-4">
                     {cart.filter(item => item.selectedQuantity > 0).map(item => (
-                      <div key={item.id} className="flex justify-between text-sm">
-                        <span className="flex items-center gap-1">
-                          {item.name} × {item.selectedQuantity}
-                          {item.is_recurring && (
-                            <span className="text-muted-foreground text-xs">
-                              ({item.recurring_interval === 'month' ? 'monthly' : 'annually'})
-                            </span>
-                          )}
-                        </span>
-                        <span>
-                          ${((item.cost || 0) * item.selectedQuantity).toFixed(2)}
-                          {item.is_recurring && <span className="text-muted-foreground">/{item.recurring_interval === 'month' ? 'mo' : 'yr'}</span>}
-                        </span>
-                      </div>
+                      item.has_variants && item.selectedVariants && Object.keys(item.selectedVariants).length > 0 ? (
+                        // Render each selected variant as a separate line
+                        Object.entries(item.selectedVariants).map(([variantId, qty]) => {
+                          const variant = item.variants?.find(v => v.id === variantId);
+                          return (
+                            <div key={variantId} className="flex justify-between text-sm">
+                              <span className="flex items-center gap-1">
+                                {item.name} ({variant?.size}) × {qty}
+                                {item.is_recurring && (
+                                  <span className="text-muted-foreground text-xs">
+                                    ({item.recurring_interval === 'month' ? 'monthly' : 'annually'})
+                                  </span>
+                                )}
+                              </span>
+                              <span>
+                                ${((item.cost || 0) * qty).toFixed(2)}
+                                {item.is_recurring && <span className="text-muted-foreground">/{item.recurring_interval === 'month' ? 'mo' : 'yr'}</span>}
+                              </span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        // Regular item without variants
+                        <div key={item.id} className="flex justify-between text-sm">
+                          <span className="flex items-center gap-1">
+                            {item.name} × {item.selectedQuantity}
+                            {item.is_recurring && (
+                              <span className="text-muted-foreground text-xs">
+                                ({item.recurring_interval === 'month' ? 'monthly' : 'annually'})
+                              </span>
+                            )}
+                          </span>
+                          <span>
+                            ${((item.cost || 0) * item.selectedQuantity).toFixed(2)}
+                            {item.is_recurring && <span className="text-muted-foreground">/{item.recurring_interval === 'month' ? 'mo' : 'yr'}</span>}
+                          </span>
+                        </div>
+                      )
                     ))}
                   </div>
 
