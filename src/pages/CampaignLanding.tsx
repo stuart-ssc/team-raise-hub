@@ -1026,6 +1026,7 @@ const CampaignLanding = () => {
               <DonorInfoForm
                 onComplete={handleDonorInfoNext}
                 onBack={() => setCheckoutStep('cart')}
+                organizationId={campaign?.groups?.organization_id}
               />
             </CardContent>
           </Card>

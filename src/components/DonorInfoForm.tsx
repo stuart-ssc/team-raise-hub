@@ -129,7 +129,9 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
         lastName: profile?.last_name || prev.lastName,
         email: email,
         phone: phone || prev.phone,
-        createAccount: false, // No need to create account if logged in
+        createAccount: false,
+        password: "",
+        confirmPassword: "",
       }));
 
       toast({
@@ -212,13 +214,24 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
           }
         });
         setErrors(newErrors);
+        toast({
+          title: "Please complete the form",
+          description: error.errors[0].message,
+          variant: "destructive"
+        });
       }
       return false;
     }
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    console.log('handleSubmit called with formData:', formData);
+    console.log('isLoggedIn:', isLoggedIn, 'loggedInUserId:', loggedInUserId);
+    
+    if (!validateForm()) {
+      console.log('Validation failed, errors:', errors);
+      return;
+    }
 
     setIsSubmitting(true);
 
