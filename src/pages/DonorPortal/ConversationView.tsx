@@ -13,6 +13,7 @@ import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { MessageAttachmentUploader } from "@/components/messaging/MessageAttachmentUploader";
 import { MessageAttachments } from "@/components/messaging/MessageAttachments";
+import { ReadReceiptIndicator } from "@/components/messaging/ReadReceiptIndicator";
 
 interface Attachment {
   name: string;
@@ -48,6 +49,7 @@ export default function DonorPortalConversationView() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [staffReadAt, setStaffReadAt] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const donorIds = donorProfiles.map(p => p.id);
@@ -78,6 +80,22 @@ export default function DonorPortalConversationView() {
 
         // Fetch messages
         await fetchMessages();
+
+        // Get staff read time for read receipts
+        const { data: staffParticipants } = await supabase
+          .from('conversation_participants')
+          .select('last_read_at')
+          .eq('conversation_id', conversationId)
+          .eq('participant_type', 'internal');
+
+        if (staffParticipants && staffParticipants.length > 0) {
+          const readTimes = staffParticipants
+            .map(p => p.last_read_at)
+            .filter(Boolean) as string[];
+          if (readTimes.length > 0) {
+            setStaffReadAt(readTimes.sort()[0]);
+          }
+        }
 
         // Mark as read
         await supabase
@@ -205,11 +223,11 @@ export default function DonorPortalConversationView() {
     }
   };
 
-  // Subscribe to new messages
+  // Subscribe to new messages and read receipt updates
   useEffect(() => {
     if (!conversationId) return;
 
-    const channel = supabase
+    const messagesChannel = supabase
       .channel(`messages-${conversationId}`)
       .on(
         'postgres_changes',
@@ -225,8 +243,35 @@ export default function DonorPortalConversationView() {
       )
       .subscribe();
 
+    // Subscribe to read receipt updates from staff
+    const readReceiptsChannel = supabase
+      .channel(`read-receipts-donor-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversation_participants',
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          // Only update if it's a staff member (internal participant)
+          if (updated.participant_type === 'internal' && updated.last_read_at) {
+            setStaffReadAt(prev => {
+              if (!prev || new Date(updated.last_read_at) > new Date(prev)) {
+                return updated.last_read_at;
+              }
+              return prev;
+            });
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(readReceiptsChannel);
     };
   }, [conversationId]);
 
@@ -285,13 +330,19 @@ export default function DonorPortalConversationView() {
                     {message.sender_name[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className={`flex-1 max-w-[75%] ${message.is_from_donor ? 'text-right' : ''}`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium">{message.sender_name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(message.created_at), 'MMM d, h:mm a')}
-                    </span>
-                  </div>
+                  <div className={`flex-1 max-w-[75%] ${message.is_from_donor ? 'text-right' : ''}`}>
+                    <div className={`flex items-center gap-2 mb-1 ${message.is_from_donor ? 'justify-end' : ''}`}>
+                      <span className="text-sm font-medium">{message.sender_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(message.created_at), 'MMM d, h:mm a')}
+                      </span>
+                      {message.is_from_donor && (
+                        <ReadReceiptIndicator
+                          status={staffReadAt && new Date(message.created_at) <= new Date(staffReadAt) ? 'read' : 'sent'}
+                          readAt={staffReadAt && new Date(message.created_at) <= new Date(staffReadAt) ? staffReadAt : undefined}
+                        />
+                      )}
+                    </div>
                   <div
                     className={`rounded-lg p-3 ${
                       message.is_from_donor
