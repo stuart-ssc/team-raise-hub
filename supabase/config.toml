@@ -197,3 +197,6 @@ verify_jwt = true
 
 [functions.save-roster-pitch]
 verify_jwt = true
+
+[functions.send-message-notification]
+verify_jwt = false

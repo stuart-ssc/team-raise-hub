@@ -26,6 +26,8 @@ import CampaignLanding from "./pages/CampaignLanding";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import Profile from "./pages/Profile";
 import NotificationHistory from "./pages/NotificationHistory";
+import Messages from "./pages/Messages";
+import Conversation from "./pages/Conversation";
 import Reports from "./pages/Reports";
 import Donors from "./pages/Donors";
 import DonorProfile from "./pages/DonorProfile";
@@ -160,6 +162,8 @@ const AppContent = () => {
         <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/dashboard/settings" element={<ProtectedRoute><OrganizationSettings /></ProtectedRoute>} />
         <Route path="/dashboard/notifications" element={<ProtectedRoute><NotificationHistory /></ProtectedRoute>} />
+        <Route path="/dashboard/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+        <Route path="/dashboard/messages/:id" element={<ProtectedRoute><Conversation /></ProtectedRoute>} />
         <Route path="/dashboard/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
         <Route path="/dashboard/my-fundraising" element={<ProtectedRoute><MyFundraising /></ProtectedRoute>} />
         <Route path="/system-admin" element={<ProtectedRoute><SystemAdminGuard><SystemAdminDashboard /></SystemAdminGuard></ProtectedRoute>} />
