@@ -13,13 +13,14 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Edit, Plus, Info, RefreshCw, HelpCircle } from "lucide-react";
+import { Trash2, Edit, Plus, Info, RefreshCw, HelpCircle, Megaphone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FormDescription } from "@/components/ui/form";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SizeVariantsEditor, SizeVariant } from "@/components/SizeVariantsEditor";
+import { CampaignPitchEditor } from "@/components/CampaignPitchEditor";
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
   description: z.string().optional(),
@@ -167,6 +168,12 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
   const [originalQuantityOffered, setOriginalQuantityOffered] = useState<number | null>(null);
   const [sizeVariants, setSizeVariants] = useState<SizeVariant[]>([]);
   const [hasVariants, setHasVariants] = useState(false);
+  const [campaignPitch, setCampaignPitch] = useState<{
+    message: string | null;
+    imageUrl: string | null;
+    videoUrl: string | null;
+    recordedVideoUrl: string | null;
+  } | null>(null);
   const { organizationUser } = useOrganizationUser();
   const { toast } = useToast();
   const campaignForm = useForm<z.infer<typeof campaignSchema>>({
@@ -320,7 +327,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
     try {
       const { data, error } = await supabase
         .from("campaigns")
-        .select("campaign_type_id, requires_business_info, file_upload_deadline_days")
+        .select("campaign_type_id, requires_business_info, file_upload_deadline_days, pitch_message, pitch_image_url, pitch_video_url, pitch_recorded_video_url")
         .eq("id", campaignId)
         .single();
 
@@ -337,6 +344,16 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
       }
       if (data.file_upload_deadline_days) {
         campaignForm.setValue("fileUploadDeadlineDays", data.file_upload_deadline_days.toString());
+      }
+      
+      // Set campaign pitch data
+      if (data.pitch_message || data.pitch_image_url || data.pitch_video_url || data.pitch_recorded_video_url) {
+        setCampaignPitch({
+          message: data.pitch_message,
+          imageUrl: data.pitch_image_url,
+          videoUrl: data.pitch_video_url,
+          recordedVideoUrl: data.pitch_recorded_video_url,
+        });
       }
     } catch (error) {
       console.error("Error fetching campaign type:", error);
@@ -530,6 +547,7 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
         setCreatedCampaignId(editCampaign.id);
         setCampaignTypeId(editCampaign.campaign_type_id);
         fetchCustomFields(editCampaign.id);
+        fetchCampaignType(editCampaign.id); // Also fetches pitch data
         // Fetch rosters for the selected group
         if (editCampaign.group_id) {
           fetchRosters(editCampaign.group_id);
@@ -1537,6 +1555,41 @@ export function AddCampaignForm({ open, onOpenChange, onCampaignAdded, editCampa
                   </div>
                 )}
               </div>
+
+              {/* Campaign Pitch Section - Only show when editing */}
+              {editCampaign && createdCampaignId && (
+                <div className="space-y-4 border-t pt-4">
+                  <div className="flex items-center gap-2">
+                    <Megaphone className="h-5 w-5 text-primary" />
+                    <div>
+                      <h3 className="font-semibold text-lg">Campaign Pitch</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Add a message, photo, or video to display on your campaign page
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      This pitch will be shown to all donors. If roster attribution is enabled, individual roster members can add their own pitch which will override this on their personal links.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <CampaignPitchEditor
+                    campaignId={createdCampaignId}
+                    initialPitch={campaignPitch || undefined}
+                    onSave={() => {
+                      // Refresh pitch data after save
+                      fetchCampaignType(createdCampaignId);
+                      toast({
+                        title: "Pitch updated",
+                        description: "Your campaign pitch has been saved.",
+                      });
+                    }}
+                  />
+                </div>
+              )}
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleClose}>
