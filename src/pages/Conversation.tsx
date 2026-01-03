@@ -21,12 +21,20 @@ import {
 import { MessageAttachmentUploader } from "@/components/messaging/MessageAttachmentUploader";
 import { MessageAttachments } from "@/components/messaging/MessageAttachments";
 import { ReadReceiptIndicator } from "@/components/messaging/ReadReceiptIndicator";
+import { MessageReactions } from "@/components/messaging/MessageReactions";
 
 interface Attachment {
   name: string;
   url: string;
   type: string;
   size: number;
+}
+
+interface Reaction {
+  id: string;
+  emoji: string;
+  user_id: string | null;
+  donor_profile_id: string | null;
 }
 
 interface Message {
@@ -38,6 +46,7 @@ interface Message {
   sender_donor_profile_id: string | null;
   sender_type: string;
   attachments?: Attachment[];
+  reactions?: Reaction[];
   sender?: {
     first_name: string | null;
     last_name: string | null;
@@ -257,10 +266,35 @@ const Conversation = () => {
 
       if (error) throw error;
 
+      // Fetch reactions for all messages
+      const messageIds = data?.map(m => m.id) || [];
+      let reactionsMap: Record<string, Reaction[]> = {};
+      
+      if (messageIds.length > 0) {
+        const { data: reactionsData } = await supabase
+          .from('message_reactions')
+          .select('id, message_id, emoji, user_id, donor_profile_id')
+          .in('message_id', messageIds);
+        
+        if (reactionsData) {
+          reactionsMap = reactionsData.reduce((acc, r) => {
+            if (!acc[r.message_id]) acc[r.message_id] = [];
+            acc[r.message_id].push({
+              id: r.id,
+              emoji: r.emoji,
+              user_id: r.user_id,
+              donor_profile_id: r.donor_profile_id,
+            });
+            return acc;
+          }, {} as Record<string, Reaction[]>);
+        }
+      }
+
       setMessages(data?.map(m => ({
         ...m,
         sender: m.sender as any,
-        attachments: (m.attachments as unknown) as Attachment[] | undefined
+        attachments: (m.attachments as unknown) as Attachment[] | undefined,
+        reactions: reactionsMap[m.id] || [],
       })) || []);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -528,7 +562,7 @@ const Conversation = () => {
                 const showAvatar = !isOwn && (index === 0 || messages[index - 1]?.sender_user_id !== message.sender_user_id);
                 
                 return (
-                  <div key={message.id} className={`flex gap-2 ${isOwn ? 'justify-end' : ''}`}>
+                  <div key={message.id} className={`flex gap-2 ${isOwn ? 'justify-end' : ''} group`}>
                     {!isOwn && (
                       <div className="w-8">
                         {showAvatar && (
@@ -562,6 +596,13 @@ const Conversation = () => {
                         )}
                       </div>
                       <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end mr-1' : 'ml-1'}`}>
+                        <MessageReactions
+                          messageId={message.id}
+                          reactions={message.reactions || []}
+                          currentUserId={user?.id}
+                          onReactionChange={fetchMessages}
+                          isOwn={isOwn}
+                        />
                         <span className="text-[10px] text-muted-foreground">
                           {formatMessageDate(message.sent_at)}
                         </span>

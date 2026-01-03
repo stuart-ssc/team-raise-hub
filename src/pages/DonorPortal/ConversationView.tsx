@@ -14,12 +14,20 @@ import { format } from "date-fns";
 import { MessageAttachmentUploader } from "@/components/messaging/MessageAttachmentUploader";
 import { MessageAttachments } from "@/components/messaging/MessageAttachments";
 import { ReadReceiptIndicator } from "@/components/messaging/ReadReceiptIndicator";
+import { MessageReactions } from "@/components/messaging/MessageReactions";
 
 interface Attachment {
   name: string;
   url: string;
   type: string;
   size: number;
+}
+
+interface Reaction {
+  id: string;
+  emoji: string;
+  user_id: string | null;
+  donor_profile_id: string | null;
 }
 
 interface Message {
@@ -31,6 +39,7 @@ interface Message {
   sender_name: string;
   is_from_donor: boolean;
   attachments?: Attachment[];
+  reactions?: Reaction[];
 }
 
 interface ConversationDetails {
@@ -132,6 +141,30 @@ export default function DonorPortalConversationView() {
 
     if (messagesError) throw messagesError;
 
+    // Fetch reactions for all messages
+    const messageIds = messagesData?.map(m => m.id) || [];
+    let reactionsMap: Record<string, Reaction[]> = {};
+    
+    if (messageIds.length > 0) {
+      const { data: reactionsData } = await supabase
+        .from('message_reactions')
+        .select('id, message_id, emoji, user_id, donor_profile_id')
+        .in('message_id', messageIds);
+      
+      if (reactionsData) {
+        reactionsMap = reactionsData.reduce((acc, r) => {
+          if (!acc[r.message_id]) acc[r.message_id] = [];
+          acc[r.message_id].push({
+            id: r.id,
+            emoji: r.emoji,
+            user_id: r.user_id,
+            donor_profile_id: r.donor_profile_id,
+          });
+          return acc;
+        }, {} as Record<string, Reaction[]>);
+      }
+    }
+
     // Fetch sender names
     const messagesWithNames: Message[] = [];
     for (const msg of (messagesData || []) as any[]) {
@@ -173,7 +206,8 @@ export default function DonorPortalConversationView() {
         sender_donor_profile_id: msg.sender_donor_profile_id,
         sender_name: senderName,
         is_from_donor: isFromDonor,
-        attachments: (msg.attachments as unknown) as Attachment[] | undefined
+        attachments: (msg.attachments as unknown) as Attachment[] | undefined,
+        reactions: reactionsMap[msg.id] || [],
       });
     }
 
@@ -323,26 +357,26 @@ export default function DonorPortalConversationView() {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex gap-3 ${message.is_from_donor ? 'flex-row-reverse' : ''}`}
+                className={`flex gap-3 ${message.is_from_donor ? 'flex-row-reverse' : ''} group`}
               >
                 <Avatar className="h-8 w-8 shrink-0">
                   <AvatarFallback className={message.is_from_donor ? 'bg-primary text-primary-foreground' : ''}>
                     {message.sender_name[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                  <div className={`flex-1 max-w-[75%] ${message.is_from_donor ? 'text-right' : ''}`}>
-                    <div className={`flex items-center gap-2 mb-1 ${message.is_from_donor ? 'justify-end' : ''}`}>
-                      <span className="text-sm font-medium">{message.sender_name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(message.created_at), 'MMM d, h:mm a')}
-                      </span>
-                      {message.is_from_donor && (
-                        <ReadReceiptIndicator
-                          status={staffReadAt && new Date(message.created_at) <= new Date(staffReadAt) ? 'read' : 'sent'}
-                          readAt={staffReadAt && new Date(message.created_at) <= new Date(staffReadAt) ? staffReadAt : undefined}
-                        />
-                      )}
-                    </div>
+                <div className={`flex-1 max-w-[75%] ${message.is_from_donor ? 'text-right' : ''}`}>
+                  <div className={`flex items-center gap-2 mb-1 ${message.is_from_donor ? 'justify-end' : ''}`}>
+                    <span className="text-sm font-medium">{message.sender_name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(message.created_at), 'MMM d, h:mm a')}
+                    </span>
+                    {message.is_from_donor && (
+                      <ReadReceiptIndicator
+                        status={staffReadAt && new Date(message.created_at) <= new Date(staffReadAt) ? 'read' : 'sent'}
+                        readAt={staffReadAt && new Date(message.created_at) <= new Date(staffReadAt) ? staffReadAt : undefined}
+                      />
+                    )}
+                  </div>
                   <div
                     className={`rounded-lg p-3 ${
                       message.is_from_donor
@@ -356,6 +390,15 @@ export default function DonorPortalConversationView() {
                     {message.attachments && message.attachments.length > 0 && (
                       <MessageAttachments attachments={message.attachments} isOwn={message.is_from_donor} />
                     )}
+                  </div>
+                  <div className={`flex items-center gap-1 mt-1 ${message.is_from_donor ? 'justify-end' : ''}`}>
+                    <MessageReactions
+                      messageId={message.id}
+                      reactions={message.reactions || []}
+                      currentDonorProfileId={donorProfiles[0]?.id}
+                      onReactionChange={fetchMessages}
+                      isOwn={message.is_from_donor}
+                    />
                   </div>
                 </div>
               </div>
