@@ -66,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Get sender name
+    // Get sender name based on sender type
     let senderName = "Someone";
     if (message.sender_user_id) {
       const { data: senderProfile } = await supabase
@@ -76,7 +76,17 @@ const handler = async (req: Request): Promise<Response> => {
         .single();
 
       if (senderProfile) {
-        senderName = `${senderProfile.first_name || ""} ${senderProfile.last_name || ""}`.trim() || "Someone";
+        senderName = `${senderProfile.first_name || ""} ${senderProfile.last_name || ""}`.trim() || "Staff member";
+      }
+    } else if (message.sender_donor_profile_id) {
+      const { data: senderDonor } = await supabase
+        .from("donor_profiles")
+        .select("first_name, last_name, email")
+        .eq("id", message.sender_donor_profile_id)
+        .single();
+      
+      if (senderDonor) {
+        senderName = `${senderDonor.first_name || ""} ${senderDonor.last_name || ""}`.trim() || senderDonor.email || "A supporter";
       }
     }
 
@@ -101,11 +111,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     let emailsSent = 0;
+    const portalUrl = "https://sponsorly.app/portal/messages/" + conversationId;
+    const dashboardUrl = "https://sponsorly.app/dashboard/messages/" + conversationId;
 
-    // Send email notifications to donors
+    // Send email notifications to all participants
     for (const participant of participants || []) {
       // Skip the sender
       if (participant.user_id === message.sender_user_id) continue;
+      if (participant.donor_profile_id === message.sender_donor_profile_id) continue;
 
       // Skip muted participants
       if (participant.muted_until && new Date(participant.muted_until) > new Date()) continue;
@@ -136,8 +149,10 @@ const handler = async (req: Request): Promise<Response> => {
                   <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
                     <p style="color: #333; margin: 0; white-space: pre-wrap;">${message.content.substring(0, 500)}${message.content.length > 500 ? '...' : ''}</p>
                   </div>
-                  <p style="color: #666; font-size: 14px;">
-                    To reply, please contact the organization directly or use the link provided in your original communication.
+                  <p style="margin: 16px 0;">
+                    <a href="${portalUrl}" style="background: #6366f1; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; display: inline-block;">
+                      View & Reply
+                    </a>
                   </p>
                   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
                   <p style="color: #999; font-size: 12px;">
@@ -151,6 +166,67 @@ const handler = async (req: Request): Promise<Response> => {
             console.log(`Email sent to donor: ${donor.email}`);
           } catch (emailError) {
             console.error(`Failed to send email to ${donor.email}:`, emailError);
+          }
+        }
+      }
+      
+      // Send to staff/internal participants
+      if (participant.participant_type === "internal" && participant.user_id) {
+        // Get staff profile
+        const { data: staffProfile } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, notify_messages")
+          .eq("id", participant.user_id)
+          .single();
+        
+        // Check if staff has message notifications enabled
+        if (staffProfile?.notify_messages === false) {
+          console.log(`Staff ${participant.user_id} has message notifications disabled`);
+          continue;
+        }
+        
+        // Get staff email from auth.users
+        const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(participant.user_id);
+        
+        if (authError) {
+          console.error(`Failed to get auth user for ${participant.user_id}:`, authError);
+          continue;
+        }
+        
+        if (authUser?.user?.email) {
+          const staffName = staffProfile?.first_name || "there";
+          const subject = conversation.subject 
+            ? `New reply: ${conversation.subject}`
+            : `New message from ${senderName}`;
+          
+          try {
+            await resend.emails.send({
+              from: "Sponsorly <noreply@sponsorly.app>",
+              to: [authUser.user.email],
+              subject: subject,
+              html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2 style="color: #1a1a1a;">Hi ${staffName},</h2>
+                  <p style="color: #444; line-height: 1.6;">You have a new message from <strong>${senderName}</strong>:</p>
+                  <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                    <p style="color: #333; margin: 0; white-space: pre-wrap;">${message.content.substring(0, 500)}${message.content.length > 500 ? '...' : ''}</p>
+                  </div>
+                  <p style="margin: 16px 0;">
+                    <a href="${dashboardUrl}" style="background: #6366f1; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; display: inline-block;">
+                      View Conversation
+                    </a>
+                  </p>
+                  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+                  <p style="color: #999; font-size: 12px;">
+                    This is an automated notification from Sponsorly.
+                  </p>
+                </div>
+              `,
+            });
+            emailsSent++;
+            console.log(`Email sent to staff: ${authUser.user.email}`);
+          } catch (emailError) {
+            console.error(`Failed to send email to ${authUser.user.email}:`, emailError);
           }
         }
       }
