@@ -18,6 +18,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { MessageAttachmentUploader } from "@/components/messaging/MessageAttachmentUploader";
+import { MessageAttachments } from "@/components/messaging/MessageAttachments";
+
+interface Attachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
 
 interface Message {
   id: string;
@@ -27,6 +36,7 @@ interface Message {
   sender_user_id: string | null;
   sender_donor_profile_id: string | null;
   sender_type: string;
+  attachments?: Attachment[];
   sender?: {
     first_name: string | null;
     last_name: string | null;
@@ -73,6 +83,7 @@ const Conversation = () => {
   const [sending, setSending] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [isMuted, setIsMuted] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -188,6 +199,7 @@ const Conversation = () => {
           sender_user_id,
           sender_donor_profile_id,
           sender_type,
+          attachments,
           sender:sender_user_id (
             first_name,
             last_name,
@@ -202,7 +214,8 @@ const Conversation = () => {
 
       setMessages(data?.map(m => ({
         ...m,
-        sender: m.sender as any
+        sender: m.sender as any,
+        attachments: (m.attachments as unknown) as Attachment[] | undefined
       })) || []);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -222,6 +235,7 @@ const Conversation = () => {
         sender_user_id,
         sender_donor_profile_id,
         sender_type,
+        attachments,
         sender:sender_user_id (
           first_name,
           last_name,
@@ -232,7 +246,11 @@ const Conversation = () => {
       .single();
 
     if (!error && data) {
-      setMessages(prev => [...prev, { ...data, sender: data.sender as any }]);
+      setMessages(prev => [...prev, { 
+        ...data, 
+        sender: data.sender as any,
+        attachments: (data.attachments as unknown) as Attachment[] | undefined
+      }]);
     }
   };
 
@@ -247,7 +265,7 @@ const Conversation = () => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !id || !user) return;
+    if ((!newMessage.trim() && pendingAttachments.length === 0) || !id || !user) return;
     
     setSending(true);
     try {
@@ -257,8 +275,9 @@ const Conversation = () => {
           conversation_id: id,
           sender_user_id: user.id,
           sender_type: 'internal',
-          content: newMessage.trim(),
-          content_type: 'text'
+          content: newMessage.trim() || (pendingAttachments.length > 0 ? '' : ''),
+          content_type: pendingAttachments.length > 0 ? 'mixed' : 'text',
+          attachments: pendingAttachments.length > 0 ? (pendingAttachments as unknown as any) : null
         })
         .select('id')
         .single();
@@ -266,6 +285,7 @@ const Conversation = () => {
       if (error) throw error;
 
       setNewMessage("");
+      setPendingAttachments([]);
       
       // Trigger email notifications (fire and forget)
       if (data?.id) {
@@ -489,7 +509,12 @@ const Conversation = () => {
                             : 'bg-muted rounded-bl-md'
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                        {message.content && (
+                          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                        )}
+                        {message.attachments && message.attachments.length > 0 && (
+                          <MessageAttachments attachments={message.attachments} isOwn={isOwn} />
+                        )}
                       </div>
                       <p className={`text-[10px] text-muted-foreground mt-1 ${isOwn ? 'text-right mr-1' : 'ml-1'}`}>
                         {formatMessageDate(message.sent_at)}
@@ -503,7 +528,15 @@ const Conversation = () => {
           </CardContent>
 
           {/* Input */}
-          <div className="p-4 border-t shrink-0">
+          <div className="p-4 border-t shrink-0 space-y-2">
+            {pendingAttachments.length > 0 && (
+              <MessageAttachmentUploader
+                conversationId={id || ''}
+                onAttachmentsChange={setPendingAttachments}
+                pendingAttachments={pendingAttachments}
+                disabled={sending}
+              />
+            )}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -511,6 +544,12 @@ const Conversation = () => {
               }}
               className="flex gap-2"
             >
+              <MessageAttachmentUploader
+                conversationId={id || ''}
+                onAttachmentsChange={setPendingAttachments}
+                pendingAttachments={pendingAttachments}
+                disabled={sending}
+              />
               <Input
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
@@ -518,7 +557,7 @@ const Conversation = () => {
                 disabled={sending}
                 className="flex-1"
               />
-              <Button type="submit" disabled={sending || !newMessage.trim()}>
+              <Button type="submit" disabled={sending || (!newMessage.trim() && pendingAttachments.length === 0)}>
                 <Send className="h-4 w-4" />
               </Button>
             </form>
