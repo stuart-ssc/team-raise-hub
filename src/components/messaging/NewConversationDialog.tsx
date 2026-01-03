@@ -109,12 +109,12 @@ const NewConversationDialog = ({
       .select(`
         id,
         user_id,
-        profiles:user_id (
+        profiles!organization_user_user_id_fkey (
           first_name,
           last_name,
           avatar_url
         ),
-        user_type:user_type_id (
+        user_type!organization_user_user_type_id_fkey (
           name
         )
       `)
