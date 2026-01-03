@@ -338,6 +338,7 @@ const NewConversationDialog = ({
                               className="h-3 w-3 cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                e.preventDefault();
                                 toggleUser(u);
                               }}
                             />
