@@ -46,6 +46,91 @@ export type Database = {
           },
         ]
       }
+      business_campaign_assets: {
+        Row: {
+          additional_files: Json | null
+          business_id: string
+          campaign_id: string
+          campaign_logo_url: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          updated_at: string | null
+          use_default_logo: boolean | null
+        }
+        Insert: {
+          additional_files?: Json | null
+          business_id: string
+          campaign_id: string
+          campaign_logo_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          updated_at?: string | null
+          use_default_logo?: boolean | null
+        }
+        Update: {
+          additional_files?: Json | null
+          business_id?: string
+          campaign_id?: string
+          campaign_logo_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          updated_at?: string | null
+          use_default_logo?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_campaign_assets_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_campaign_assets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_campaign_assets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "business_campaign_assets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_campaign_assets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_campaign_assets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_donors: {
         Row: {
           auto_linked: boolean | null

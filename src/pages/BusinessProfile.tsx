@@ -27,6 +27,7 @@ import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialo
 import { EditBusinessDialog } from "@/components/EditBusinessDialog";
 import { BusinessActivityTimeline } from "@/components/BusinessActivityTimeline";
 import { BusinessInsightsPanel } from "@/components/BusinessInsightsPanel";
+import { BusinessCampaignAssetsList } from "@/components/BusinessCampaignAssetsList";
 import { ManualEnrollmentDialog } from "@/components/ManualEnrollmentDialog";
 import {
   AlertDialog,
@@ -1173,6 +1174,12 @@ const BusinessProfile = () => {
                 </CollapsibleContent>
               </Card>
             </Collapsible>
+
+            {/* Campaign Assets */}
+            <BusinessCampaignAssetsList 
+              businessId={businessId}
+              businessLogoUrl={business.logo_url}
+            />
 
             {/* Activity Timeline */}
             <BusinessActivityTimeline businessId={businessId} />

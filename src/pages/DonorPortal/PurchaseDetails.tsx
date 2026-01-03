@@ -17,7 +17,9 @@ import {
   AlertCircle,
   Building2,
   Calendar,
-  DollarSign
+  DollarSign,
+  Image as ImageIcon,
+  ArrowRight,
 } from "lucide-react";
 
 interface OrderItem {
@@ -54,6 +56,19 @@ interface CustomField {
   field_options: any;
 }
 
+interface CampaignAssets {
+  id: string;
+  campaign_logo_url: string | null;
+  use_default_logo: boolean;
+  additional_files: Array<{ name: string; url: string; type: string }>;
+}
+
+interface BusinessInfo {
+  id: string;
+  business_name: string;
+  logo_url: string | null;
+}
+
 export default function DonorPortalPurchaseDetails() {
   const { orderId } = useParams();
   const { user } = useAuth();
@@ -63,6 +78,8 @@ export default function DonorPortalPurchaseDetails() {
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [fieldValues, setFieldValues] = useState<Record<string, any>>({});
+  const [campaignAssets, setCampaignAssets] = useState<CampaignAssets | null>(null);
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -135,6 +152,35 @@ export default function DonorPortalPurchaseDetails() {
           values[(v as any).field_id] = (v as any).field_value;
         }
         setFieldValues(values);
+
+        // Fetch campaign assets if order is linked to a business
+        if (orderData.business_id) {
+          const { data: businessData } = await supabase
+            .from('businesses')
+            .select('id, business_name, logo_url')
+            .eq('id', orderData.business_id)
+            .single();
+          
+          setBusinessInfo(businessData);
+
+          const { data: assetsData } = await supabase
+            .from('business_campaign_assets')
+            .select('id, campaign_logo_url, use_default_logo, additional_files')
+            .eq('business_id', orderData.business_id)
+            .eq('campaign_id', campaign.id)
+            .single();
+          
+          if (assetsData) {
+            setCampaignAssets({
+              id: assetsData.id,
+              campaign_logo_url: assetsData.campaign_logo_url,
+              use_default_logo: assetsData.use_default_logo || false,
+              additional_files: Array.isArray(assetsData.additional_files) 
+                ? (assetsData.additional_files as Array<{ name: string; url: string; type: string }>)
+                : [],
+            });
+          }
+        }
       } catch (error) {
         console.error('Error fetching order details:', error);
         toast({
@@ -368,6 +414,70 @@ export default function DonorPortalPurchaseDetails() {
                   </Button>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Campaign Assets Section - Only show if order is linked to a business */}
+        {order.business_id && businessInfo && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Campaign Branding
+              </CardTitle>
+              <CardDescription>
+                Customize your business logo and branding for this campaign
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  {campaignAssets?.campaign_logo_url && !campaignAssets?.use_default_logo ? (
+                    <img
+                      src={campaignAssets.campaign_logo_url}
+                      alt="Campaign logo"
+                      className="h-12 w-12 rounded object-contain bg-muted"
+                    />
+                  ) : businessInfo.logo_url ? (
+                    <img
+                      src={businessInfo.logo_url}
+                      alt="Business logo"
+                      className="h-12 w-12 rounded object-contain bg-muted"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded bg-muted flex items-center justify-center">
+                      <Building2 className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-medium">{businessInfo.business_name}</p>
+                    {campaignAssets ? (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Assets configured
+                        </Badge>
+                        {(campaignAssets.additional_files?.length || 0) > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            {campaignAssets.additional_files.length} file(s)
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No campaign-specific assets uploaded
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <Button variant="outline" asChild>
+                  <Link to={`/portal/purchases/${orderId}/assets`}>
+                    {campaignAssets ? "Edit Assets" : "Add Assets"}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}

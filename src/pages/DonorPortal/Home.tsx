@@ -15,13 +15,21 @@ import {
   Building2, 
   FileText,
   AlertCircle,
-  ArrowRight
+  ArrowRight,
+  Image as ImageIcon,
 } from "lucide-react";
 
 interface PendingUpload {
   orderId: string;
   campaignName: string;
   daysRemaining: number;
+}
+
+interface PendingCampaignAsset {
+  orderId: string;
+  campaignId: string;
+  campaignName: string;
+  businessName: string;
 }
 
 interface RecentOrder {
@@ -39,10 +47,12 @@ export default function DonorPortalHome() {
   const [stats, setStats] = useState({
     totalOrders: 0,
     pendingUploads: 0,
+    pendingAssets: 0,
     unreadMessages: 0,
     linkedBusinesses: 0,
   });
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
+  const [pendingCampaignAssets, setPendingCampaignAssets] = useState<PendingCampaignAsset[]>([]);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
 
   useEffect(() => {
@@ -59,6 +69,7 @@ export default function DonorPortalHome() {
             total_amount,
             status,
             files_complete,
+            business_id,
             campaign:campaigns (
               id,
               name,
@@ -109,6 +120,40 @@ export default function DonorPortalHome() {
         }
         setPendingUploads(pendingUploadsList);
 
+        // Find orders with linked businesses that don't have campaign assets
+        const pendingAssetsList: PendingCampaignAsset[] = [];
+        for (const order of orders || []) {
+          if (!order.business_id) continue;
+          
+          const campaign = order.campaign as any;
+          if (!campaign?.id) continue;
+
+          // Check if campaign assets exist for this business/campaign combo
+          const { data: existingAssets } = await supabase
+            .from('business_campaign_assets')
+            .select('id')
+            .eq('business_id', order.business_id)
+            .eq('campaign_id', campaign.id)
+            .single();
+
+          if (!existingAssets) {
+            // Get business name
+            const { data: businessData } = await supabase
+              .from('businesses')
+              .select('business_name')
+              .eq('id', order.business_id)
+              .single();
+
+            pendingAssetsList.push({
+              orderId: order.id,
+              campaignId: campaign.id,
+              campaignName: campaign.name,
+              businessName: businessData?.business_name || 'Unknown Business',
+            });
+          }
+        }
+        setPendingCampaignAssets(pendingAssetsList);
+
         // Get unread message count
         let unreadMessages = 0;
         if (donorProfiles.length > 0) {
@@ -135,6 +180,7 @@ export default function DonorPortalHome() {
         setStats({
           totalOrders: orders?.length || 0,
           pendingUploads: pendingUploadsList.length,
+          pendingAssets: pendingAssetsList.length,
           unreadMessages,
           linkedBusinesses: linkedBusinesses.length,
         });
@@ -257,6 +303,49 @@ export default function DonorPortalHome() {
                   <Button variant="ghost" className="w-full" asChild>
                     <Link to="/portal/purchases">
                       View all {pendingUploads.length} pending uploads
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pending Campaign Assets */}
+        {pendingCampaignAssets.length > 0 && (
+          <Card className="border-primary/50 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <ImageIcon className="h-5 w-5" />
+                Pending Campaign Branding
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Upload custom logos or branding for your sponsored campaigns
+                </p>
+                {pendingCampaignAssets.slice(0, 3).map((asset) => (
+                  <div key={asset.orderId} className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{asset.campaignName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Sponsored by {asset.businessName}
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={`/portal/purchases/${asset.orderId}/assets`}>
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Add Assets
+                      </Link>
+                    </Button>
+                  </div>
+                ))}
+                {pendingCampaignAssets.length > 3 && (
+                  <Button variant="ghost" className="w-full" asChild>
+                    <Link to="/portal/purchases">
+                      View all {pendingCampaignAssets.length} pending
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Link>
                   </Button>
