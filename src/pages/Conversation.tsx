@@ -251,7 +251,7 @@ const Conversation = () => {
     
     setSending(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('messages')
         .insert({
           conversation_id: id,
@@ -259,11 +259,20 @@ const Conversation = () => {
           sender_type: 'internal',
           content: newMessage.trim(),
           content_type: 'text'
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
 
       setNewMessage("");
+      
+      // Trigger email notifications (fire and forget)
+      if (data?.id) {
+        supabase.functions.invoke('send-message-notification', {
+          body: { conversationId: id, messageId: data.id }
+        }).catch(err => console.error('Notification error:', err));
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error("Failed to send message");

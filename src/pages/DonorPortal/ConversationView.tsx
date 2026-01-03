@@ -156,21 +156,28 @@ export default function DonorPortalConversationView() {
 
     setSending(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('messages')
         .insert({
           conversation_id: conversationId,
           sender_donor_profile_id: donorProfiles[0].id,
           sender_type: 'donor',
           content: newMessage.trim(),
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
 
       setNewMessage("");
       await fetchMessages();
 
-      // Send notification to staff (TODO: implement edge function trigger)
+      // Trigger email notifications to staff
+      if (data?.id) {
+        supabase.functions.invoke('send-message-notification', {
+          body: { conversationId, messageId: data.id }
+        }).catch(err => console.error('Notification error:', err));
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
