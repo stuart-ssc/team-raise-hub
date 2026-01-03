@@ -1,4 +1,4 @@
-import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, Trophy } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, Trophy, MessageCircle } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -8,6 +8,7 @@ const sidebarItems = [
   { title: "Home", icon: Home, url: "/dashboard", end: true },
   { title: "My Orders", icon: Package, url: "/dashboard/orders" },
   { title: "My Fundraising", icon: Trophy, url: "/dashboard/my-fundraising", participantOnly: true },
+  { title: "Messages", icon: MessageCircle, url: "/dashboard/messages" },
   { title: "Groups", icon: Users, url: "/dashboard/groups" },
   { title: "Campaigns", icon: Target, url: "/dashboard/campaigns" },
   { title: "Donors", icon: Heart, url: "/dashboard/donors" },

@@ -965,6 +965,128 @@ export type Database = {
           },
         ]
       }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          donor_profile_id: string | null
+          id: string
+          is_archived: boolean | null
+          joined_at: string | null
+          last_read_at: string | null
+          left_at: string | null
+          muted_until: string | null
+          participant_type: string
+          role: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id: string
+          donor_profile_id?: string | null
+          id?: string
+          is_archived?: boolean | null
+          joined_at?: string | null
+          last_read_at?: string | null
+          left_at?: string | null
+          muted_until?: string | null
+          participant_type: string
+          role?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          donor_profile_id?: string | null
+          id?: string
+          is_archived?: boolean | null
+          joined_at?: string | null
+          last_read_at?: string | null
+          left_at?: string | null
+          muted_until?: string | null
+          participant_type?: string
+          role?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_donor_profile_id_fkey"
+            columns: ["donor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "donor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          context_id: string | null
+          context_type: string | null
+          conversation_type: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          organization_id: string
+          subject: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          context_id?: string | null
+          context_type?: string | null
+          conversation_type: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          organization_id: string
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          context_id?: string | null
+          context_type?: string | null
+          conversation_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          organization_id?: string
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       counties: {
         Row: {
           county_name: string
@@ -1195,6 +1317,7 @@ export type Database = {
           last_donation_date: string | null
           last_name: string | null
           lifetime_value: number | null
+          message_notification_email: boolean | null
           notes: string | null
           organization_id: string
           phone: string | null
@@ -1219,6 +1342,7 @@ export type Database = {
           last_donation_date?: string | null
           last_name?: string | null
           lifetime_value?: number | null
+          message_notification_email?: boolean | null
           notes?: string | null
           organization_id: string
           phone?: string | null
@@ -1243,6 +1367,7 @@ export type Database = {
           last_donation_date?: string | null
           last_name?: string | null
           lifetime_value?: number | null
+          message_notification_email?: boolean | null
           notes?: string | null
           organization_id?: string
           phone?: string | null
@@ -1979,6 +2104,83 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          attachments: Json | null
+          content: string
+          content_type: string | null
+          conversation_id: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          metadata: Json | null
+          reply_to_id: string | null
+          sender_donor_profile_id: string | null
+          sender_type: string
+          sender_user_id: string | null
+          sent_at: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          content: string
+          content_type?: string | null
+          conversation_id: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          metadata?: Json | null
+          reply_to_id?: string | null
+          sender_donor_profile_id?: string | null
+          sender_type: string
+          sender_user_id?: string | null
+          sent_at?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          content?: string
+          content_type?: string | null
+          conversation_id?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          metadata?: Json | null
+          reply_to_id?: string | null
+          sender_donor_profile_id?: string | null
+          sender_type?: string
+          sender_user_id?: string | null
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_donor_profile_id_fkey"
+            columns: ["sender_donor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "donor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_user_id_fkey"
+            columns: ["sender_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nonprofits: {
         Row: {
           c3_status_document_url: string | null
@@ -2639,6 +2841,7 @@ export type Database = {
           notify_assignments: boolean | null
           notify_campaigns: boolean | null
           notify_donations: boolean | null
+          notify_messages: boolean | null
           school_id: string | null
           system_admin: boolean | null
           updated_at: string
@@ -2654,6 +2857,7 @@ export type Database = {
           notify_assignments?: boolean | null
           notify_campaigns?: boolean | null
           notify_donations?: boolean | null
+          notify_messages?: boolean | null
           school_id?: string | null
           system_admin?: boolean | null
           updated_at?: string
@@ -2669,6 +2873,7 @@ export type Database = {
           notify_assignments?: boolean | null
           notify_campaigns?: boolean | null
           notify_donations?: boolean | null
+          notify_messages?: boolean | null
           school_id?: string | null
           system_admin?: boolean | null
           updated_at?: string
@@ -3576,6 +3781,10 @@ export type Database = {
       increment_campaign_amount: {
         Args: { amount: number; campaign_id: string }
         Returns: undefined
+      }
+      is_conversation_participant: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
       }
       is_system_admin: { Args: { user_id: string }; Returns: boolean }
       recalculate_donor_stats: {
