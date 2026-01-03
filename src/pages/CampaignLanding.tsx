@@ -29,6 +29,11 @@ interface CampaignData {
   requires_business_info: boolean | null;
   file_upload_deadline_days: number | null;
   roster_id: number | null;
+  // Campaign-level pitch fields
+  pitch_message: string | null;
+  pitch_image_url: string | null;
+  pitch_video_url: string | null;
+  pitch_recorded_video_url: string | null;
   groups: {
     id: string;
     organization_id: string;
@@ -664,62 +669,97 @@ const CampaignLanding = () => {
         </div>
       </div>
 
-      {/* Personal Pitch Section */}
-      {attributedRosterMember && (
-        <div className="max-w-6xl mx-auto px-6 pt-6">
-          <Card className="bg-primary/5 border-primary/20 overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row gap-6 items-center">
-                {/* Photo */}
-                {attributedRosterMember.pitchImageUrl && (
-                  <div className="flex-shrink-0">
-                    <img 
-                      src={attributedRosterMember.pitchImageUrl} 
-                      alt={`${attributedRosterMember.firstName} ${attributedRosterMember.lastName}`}
-                      className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-background shadow-lg"
+      {/* Pitch Section - Cascading: Roster member pitch > Campaign pitch */}
+      {(() => {
+        // Determine which pitch to show (roster member takes priority)
+        const rosterHasPitch = attributedRosterMember && (
+          attributedRosterMember.pitchMessage || 
+          attributedRosterMember.pitchImageUrl || 
+          attributedRosterMember.pitchVideoUrl || 
+          attributedRosterMember.pitchRecordedVideoUrl
+        );
+        
+        const campaignHasPitch = campaign && (
+          campaign.pitch_message || 
+          campaign.pitch_image_url || 
+          campaign.pitch_video_url || 
+          campaign.pitch_recorded_video_url
+        );
+        
+        const activePitch = rosterHasPitch ? {
+          type: 'roster' as const,
+          name: `${attributedRosterMember!.firstName} ${attributedRosterMember!.lastName}`,
+          message: attributedRosterMember!.pitchMessage,
+          imageUrl: attributedRosterMember!.pitchImageUrl,
+          videoUrl: attributedRosterMember!.pitchVideoUrl,
+          recordedVideoUrl: attributedRosterMember!.pitchRecordedVideoUrl,
+        } : campaignHasPitch ? {
+          type: 'campaign' as const,
+          name: campaign!.groups?.group_name || campaign!.name,
+          message: campaign!.pitch_message,
+          imageUrl: campaign!.pitch_image_url,
+          videoUrl: campaign!.pitch_video_url,
+          recordedVideoUrl: campaign!.pitch_recorded_video_url,
+        } : null;
+        
+        if (!activePitch) return null;
+        
+        const getVideoEmbedUrl = (url: string | null | undefined) => {
+          if (!url) return null;
+          const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/);
+          if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+          const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/);
+          if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+          return null;
+        };
+        
+        const embedUrl = getVideoEmbedUrl(activePitch.videoUrl);
+        
+        return (
+          <div className="max-w-6xl mx-auto px-6 pt-6">
+            <Card className="bg-primary/5 border-primary/20 overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row gap-6 items-center">
+                  {/* Photo */}
+                  {activePitch.imageUrl && (
+                    <div className="flex-shrink-0">
+                      <img 
+                        src={activePitch.imageUrl} 
+                        alt={activePitch.name}
+                        className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-background shadow-lg"
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="flex-1 text-center md:text-left">
+                    {/* Attribution */}
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {activePitch.type === 'roster' ? '🎉 You\'re supporting' : '💬 A message from'}
+                    </p>
+                    <h3 className="text-xl font-bold mb-3">
+                      {activePitch.name}
+                    </h3>
+                    
+                    {/* Message */}
+                    {activePitch.message && (
+                      <blockquote className="italic text-muted-foreground border-l-4 border-primary/30 pl-4 py-2">
+                        "{activePitch.message}"
+                      </blockquote>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Video - prioritize recorded video over external link */}
+                {activePitch.recordedVideoUrl ? (
+                  <div className="mt-4 aspect-video rounded-lg overflow-hidden max-w-2xl mx-auto">
+                    <video
+                      src={activePitch.recordedVideoUrl}
+                      className="w-full h-full object-cover"
+                      controls
+                      playsInline
                     />
                   </div>
-                )}
-                
-                <div className="flex-1 text-center md:text-left">
-                  {/* Attribution */}
-                  <p className="text-sm text-muted-foreground mb-1">
-                    🎉 You're supporting
-                  </p>
-                  <h3 className="text-xl font-bold mb-3">
-                    {attributedRosterMember.firstName} {attributedRosterMember.lastName}
-                  </h3>
-                  
-                  {/* Personal Message */}
-                  {attributedRosterMember.pitchMessage && (
-                    <blockquote className="italic text-muted-foreground border-l-4 border-primary/30 pl-4 py-2">
-                      "{attributedRosterMember.pitchMessage}"
-                    </blockquote>
-                  )}
-                </div>
-              </div>
-              
-              {/* Video - prioritize recorded video over external link */}
-              {attributedRosterMember.pitchRecordedVideoUrl ? (
-                <div className="mt-4 aspect-video rounded-lg overflow-hidden max-w-2xl mx-auto">
-                  <video
-                    src={attributedRosterMember.pitchRecordedVideoUrl}
-                    className="w-full h-full object-cover"
-                    controls
-                    playsInline
-                  />
-                </div>
-              ) : attributedRosterMember.pitchVideoUrl && (() => {
-                const url = attributedRosterMember.pitchVideoUrl;
-                const ytMatch = url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/);
-                const vimeoMatch = url?.match(/(?:vimeo\.com\/)(\d+)/);
-                const embedUrl = ytMatch 
-                  ? `https://www.youtube.com/embed/${ytMatch[1]}` 
-                  : vimeoMatch 
-                    ? `https://player.vimeo.com/video/${vimeoMatch[1]}`
-                    : null;
-                
-                return embedUrl ? (
+                ) : embedUrl && (
                   <div className="mt-4 aspect-video rounded-lg overflow-hidden max-w-2xl mx-auto">
                     <iframe
                       src={embedUrl}
@@ -728,12 +768,12 @@ const CampaignLanding = () => {
                       allowFullScreen
                     />
                   </div>
-                ) : null;
-              })()}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })()}
 
       {/* Campaign Items and Checkout Steps */}
       <div className="max-w-6xl mx-auto p-6">

@@ -824,6 +824,10 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          pitch_image_url: string | null
+          pitch_message: string | null
+          pitch_recorded_video_url: string | null
+          pitch_video_url: string | null
           publication_status: string | null
           requires_business_info: boolean | null
           roster_id: number | null
@@ -847,6 +851,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          pitch_image_url?: string | null
+          pitch_message?: string | null
+          pitch_recorded_video_url?: string | null
+          pitch_video_url?: string | null
           publication_status?: string | null
           requires_business_info?: boolean | null
           roster_id?: number | null
@@ -870,6 +878,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          pitch_image_url?: string | null
+          pitch_message?: string | null
+          pitch_recorded_video_url?: string | null
+          pitch_video_url?: string | null
           publication_status?: string | null
           requires_business_info?: boolean | null
           roster_id?: number | null
