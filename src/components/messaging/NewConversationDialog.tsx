@@ -30,9 +30,10 @@ import {
 } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Check, ChevronsUpDown, X, Users, Heart } from "lucide-react";
+import { Check, ChevronsUpDown, X, Users, Heart, Target, Package, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface NewConversationDialogProps {
   open: boolean;
@@ -40,6 +41,20 @@ interface NewConversationDialogProps {
   onConversationCreated: (conversationId: string) => void;
   preselectedUserId?: string;
   preselectedDonorId?: string;
+  contextType?: 'campaign' | 'order' | null;
+  contextId?: string;
+  contextLabel?: string;
+}
+
+interface Campaign {
+  id: string;
+  name: string;
+}
+
+interface Order {
+  id: string;
+  donor_name: string;
+  campaign_name: string;
 }
 
 interface OrgUser {
@@ -63,7 +78,10 @@ const NewConversationDialog = ({
   onOpenChange,
   onConversationCreated,
   preselectedUserId,
-  preselectedDonorId
+  preselectedDonorId,
+  contextType: initialContextType,
+  contextId: initialContextId,
+  contextLabel: initialContextLabel
 }: NewConversationDialogProps) => {
   const { user } = useAuth();
   const { organizationUser } = useOrganizationUser();
@@ -77,13 +95,36 @@ const NewConversationDialog = ({
   const [loading, setLoading] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [donorSearchOpen, setDonorSearchOpen] = useState(false);
+  
+  // Context linking state
+  const [contextType, setContextType] = useState<'campaign' | 'order' | null>(initialContextType || null);
+  const [contextId, setContextId] = useState<string | undefined>(initialContextId);
+  const [contextLabel, setContextLabel] = useState<string | undefined>(initialContextLabel);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [contextSelectorOpen, setContextSelectorOpen] = useState(false);
+  const [contextPickerOpen, setContextPickerOpen] = useState(false);
 
   useEffect(() => {
     if (open && organizationUser?.organization_id) {
       fetchOrgUsers();
       fetchDonors();
+      fetchCampaigns();
+      fetchOrders();
     }
   }, [open, organizationUser?.organization_id]);
+
+  useEffect(() => {
+    // Reset context when dialog opens with new props
+    if (open) {
+      setContextType(initialContextType || null);
+      setContextId(initialContextId);
+      setContextLabel(initialContextLabel);
+      if (initialContextLabel && !subject) {
+        setSubject(`Re: ${initialContextLabel}`);
+      }
+    }
+  }, [open, initialContextType, initialContextId, initialContextLabel]);
 
   useEffect(() => {
     if (preselectedUserId && orgUsers.length > 0) {
@@ -153,6 +194,45 @@ const NewConversationDialog = ({
     }
   };
 
+  const fetchCampaigns = async () => {
+    if (!organizationUser?.organization_id) return;
+
+    const { data, error } = await supabase
+      .from('campaigns')
+      .select('id, name, groups!inner(organization_id)')
+      .eq('groups.organization_id', organizationUser.organization_id)
+      .eq('status', true)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (!error && data) {
+      setCampaigns(data.map(c => ({ id: c.id, name: c.name })));
+    }
+  };
+
+  const fetchOrders = async () => {
+    if (!organizationUser?.organization_id) return;
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        id,
+        donor_profiles!inner(first_name, last_name, email, organization_id),
+        campaign_items!inner(campaigns!inner(name))
+      `)
+      .eq('donor_profiles.organization_id', organizationUser.organization_id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (!error && data) {
+      setOrders(data.map(o => ({
+        id: o.id,
+        donor_name: `${(o.donor_profiles as any)?.first_name || ''} ${(o.donor_profiles as any)?.last_name || ''}`.trim() || (o.donor_profiles as any)?.email,
+        campaign_name: (o.campaign_items as any)?.campaigns?.name || 'Unknown Campaign'
+      })));
+    }
+  };
+
   const handleCreateConversation = async () => {
     if (!user || !organizationUser?.organization_id) return;
     
@@ -212,7 +292,9 @@ const NewConversationDialog = ({
           organization_id: organizationUser.organization_id,
           conversation_type: activeTab === "donor" ? 'donor' : selectedUsers.length > 1 ? 'group' : 'internal',
           subject: subject.trim() || null,
-          created_by: user.id
+          created_by: user.id,
+          context_type: contextType,
+          context_id: contextId
         })
         .select()
         .single();
@@ -270,7 +352,35 @@ const NewConversationDialog = ({
     setSelectedDonor(null);
     setSubject("");
     setInitialMessage("");
+    setContextType(null);
+    setContextId(undefined);
+    setContextLabel(undefined);
+    setContextSelectorOpen(false);
     onOpenChange(false);
+  };
+
+  const selectContext = (type: 'campaign' | 'order', id: string, label: string) => {
+    setContextType(type);
+    setContextId(id);
+    setContextLabel(label);
+    setContextPickerOpen(false);
+    if (!subject) {
+      setSubject(`Re: ${label}`);
+    }
+  };
+
+  const clearContext = () => {
+    setContextType(null);
+    setContextId(undefined);
+    setContextLabel(undefined);
+  };
+
+  const getContextIcon = (type: 'campaign' | 'order' | null) => {
+    switch (type) {
+      case 'campaign': return <Target className="h-4 w-4" />;
+      case 'order': return <Package className="h-4 w-4" />;
+      default: return <Link2 className="h-4 w-4" />;
+    }
   };
 
   const toggleUser = (orgUser: OrgUser) => {
@@ -456,6 +566,132 @@ const NewConversationDialog = ({
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Context Linking */}
+        {contextType && contextLabel ? (
+          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+            <Badge variant="secondary" className="flex items-center gap-1">
+              {getContextIcon(contextType)}
+              <span className="capitalize">{contextType}:</span>
+              <span className="font-medium">{contextLabel}</span>
+            </Badge>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5"
+              onClick={clearContext}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        ) : (
+          <Collapsible open={contextSelectorOpen} onOpenChange={setContextSelectorOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground">
+                <Link2 className="h-4 w-4 mr-2" />
+                Link to campaign or order (optional)
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-3 pt-3">
+              <div className="space-y-2">
+                <Label>Context Type</Label>
+                <Popover open={contextPickerOpen} onOpenChange={setContextPickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {contextType ? (
+                        <span className="flex items-center gap-2">
+                          {getContextIcon(contextType)}
+                          <span className="capitalize">{contextType}</span>
+                        </span>
+                      ) : (
+                        "Select context type..."
+                      )}
+                      <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandList>
+                        <CommandGroup heading="Link to">
+                          <CommandItem
+                            onSelect={() => {
+                              setContextType('campaign');
+                              setContextPickerOpen(false);
+                            }}
+                          >
+                            <Target className="h-4 w-4 mr-2" />
+                            Campaign
+                          </CommandItem>
+                          <CommandItem
+                            onSelect={() => {
+                              setContextType('order');
+                              setContextPickerOpen(false);
+                            }}
+                          >
+                            <Package className="h-4 w-4 mr-2" />
+                            Order
+                          </CommandItem>
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {contextType === 'campaign' && (
+                <div className="space-y-2">
+                  <Label>Select Campaign</Label>
+                  <Command className="border rounded-md">
+                    <CommandInput placeholder="Search campaigns..." />
+                    <CommandList>
+                      <CommandEmpty>No campaigns found.</CommandEmpty>
+                      <CommandGroup>
+                        {campaigns.map(c => (
+                          <CommandItem
+                            key={c.id}
+                            value={c.name}
+                            onSelect={() => selectContext('campaign', c.id, c.name)}
+                          >
+                            <Target className="h-4 w-4 mr-2" />
+                            {c.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </div>
+              )}
+
+              {contextType === 'order' && (
+                <div className="space-y-2">
+                  <Label>Select Order</Label>
+                  <Command className="border rounded-md">
+                    <CommandInput placeholder="Search orders..." />
+                    <CommandList>
+                      <CommandEmpty>No orders found.</CommandEmpty>
+                      <CommandGroup>
+                        {orders.map(o => (
+                          <CommandItem
+                            key={o.id}
+                            value={`${o.donor_name} ${o.campaign_name}`}
+                            onSelect={() => selectContext('order', o.id, `${o.donor_name} - ${o.campaign_name}`)}
+                          >
+                            <Package className="h-4 w-4 mr-2" />
+                            <div className="flex flex-col">
+                              <span className="text-sm">{o.donor_name}</span>
+                              <span className="text-xs text-muted-foreground">{o.campaign_name}</span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="message">Message</Label>

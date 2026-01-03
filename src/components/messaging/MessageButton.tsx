@@ -11,6 +11,9 @@ interface MessageButtonProps {
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
   showLabel?: boolean;
+  contextType?: 'campaign' | 'order' | null;
+  contextId?: string;
+  contextLabel?: string;
 }
 
 const MessageButton = ({
@@ -19,7 +22,10 @@ const MessageButton = ({
   variant = "outline",
   size = "sm",
   className,
-  showLabel = true
+  showLabel = true,
+  contextType,
+  contextId,
+  contextLabel
 }: MessageButtonProps) => {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -42,6 +48,9 @@ const MessageButton = ({
         onConversationCreated={(id) => navigate(`/dashboard/messages/${id}`)}
         preselectedUserId={userId}
         preselectedDonorId={donorId}
+        contextType={contextType}
+        contextId={contextId}
+        contextLabel={contextLabel}
       />
     </>
   );
