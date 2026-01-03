@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -13,7 +14,6 @@ import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { AddCampaignForm } from "@/components/AddCampaignForm";
 import { CampaignPublicationControl } from "@/components/CampaignPublicationControl";
 import { ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Package, X, ExternalLink, Link as LinkIcon, Globe, Eye, AlertCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -38,6 +38,7 @@ interface Campaign {
 }
 
 export default function Campaigns() {
+  const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,9 +46,6 @@ export default function Campaigns() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterBy, setFilterBy] = useState("active");
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [showAddCampaign, setShowAddCampaign] = useState(false);
-  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
-  const [managingCampaignId, setManagingCampaignId] = useState<string | null>(null);
   const [publishingCampaign, setPublishingCampaign] = useState<Campaign | null>(null);
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup, groups } = useActiveGroup();
@@ -332,7 +330,7 @@ export default function Campaigns() {
                   </SelectContent>
                 </Select>
 
-                <Button onClick={() => setShowAddCampaign(true)} className="flex items-center gap-2 col-span-2 sm:col-span-1 lg:col-start-4 w-full sm:w-auto sm:justify-self-end">
+                <Button onClick={() => navigate("/dashboard/campaigns/new")} className="flex items-center gap-2 col-span-2 sm:col-span-1 lg:col-start-4 w-full sm:w-auto sm:justify-self-end">
                   <Plus className="h-4 w-4" />
                   Add Campaign
                 </Button>
@@ -347,7 +345,7 @@ export default function Campaigns() {
                     <CardContent className="py-12 text-center">
                       <p className="text-muted-foreground mb-4">No campaigns found.</p>
                       <Button 
-                        onClick={() => setShowAddCampaign(true)}
+                        onClick={() => navigate("/dashboard/campaigns/new")}
                         className="flex items-center gap-2"
                       >
                         <Plus className="h-4 w-4" />
@@ -371,19 +369,11 @@ export default function Campaigns() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-background border">
-                              <DropdownMenuItem onClick={() => {
-                                setEditingCampaign(campaign);
-                                setManagingCampaignId(null);
-                                setShowAddCampaign(true);
-                              }}>
+                              <DropdownMenuItem onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
-                                setEditingCampaign(null);
-                                setManagingCampaignId(campaign.id);
-                                setShowAddCampaign(true);
-                              }}>
+                              <DropdownMenuItem onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}>
                                 <Package className="mr-2 h-4 w-4" />
                                 Manage Items
                               </DropdownMenuItem>
@@ -513,7 +503,7 @@ export default function Campaigns() {
                         <div className="flex flex-col items-center space-y-4">
                           <p className="text-muted-foreground">No campaigns found.</p>
                           <Button 
-                            onClick={() => setShowAddCampaign(true)}
+                            onClick={() => navigate("/dashboard/campaigns/new")}
                             className="flex items-center gap-2"
                           >
                             <Plus className="h-4 w-4" />
@@ -567,20 +557,14 @@ export default function Campaigns() {
                             <DropdownMenuContent align="end" className="bg-background border">
                               <DropdownMenuItem 
                                 className="cursor-pointer"
-                                onClick={() => {
-                                  setEditingCampaign(campaign);
-                                  setShowAddCampaign(true);
-                                }}
+                                onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
                               >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Campaign
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 className="cursor-pointer"
-                                onClick={() => {
-                                  setManagingCampaignId(campaign.id);
-                                  setShowAddCampaign(true);
-                                }}
+                                onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
                               >
                                 <Package className="mr-2 h-4 w-4" />
                                 Manage Campaign Items
@@ -667,36 +651,6 @@ export default function Campaigns() {
                 </Table>
               </div>
             )}
-
-            {showAddCampaign && (
-            <AddCampaignForm
-              open={showAddCampaign}
-              onOpenChange={(open) => {
-                setShowAddCampaign(open);
-                if (!open) {
-                  setEditingCampaign(null);
-                  setManagingCampaignId(null);
-                }
-              }}
-              onCampaignAdded={fetchCampaigns}
-              editCampaign={editingCampaign ? {
-                id: editingCampaign.id,
-                name: editingCampaign.name,
-                description: editingCampaign.description,
-                group_directions: (editingCampaign as any).group_directions || null,
-                thank_you_message: (editingCampaign as any).thank_you_message || null,
-                goal_amount: editingCampaign.goal_amount,
-                start_date: editingCampaign.start_date,
-                end_date: editingCampaign.end_date,
-                group_id: editingCampaign.group_id || '',
-                campaign_type_id: editingCampaign.campaign_type_id || '',
-                slug: editingCampaign.slug || '',
-                image_url: editingCampaign.image_url || null,
-                publication_status: editingCampaign.publication_status || 'draft',
-              } : null}
-              manageCampaignId={managingCampaignId}
-            />
-          )}
           
           {publishingCampaign && (
             <CampaignPublicationControl
