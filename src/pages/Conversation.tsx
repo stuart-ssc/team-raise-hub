@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MessageAttachmentUploader } from "@/components/messaging/MessageAttachmentUploader";
 import { MessageAttachments } from "@/components/messaging/MessageAttachments";
+import { ReadReceiptIndicator } from "@/components/messaging/ReadReceiptIndicator";
 
 interface Attachment {
   name: string;
@@ -49,6 +50,7 @@ interface Participant {
   donor_profile_id: string | null;
   participant_type: string;
   role: string;
+  last_read_at: string | null;
   profile?: {
     first_name: string | null;
     last_name: string | null;
@@ -84,6 +86,7 @@ const Conversation = () => {
   const [newMessage, setNewMessage] = useState("");
   const [isMuted, setIsMuted] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [recipientReadAt, setRecipientReadAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -92,7 +95,7 @@ const Conversation = () => {
       markAsRead();
       
       // Subscribe to new messages
-      const channel = supabase
+      const messagesChannel = supabase
         .channel(`conversation-${id}`)
         .on(
           'postgres_changes',
@@ -111,11 +114,39 @@ const Conversation = () => {
         )
         .subscribe();
 
+      // Subscribe to read receipt updates
+      const readReceiptsChannel = supabase
+        .channel(`read-receipts-${id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'conversation_participants',
+            filter: `conversation_id=eq.${id}`
+          },
+          (payload) => {
+            const updated = payload.new as any;
+            // Only update if it's not our own read receipt
+            if (updated.user_id !== user?.id && updated.last_read_at) {
+              setRecipientReadAt(prev => {
+                // Use the later read time
+                if (!prev || new Date(updated.last_read_at) > new Date(prev)) {
+                  return updated.last_read_at;
+                }
+                return prev;
+              });
+            }
+          }
+        )
+        .subscribe();
+
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(messagesChannel);
+        supabase.removeChannel(readReceiptsChannel);
       };
     }
-  }, [id]);
+  }, [id, user?.id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -146,6 +177,7 @@ const Conversation = () => {
           participant_type,
           role,
           muted_until,
+          last_read_at,
           profiles:user_id (
             first_name,
             last_name,
@@ -162,6 +194,18 @@ const Conversation = () => {
 
       if (partError) throw partError;
 
+      // Get earliest read time from other participants (for read receipts)
+      const otherParticipants = participants?.filter(p => p.user_id !== user?.id) || [];
+      if (otherParticipants.length > 0) {
+        const readTimes = otherParticipants
+          .map(p => p.last_read_at)
+          .filter(Boolean) as string[];
+        if (readTimes.length > 0) {
+          // Use the minimum read time (earliest reader)
+          setRecipientReadAt(readTimes.sort()[0]);
+        }
+      }
+
       // Check if current user is muted
       const myParticipation = participants?.find(p => p.user_id === user?.id);
       if (myParticipation?.muted_until) {
@@ -175,6 +219,7 @@ const Conversation = () => {
           donor_profile_id: p.donor_profile_id,
           participant_type: p.participant_type,
           role: p.role,
+          last_read_at: p.last_read_at,
           profile: p.profiles as any,
           donor_profile: p.donor_profiles as any
         })) || []
@@ -516,9 +561,17 @@ const Conversation = () => {
                           <MessageAttachments attachments={message.attachments} isOwn={isOwn} />
                         )}
                       </div>
-                      <p className={`text-[10px] text-muted-foreground mt-1 ${isOwn ? 'text-right mr-1' : 'ml-1'}`}>
-                        {formatMessageDate(message.sent_at)}
-                      </p>
+                      <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end mr-1' : 'ml-1'}`}>
+                        <span className="text-[10px] text-muted-foreground">
+                          {formatMessageDate(message.sent_at)}
+                        </span>
+                        {isOwn && (
+                          <ReadReceiptIndicator
+                            status={recipientReadAt && new Date(message.sent_at) <= new Date(recipientReadAt) ? 'read' : 'sent'}
+                            readAt={recipientReadAt && new Date(message.sent_at) <= new Date(recipientReadAt) ? recipientReadAt : undefined}
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
