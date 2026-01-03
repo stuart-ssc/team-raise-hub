@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquarePlus, Search, Archive, Users, MessageCircle, Building2, Target, Package } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import NewConversationDialog from "@/components/messaging/NewConversationDialog";
+import MessageSearchDialog from "@/components/messaging/MessageSearchDialog";
 
 interface ConversationWithDetails {
   id: string;
@@ -57,6 +58,7 @@ const Messages = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
 
   useEffect(() => {
     if (organizationUser?.organization_id) {
@@ -306,12 +308,20 @@ const Messages = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search messages..."
+                  placeholder="Filter conversations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
                 />
               </div>
+              <Button
+                variant="outline"
+                onClick={() => setSearchDialogOpen(true)}
+                className="shrink-0"
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Search All Messages
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
@@ -427,6 +437,14 @@ const Messages = () => {
         onOpenChange={setDialogOpen}
         onConversationCreated={(id) => navigate(`/dashboard/messages/${id}`)}
       />
+
+      {organizationUser?.organization_id && (
+        <MessageSearchDialog
+          open={searchDialogOpen}
+          onOpenChange={setSearchDialogOpen}
+          organizationId={organizationUser.organization_id}
+        />
+      )}
     </DashboardPageLayout>
   );
 };
