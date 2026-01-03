@@ -86,6 +86,8 @@ import DonorPortalConversationView from "./pages/DonorPortal/ConversationView";
 import DonorPortalReceipts from "./pages/DonorPortal/Receipts";
 import DonorPortalProfile from "./pages/DonorPortal/Profile";
 
+const queryClient = new QueryClient();
+
 const AppContent = () => {
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const { user, loading } = useAuth();
@@ -201,6 +203,7 @@ const AppContent = () => {
         <Route path="/portal/profile" element={<ProtectedRoute><DonorPortalProfile /></ProtectedRoute>} />
         
         <Route path="*" element={<NotFound />} />
+      </Routes>
     </BrowserRouter>
   );
 };
