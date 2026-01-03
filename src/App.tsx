@@ -21,6 +21,7 @@ import Dashboard from "./pages/Dashboard";
 import Groups from "./pages/Groups";
 import Users from "./pages/Users";
 import Campaigns from "./pages/Campaigns";
+import CampaignEditor from "./pages/CampaignEditor";
 import CampaignLanding from "./pages/CampaignLanding";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import Profile from "./pages/Profile";
@@ -141,6 +142,8 @@ const AppContent = () => {
         <Route path="/dashboard/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
         <Route path="/dashboard/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
         <Route path="/dashboard/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+        <Route path="/dashboard/campaigns/new" element={<ProtectedRoute><CampaignEditor /></ProtectedRoute>} />
+        <Route path="/dashboard/campaigns/:id/edit" element={<ProtectedRoute><CampaignEditor /></ProtectedRoute>} />
         <Route path="/dashboard/donors" element={<ProtectedRoute><Donors /></ProtectedRoute>} />
         <Route path="/dashboard/donors/:donorId" element={<ProtectedRoute><DonorProfile /></ProtectedRoute>} />
         <Route path="/dashboard/donors/analytics" element={<ProtectedRoute><DonorAnalytics /></ProtectedRoute>} />
