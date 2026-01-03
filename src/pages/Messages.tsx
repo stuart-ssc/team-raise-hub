@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquarePlus, Search, Archive, Users, MessageCircle, Building2 } from "lucide-react";
+import { MessageSquarePlus, Search, Archive, Users, MessageCircle, Building2, Target, Package } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import NewConversationDialog from "@/components/messaging/NewConversationDialog";
 
@@ -20,6 +20,7 @@ interface ConversationWithDetails {
   subject: string | null;
   conversation_type: string;
   context_type: string | null;
+  context_id: string | null;
   updated_at: string;
   created_at: string;
   participants: {
@@ -99,6 +100,7 @@ const Messages = () => {
             subject,
             conversation_type,
             context_type,
+            context_id,
             updated_at,
             created_at,
             organization_id
@@ -175,6 +177,7 @@ const Messages = () => {
             subject: conv.subject,
             conversation_type: conv.conversation_type,
             context_type: conv.context_type,
+            context_id: conv.context_id,
             updated_at: conv.updated_at,
             created_at: conv.created_at,
             participants: convParticipants.map(cp => ({
@@ -386,14 +389,27 @@ const Messages = () => {
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <p className={`text-xs truncate flex-1 ${conversation.unread_count > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {conversation.last_message?.content || "No messages yet"}
-                            </p>
-                            {conversation.unread_count > 0 && (
-                              <Badge variant="default" className="h-5 min-w-5 flex items-center justify-center text-xs">
-                                {conversation.unread_count}
-                              </Badge>
-                            )}
+                            <div className="flex items-center gap-1 flex-1 min-w-0">
+                              <p className={`text-xs truncate ${conversation.unread_count > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                {conversation.last_message?.content || "No messages yet"}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {conversation.context_type && (
+                                <Badge variant="outline" className="h-5 text-xs">
+                                  {conversation.context_type === 'campaign' ? (
+                                    <Target className="h-3 w-3" />
+                                  ) : (
+                                    <Package className="h-3 w-3" />
+                                  )}
+                                </Badge>
+                              )}
+                              {conversation.unread_count > 0 && (
+                                <Badge variant="default" className="h-5 min-w-5 flex items-center justify-center text-xs">
+                                  {conversation.unread_count}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
