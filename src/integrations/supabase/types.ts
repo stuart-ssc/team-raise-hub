@@ -1330,6 +1330,7 @@ export type Database = {
           tags: string[] | null
           total_donations: number | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -1355,6 +1356,7 @@ export type Database = {
           tags?: string[] | null
           total_donations?: number | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -1380,6 +1382,7 @@ export type Database = {
           tags?: string[] | null
           total_donations?: number | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1394,6 +1397,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3800,6 +3810,7 @@ export type Database = {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
       }
+      is_donor_only_user: { Args: { check_user_id: string }; Returns: boolean }
       is_system_admin: { Args: { user_id: string }; Returns: boolean }
       recalculate_donor_stats: {
         Args: { p_organization_id?: string }
