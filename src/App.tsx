@@ -17,7 +17,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DataProcessingAgreement from "./pages/DataProcessingAgreement";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
+import DashboardRedirect from "./components/DashboardRedirect";
 import Groups from "./pages/Groups";
 import Users from "./pages/Users";
 import Campaigns from "./pages/Campaigns";
@@ -151,7 +151,7 @@ const AppContent = () => {
         <Route path="/orders/:orderId" element={<OrderDetails />} />
         <Route path="/dashboard/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
         <Route path="/dashboard/orders/:orderId" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><DashboardRedirect /></ProtectedRoute>} />
         <Route path="/dashboard/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
         <Route path="/dashboard/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
         <Route path="/dashboard/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
