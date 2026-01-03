@@ -75,7 +75,16 @@ import StateLandingPage from "./pages/StateLandingPage";
 import SchoolLandingPage from "./pages/SchoolLandingPage";
 import DistrictLandingPage from "./pages/DistrictLandingPage";
 
-const queryClient = new QueryClient();
+// Donor Portal Pages
+import DonorPortalHome from "./pages/DonorPortal/Home";
+import DonorPortalPurchases from "./pages/DonorPortal/Purchases";
+import DonorPortalPurchaseDetails from "./pages/DonorPortal/PurchaseDetails";
+import DonorPortalMyBusinesses from "./pages/DonorPortal/MyBusinesses";
+import DonorPortalBusinessEditor from "./pages/DonorPortal/BusinessEditor";
+import DonorPortalMessages from "./pages/DonorPortal/Messages";
+import DonorPortalConversationView from "./pages/DonorPortal/ConversationView";
+import DonorPortalReceipts from "./pages/DonorPortal/Receipts";
+import DonorPortalProfile from "./pages/DonorPortal/Profile";
 
 const AppContent = () => {
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -179,8 +188,19 @@ const AppContent = () => {
         <Route path="/system-admin/reports" element={<ProtectedRoute><SystemAdminGuard><SystemAdminReports /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/marketing-analytics" element={<ProtectedRoute><SystemAdminGuard><MarketingAnalytics /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/contact-submissions" element={<ProtectedRoute><SystemAdminGuard><ContactSubmissions /></SystemAdminGuard></ProtectedRoute>} />
+        
+        {/* Donor Portal Routes */}
+        <Route path="/portal" element={<ProtectedRoute><DonorPortalHome /></ProtectedRoute>} />
+        <Route path="/portal/purchases" element={<ProtectedRoute><DonorPortalPurchases /></ProtectedRoute>} />
+        <Route path="/portal/purchases/:orderId" element={<ProtectedRoute><DonorPortalPurchaseDetails /></ProtectedRoute>} />
+        <Route path="/portal/businesses" element={<ProtectedRoute><DonorPortalMyBusinesses /></ProtectedRoute>} />
+        <Route path="/portal/businesses/:businessId" element={<ProtectedRoute><DonorPortalBusinessEditor /></ProtectedRoute>} />
+        <Route path="/portal/messages" element={<ProtectedRoute><DonorPortalMessages /></ProtectedRoute>} />
+        <Route path="/portal/messages/:id" element={<ProtectedRoute><DonorPortalConversationView /></ProtectedRoute>} />
+        <Route path="/portal/receipts" element={<ProtectedRoute><DonorPortalReceipts /></ProtectedRoute>} />
+        <Route path="/portal/profile" element={<ProtectedRoute><DonorPortalProfile /></ProtectedRoute>} />
+        
         <Route path="*" element={<NotFound />} />
-      </Routes>
     </BrowserRouter>
   );
 };
