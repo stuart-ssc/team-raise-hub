@@ -11,6 +11,15 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { MessageAttachmentUploader } from "@/components/messaging/MessageAttachmentUploader";
+import { MessageAttachments } from "@/components/messaging/MessageAttachments";
+
+interface Attachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
 
 interface Message {
   id: string;
@@ -20,6 +29,7 @@ interface Message {
   sender_donor_profile_id: string | null;
   sender_name: string;
   is_from_donor: boolean;
+  attachments?: Attachment[];
 }
 
 interface ConversationDetails {
@@ -37,6 +47,7 @@ export default function DonorPortalConversationView() {
   const [conversation, setConversation] = useState<ConversationDetails | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const donorIds = donorProfiles.map(p => p.id);
@@ -144,6 +155,7 @@ export default function DonorPortalConversationView() {
         sender_donor_profile_id: msg.sender_donor_profile_id,
         sender_name: senderName,
         is_from_donor: isFromDonor,
+        attachments: (msg.attachments as unknown) as Attachment[] | undefined
       });
     }
 
@@ -152,7 +164,7 @@ export default function DonorPortalConversationView() {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !conversationId || donorProfiles.length === 0) return;
+    if ((!newMessage.trim() && pendingAttachments.length === 0) || !conversationId || donorProfiles.length === 0) return;
 
     setSending(true);
     try {
@@ -162,7 +174,9 @@ export default function DonorPortalConversationView() {
           conversation_id: conversationId,
           sender_donor_profile_id: donorProfiles[0].id,
           sender_type: 'donor',
-          content: newMessage.trim(),
+          content: newMessage.trim() || '',
+          content_type: pendingAttachments.length > 0 ? 'mixed' : 'text',
+          attachments: pendingAttachments.length > 0 ? (pendingAttachments as unknown as any) : null
         })
         .select('id')
         .single();
@@ -170,6 +184,7 @@ export default function DonorPortalConversationView() {
       if (error) throw error;
 
       setNewMessage("");
+      setPendingAttachments([]);
       await fetchMessages();
 
       // Trigger email notifications to staff
@@ -284,7 +299,12 @@ export default function DonorPortalConversationView() {
                         : 'bg-muted'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    {message.content && (
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    )}
+                    {message.attachments && message.attachments.length > 0 && (
+                      <MessageAttachments attachments={message.attachments} isOwn={message.is_from_donor} />
+                    )}
                   </div>
                 </div>
               </div>
@@ -292,13 +312,27 @@ export default function DonorPortalConversationView() {
             <div ref={messagesEndRef} />
           </CardContent>
 
-          <div className="border-t p-4">
+          <div className="border-t p-4 space-y-2">
+            {pendingAttachments.length > 0 && (
+              <MessageAttachmentUploader
+                conversationId={conversationId || ''}
+                onAttachmentsChange={setPendingAttachments}
+                pendingAttachments={pendingAttachments}
+                disabled={sending}
+              />
+            )}
             <div className="flex gap-2">
+              <MessageAttachmentUploader
+                conversationId={conversationId || ''}
+                onAttachmentsChange={setPendingAttachments}
+                pendingAttachments={pendingAttachments}
+                disabled={sending}
+              />
               <Textarea
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type your message..."
-                className="resize-none"
+                className="resize-none flex-1"
                 rows={2}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -307,7 +341,7 @@ export default function DonorPortalConversationView() {
                   }
                 }}
               />
-              <Button onClick={handleSendMessage} disabled={sending || !newMessage.trim()}>
+              <Button onClick={handleSendMessage} disabled={sending || (!newMessage.trim() && pendingAttachments.length === 0)}>
                 {sending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -315,7 +349,7 @@ export default function DonorPortalConversationView() {
                 )}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs text-muted-foreground">
               Press Enter to send, Shift+Enter for new line
             </p>
           </div>
