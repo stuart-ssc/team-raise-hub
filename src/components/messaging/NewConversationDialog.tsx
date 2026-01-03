@@ -122,7 +122,12 @@ const NewConversationDialog = ({
       .eq('active_user', true)
       .neq('user_id', user?.id);
 
-    if (!error && data) {
+    if (error) {
+      console.error('Error fetching org users:', error);
+    }
+    
+    if (data) {
+      console.log('Org users data:', data);
       setOrgUsers(data.map(u => ({
         id: u.id,
         user_id: u.user_id,
