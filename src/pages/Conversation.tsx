@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -22,6 +23,7 @@ import { MessageAttachmentUploader } from "@/components/messaging/MessageAttachm
 import { MessageAttachments } from "@/components/messaging/MessageAttachments";
 import { ReadReceiptIndicator } from "@/components/messaging/ReadReceiptIndicator";
 import { MessageReactions } from "@/components/messaging/MessageReactions";
+import { MessageTemplatesPicker } from "@/components/messaging/MessageTemplatesPicker";
 
 interface Attachment {
   name: string;
@@ -85,6 +87,7 @@ interface ConversationDetails {
 const Conversation = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { organizationUser } = useOrganizationUser();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -644,6 +647,13 @@ const Conversation = () => {
                 pendingAttachments={pendingAttachments}
                 disabled={sending}
               />
+              {organizationUser?.organization_id && (
+                <MessageTemplatesPicker
+                  organizationId={organizationUser.organization_id}
+                  onSelectTemplate={(content) => setNewMessage(prev => prev ? `${prev}\n${content}` : content)}
+                  canManage={['organization_admin', 'program_manager'].includes(organizationUser?.user_type?.permission_level || '')}
+                />
+              )}
               <Input
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
