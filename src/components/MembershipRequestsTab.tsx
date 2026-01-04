@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -166,11 +167,15 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
   const handleApprove = async (request: MembershipRequest) => {
     setProcessing(request.id);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from("membership_requests")
         .update({ 
           status: "approved",
           reviewer_notes: reviewerNotes || null,
+          reviewed_by: user?.id || null,
+          reviewed_at: new Date().toISOString(),
         })
         .eq("id", request.id);
 
@@ -210,11 +215,15 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
 
     setProcessing(request.id);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from("membership_requests")
         .update({ 
           status: "rejected",
           reviewer_notes: reviewerNotes,
+          reviewed_by: user?.id || null,
+          reviewed_at: new Date().toISOString(),
         })
         .eq("id", request.id);
 

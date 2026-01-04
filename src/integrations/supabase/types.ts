@@ -2207,6 +2207,7 @@ export type Database = {
           organization_id: string
           requester_message: string | null
           reviewed_at: string | null
+          reviewed_by: string | null
           reviewer_id: string | null
           reviewer_notes: string | null
           status: string
@@ -2221,6 +2222,7 @@ export type Database = {
           organization_id: string
           requester_message?: string | null
           reviewed_at?: string | null
+          reviewed_by?: string | null
           reviewer_id?: string | null
           reviewer_notes?: string | null
           status?: string
@@ -2235,6 +2237,7 @@ export type Database = {
           organization_id?: string
           requester_message?: string | null
           reviewed_at?: string | null
+          reviewed_by?: string | null
           reviewer_id?: string | null
           reviewer_notes?: string | null
           status?: string
@@ -2262,6 +2265,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {

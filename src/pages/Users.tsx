@@ -35,6 +35,7 @@ import {
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { MembershipRequestsTab } from "@/components/MembershipRequestsTab";
+import { MembershipRequestHistory } from "@/components/MembershipRequestHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { AddUserForm } from "@/components/AddUserForm";
@@ -325,6 +326,7 @@ const Users = () => {
                     </Badge>
                   )}
                 </TabsTrigger>
+                <TabsTrigger value="history">Request History</TabsTrigger>
               </TabsList>
               
               <TabsContent value="users" className="mt-4">
@@ -574,6 +576,12 @@ const Users = () => {
                     fetchPendingRequestsCount();
                     fetchUsers();
                   }}
+                />
+              </TabsContent>
+              
+              <TabsContent value="history" className="mt-4">
+                <MembershipRequestHistory 
+                  organizationId={organizationUser?.organization_id || ""}
                 />
               </TabsContent>
             </Tabs>
