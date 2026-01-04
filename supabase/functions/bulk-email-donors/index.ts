@@ -14,6 +14,16 @@ interface BulkEmailRequest {
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
+// Escape HTML entities to prevent XSS
+const escapeHtml = (text: string): string => {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -77,16 +87,17 @@ Deno.serve(async (req) => {
     // Send email to each donor
     for (const donor of donors) {
       try {
-        // Personalize message
+        // Personalize and escape message to prevent XSS
         const personalizedMessage = message.replace(
           /{firstName}/g,
-          donor.first_name || "Friend"
+          escapeHtml(donor.first_name || "Friend")
         );
+        const escapedMessage = escapeHtml(personalizedMessage);
 
         const htmlMessage = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="padding: 20px;">
-              ${personalizedMessage.split('\n').map(para => `<p>${para}</p>`).join('')}
+              ${escapedMessage.split('\n').map(para => `<p>${para}</p>`).join('')}
             </div>
             <div style="padding: 20px; background-color: #f5f5f5; text-align: center; font-size: 12px; color: #666;">
               <p>You're receiving this email as a supporter of our organization.</p>
