@@ -54,7 +54,7 @@ const DashboardSidebarSheet = ({
   const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
 
   // Fetch pending membership requests count
-  useEffect(() => {
+  const fetchPendingCount = () => {
     if (organizationUser?.organization_id && canSeeUsers) {
       supabase
         .from('membership_requests')
@@ -63,6 +63,35 @@ const DashboardSidebarSheet = ({
         .eq('status', 'pending')
         .then(({ count }) => setPendingCount(count || 0));
     }
+  };
+
+  useEffect(() => {
+    fetchPendingCount();
+  }, [organizationUser?.organization_id, canSeeUsers]);
+
+  // Real-time subscription for pending requests
+  useEffect(() => {
+    if (!organizationUser?.organization_id || !canSeeUsers) return;
+
+    const channel = supabase
+      .channel('sidebar-sheet-membership-requests')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'membership_requests',
+          filter: `organization_id=eq.${organizationUser.organization_id}`,
+        },
+        () => {
+          fetchPendingCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [organizationUser?.organization_id, canSeeUsers]);
 
   const isActive = (path: string, end?: boolean) => {

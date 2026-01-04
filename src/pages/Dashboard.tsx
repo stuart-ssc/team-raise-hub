@@ -230,6 +230,31 @@ const Dashboard = () => {
     }
   }, [organizationUser?.organization_id, canManageUsers]);
 
+  // Real-time subscription for pending requests
+  useEffect(() => {
+    if (!organizationUser?.organization_id || !canManageUsers) return;
+
+    const channel = supabase
+      .channel('dashboard-membership-requests')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'membership_requests',
+          filter: `organization_id=eq.${organizationUser.organization_id}`,
+        },
+        () => {
+          fetchPendingRequestsCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [organizationUser?.organization_id, canManageUsers]);
+
   return (
     <DashboardPageLayout
       showBreadcrumbs={false}
