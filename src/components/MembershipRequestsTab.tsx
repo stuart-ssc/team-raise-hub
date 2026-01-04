@@ -137,6 +137,32 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
     }
   }, [organizationId]);
 
+  // Real-time subscription for requests list
+  useEffect(() => {
+    if (!organizationId) return;
+
+    const channel = supabase
+      .channel('membership-requests-list')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'membership_requests',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        () => {
+          fetchRequests();
+          onRequestProcessed?.();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [organizationId]);
+
   const handleApprove = async (request: MembershipRequest) => {
     setProcessing(request.id);
     try {
