@@ -39,9 +39,9 @@ export function DonorPortalSidebar({ hasBusinesses = false, onLogout }: DonorPor
   return (
     <>
       <aside className="hidden md:flex flex-col w-64 bg-card border-r min-h-screen">
-        <div className="p-6 border-b">
+        <div className="p-4">
           <NavLink to="/portal">
-            <SponsorlyLogo theme="light" className="h-8" />
+            <SponsorlyLogo theme="light" />
           </NavLink>
         </div>
 

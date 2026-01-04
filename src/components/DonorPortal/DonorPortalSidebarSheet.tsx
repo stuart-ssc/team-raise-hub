@@ -54,9 +54,9 @@ export function DonorPortalSidebarSheet({
         </SheetTrigger>
         <SheetContent side="left" className="w-72 p-0">
           <div className="flex flex-col h-full">
-            <div className="p-6 border-b">
+            <div className="p-4">
               <NavLink to="/portal" onClick={() => onOpenChange(false)}>
-                <SponsorlyLogo theme="light" className="h-8" />
+                <SponsorlyLogo theme="light" />
               </NavLink>
             </div>
 
