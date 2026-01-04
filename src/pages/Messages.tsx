@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquarePlus, Search, Archive, Users, MessageCircle, Building2, Target, Package } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MessageSquarePlus, Search, Archive, Users, MessageCircle, Building2, Target, Package, Filter, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import NewConversationDialog from "@/components/messaging/NewConversationDialog";
 import MessageSearchDialog from "@/components/messaging/MessageSearchDialog";
@@ -47,6 +48,13 @@ interface ConversationWithDetails {
     sender_user_id: string | null;
   };
   unread_count: number;
+  context_name?: string;
+}
+
+interface ContextOption {
+  id: string;
+  name: string;
+  type: 'campaign' | 'order';
 }
 
 const Messages = () => {
@@ -59,10 +67,13 @@ const Messages = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [contextFilter, setContextFilter] = useState<string>("all");
+  const [contextOptions, setContextOptions] = useState<ContextOption[]>([]);
 
   useEffect(() => {
     if (organizationUser?.organization_id) {
       fetchConversations();
+      fetchContextOptions();
       
       // Subscribe to realtime updates
       const channel = supabase
@@ -85,6 +96,62 @@ const Messages = () => {
       };
     }
   }, [organizationUser?.organization_id]);
+
+  const fetchContextOptions = async () => {
+    if (!organizationUser?.organization_id) return;
+
+    try {
+      // Fetch campaigns for this organization
+      const { data: campaigns } = await supabase
+        .from('campaigns')
+        .select(`
+          id,
+          name,
+          groups!inner (
+            organization_id
+          )
+        `)
+        .eq('groups.organization_id', organizationUser.organization_id);
+
+      const options: ContextOption[] = [];
+
+      if (campaigns) {
+        campaigns.forEach(c => {
+          options.push({ id: c.id, name: c.name, type: 'campaign' });
+        });
+      }
+
+      // Only add orders that are linked to conversations for this org
+      const { data: orderConversations } = await supabase
+        .from('conversations')
+        .select('context_id')
+        .eq('organization_id', organizationUser.organization_id)
+        .eq('context_type', 'order')
+        .not('context_id', 'is', null);
+
+      if (orderConversations && orderConversations.length > 0) {
+        const orderIds = orderConversations.map(c => c.context_id).filter(Boolean) as string[];
+        const { data: orders } = await supabase
+          .from('orders')
+          .select('id, customer_email, created_at')
+          .in('id', orderIds);
+
+        if (orders) {
+          orders.forEach(o => {
+            options.push({ 
+              id: o.id, 
+              name: `Order - ${o.customer_email?.split('@')[0] || 'Unknown'}`, 
+              type: 'order' 
+            });
+          });
+        }
+      }
+
+      setContextOptions(options);
+    } catch (error) {
+      console.error('Error fetching context options:', error);
+    }
+  };
 
   const fetchConversations = async () => {
     if (!user || !organizationUser?.organization_id) return;
@@ -260,6 +327,13 @@ const Messages = () => {
     if (activeTab === "archived" && !conv.participants.find(p => p.user_id === user?.id)?.is_archived) return false;
     if (activeTab !== "archived" && conv.participants.find(p => p.user_id === user?.id)?.is_archived) return false;
     
+    // Filter by context (campaign or order)
+    if (contextFilter !== "all") {
+      if (contextFilter === "campaign" && conv.context_type !== "campaign") return false;
+      if (contextFilter === "order" && conv.context_type !== "order") return false;
+      if (contextFilter !== "campaign" && contextFilter !== "order" && conv.context_id !== contextFilter) return false;
+    }
+    
     // Filter by search
     if (searchQuery) {
       const title = getConversationTitle(conv).toLowerCase();
@@ -269,6 +343,8 @@ const Messages = () => {
     
     return true;
   });
+
+  const clearContextFilter = () => setContextFilter("all");
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0);
 
@@ -304,24 +380,80 @@ const Messages = () => {
         {/* Search and Tabs */}
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Filter conversations..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Filter conversations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setSearchDialogOpen(true)}
+                  className="shrink-0"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Search All Messages
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => setSearchDialogOpen(true)}
-                className="shrink-0"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                Search All Messages
-              </Button>
+              
+              {/* Context Filter */}
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={contextFilter} onValueChange={setContextFilter}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Filter by context" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Conversations</SelectItem>
+                    <SelectItem value="campaign">
+                      <span className="flex items-center gap-2">
+                        <Target className="h-3 w-3" />
+                        All Campaigns
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="order">
+                      <span className="flex items-center gap-2">
+                        <Package className="h-3 w-3" />
+                        All Orders
+                      </span>
+                    </SelectItem>
+                    {contextOptions.filter(o => o.type === 'campaign').length > 0 && (
+                      <>
+                        {contextOptions.filter(o => o.type === 'campaign').map(option => (
+                          <SelectItem key={option.id} value={option.id}>
+                            <span className="flex items-center gap-2">
+                              <Target className="h-3 w-3 text-primary" />
+                              {option.name}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                    {contextOptions.filter(o => o.type === 'order').length > 0 && (
+                      <>
+                        {contextOptions.filter(o => o.type === 'order').map(option => (
+                          <SelectItem key={option.id} value={option.id}>
+                            <span className="flex items-center gap-2">
+                              <Package className="h-3 w-3 text-orange-500" />
+                              {option.name}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+                {contextFilter !== "all" && (
+                  <Button variant="ghost" size="sm" onClick={clearContextFilter}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
