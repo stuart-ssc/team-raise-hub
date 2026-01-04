@@ -56,7 +56,7 @@ export function DonorPortalSidebarSheet({
           <div className="flex flex-col h-full">
             <div className="p-6 border-b">
               <NavLink to="/portal" onClick={() => onOpenChange(false)}>
-                <SponsorlyLogo className="h-8" />
+                <SponsorlyLogo theme="light" className="h-8" />
               </NavLink>
             </div>
 
