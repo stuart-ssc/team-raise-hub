@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DonorPortalLayout } from "@/components/DonorPortal/DonorPortalLayout";
 import { JoinOrganizationDialog } from "@/components/DonorPortal/JoinOrganizationDialog";
+import { PendingMembershipCard } from "@/components/DonorPortal/PendingMembershipCard";
 import { useDonorPortal } from "@/hooks/useDonorPortal";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -245,6 +246,8 @@ export default function DonorPortalHome() {
   return (
     <DonorPortalLayout title={`Welcome back, ${userName}!`} subtitle="Here's an overview of your activity">
       <div className="space-y-6">
+        {/* Pending Membership Requests */}
+        <PendingMembershipCard />
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
