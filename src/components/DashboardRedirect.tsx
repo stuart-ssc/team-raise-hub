@@ -38,7 +38,7 @@ const DashboardRedirect = () => {
   // Check if user has existing orders by email (for donors who haven't set up yet)
   useEffect(() => {
     const checkExistingOrders = async () => {
-      if (!user?.email) {
+      if (!user?.email || !user?.id) {
         setCheckingOrders(false);
         return;
       }
@@ -59,9 +59,17 @@ const DashboardRedirect = () => {
       const { count: emailCount } = await supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
-        .ilike('customer_email', user.email);
+        .ilike('customer_email', user.email)
+        .is('user_id', null);
       
       if (emailCount && emailCount > 0) {
+        // Auto-link orphaned orders to this user for faster future lookups
+        await supabase
+          .from('orders')
+          .update({ user_id: user.id })
+          .ilike('customer_email', user.email)
+          .is('user_id', null);
+        
         setHasExistingOrders(true);
         setCheckingOrders(false);
         return;
