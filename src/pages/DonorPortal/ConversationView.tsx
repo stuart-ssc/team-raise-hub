@@ -15,6 +15,8 @@ import { MessageAttachmentUploader } from "@/components/messaging/MessageAttachm
 import { MessageAttachments } from "@/components/messaging/MessageAttachments";
 import { ReadReceiptIndicator } from "@/components/messaging/ReadReceiptIndicator";
 import { MessageReactions } from "@/components/messaging/MessageReactions";
+import { TypingIndicator } from "@/components/messaging/TypingIndicator";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 
 interface Attachment {
   name: string;
@@ -62,6 +64,17 @@ export default function DonorPortalConversationView() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const donorIds = donorProfiles.map(p => p.id);
+  
+  // Get donor's name for typing indicator
+  const donorName = donorProfiles[0]
+    ? `${donorProfiles[0].first_name || ''} ${donorProfiles[0].last_name || ''}`.trim() || 'Donor'
+    : 'Donor';
+
+  const { typingUsers, setIsTyping } = useTypingIndicator({
+    conversationId: conversationId || '',
+    donorProfileId: donorProfiles[0]?.id,
+    userName: donorName,
+  });
 
   useEffect(() => {
     const fetchConversation = async () => {
@@ -406,6 +419,9 @@ export default function DonorPortalConversationView() {
             <div ref={messagesEndRef} />
           </CardContent>
 
+          {/* Typing Indicator */}
+          <TypingIndicator typingUsers={typingUsers} />
+
           <div className="border-t p-4 space-y-2">
             {pendingAttachments.length > 0 && (
               <MessageAttachmentUploader
@@ -425,17 +441,19 @@ export default function DonorPortalConversationView() {
               <Textarea
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
+                onInput={() => setIsTyping(true)}
                 placeholder="Type your message..."
                 className="resize-none flex-1"
                 rows={2}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
+                    setIsTyping(false);
                     handleSendMessage();
                   }
                 }}
               />
-              <Button onClick={handleSendMessage} disabled={sending || (!newMessage.trim() && pendingAttachments.length === 0)}>
+              <Button onClick={() => { setIsTyping(false); handleSendMessage(); }} disabled={sending || (!newMessage.trim() && pendingAttachments.length === 0)}>
                 {sending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (

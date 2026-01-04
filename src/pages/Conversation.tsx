@@ -24,6 +24,8 @@ import { MessageAttachments } from "@/components/messaging/MessageAttachments";
 import { ReadReceiptIndicator } from "@/components/messaging/ReadReceiptIndicator";
 import { MessageReactions } from "@/components/messaging/MessageReactions";
 import { MessageTemplatesPicker } from "@/components/messaging/MessageTemplatesPicker";
+import { TypingIndicator } from "@/components/messaging/TypingIndicator";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 
 interface Attachment {
   name: string;
@@ -99,6 +101,30 @@ const Conversation = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [recipientReadAt, setRecipientReadAt] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState('Staff');
+
+  // Fetch current user's name for typing indicator
+  useEffect(() => {
+    const fetchUserName = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .single();
+      if (data) {
+        const name = `${data.first_name || ''} ${data.last_name || ''}`.trim();
+        setCurrentUserName(name || 'Staff');
+      }
+    };
+    fetchUserName();
+  }, [user?.id]);
+
+  const { typingUsers, setIsTyping } = useTypingIndicator({
+    conversationId: id || '',
+    userId: user?.id,
+    userName: currentUserName,
+  });
 
   useEffect(() => {
     if (id) {
@@ -624,6 +650,9 @@ const Conversation = () => {
             <div ref={messagesEndRef} />
           </CardContent>
 
+          {/* Typing Indicator */}
+          <TypingIndicator typingUsers={typingUsers} />
+
           {/* Input */}
           <div className="p-4 border-t shrink-0 space-y-2">
             {pendingAttachments.length > 0 && (
@@ -637,6 +666,7 @@ const Conversation = () => {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
+                setIsTyping(false);
                 sendMessage();
               }}
               className="flex gap-2"
@@ -657,6 +687,7 @@ const Conversation = () => {
               <Input
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
+                onInput={() => setIsTyping(true)}
                 placeholder="Type a message..."
                 disabled={sending}
                 className="flex-1"
