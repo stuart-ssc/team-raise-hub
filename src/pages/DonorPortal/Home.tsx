@@ -372,7 +372,10 @@ export default function DonorPortalHome() {
                 <ShoppingBag className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="font-semibold mb-2">No purchases yet</h3>
                 <p className="text-muted-foreground text-sm">
-                  Your purchase history will appear here
+                  When you support a campaign, your purchases will appear here.
+                </p>
+                <p className="text-muted-foreground text-xs mt-2">
+                  Browse campaigns shared with you or check back after making a purchase.
                 </p>
               </div>
             ) : (

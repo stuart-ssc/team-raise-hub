@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -87,6 +88,7 @@ export const OrganizationSetupModal = ({ open, onComplete, userId }: Organizatio
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   const form = useForm<SchoolUserFormData>({
     resolver: zodResolver(schoolUserSchema),
@@ -182,7 +184,12 @@ export const OrganizationSetupModal = ({ open, onComplete, userId }: Organizatio
     loadGroups();
   }, [selectedSchoolId, selectedUserType]);
 
-  const handleOrganizationTypeSelect = (type: 'school' | 'nonprofit') => {
+  const handleOrganizationTypeSelect = (type: 'school' | 'nonprofit' | 'donor') => {
+    if (type === 'donor') {
+      // Donors go directly to the portal - no org setup needed
+      navigate('/portal', { replace: true });
+      return;
+    }
     setOrganizationType(type);
     setStep(type);
   };

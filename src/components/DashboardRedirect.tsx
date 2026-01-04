@@ -10,7 +10,9 @@ const DashboardRedirect = () => {
   const navigate = useNavigate();
   const { isDonorOnly, isLoading: donorLoading, hasOrgAccess } = useDonorPortal();
   const [isSystemAdmin, setIsSystemAdmin] = useState<boolean | null>(null);
+  const [hasExistingOrders, setHasExistingOrders] = useState<boolean | null>(null);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
+  const [checkingOrders, setCheckingOrders] = useState(true);
 
   // Check if user is system admin
   useEffect(() => {
@@ -33,9 +35,44 @@ const DashboardRedirect = () => {
     checkSystemAdmin();
   }, [user?.id]);
 
+  // Check if user has existing orders by email (for donors who haven't set up yet)
+  useEffect(() => {
+    const checkExistingOrders = async () => {
+      if (!user?.email) {
+        setCheckingOrders(false);
+        return;
+      }
+      
+      // Check if user has orders either by user_id or by email through donor profiles
+      const { count } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      
+      if (count && count > 0) {
+        setHasExistingOrders(true);
+        setCheckingOrders(false);
+        return;
+      }
+
+      // Also check if they have a donor profile with orders
+      const { data: donorProfile } = await supabase
+        .from('donor_profiles')
+        .select('id')
+        .eq('email', user.email.toLowerCase())
+        .limit(1)
+        .maybeSingle();
+
+      setHasExistingOrders(!!donorProfile);
+      setCheckingOrders(false);
+    };
+    
+    checkExistingOrders();
+  }, [user?.id, user?.email]);
+
   // Handle redirects based on user type
   useEffect(() => {
-    if (donorLoading || checkingAdmin) return;
+    if (donorLoading || checkingAdmin || checkingOrders) return;
     
     // Donor-only users go to portal
     if (isDonorOnly) {
@@ -48,10 +85,17 @@ const DashboardRedirect = () => {
       navigate('/system-admin', { replace: true });
       return;
     }
-  }, [isDonorOnly, isSystemAdmin, hasOrgAccess, donorLoading, checkingAdmin, navigate]);
+
+    // Users with existing orders but no org access - redirect to portal
+    // This catches donors who made purchases but haven't set up
+    if (hasExistingOrders && !hasOrgAccess && !isSystemAdmin) {
+      navigate('/portal', { replace: true });
+      return;
+    }
+  }, [isDonorOnly, isSystemAdmin, hasOrgAccess, hasExistingOrders, donorLoading, checkingAdmin, checkingOrders, navigate]);
 
   // Show loading state while determining user type
-  if (donorLoading || checkingAdmin) {
+  if (donorLoading || checkingAdmin || checkingOrders) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -60,7 +104,7 @@ const DashboardRedirect = () => {
   }
 
   // If user should be redirected, show loading (redirect is happening)
-  if (isDonorOnly || (isSystemAdmin && !hasOrgAccess)) {
+  if (isDonorOnly || (isSystemAdmin && !hasOrgAccess) || (hasExistingOrders && !hasOrgAccess && !isSystemAdmin)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
