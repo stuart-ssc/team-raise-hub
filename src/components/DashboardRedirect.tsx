@@ -90,31 +90,6 @@ const DashboardRedirect = () => {
     checkExistingOrders();
   }, [user?.id, user?.email]);
 
-  // Handle redirects based on user type
-  useEffect(() => {
-    if (donorLoading || checkingAdmin || checkingOrders) return;
-    
-    // Donor-only users go to portal
-    if (isDonorOnly) {
-      navigate('/portal', { replace: true });
-      return;
-    }
-    
-    // System admins without org access go to admin dashboard
-    if (isSystemAdmin && !hasOrgAccess) {
-      navigate('/system-admin', { replace: true });
-      return;
-    }
-
-    // Users with existing orders but no org access - redirect to portal
-    // This catches donors who made purchases but haven't set up
-    if (hasExistingOrders && !hasOrgAccess && !isSystemAdmin) {
-      // Pass state to indicate orders were found by email (for welcome notification)
-      navigate('/portal', { replace: true, state: { ordersLinked: true } });
-      return;
-    }
-  }, [isDonorOnly, isSystemAdmin, hasOrgAccess, hasExistingOrders, donorLoading, checkingAdmin, checkingOrders, navigate]);
-
   // Show loading state while determining user type
   if (donorLoading || checkingAdmin || checkingOrders) {
     return (
@@ -124,8 +99,10 @@ const DashboardRedirect = () => {
     );
   }
 
-  // If user should be redirected, show loading (redirect is happening)
-  if (isDonorOnly || (isSystemAdmin && !hasOrgAccess) || (hasExistingOrders && !hasOrgAccess && !isSystemAdmin)) {
+  // Perform redirects SYNCHRONOUSLY - check conditions and navigate immediately
+  // Donor-only users go to portal
+  if (isDonorOnly) {
+    navigate('/portal', { replace: true });
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -133,7 +110,27 @@ const DashboardRedirect = () => {
     );
   }
 
-  // Regular staff users - render the dashboard
+  // System admins without org access go to admin dashboard
+  if (isSystemAdmin && !hasOrgAccess) {
+    navigate('/system-admin', { replace: true });
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Users with existing orders but no org access - redirect to portal
+  if (hasExistingOrders && !hasOrgAccess && !isSystemAdmin) {
+    navigate('/portal', { replace: true, state: { ordersLinked: true } });
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Only render Dashboard after confirming no redirect is needed
   return <Dashboard />;
 };
 
