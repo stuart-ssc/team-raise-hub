@@ -13,6 +13,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Escape HTML entities to prevent XSS
+const escapeHtml = (text: string): string => {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -72,8 +82,10 @@ serve(async (req) => {
     // Send emails to each business
     for (const business of businessesWithEmail) {
       try {
-        // Personalize the message
+        // Personalize and escape message to prevent XSS
+        const escapedBusinessName = escapeHtml(business.business_name || "Partner");
         const personalizedMessage = message.replace(/{businessName}/g, business.business_name || "");
+        const escapedMessage = escapeHtml(personalizedMessage);
 
         // Send email via Resend
         const emailResponse = await resend.emails.send({
@@ -101,8 +113,8 @@ serve(async (req) => {
                     <h2 style="margin: 0; color: #2c3e50;">Partnership Update</h2>
                   </div>
                   <div class="content">
-                    <p>Dear ${business.business_name || "Partner"},</p>
-                    <div class="message">${personalizedMessage}</div>
+                    <p>Dear ${escapedBusinessName},</p>
+                    <div class="message">${escapedMessage}</div>
                     <p>Thank you for your continued partnership.</p>
                     <p>Best regards,<br>The Sponsorly Team</p>
                   </div>
