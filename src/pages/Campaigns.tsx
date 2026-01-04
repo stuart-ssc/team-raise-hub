@@ -15,8 +15,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CampaignPublicationControl } from "@/components/CampaignPublicationControl";
-import { ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Package, X, ExternalLink, Link as LinkIcon, Globe, Eye, AlertCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Package, X, ExternalLink, Link as LinkIcon, Globe, Eye, AlertCircle, MessageSquare } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import NewConversationDialog from "@/components/messaging/NewConversationDialog";
 
 interface Campaign {
   id: string;
@@ -47,6 +48,8 @@ export default function Campaigns() {
   const [filterBy, setFilterBy] = useState("active");
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [publishingCampaign, setPublishingCampaign] = useState<Campaign | null>(null);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [messageCampaign, setMessageCampaign] = useState<Campaign | null>(null);
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup, groups } = useActiveGroup();
   const { toast } = useToast();
@@ -389,6 +392,13 @@ export default function Campaigns() {
                                   View Landing Page
                                 </DropdownMenuItem>
                               )}
+                              <DropdownMenuItem onClick={() => {
+                                setMessageCampaign(campaign);
+                                setMessageDialogOpen(true);
+                              }}>
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                Send Message
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -591,6 +601,16 @@ export default function Campaigns() {
                               )}
                               <DropdownMenuItem 
                                 className="cursor-pointer"
+                                onClick={() => {
+                                  setMessageCampaign(campaign);
+                                  setMessageDialogOpen(true);
+                                }}
+                              >
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                Send Message
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
                                 onClick={() => setPublishingCampaign(campaign)}
                               >
                                 {campaign.publication_status === 'published' ? (
@@ -668,6 +688,20 @@ export default function Campaigns() {
               hideButton={true}
             />
           )}
+
+          {/* Message Dialog */}
+          <NewConversationDialog
+            open={messageDialogOpen}
+            onOpenChange={setMessageDialogOpen}
+            onConversationCreated={(conversationId) => {
+              setMessageDialogOpen(false);
+              setMessageCampaign(null);
+              navigate(`/dashboard/messages/${conversationId}`);
+            }}
+            contextType="campaign"
+            contextId={messageCampaign?.id}
+            contextLabel={messageCampaign?.name}
+          />
         </div>
     </DashboardPageLayout>
   );
