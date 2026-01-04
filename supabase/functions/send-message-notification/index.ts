@@ -14,6 +14,84 @@ interface MessageNotificationRequest {
   messageId: string;
 }
 
+// Helper to send push notification to a user
+async function sendPushNotification(
+  supabase: any,
+  userId: string,
+  title: string,
+  body: string,
+  data: Record<string, string>
+): Promise<{ success: boolean; sent?: number; failed?: number }> {
+  const fcmServerKey = Deno.env.get('FCM_SERVER_KEY');
+  
+  if (!fcmServerKey) {
+    console.log('FCM_SERVER_KEY not configured, skipping push notification');
+    return { success: false };
+  }
+
+  // Get user's active device tokens
+  const { data: tokens, error: tokenError } = await supabase
+    .from('push_notification_tokens')
+    .select('device_token, platform')
+    .eq('user_id', userId)
+    .eq('active', true);
+
+  if (tokenError || !tokens || tokens.length === 0) {
+    console.log(`No active device tokens for user ${userId}`);
+    return { success: false };
+  }
+
+  const deviceTokens = tokens.map((t: any) => t.device_token);
+
+  try {
+    // Send to FCM
+    const fcmResponse = await fetch('https://fcm.googleapis.com/fcm/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `key=${fcmServerKey}`
+      },
+      body: JSON.stringify({
+        registration_ids: deviceTokens,
+        notification: {
+          title,
+          body,
+          sound: 'default',
+          badge: '1'
+        },
+        data: data || {},
+        priority: 'high'
+      })
+    });
+
+    const fcmResult = await fcmResponse.json();
+    console.log(`Push notification result for user ${userId}:`, fcmResult);
+
+    // Log to database
+    await supabase
+      .from('push_notification_log')
+      .insert({
+        user_id: userId,
+        title,
+        body,
+        data,
+        tokens_sent: deviceTokens.length,
+        success_count: fcmResult.success || 0,
+        failure_count: fcmResult.failure || 0,
+        fcm_response: fcmResult
+      });
+
+    return {
+      success: true,
+      sent: fcmResult.success || 0,
+      failed: fcmResult.failure || 0
+    };
+  } catch (error) {
+    console.error(`Error sending push notification to user ${userId}:`, error);
+    return { success: false };
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -111,6 +189,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     let emailsSent = 0;
+    let pushSent = 0;
     const portalUrl = "https://sponsorly.app/portal/messages/" + conversationId;
     const dashboardUrl = "https://sponsorly.app/dashboard/messages/" + conversationId;
 
@@ -172,18 +251,17 @@ const handler = async (req: Request): Promise<Response> => {
       
       // Send to staff/internal participants
       if (participant.participant_type === "internal" && participant.user_id) {
-        // Get staff profile
+        // Get staff profile with push notification preference
         const { data: staffProfile } = await supabase
           .from("profiles")
-          .select("first_name, last_name, notify_messages")
+          .select("first_name, last_name, notify_messages, push_notify_messages")
           .eq("id", participant.user_id)
           .single();
         
-        // Check if staff has message notifications enabled
-        if (staffProfile?.notify_messages === false) {
-          console.log(`Staff ${participant.user_id} has message notifications disabled`);
-          continue;
-        }
+        // Check if staff has message notifications enabled (for email)
+        const emailEnabled = staffProfile?.notify_messages !== false;
+        // Check if push notifications enabled
+        const pushEnabled = staffProfile?.push_notify_messages !== false;
         
         // Get staff email from auth.users
         const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(participant.user_id);
@@ -193,7 +271,8 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
         
-        if (authUser?.user?.email) {
+        // Send email notification
+        if (emailEnabled && authUser?.user?.email) {
           const staffName = staffProfile?.first_name || "there";
           const subject = conversation.subject 
             ? `New reply: ${conversation.subject}`
@@ -229,13 +308,37 @@ const handler = async (req: Request): Promise<Response> => {
             console.error(`Failed to send email to ${authUser.user.email}:`, emailError);
           }
         }
+        
+        // Send push notification
+        if (pushEnabled) {
+          const pushTitle = senderName;
+          const pushBody = message.content.substring(0, 100) + (message.content.length > 100 ? '...' : '');
+          const pushData = {
+            type: 'new_message',
+            conversationId: conversationId,
+            messageId: messageId,
+            route: `/dashboard/messages/${conversationId}`
+          };
+          
+          const pushResult = await sendPushNotification(
+            supabase,
+            participant.user_id,
+            pushTitle,
+            pushBody,
+            pushData
+          );
+          
+          if (pushResult.success && pushResult.sent) {
+            pushSent += pushResult.sent;
+          }
+        }
       }
     }
 
-    console.log(`Notification process complete. Emails sent: ${emailsSent}`);
+    console.log(`Notification process complete. Emails sent: ${emailsSent}, Push sent: ${pushSent}`);
 
     return new Response(
-      JSON.stringify({ success: true, emailsSent }),
+      JSON.stringify({ success: true, emailsSent, pushSent }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },

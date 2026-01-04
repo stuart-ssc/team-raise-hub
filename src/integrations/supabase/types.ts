@@ -2993,6 +2993,7 @@ export type Database = {
           notify_campaigns: boolean | null
           notify_donations: boolean | null
           notify_messages: boolean | null
+          push_notify_messages: boolean | null
           school_id: string | null
           system_admin: boolean | null
           updated_at: string
@@ -3009,6 +3010,7 @@ export type Database = {
           notify_campaigns?: boolean | null
           notify_donations?: boolean | null
           notify_messages?: boolean | null
+          push_notify_messages?: boolean | null
           school_id?: string | null
           system_admin?: boolean | null
           updated_at?: string
@@ -3025,6 +3027,7 @@ export type Database = {
           notify_campaigns?: boolean | null
           notify_donations?: boolean | null
           notify_messages?: boolean | null
+          push_notify_messages?: boolean | null
           school_id?: string | null
           system_admin?: boolean | null
           updated_at?: string
@@ -3038,6 +3041,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_notification_log: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          data: Json | null
+          failure_count: number | null
+          fcm_response: Json | null
+          id: string
+          success_count: number | null
+          title: string
+          tokens_sent: number | null
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string | null
+          data?: Json | null
+          failure_count?: number | null
+          fcm_response?: Json | null
+          id?: string
+          success_count?: number | null
+          title: string
+          tokens_sent?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string | null
+          data?: Json | null
+          failure_count?: number | null
+          fcm_response?: Json | null
+          id?: string
+          success_count?: number | null
+          title?: string
+          tokens_sent?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      push_notification_tokens: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          device_info: Json | null
+          device_token: string
+          id: string
+          platform: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          device_info?: Json | null
+          device_token: string
+          id?: string
+          platform: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          device_info?: Json | null
+          device_token?: string
+          id?: string
+          platform?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       roster_member_campaign_links: {
         Row: {
