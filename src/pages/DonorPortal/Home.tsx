@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DonorPortalLayout } from "@/components/DonorPortal/DonorPortalLayout";
+import { JoinOrganizationDialog } from "@/components/DonorPortal/JoinOrganizationDialog";
 import { useDonorPortal } from "@/hooks/useDonorPortal";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +18,7 @@ import {
   AlertCircle,
   ArrowRight,
   Image as ImageIcon,
+  Users,
 } from "lucide-react";
 
 interface PendingUpload {
@@ -44,6 +46,7 @@ export default function DonorPortalHome() {
   const { user } = useAuth();
   const { donorProfiles, linkedBusinesses, isLoading: portalLoading } = useDonorPortal();
   const [loading, setLoading] = useState(true);
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const [stats, setStats] = useState({
     totalOrders: 0,
     pendingUploads: 0,
@@ -451,7 +454,24 @@ export default function DonorPortalHome() {
               </CardContent>
             </Link>
           </Card>
+
+          <Card 
+            className="hover:bg-accent/5 transition-colors cursor-pointer border-dashed"
+            onClick={() => setJoinDialogOpen(true)}
+          >
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="p-3 rounded-full bg-secondary/50">
+                <Users className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Join an Organization</h3>
+                <p className="text-sm text-muted-foreground">Become a parent, volunteer, or staff</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        <JoinOrganizationDialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen} />
       </div>
     </DonorPortalLayout>
   );
