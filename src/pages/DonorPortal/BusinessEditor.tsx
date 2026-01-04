@@ -59,9 +59,9 @@ export default function DonorPortalBusinessEditor() {
     },
   });
 
-  // Check if user has permission to edit this business
+  // Check if user has permission to edit this business (any linked donor can edit)
   const hasPermission = linkedBusinesses.some(
-    (link) => link.business_id === businessId && link.is_primary_contact
+    (link) => link.business_id === businessId
   );
 
   useEffect(() => {
@@ -170,7 +170,7 @@ export default function DonorPortalBusinessEditor() {
           <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <h2 className="text-lg font-semibold mb-2">Permission Denied</h2>
           <p className="text-muted-foreground mb-4">
-            Only the primary contact can edit business information.
+            You must be linked to this business to edit its information.
           </p>
           <Button asChild>
             <Link to="/portal/businesses">Back to Businesses</Link>
