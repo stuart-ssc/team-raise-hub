@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,7 +75,6 @@ export function JoinOrganizationDialog({ open, onOpenChange }: JoinOrganizationD
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   const form = useForm<SchoolJoinFormData>({
     resolver: zodResolver(schoolJoinSchema),
@@ -182,31 +180,48 @@ export function JoinOrganizationDialog({ open, onOpenChange }: JoinOrganizationD
         throw new Error("School organization not found");
       }
 
-      // Create organization_user record
-      const { error: orgUserError } = await supabase
-        .from("organization_user")
+      // Check if user already has a pending request
+      const { data: existingRequest } = await supabase
+        .from("membership_requests")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("organization_id", selectedSchool.organization_id)
+        .eq("status", "pending")
+        .single();
+
+      if (existingRequest) {
+        toast({
+          title: "Request Already Pending",
+          description: "You already have a pending request for this organization.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create membership request instead of direct organization_user
+      const { error: requestError } = await supabase
+        .from("membership_requests")
         .insert({
           user_id: user.id,
           organization_id: selectedSchool.organization_id,
           group_id: data.groupId || null,
           user_type_id: data.userTypeId,
-          active_user: true,
+          requester_message: "Requested via donor portal",
         });
 
-      if (orgUserError) throw orgUserError;
+      if (requestError) throw requestError;
 
       toast({
-        title: "Success!",
-        description: "You've joined the organization. Redirecting to dashboard...",
+        title: "Request Submitted!",
+        description: "Your membership request has been sent for approval. You'll be notified when it's reviewed.",
       });
 
       onOpenChange(false);
-      navigate('/dashboard', { replace: true });
     } catch (error: any) {
-      console.error('Join error:', error);
+      console.error('Join request error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to join organization",
+        description: error.message || "Failed to submit membership request",
         variant: "destructive",
       });
     } finally {
@@ -380,10 +395,10 @@ export function JoinOrganizationDialog({ open, onOpenChange }: JoinOrganizationD
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Joining...
+                    Submitting...
                   </>
                 ) : (
-                  "Join Organization"
+                  "Request to Join"
                 )}
               </Button>
             )}

@@ -2199,6 +2199,80 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_requests: {
+        Row: {
+          created_at: string
+          group_id: string | null
+          id: string
+          organization_id: string
+          requester_message: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          reviewer_notes: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          user_type_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          organization_id: string
+          requester_message?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_type_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          organization_id?: string
+          requester_message?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_requests_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_requests_user_type_id_fkey"
+            columns: ["user_type_id"]
+            isOneToOne: false
+            referencedRelation: "user_type"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           created_at: string

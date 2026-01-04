@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { MoreHorizontal, ChevronDown, Search } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
+import { MembershipRequestsTab } from "@/components/MembershipRequestsTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { AddUserForm } from "@/components/AddUserForm";
@@ -49,6 +51,7 @@ interface User {
 }
 
 const Users = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sortBy, setSortBy] = useState("last_name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterBy, setFilterBy] = useState("active");
@@ -57,9 +60,13 @@ const Users = () => {
   const [selectedGroup, setSelectedGroup] = useState<{id: string, group_name: string} | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddUserForm, setShowAddUserForm] = useState(false);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const { organizationUser } = useOrganizationUser();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  
+  // Get initial tab from URL params
+  const activeTab = searchParams.get("tab") || "users";
 
   // Check if user has permission to access this page
   const permissionLevel = organizationUser?.user_type.permission_level;
@@ -167,11 +174,29 @@ const Users = () => {
     }
   };
 
+  // Fetch pending requests count
+  const fetchPendingRequestsCount = async () => {
+    if (!organizationUser?.organization_id) return;
+    
+    const { count } = await supabase
+      .from("membership_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", organizationUser.organization_id)
+      .eq("status", "pending");
+    
+    setPendingRequestsCount(count || 0);
+  };
+
   useEffect(() => {
     if (organizationUser) {
       fetchUsers();
+      fetchPendingRequestsCount();
     }
   }, [organizationUser, selectedGroup]);
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
 
   const handleGroupClick = async (groupId: string | null) => {
     if (groupId) {
@@ -286,7 +311,24 @@ const Users = () => {
           <div className="p-6 space-y-6">
             <h2 className="text-xl font-semibold text-foreground">Users</h2>
             
-            <div id="users-admin-table" className="space-y-4">
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+              <TabsList>
+                <TabsTrigger value="users">Active Users</TabsTrigger>
+                <TabsTrigger value="pending" className="relative">
+                  Pending Requests
+                  {pendingRequestsCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="ml-2 h-5 min-w-5 px-1.5 text-xs"
+                    >
+                      {pendingRequestsCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="users" className="mt-4">
+                <div id="users-admin-table" className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -522,7 +564,19 @@ const Users = () => {
               <p className="text-sm text-muted-foreground italic mt-4">
                 Note: Once a person is added to the system, only they can update their person information (Name, email).
               </p>
-            </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="pending" className="mt-4">
+                <MembershipRequestsTab 
+                  organizationId={organizationUser?.organization_id || ""}
+                  onRequestProcessed={() => {
+                    fetchPendingRequestsCount();
+                    fetchUsers();
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>
