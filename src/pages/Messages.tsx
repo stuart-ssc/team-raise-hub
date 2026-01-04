@@ -226,7 +226,41 @@ const Messages = () => {
 
       if (msgError) throw msgError;
 
-      // Get unread counts
+      // Get context names for campaigns
+      const campaignContextIds = participations
+        ?.filter(p => p.conversations && (p.conversations as any).context_type === 'campaign' && (p.conversations as any).context_id)
+        .map(p => (p.conversations as any).context_id) || [];
+      
+      let campaignNames: Record<string, string> = {};
+      if (campaignContextIds.length > 0) {
+        const { data: campaigns } = await supabase
+          .from('campaigns')
+          .select('id, name')
+          .in('id', campaignContextIds);
+        
+        if (campaigns) {
+          campaigns.forEach(c => { campaignNames[c.id] = c.name; });
+        }
+      }
+
+      // Get context names for orders
+      const orderContextIds = participations
+        ?.filter(p => p.conversations && (p.conversations as any).context_type === 'order' && (p.conversations as any).context_id)
+        .map(p => (p.conversations as any).context_id) || [];
+      
+      let orderNames: Record<string, string> = {};
+      if (orderContextIds.length > 0) {
+        const { data: orders } = await supabase
+          .from('orders')
+          .select('id, customer_email')
+          .in('id', orderContextIds);
+        
+        if (orders) {
+          orders.forEach(o => { orderNames[o.id] = `Order - ${o.customer_email?.split('@')[0] || 'Unknown'}`; });
+        }
+      }
+
+      // Get unread counts and build conversation details
       const conversationsWithDetails: ConversationWithDetails[] = participations
         ?.filter(p => p.conversations && (p.conversations as any).organization_id === organizationUser.organization_id)
         .map(p => {
@@ -240,6 +274,14 @@ const Messages = () => {
             new Date(m.sent_at) > new Date(p.last_read_at || 0) &&
             m.sender_user_id !== user.id
           ).length || 0;
+
+          // Get context name
+          let contextName: string | undefined;
+          if (conv.context_type === 'campaign' && conv.context_id) {
+            contextName = campaignNames[conv.context_id];
+          } else if (conv.context_type === 'order' && conv.context_id) {
+            contextName = orderNames[conv.context_id];
+          }
 
           return {
             id: conv.id,
@@ -263,7 +305,8 @@ const Messages = () => {
               sent_at: lastMessage.sent_at,
               sender_user_id: lastMessage.sender_user_id
             } : undefined,
-            unread_count: unreadCount
+            unread_count: unreadCount,
+            context_name: contextName
           };
         }) || [];
 
@@ -334,11 +377,14 @@ const Messages = () => {
       if (contextFilter !== "campaign" && contextFilter !== "order" && conv.context_id !== contextFilter) return false;
     }
     
-    // Filter by search
+    // Filter by search (includes title, last message, and context name)
     if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       const title = getConversationTitle(conv).toLowerCase();
       const lastMsg = conv.last_message?.content.toLowerCase() || '';
-      return title.includes(searchQuery.toLowerCase()) || lastMsg.includes(searchQuery.toLowerCase());
+      const contextName = conv.context_name?.toLowerCase() || '';
+      const contextType = conv.context_type?.toLowerCase() || '';
+      return title.includes(query) || lastMsg.includes(query) || contextName.includes(query) || contextType.includes(query);
     }
     
     return true;
@@ -537,7 +583,17 @@ const Messages = () => {
                               </p>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                              {conversation.context_type && (
+                              {conversation.context_name && (
+                                <Badge variant="outline" className="h-5 text-xs max-w-[120px] truncate flex items-center gap-1">
+                                  {conversation.context_type === 'campaign' ? (
+                                    <Target className="h-3 w-3 shrink-0" />
+                                  ) : (
+                                    <Package className="h-3 w-3 shrink-0" />
+                                  )}
+                                  <span className="truncate">{conversation.context_name}</span>
+                                </Badge>
+                              )}
+                              {conversation.context_type && !conversation.context_name && (
                                 <Badge variant="outline" className="h-5 text-xs">
                                   {conversation.context_type === 'campaign' ? (
                                     <Target className="h-3 w-3" />
