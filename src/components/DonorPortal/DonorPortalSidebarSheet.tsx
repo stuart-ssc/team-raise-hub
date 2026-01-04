@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, ShoppingBag, Building2, MessageSquare, Receipt, User, LogOut, Menu } from "lucide-react";
+import { Home, ShoppingBag, Building2, MessageSquare, Receipt, User, LogOut, Menu, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
+import { JoinOrganizationDialog } from "./JoinOrganizationDialog";
 
 interface DonorPortalSidebarSheetProps {
   open: boolean;
@@ -28,6 +30,7 @@ export function DonorPortalSidebarSheet({
   onLogout 
 }: DonorPortalSidebarSheetProps) {
   const location = useLocation();
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
 
   const isActive = (path: string) => {
     if (path === "/portal") {
@@ -42,53 +45,68 @@ export function DonorPortalSidebarSheet({
   });
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden">
-          <Menu className="h-6 w-6" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-72 p-0">
-        <div className="flex flex-col h-full">
-          <div className="p-6 border-b">
-            <NavLink to="/portal" onClick={() => onOpenChange(false)}>
-              <SponsorlyLogo className="h-8" />
-            </NavLink>
-          </div>
-
-          <nav className="flex-1 p-4 space-y-1">
-            {filteredItems.map((item) => (
-              <NavLink
-                key={item.url}
-                to={item.url}
-                onClick={() => onOpenChange(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  isActive(item.url)
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.title}
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="md:hidden">
+            <Menu className="h-6 w-6" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-72 p-0">
+          <div className="flex flex-col h-full">
+            <div className="p-6 border-b">
+              <NavLink to="/portal" onClick={() => onOpenChange(false)}>
+                <SponsorlyLogo className="h-8" />
               </NavLink>
-            ))}
-          </nav>
+            </div>
 
-          <div className="p-4 border-t">
-            <button
-              onClick={() => {
-                onOpenChange(false);
-                onLogout();
-              }}
-              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-            >
-              <LogOut className="h-5 w-5" />
-              Sign Out
-            </button>
+            <nav className="flex-1 p-4 space-y-1">
+              {filteredItems.map((item) => (
+                <NavLink
+                  key={item.url}
+                  to={item.url}
+                  onClick={() => onOpenChange(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    isActive(item.url)
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.title}
+                </NavLink>
+              ))}
+            </nav>
+
+            <div className="p-4 border-t space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-3"
+                onClick={() => {
+                  onOpenChange(false);
+                  setJoinDialogOpen(true);
+                }}
+              >
+                <Users className="h-5 w-5" />
+                Join an Organization
+              </Button>
+              <button
+                onClick={() => {
+                  onOpenChange(false);
+                  onLogout();
+                }}
+                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+              >
+                <LogOut className="h-5 w-5" />
+                Sign Out
+              </button>
+            </div>
           </div>
-        </div>
-      </SheetContent>
-    </Sheet>
+        </SheetContent>
+      </Sheet>
+
+      <JoinOrganizationDialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen} />
+    </>
   );
 }
