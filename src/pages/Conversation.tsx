@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Send, MoreVertical, Archive, Bell, BellOff, Users, Target, Package } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, Archive, Bell, BellOff, Users, Target, Package, Pin, PinOff } from "lucide-react";
 import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import {
   DropdownMenu,
@@ -51,6 +51,8 @@ interface Message {
   sender_type: string;
   attachments?: Attachment[];
   reactions?: Reaction[];
+  pinned_at?: string | null;
+  pinned_by?: string | null;
   sender?: {
     first_name: string | null;
     last_name: string | null;
@@ -283,6 +285,8 @@ const Conversation = () => {
           sender_donor_profile_id,
           sender_type,
           attachments,
+          pinned_at,
+          pinned_by,
           sender:sender_user_id (
             first_name,
             last_name,
@@ -344,6 +348,8 @@ const Conversation = () => {
         sender_donor_profile_id,
         sender_type,
         attachments,
+        pinned_at,
+        pinned_by,
         sender:sender_user_id (
           first_name,
           last_name,
@@ -438,6 +444,29 @@ const Conversation = () => {
     if (!error) {
       toast.success("Conversation archived");
       navigate('/dashboard/messages');
+    }
+  };
+
+  const togglePin = async (messageId: string, isPinned: boolean) => {
+    if (!user) return;
+    
+    const { error } = await supabase
+      .from('messages')
+      .update({
+        pinned_at: isPinned ? null : new Date().toISOString(),
+        pinned_by: isPinned ? null : user.id,
+      })
+      .eq('id', messageId);
+
+    if (!error) {
+      setMessages(prev => prev.map(m => 
+        m.id === messageId 
+          ? { ...m, pinned_at: isPinned ? null : new Date().toISOString(), pinned_by: isPinned ? null : user.id }
+          : m
+      ));
+      toast.success(isPinned ? "Message unpinned" : "Message pinned");
+    } else {
+      toast.error("Failed to update pin status");
     }
   };
 
@@ -579,6 +608,34 @@ const Conversation = () => {
             </DropdownMenu>
           </CardHeader>
 
+          {/* Pinned Messages */}
+          {messages.filter(m => m.pinned_at).length > 0 && (
+            <div className="border-b bg-muted/30 p-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
+                <Pin className="h-4 w-4" />
+                Pinned Messages
+              </div>
+              <div className="space-y-2">
+                {messages.filter(m => m.pinned_at).map(message => (
+                  <div key={`pinned-${message.id}`} className="flex items-start gap-2 bg-background rounded-lg p-2 border">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium">{getSenderName(message)}</p>
+                      <p className="text-sm text-muted-foreground truncate">{message.content}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0"
+                      onClick={() => togglePin(message.id, true)}
+                    >
+                      <PinOff className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Messages */}
           <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 ? (
@@ -589,6 +646,7 @@ const Conversation = () => {
               messages.map((message, index) => {
                 const isOwn = message.sender_user_id === user?.id;
                 const showAvatar = !isOwn && (index === 0 || messages[index - 1]?.sender_user_id !== message.sender_user_id);
+                const isPinned = !!message.pinned_at;
                 
                 return (
                   <div key={message.id} className={`flex gap-2 ${isOwn ? 'justify-end' : ''} group`}>
@@ -610,21 +668,34 @@ const Conversation = () => {
                           {getSenderName(message)}
                         </p>
                       )}
-                      <div
-                        className={`rounded-2xl px-4 py-2 ${
-                          isOwn
-                            ? 'bg-primary text-primary-foreground rounded-br-md'
-                            : 'bg-muted rounded-bl-md'
-                        }`}
-                      >
-                        {message.content && (
-                          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                      <div className="relative">
+                        {isPinned && (
+                          <Pin className="absolute -top-1 -right-1 h-3 w-3 text-primary" />
                         )}
-                        {message.attachments && message.attachments.length > 0 && (
-                          <MessageAttachments attachments={message.attachments} isOwn={isOwn} />
-                        )}
+                        <div
+                          className={`rounded-2xl px-4 py-2 ${
+                            isOwn
+                              ? 'bg-primary text-primary-foreground rounded-br-md'
+                              : 'bg-muted rounded-bl-md'
+                          } ${isPinned ? 'ring-1 ring-primary/30' : ''}`}
+                        >
+                          {message.content && (
+                            <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                          )}
+                          {message.attachments && message.attachments.length > 0 && (
+                            <MessageAttachments attachments={message.attachments} isOwn={isOwn} />
+                          )}
+                        </div>
                       </div>
                       <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end mr-1' : 'ml-1'}`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => togglePin(message.id, isPinned)}
+                        >
+                          {isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+                        </Button>
                         <MessageReactions
                           messageId={message.id}
                           reactions={message.reactions || []}

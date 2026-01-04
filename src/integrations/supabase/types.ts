@@ -2309,6 +2309,8 @@ export type Database = {
           edited_at: string | null
           id: string
           metadata: Json | null
+          pinned_at: string | null
+          pinned_by: string | null
           reply_to_id: string | null
           sender_donor_profile_id: string | null
           sender_type: string
@@ -2324,6 +2326,8 @@ export type Database = {
           edited_at?: string | null
           id?: string
           metadata?: Json | null
+          pinned_at?: string | null
+          pinned_by?: string | null
           reply_to_id?: string | null
           sender_donor_profile_id?: string | null
           sender_type: string
@@ -2339,6 +2343,8 @@ export type Database = {
           edited_at?: string | null
           id?: string
           metadata?: Json | null
+          pinned_at?: string | null
+          pinned_by?: string | null
           reply_to_id?: string | null
           sender_donor_profile_id?: string | null
           sender_type?: string
@@ -2351,6 +2357,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_pinned_by_fkey"
+            columns: ["pinned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
