@@ -109,7 +109,8 @@ const DashboardRedirect = () => {
     // Users with existing orders but no org access - redirect to portal
     // This catches donors who made purchases but haven't set up
     if (hasExistingOrders && !hasOrgAccess && !isSystemAdmin) {
-      navigate('/portal', { replace: true });
+      // Pass state to indicate orders were found by email (for welcome notification)
+      navigate('/portal', { replace: true, state: { ordersLinked: true } });
       return;
     }
   }, [isDonorOnly, isSystemAdmin, hasOrgAccess, hasExistingOrders, donorLoading, checkingAdmin, checkingOrders, navigate]);

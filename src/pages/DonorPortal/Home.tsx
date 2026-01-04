@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { DonorPortalLayout } from "@/components/DonorPortal/DonorPortalLayout";
 import { JoinOrganizationDialog } from "@/components/DonorPortal/JoinOrganizationDialog";
 import { useDonorPortal } from "@/hooks/useDonorPortal";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   ShoppingBag, 
@@ -45,8 +46,11 @@ interface RecentOrder {
 export default function DonorPortalHome() {
   const { user } = useAuth();
   const { donorProfiles, linkedBusinesses, isLoading: portalLoading } = useDonorPortal();
+  const location = useLocation();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const [hasShownWelcome, setHasShownWelcome] = useState(false);
   const [stats, setStats] = useState({
     totalOrders: 0,
     pendingUploads: 0,
@@ -57,6 +61,21 @@ export default function DonorPortalHome() {
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const [pendingCampaignAssets, setPendingCampaignAssets] = useState<PendingCampaignAsset[]>([]);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+
+  // Show welcome notification for users with legacy orders
+  useEffect(() => {
+    const state = location.state as { ordersLinked?: boolean } | null;
+    if (state?.ordersLinked && !hasShownWelcome && !loading) {
+      setHasShownWelcome(true);
+      // Clear the state so it doesn't show again on refresh
+      window.history.replaceState({}, document.title);
+      
+      toast({
+        title: "Welcome to your Donor Portal!",
+        description: `We found ${stats.totalOrders} order${stats.totalOrders !== 1 ? 's' : ''} associated with your email.`,
+      });
+    }
+  }, [location.state, hasShownWelcome, loading, stats.totalOrders, toast]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
