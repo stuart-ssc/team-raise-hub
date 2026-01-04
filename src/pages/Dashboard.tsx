@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Package } from "lucide-react";
+import { MoreHorizontal, Edit, Package, UserPlus } from "lucide-react";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
 import { AddCampaignForm } from "@/components/AddCampaignForm";
@@ -32,6 +32,7 @@ const Dashboard = () => {
   const [manageCampaignId, setManageCampaignId] = useState<string | null>(null);
   const [donors, setDonors] = useState<any[]>([]);
   const [donorCount, setDonorCount] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   // Check if user needs to complete organization setup
   useEffect(() => {
@@ -208,6 +209,26 @@ const Dashboard = () => {
   const permissionLevel = organizationUser?.user_type?.permission_level || 
     getPermissionLevel(organizationUser?.user_type?.name || '');
   const isPlayer = permissionLevel === 'participant' || permissionLevel === 'supporter';
+  const canManageUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
+
+  // Fetch pending membership requests count for admins/managers
+  const fetchPendingRequestsCount = async () => {
+    if (!organizationUser?.organization_id || !canManageUsers) return;
+    
+    const { count } = await supabase
+      .from('membership_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationUser.organization_id)
+      .eq('status', 'pending');
+    
+    setPendingRequestsCount(count || 0);
+  };
+
+  useEffect(() => {
+    if (organizationUser?.organization_id && canManageUsers) {
+      fetchPendingRequestsCount();
+    }
+  }, [organizationUser?.organization_id, canManageUsers]);
 
   return (
     <DashboardPageLayout
@@ -218,6 +239,28 @@ const Dashboard = () => {
           <PlayerDashboard />
         ) : (
           <>
+          {/* Pending Membership Requests Alert */}
+          {canManageUsers && pendingRequestsCount > 0 && (
+            <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4 md:px-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900">
+                    <UserPlus className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Pending Membership Requests</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {pendingRequestsCount} {pendingRequestsCount === 1 ? 'person wants' : 'people want'} to join your organization
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={() => navigate('/dashboard/users?tab=pending')} size="sm">
+                  Review Requests
+                </Button>
+              </CardHeader>
+            </Card>
+          )}
+
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             <Card>
