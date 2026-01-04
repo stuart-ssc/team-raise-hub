@@ -1,8 +1,11 @@
+import { useEffect, useState } from "react";
 import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, Trophy, MessageCircle } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { getLabel } from "@/lib/terminology";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 const sidebarItems = [
   { title: "Home", icon: Home, url: "/dashboard", end: true },
@@ -21,10 +24,23 @@ const sidebarItems = [
 const DashboardSidebar = () => {
   const location = useLocation();
   const { organizationUser } = useOrganizationUser();
+  const [pendingCount, setPendingCount] = useState(0);
 
   // Check if user has permission to see Users menu item
-  const permissionLevel = organizationUser?.user_type.permission_level;
+  const permissionLevel = organizationUser?.user_type?.permission_level;
   const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
+
+  // Fetch pending membership requests count
+  useEffect(() => {
+    if (organizationUser?.organization_id && canSeeUsers) {
+      supabase
+        .from('membership_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organizationUser.organization_id)
+        .eq('status', 'pending')
+        .then(({ count }) => setPendingCount(count || 0));
+    }
+  }, [organizationUser?.organization_id, canSeeUsers]);
 
   const isActive = (path: string, end?: boolean) => {
     if (end) {
@@ -76,7 +92,7 @@ const DashboardSidebar = () => {
               <li key={item.title}>
                 <NavLink
                   to={item.url}
-                  className={`flex items-center transition-colors rounded-md px-3 py-2 ${
+                  className={`flex items-center justify-between transition-colors rounded-md px-3 py-2 ${
                     active
                       ? 'bg-sidebar-primary text-sidebar-primary-foreground'
                       : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
@@ -85,12 +101,19 @@ const DashboardSidebar = () => {
                     ? getLabel(organizationUser.organization.organization_type, 'programs')
                     : item.title}
                 >
-                  <Icon className="h-5 w-5 flex-shrink-0" />
-                  <span className="font-medium ml-3 hidden lg:inline">
-                    {organizationUser?.organization && item.title === 'Groups'
-                      ? getLabel(organizationUser.organization.organization_type, 'programs')
-                      : item.title}
-                  </span>
+                  <div className="flex items-center">
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="font-medium ml-3 hidden lg:inline">
+                      {organizationUser?.organization && item.title === 'Groups'
+                        ? getLabel(organizationUser.organization.organization_type, 'programs')
+                        : item.title}
+                    </span>
+                  </div>
+                  {item.title === "Users" && pendingCount > 0 && (
+                    <Badge variant="destructive" className="ml-auto text-xs h-5 min-w-5 flex items-center justify-center">
+                      {pendingCount}
+                    </Badge>
+                  )}
                 </NavLink>
               </li>
             );
