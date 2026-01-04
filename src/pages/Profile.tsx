@@ -17,7 +17,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2 } from "lucide-react";
+import { Loader2, Smartphone } from "lucide-react";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const profileSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -42,6 +43,7 @@ const Profile = () => {
   const { user, updatePassword } = useAuth();
   const { organizationUser } = useOrganizationUser();
   const { toast } = useToast();
+  const { isSupported: pushSupported } = usePushNotifications();
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
   const [schoolUserData, setSchoolUserData] = useState<any[]>([]);
@@ -49,9 +51,9 @@ const Profile = () => {
     notify_campaigns: true,
     notify_donations: true,
     notify_assignments: true,
+    push_notify_messages: true,
   });
   const [digestFrequency, setDigestFrequency] = useState<string>("weekly");
-
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -95,6 +97,7 @@ const Profile = () => {
           notify_campaigns: profile.notify_campaigns ?? true,
           notify_donations: profile.notify_donations ?? true,
           notify_assignments: profile.notify_assignments ?? true,
+          push_notify_messages: profile.push_notify_messages ?? true,
         });
         setDigestFrequency(profile.email_digest_frequency || "weekly");
       }
@@ -489,6 +492,31 @@ const Profile = () => {
                         disabled={loading}
                       />
                     </div>
+
+                    {/* Push notification settings - only show if on mobile app */}
+                    {pushSupported && (
+                      <div className="border-t pt-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Smartphone className="h-5 w-5 text-muted-foreground" />
+                          <span className="font-medium">Mobile Push Notifications</span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <Label htmlFor="push_notify_messages" className="text-base">Message Alerts</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Receive push notifications on your mobile device when you get new messages
+                            </p>
+                          </div>
+                          <Switch
+                            id="push_notify_messages"
+                            checked={notificationPrefs.push_notify_messages}
+                            onCheckedChange={(checked) => handleNotificationChange("push_notify_messages", checked)}
+                            disabled={loading}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     <div className="border-t pt-6">
                       <div className="space-y-3">
