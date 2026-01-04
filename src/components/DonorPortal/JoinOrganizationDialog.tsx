@@ -211,6 +211,38 @@ export function JoinOrganizationDialog({ open, onOpenChange }: JoinOrganizationD
 
       if (requestError) throw requestError;
 
+      // Get organization name for the notification email
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("name")
+        .eq("id", selectedSchool.organization_id)
+        .single();
+
+      // Get role name
+      const roleName = userTypes.find(t => t.id === data.userTypeId)?.name || "Member";
+
+      // Get group name if selected
+      const groupName = groups.find(g => g.id === data.groupId)?.group_name;
+
+      // Get requester name
+      const requesterName = user.user_metadata?.first_name 
+        ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ""}`.trim()
+        : user.email?.split("@")[0] || "A user";
+
+      // Send notification email to organization admins (fire and forget)
+      supabase.functions.invoke("send-membership-request-notification", {
+        body: {
+          organizationId: selectedSchool.organization_id,
+          requesterName,
+          requesterEmail: user.email,
+          organizationName: org?.name || selectedSchool.school_name,
+          roleName,
+          groupName,
+        },
+      }).catch((err) => {
+        console.error("Failed to send membership request notification:", err);
+      });
+
       toast({
         title: "Request Submitted!",
         description: "Your membership request has been sent for approval. You'll be notified when it's reviewed.",
