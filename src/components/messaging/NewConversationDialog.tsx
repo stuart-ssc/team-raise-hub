@@ -430,32 +430,29 @@ const NewConversationDialog = ({
           <TabsContent value="internal" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Recipients</Label>
+              {selectedUsers.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedUsers.map(u => (
+                    <Badge key={u.user_id} variant="secondary" className="flex items-center gap-1">
+                      {getUserName(u)}
+                      <X
+                        className="h-3 w-3 cursor-pointer hover:text-destructive"
+                        onClick={() => toggleUser(u)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              )}
               <Popover open={searchOpen} onOpenChange={setSearchOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     role="combobox"
-                    className="w-full justify-between h-auto min-h-10"
+                    className="w-full justify-between"
                   >
-                    {selectedUsers.length === 0 ? (
-                      <span className="text-muted-foreground">Select team members...</span>
-                    ) : (
-                      <div className="flex flex-wrap gap-1">
-                        {selectedUsers.map(u => (
-                          <Badge key={u.user_id} variant="secondary" className="flex items-center gap-1">
-                            {getUserName(u)}
-                            <X
-                              className="h-3 w-3 cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                toggleUser(u);
-                              }}
-                            />
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
+                    <span className="text-muted-foreground">
+                      {selectedUsers.length === 0 ? "Select team members..." : "Add more..."}
+                    </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
