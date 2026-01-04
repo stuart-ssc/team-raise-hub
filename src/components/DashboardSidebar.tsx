@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, Trophy, MessageCircle } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, Trophy, MessageCircle, UserCircle } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { useDonorPortal } from "@/hooks/useDonorPortal";
 import { getLabel } from "@/lib/terminology";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +25,10 @@ const sidebarItems = [
 const DashboardSidebar = () => {
   const location = useLocation();
   const { organizationUser } = useOrganizationUser();
+  const { donorProfiles } = useDonorPortal();
   const [pendingCount, setPendingCount] = useState(0);
+  
+  const hasDonorAccess = donorProfiles.length > 0;
 
   // Check if user has permission to see Users menu item
   const permissionLevel = organizationUser?.user_type?.permission_level;
@@ -147,6 +151,20 @@ const DashboardSidebar = () => {
               </li>
             );
           })}
+          
+          {/* Donor Portal link for dual-role users */}
+          {hasDonorAccess && (
+            <li className="pt-4 border-t border-sidebar-border mt-4">
+              <NavLink
+                to="/portal"
+                className="flex items-center transition-colors rounded-md px-3 py-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                title="Donor Portal"
+              >
+                <UserCircle className="h-5 w-5 flex-shrink-0" />
+                <span className="font-medium ml-3 hidden lg:inline">Donor Portal</span>
+              </NavLink>
+            </li>
+          )}
         </ul>
       </nav>
     </aside>

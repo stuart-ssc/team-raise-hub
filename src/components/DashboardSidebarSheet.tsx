@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, LogOut, User, Trophy, MessageCircle } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, LogOut, User, Trophy, MessageCircle, UserCircle } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { useDonorPortal } from "@/hooks/useDonorPortal";
 import { getLabel } from "@/lib/terminology";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
@@ -47,7 +48,10 @@ const DashboardSidebarSheet = ({
 }: DashboardSidebarSheetProps) => {
   const location = useLocation();
   const { organizationUser } = useOrganizationUser();
+  const { donorProfiles } = useDonorPortal();
   const [pendingCount, setPendingCount] = useState(0);
+  
+  const hasDonorAccess = donorProfiles.length > 0;
 
   // Check if user has permission to see Users menu item
   const permissionLevel = organizationUser?.user_type?.permission_level;
@@ -169,6 +173,20 @@ const DashboardSidebarSheet = ({
                   </li>
                 );
               })}
+              
+              {/* Donor Portal link for dual-role users */}
+              {hasDonorAccess && (
+                <li className="pt-4 border-t border-sidebar-border mt-4">
+                  <NavLink
+                    to="/portal"
+                    onClick={() => onOpenChange(false)}
+                    className="flex items-center gap-3 px-3 py-2 transition-colors rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  >
+                    <UserCircle className="h-5 w-5 flex-shrink-0" />
+                    <span className="font-medium">Donor Portal</span>
+                  </NavLink>
+                </li>
+              )}
             </ul>
           </nav>
 
