@@ -112,6 +112,49 @@ export function PendingMembershipCard() {
     fetchRequests();
   }, [user]);
 
+  // Real-time subscription for membership request status changes
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('donor-membership-requests')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'membership_requests',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          // Check if request was approved or rejected
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            const newStatus = (payload.new as any).status;
+            if (newStatus === 'approved') {
+              toast({
+                title: "Request Approved!",
+                description: "Your membership request has been approved. Refreshing...",
+              });
+              // Reload page after short delay to show the new organization
+              setTimeout(() => window.location.reload(), 1500);
+            } else if (newStatus === 'rejected') {
+              toast({
+                title: "Request Rejected",
+                description: "Your membership request was not approved.",
+                variant: "destructive",
+              });
+            }
+          }
+          fetchRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, toast]);
+
   const handleCancel = async (requestId: string) => {
     setCanceling(requestId);
     try {
