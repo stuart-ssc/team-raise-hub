@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,8 +24,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Check, X, Loader2, Clock, User } from "lucide-react";
+import { Check, X, Loader2, Clock, User, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface MembershipRequest {
   id: string;
@@ -164,6 +169,35 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
     };
   }, [organizationId]);
 
+  const sendDecisionNotification = async (
+    request: MembershipRequest,
+    decision: "approved" | "rejected",
+    notes?: string
+  ) => {
+    try {
+      // Get organization name
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("name")
+        .eq("id", request.organization_id)
+        .single();
+
+      await supabase.functions.invoke("send-membership-decision-notification", {
+        body: {
+          userId: request.user_id,
+          organizationName: org?.name || "the organization",
+          decision,
+          roleName: request.user_type?.name || "Member",
+          groupName: request.group?.group_name,
+          reviewerNotes: notes,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send decision notification email:", error);
+      // Don't throw - email is secondary to the approval/rejection
+    }
+  };
+
   const handleApprove = async (request: MembershipRequest) => {
     setProcessing(request.id);
     try {
@@ -180,6 +214,9 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
         .eq("id", request.id);
 
       if (error) throw error;
+
+      // Send email notification
+      await sendDecisionNotification(request, "approved");
 
       toast({
         title: "Request Approved",
@@ -228,6 +265,9 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
         .eq("id", request.id);
 
       if (error) throw error;
+
+      // Send email notification with reviewer notes
+      await sendDecisionNotification(request, "rejected", reviewerNotes);
 
       toast({
         title: "Request Rejected",
@@ -311,6 +351,12 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
                     <span className="font-medium">{request.group.group_name}</span>
                   </div>
                 )}
+                {request.requester_message && (
+                  <div className="pt-2 border-t mt-2">
+                    <p className="text-muted-foreground text-xs mb-1">Message:</p>
+                    <p className="text-sm italic">"{request.requester_message}"</p>
+                  </div>
+                )}
               </div>
               
               <div className="flex gap-2 pt-2">
@@ -357,9 +403,15 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
               <AlertDialogTitle>Approve Membership Request</AlertDialogTitle>
               <AlertDialogDescription>
                 Approve {selectedRequest?.user?.first_name}'s request to join as {selectedRequest?.user_type?.name}?
-                They will immediately gain access to the organization.
+                They will immediately gain access to the organization and receive an email notification.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            {selectedRequest?.requester_message && (
+              <div className="bg-muted p-3 rounded-md my-2">
+                <p className="text-xs text-muted-foreground mb-1">Message from requester:</p>
+                <p className="text-sm italic">"{selectedRequest.requester_message}"</p>
+              </div>
+            )}
             <AlertDialogFooter>
               <AlertDialogCancel onClick={() => setReviewerNotes("")}>Cancel</AlertDialogCancel>
               <AlertDialogAction
@@ -379,9 +431,15 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
             <AlertDialogHeader>
               <AlertDialogTitle>Reject Membership Request</AlertDialogTitle>
               <AlertDialogDescription>
-                Please provide a reason for rejecting this request. The user will be notified.
+                Please provide a reason for rejecting this request. The user will be notified via email.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            {selectedRequest?.requester_message && (
+              <div className="bg-muted p-3 rounded-md my-2">
+                <p className="text-xs text-muted-foreground mb-1">Message from requester:</p>
+                <p className="text-sm italic">"{selectedRequest.requester_message}"</p>
+              </div>
+            )}
             <Textarea
               placeholder="Reason for rejection..."
               value={reviewerNotes}
@@ -422,7 +480,22 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
             {requests.map((request) => (
               <TableRow key={request.id}>
                 <TableCell className="font-medium">
-                  {request.user?.first_name || 'Unknown'} {request.user?.last_name || ''}
+                  <div className="flex items-center gap-2">
+                    <span>{request.user?.first_name || 'Unknown'} {request.user?.last_name || ''}</span>
+                    {request.requester_message && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <MessageSquare className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs text-muted-foreground mb-1">Message from requester:</p>
+                            <p className="text-sm">"{request.requester_message}"</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>{request.user_type?.name || '-'}</TableCell>
                 <TableCell>{request.group?.group_name || '-'}</TableCell>
@@ -475,9 +548,15 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
             <AlertDialogTitle>Approve Membership Request</AlertDialogTitle>
             <AlertDialogDescription>
               Approve {selectedRequest?.user?.first_name}'s request to join as {selectedRequest?.user_type?.name}?
-              They will immediately gain access to the organization.
+              They will immediately gain access to the organization and receive an email notification.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {selectedRequest?.requester_message && (
+            <div className="bg-muted p-3 rounded-md my-2">
+              <p className="text-xs text-muted-foreground mb-1">Message from requester:</p>
+              <p className="text-sm italic">"{selectedRequest.requester_message}"</p>
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setReviewerNotes("")}>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -497,9 +576,15 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
           <AlertDialogHeader>
             <AlertDialogTitle>Reject Membership Request</AlertDialogTitle>
             <AlertDialogDescription>
-              Please provide a reason for rejecting this request. The user will be notified.
+              Please provide a reason for rejecting this request. The user will be notified via email.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {selectedRequest?.requester_message && (
+            <div className="bg-muted p-3 rounded-md my-2">
+              <p className="text-xs text-muted-foreground mb-1">Message from requester:</p>
+              <p className="text-sm italic">"{selectedRequest.requester_message}"</p>
+            </div>
+          )}
           <Textarea
             placeholder="Reason for rejection..."
             value={reviewerNotes}
