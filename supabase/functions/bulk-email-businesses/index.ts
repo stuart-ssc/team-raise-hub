@@ -13,14 +13,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Escape HTML entities to prevent XSS
-const escapeHtml = (text: string): string => {
+// Convert plain text to safe HTML by encoding all special characters
+// This ensures user input is treated as text content, not HTML
+const textToSafeHtml = (text: string): string => {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/'/g, '&#039;')
+    .replace(/\n/g, '<br>');
 };
 
 serve(async (req) => {
@@ -82,10 +84,14 @@ serve(async (req) => {
     // Send emails to each business
     for (const business of businessesWithEmail) {
       try {
-        // Personalize and escape message to prevent XSS
-        const escapedBusinessName = escapeHtml(business.business_name || "Partner");
-        const personalizedMessage = message.replace(/{businessName}/g, business.business_name || "");
-        const escapedMessage = escapeHtml(personalizedMessage);
+        // Personalize message with safe text substitution
+        // First substitute variables in plain text, then convert entire message to safe HTML
+        const businessName = business.business_name || "Partner";
+        const personalizedMessage = message.replace(/{businessName}/g, businessName);
+        
+        // Convert the entire personalized message to safe HTML (escapes all HTML entities)
+        const safeMessageHtml = textToSafeHtml(personalizedMessage);
+        const safeBusinessName = textToSafeHtml(businessName);
 
         // Send email via Resend
         const emailResponse = await resend.emails.send({
@@ -98,27 +104,19 @@ serve(async (req) => {
               <head>
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: #f8f9fa; padding: 20px; border-radius: 8px 8px 0 0; }
-                  .content { background: #ffffff; padding: 30px; border: 1px solid #e9ecef; }
-                  .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #6c757d; border-radius: 0 0 8px 8px; }
-                  .message { white-space: pre-wrap; margin: 20px 0; }
-                </style>
               </head>
-              <body>
-                <div class="container">
-                  <div class="header">
+              <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px 8px 0 0;">
                     <h2 style="margin: 0; color: #2c3e50;">Partnership Update</h2>
                   </div>
-                  <div class="content">
-                    <p>Dear ${escapedBusinessName},</p>
-                    <div class="message">${escapedMessage}</div>
+                  <div style="background: #ffffff; padding: 30px; border: 1px solid #e9ecef;">
+                    <p>Dear ${safeBusinessName},</p>
+                    <div style="margin: 20px 0; line-height: 1.6;">${safeMessageHtml}</div>
                     <p>Thank you for your continued partnership.</p>
                     <p>Best regards,<br>The Sponsorly Team</p>
                   </div>
-                  <div class="footer">
+                  <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #6c757d; border-radius: 0 0 8px 8px;">
                     <p>This email was sent to business partners in our network.</p>
                     <p>If you wish to unsubscribe from future communications, please contact us.</p>
                   </div>

@@ -14,14 +14,16 @@ interface BulkEmailRequest {
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-// Escape HTML entities to prevent XSS
-const escapeHtml = (text: string): string => {
+// Convert plain text to safe HTML by encoding all special characters
+// This ensures user input is treated as text content, not HTML
+const textToSafeHtml = (text: string): string => {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/'/g, '&#039;')
+    .replace(/\n/g, '<br>');
 };
 
 Deno.serve(async (req) => {
@@ -87,23 +89,34 @@ Deno.serve(async (req) => {
     // Send email to each donor
     for (const donor of donors) {
       try {
-        // Personalize and escape message to prevent XSS
-        const personalizedMessage = message.replace(
-          /{firstName}/g,
-          escapeHtml(donor.first_name || "Friend")
-        );
-        const escapedMessage = escapeHtml(personalizedMessage);
+        // Personalize message with safe text substitution
+        // First substitute variables in plain text, then convert entire message to safe HTML
+        const firstName = donor.first_name || "Friend";
+        const personalizedMessage = message.replace(/{firstName}/g, firstName);
+        
+        // Convert the entire personalized message to safe HTML (escapes all HTML entities)
+        const safeMessageHtml = textToSafeHtml(personalizedMessage);
+        const safeFirstName = textToSafeHtml(firstName);
 
         const htmlMessage = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="padding: 20px;">
-              ${escapedMessage.split('\n').map(para => `<p>${para}</p>`).join('')}
-            </div>
-            <div style="padding: 20px; background-color: #f5f5f5; text-align: center; font-size: 12px; color: #666;">
-              <p>You're receiving this email as a supporter of our organization.</p>
-              <p>If you'd like to update your preferences, please contact us.</p>
-            </div>
-          </div>
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f5f5f5;">
+              <div style="padding: 20px; background-color: #ffffff;">
+                <p>Dear ${safeFirstName},</p>
+                <div style="margin: 20px 0; line-height: 1.6;">${safeMessageHtml}</div>
+                <p>Best regards,<br>The Sponsorly Team</p>
+              </div>
+              <div style="padding: 20px; background-color: #f5f5f5; text-align: center; font-size: 12px; color: #666;">
+                <p>You're receiving this email as a supporter of our organization.</p>
+                <p>If you'd like to update your preferences, please contact us.</p>
+              </div>
+            </body>
+          </html>
         `;
 
         const { data: emailData, error: emailError } = await resend.emails.send({
