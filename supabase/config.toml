@@ -203,3 +203,6 @@ verify_jwt = false
 
 [functions.send-membership-request-notification]
 verify_jwt = false
+
+[functions.send-membership-decision-notification]
+verify_jwt = false
