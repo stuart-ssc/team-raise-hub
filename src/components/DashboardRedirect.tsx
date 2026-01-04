@@ -43,23 +43,35 @@ const DashboardRedirect = () => {
         return;
       }
       
-      // Check if user has orders either by user_id or by email through donor profiles
-      const { count } = await supabase
+      // Check 1: Orders linked directly to user_id
+      const { count: userIdCount } = await supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id);
       
-      if (count && count > 0) {
+      if (userIdCount && userIdCount > 0) {
         setHasExistingOrders(true);
         setCheckingOrders(false);
         return;
       }
 
-      // Also check if they have a donor profile with orders
+      // Check 2: Orders by customer_email (catches orders placed without login)
+      const { count: emailCount } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .ilike('customer_email', user.email);
+      
+      if (emailCount && emailCount > 0) {
+        setHasExistingOrders(true);
+        setCheckingOrders(false);
+        return;
+      }
+
+      // Check 3: Donor profile exists (may have been created manually or via import)
       const { data: donorProfile } = await supabase
         .from('donor_profiles')
         .select('id')
-        .eq('email', user.email.toLowerCase())
+        .ilike('email', user.email)
         .limit(1)
         .maybeSingle();
 
