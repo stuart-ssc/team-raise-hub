@@ -41,6 +41,8 @@ interface RecentOrder {
   created_at: string;
   total_amount: number;
   campaign_name: string;
+  organization_name: string | null;
+  group_name: string | null;
   status: string;
 }
 
@@ -96,7 +98,13 @@ export default function DonorPortalHome() {
             campaign:campaigns (
               id,
               name,
-              file_upload_deadline_days
+              file_upload_deadline_days,
+              group:groups (
+                group_name,
+                organization:organizations (
+                  name
+                )
+              )
             )
           `)
           .eq('user_id', user.id)
@@ -105,13 +113,20 @@ export default function DonorPortalHome() {
 
         if (ordersError) throw ordersError;
 
-        const recentOrdersData = (orders || []).map(o => ({
-          id: o.id,
-          created_at: o.created_at,
-          total_amount: o.total_amount,
-          campaign_name: (o.campaign as any)?.name || 'Unknown Campaign',
-          status: o.status,
-        }));
+        const recentOrdersData = (orders || []).map(o => {
+          const campaign = o.campaign as any;
+          const group = campaign?.group;
+          const organization = group?.organization;
+          return {
+            id: o.id,
+            created_at: o.created_at,
+            total_amount: o.total_amount,
+            campaign_name: campaign?.name || 'Unknown Campaign',
+            organization_name: organization?.name || null,
+            group_name: group?.group_name || null,
+            status: o.status,
+          };
+        });
         setRecentOrders(recentOrdersData.slice(0, 5));
 
         // Calculate pending uploads
@@ -411,7 +426,15 @@ export default function DonorPortalHome() {
                     className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/5 transition-colors"
                   >
                     <div>
-                      <p className="font-medium">{order.campaign_name}</p>
+                      <p className="font-medium">
+                        {order.campaign_name}
+                        {order.organization_name && (
+                          <span className="text-muted-foreground font-normal">
+                            {' - '}{order.organization_name}
+                            {order.group_name && ` (${order.group_name})`}
+                          </span>
+                        )}
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         {new Date(order.created_at).toLocaleDateString()}
                       </p>
