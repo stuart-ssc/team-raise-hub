@@ -458,20 +458,6 @@ export default function DonorPortalHome() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="hover:bg-accent/5 transition-colors cursor-pointer" onClick={() => {}}>
-            <Link to="/portal/receipts">
-              <CardContent className="flex items-center gap-4 p-6">
-                <div className="p-3 rounded-full bg-primary/10">
-                  <FileText className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Tax Receipts</h3>
-                  <p className="text-sm text-muted-foreground">Download donation receipts</p>
-                </div>
-              </CardContent>
-            </Link>
-          </Card>
-
           <Card className="hover:bg-accent/5 transition-colors cursor-pointer">
             <Link to="/portal/messages">
               <CardContent className="flex items-center gap-4 p-6">
