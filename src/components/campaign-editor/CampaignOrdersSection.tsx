@@ -33,7 +33,7 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
         .from("orders")
         .select("id, customer_name, customer_email, customer_phone, items, total_amount, created_at, files_complete, status")
         .eq("campaign_id", campaignId)
-        .eq("status", "completed")
+        .eq("status", "succeeded")
         .order("created_at", { ascending: false });
 
       if (error) throw error;

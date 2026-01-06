@@ -17,7 +17,7 @@ export function CampaignStatsCard({ campaignId, goalAmount }: CampaignStatsCardP
         .from("orders")
         .select("total_amount, files_complete")
         .eq("campaign_id", campaignId)
-        .eq("status", "completed");
+        .eq("status", "succeeded");
 
       if (error) throw error;
 
