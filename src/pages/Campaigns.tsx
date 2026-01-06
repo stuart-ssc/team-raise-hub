@@ -11,13 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { CampaignPublicationControl } from "@/components/CampaignPublicationControl";
-import { ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Package, X, ExternalLink, Link as LinkIcon, Globe, Eye, AlertCircle, MessageSquare } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import NewConversationDialog from "@/components/messaging/NewConversationDialog";
+import { ChevronDown, ChevronUp, Plus, Search, ExternalLink, Globe, Eye, AlertCircle } from "lucide-react";
 
 interface Campaign {
   id: string;
@@ -46,10 +42,6 @@ export default function Campaigns() {
   const [sortBy, setSortBy] = useState<keyof Campaign>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterBy, setFilterBy] = useState("active");
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [publishingCampaign, setPublishingCampaign] = useState<Campaign | null>(null);
-  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
-  const [messageCampaign, setMessageCampaign] = useState<Campaign | null>(null);
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup, groups } = useActiveGroup();
   const { toast } = useToast();
@@ -178,28 +170,6 @@ export default function Campaigns() {
         title: "Error",
         description: "Failed to update campaign status",
         variant: "destructive",
-      });
-    }
-  };
-
-  const handleGenerateRosterLinks = async (campaignId: string, campaignName: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-roster-member-links', {
-        body: { campaignId }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: `Generated ${data.count} shareable links for ${campaignName}`,
-      });
-    } catch (error) {
-      console.error('Error generating roster links:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to generate roster links",
       });
     }
   };
@@ -362,56 +332,47 @@ export default function Campaigns() {
                       <CardHeader>
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <CardTitle className="text-base truncate">{campaign.name}</CardTitle>
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-base truncate">{campaign.name}</CardTitle>
+                              {campaign.slug && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    window.open(`/c/${campaign.slug}`, '_blank');
+                                  }}
+                                  title="Preview landing page"
+                                >
+                                  <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                                </Button>
+                              )}
+                            </div>
                             <p className="text-sm text-muted-foreground mt-1">{campaign.group_name || "—"}</p>
                           </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-background border">
-                              <DropdownMenuItem onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}>
-                                <Package className="mr-2 h-4 w-4" />
-                                Manage Items
-                              </DropdownMenuItem>
-                              {campaign.enable_roster_attribution && campaign.publication_status === 'published' && (
-                                <DropdownMenuItem onClick={() => handleGenerateRosterLinks(campaign.id, campaign.name)}>
-                                  <LinkIcon className="mr-2 h-4 w-4" />
-                                  Generate Roster Links
-                                </DropdownMenuItem>
-                              )}
-                              {campaign.slug && (
-                                <DropdownMenuItem onClick={() => window.open(`/campaign/${campaign.slug}`, '_blank')}>
-                                  <ExternalLink className="mr-2 h-4 w-4" />
-                                  View Landing Page
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem onClick={() => {
-                                setMessageCampaign(campaign);
-                                setMessageDialogOpen(true);
-                              }}>
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                                Send Message
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
+                          >
+                            Manage
+                          </Button>
                         </div>
                         <div className="flex flex-wrap gap-2 mt-2">
                           <Badge variant="outline">{campaign.campaign_type_name || "—"}</Badge>
-                          <CampaignPublicationControl
-                            campaignId={campaign.id}
-                            campaignName={campaign.name}
-                            groupId={campaign.group_id || ""}
-                            currentStatus={campaign.publication_status}
-                            enableRosterAttribution={campaign.enable_roster_attribution}
-                            onStatusChange={fetchCampaigns}
-                          />
+                          <Badge 
+                            variant={campaign.publication_status === 'published' ? 'default' : 'outline'}
+                            className="gap-1"
+                          >
+                            {campaign.publication_status === 'published' ? (
+                              <><Globe className="h-3 w-3" /> Published</>
+                            ) : campaign.publication_status === 'pending_verification' ? (
+                              <><AlertCircle className="h-3 w-3" /> Pending</>
+                            ) : (
+                              <><Eye className="h-3 w-3" /> Draft</>
+                            )}
+                          </Badge>
                         </div>
                       </CardHeader>
                       <CardContent>
@@ -526,7 +487,23 @@ export default function Campaigns() {
                     sortedCampaigns.map((campaign) => (
                       <TableRow key={campaign.id}>
                         <TableCell className="font-medium">
-                          {campaign.name}
+                          <div className="flex items-center gap-2">
+                            {campaign.name}
+                            {campaign.slug && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(`/c/${campaign.slug}`, '_blank');
+                                }}
+                                title="Preview landing page"
+                              >
+                                <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{campaign.group_name || "—"}</TableCell>
                         <TableCell>{campaign.campaign_type_name || "—"}</TableCell>
@@ -558,111 +535,13 @@ export default function Campaigns() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-background border">
-                              <DropdownMenuItem 
-                                className="cursor-pointer"
-                                onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Campaign
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="cursor-pointer"
-                                onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
-                              >
-                                <Package className="mr-2 h-4 w-4" />
-                                Manage Campaign Items
-                              </DropdownMenuItem>
-                              {campaign.enable_roster_attribution && campaign.publication_status === 'published' && (
-                                <DropdownMenuItem 
-                                  className="cursor-pointer"
-                                  onClick={() => handleGenerateRosterLinks(campaign.id, campaign.name)}
-                                >
-                                  <LinkIcon className="mr-2 h-4 w-4" />
-                                  Generate Roster Links
-                                </DropdownMenuItem>
-                              )}
-                              {campaign.slug && (
-                                <DropdownMenuItem 
-                                  className="cursor-pointer"
-                                  onClick={() => {
-                                    window.open(`/c/${campaign.slug}`, '_blank');
-                                  }}
-                                >
-                                  <ExternalLink className="mr-2 h-4 w-4" />
-                                  Preview Campaign Page
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem 
-                                className="cursor-pointer"
-                                onClick={() => {
-                                  setMessageCampaign(campaign);
-                                  setMessageDialogOpen(true);
-                                }}
-                              >
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                                Send Message
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="cursor-pointer"
-                                onClick={() => setPublishingCampaign(campaign)}
-                              >
-                                {campaign.publication_status === 'published' ? (
-                                  <>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Unpublish Campaign
-                                  </>
-                                ) : (
-                                  <>
-                                    <Globe className="mr-2 h-4 w-4" />
-                                    Publish Campaign
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem 
-                                    className="cursor-pointer text-destructive focus:text-destructive"
-                                    onSelect={(e) => {
-                                      e.preventDefault();
-                                      setSelectedCampaign(campaign);
-                                    }}
-                                  >
-                                    <X className="mr-2 h-4 w-4" />
-                                    {campaign.status ? "Deactivate" : "Activate"} Campaign
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      {campaign.status ? "Deactivate" : "Activate"} Campaign
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to {campaign.status ? "deactivate" : "activate"} the campaign "{campaign.name}"?
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => {
-                                        if (selectedCampaign) {
-                                          handleUpdateCampaignStatus(selectedCampaign.id, !selectedCampaign.status);
-                                        }
-                                      }}
-                                    >
-                                      {campaign.status ? "Deactivate" : "Activate"}
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
+                          >
+                            Manage
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))
@@ -671,37 +550,6 @@ export default function Campaigns() {
                 </Table>
               </div>
             )}
-          
-          {publishingCampaign && (
-            <CampaignPublicationControl
-              campaignId={publishingCampaign.id}
-              campaignName={publishingCampaign.name}
-              groupId={publishingCampaign.group_id || ""}
-              currentStatus={publishingCampaign.publication_status}
-              enableRosterAttribution={publishingCampaign.enable_roster_attribution}
-              onStatusChange={() => {
-                fetchCampaigns();
-                setPublishingCampaign(null);
-              }}
-              triggerOpen={true}
-              onClose={() => setPublishingCampaign(null)}
-              hideButton={true}
-            />
-          )}
-
-          {/* Message Dialog */}
-          <NewConversationDialog
-            open={messageDialogOpen}
-            onOpenChange={setMessageDialogOpen}
-            onConversationCreated={(conversationId) => {
-              setMessageDialogOpen(false);
-              setMessageCampaign(null);
-              navigate(`/dashboard/messages/${conversationId}`);
-            }}
-            contextType="campaign"
-            contextId={messageCampaign?.id}
-            contextLabel={messageCampaign?.name}
-          />
         </div>
     </DashboardPageLayout>
   );
