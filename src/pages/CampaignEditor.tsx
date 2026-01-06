@@ -350,7 +350,6 @@ export default function CampaignEditor() {
                 groupId={campaignData.groupId}
                 slug={campaignData.slug || null}
                 publicationStatus={campaignData.publicationStatus}
-                enableRosterAttribution={campaignData.enableRosterAttribution}
                 onPublicationChange={() => {
                   // Refetch campaign data to get updated publication status
                   window.location.reload();

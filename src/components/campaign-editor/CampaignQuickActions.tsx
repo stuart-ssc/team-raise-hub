@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Copy, Link2, Check } from "lucide-react";
+import { ExternalLink, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { CampaignPublicationControl } from "@/components/CampaignPublicationControl";
 
 interface CampaignQuickActionsProps {
@@ -12,7 +11,6 @@ interface CampaignQuickActionsProps {
   groupId: string;
   slug: string | null;
   publicationStatus: string;
-  enableRosterAttribution: boolean;
   onPublicationChange: () => void;
 }
 
@@ -22,13 +20,11 @@ export function CampaignQuickActions({
   groupId,
   slug,
   publicationStatus,
-  enableRosterAttribution,
   onPublicationChange,
 }: CampaignQuickActionsProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
-  const [generatingLinks, setGeneratingLinks] = useState(false);
 
   const campaignUrl = slug ? `${window.location.origin}/c/${slug}` : null;
   const isPublished = publicationStatus === "published";
@@ -48,31 +44,6 @@ export function CampaignQuickActions({
   const handlePreview = () => {
     if (slug) {
       window.open(`/c/${slug}`, "_blank");
-    }
-  };
-
-  const handleGenerateRosterLinks = async () => {
-    setGeneratingLinks(true);
-    try {
-      const { error } = await supabase.functions.invoke("generate-roster-member-links", {
-        body: { campaignId },
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Links generated",
-        description: "Roster member links have been generated successfully",
-      });
-    } catch (error) {
-      console.error("Error generating roster links:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate roster links",
-        variant: "destructive",
-      });
-    } finally {
-      setGeneratingLinks(false);
     }
   };
 
@@ -119,25 +90,12 @@ export function CampaignQuickActions({
         </>
       )}
 
-      {enableRosterAttribution && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleGenerateRosterLinks}
-          disabled={generatingLinks}
-          className="gap-2"
-        >
-          <Link2 className="h-4 w-4" />
-          {generatingLinks ? "Generating..." : "Generate Roster Links"}
-        </Button>
-      )}
-
       <CampaignPublicationControl
         campaignId={campaignId}
         campaignName={campaignName}
         groupId={groupId}
         currentStatus={publicationStatus}
-        enableRosterAttribution={enableRosterAttribution}
+        enableRosterAttribution={false}
         onStatusChange={handlePublicationChange}
         triggerOpen={publishDialogOpen}
         onClose={() => setPublishDialogOpen(false)}
