@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, FileText, Calendar, Users, Heart, ListPlus, Megaphone, Package, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, FileText, Calendar, Users, Heart, ListPlus, Megaphone, Package, Loader2, ShoppingCart } from "lucide-react";
 import { BasicDetailsSection } from "@/components/campaign-editor/BasicDetailsSection";
 import { ScheduleSection } from "@/components/campaign-editor/ScheduleSection";
 import { TeamSettingsSection } from "@/components/campaign-editor/TeamSettingsSection";
@@ -15,6 +15,9 @@ import { DonorExperienceSection } from "@/components/campaign-editor/DonorExperi
 import { CustomFieldsSection } from "@/components/campaign-editor/CustomFieldsSection";
 import { CampaignPitchSection } from "@/components/campaign-editor/CampaignPitchSection";
 import { CampaignItemsSection } from "@/components/campaign-editor/CampaignItemsSection";
+import { CampaignStatsCard } from "@/components/campaign-editor/CampaignStatsCard";
+import { CampaignQuickActions } from "@/components/campaign-editor/CampaignQuickActions";
+import { CampaignOrdersSection } from "@/components/campaign-editor/CampaignOrdersSection";
 
 interface CampaignData {
   id?: string;
@@ -33,6 +36,7 @@ interface CampaignData {
   fileUploadDeadlineDays: string;
   enableRosterAttribution: boolean;
   rosterId: string;
+  publicationStatus: string;
 }
 
 interface CustomField {
@@ -78,6 +82,7 @@ export default function CampaignEditor() {
     fileUploadDeadlineDays: "",
     enableRosterAttribution: false,
     rosterId: "",
+    publicationStatus: "draft",
   });
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [campaignPitch, setCampaignPitch] = useState<CampaignPitch | null>(null);
@@ -121,6 +126,7 @@ export default function CampaignEditor() {
           fileUploadDeadlineDays: data.file_upload_deadline_days?.toString() || "",
           enableRosterAttribution: data.enable_roster_attribution || false,
           rosterId: data.roster_id?.toString() || "",
+          publicationStatus: data.publication_status || "draft",
         });
 
         // Fetch pitch data
@@ -329,20 +335,44 @@ export default function CampaignEditor() {
             </Button>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
-                {isEditing ? "Edit Campaign" : "Create New Campaign"}
+                {isEditing ? campaignData.name || "Edit Campaign" : "Create New Campaign"}
               </h1>
               <p className="text-muted-foreground">
-                {isEditing ? "Update your campaign settings" : "Set up your fundraising campaign step by step"}
+                {isEditing ? "Manage your campaign settings and orders" : "Set up your fundraising campaign step by step"}
               </p>
             </div>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="gap-2">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {saving ? "Saving..." : "Save Campaign"}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {isEditing && id && campaignData.groupId && (
+              <CampaignQuickActions
+                campaignId={id}
+                campaignName={campaignData.name}
+                groupId={campaignData.groupId}
+                slug={campaignData.slug || null}
+                publicationStatus={campaignData.publicationStatus}
+                enableRosterAttribution={campaignData.enableRosterAttribution}
+                onPublicationChange={() => {
+                  // Refetch campaign data to get updated publication status
+                  window.location.reload();
+                }}
+              />
+            )}
+            <Button onClick={handleSave} disabled={saving} className="gap-2">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {saving ? "Saving..." : "Save Campaign"}
+            </Button>
+          </div>
         </div>
 
         <Separator />
+
+        {/* Stats Card - Only show when editing */}
+        {isEditing && id && (
+          <CampaignStatsCard
+            campaignId={id}
+            goalAmount={parseFloat(campaignData.goalAmount) || 0}
+          />
+        )}
 
         {/* Form Sections */}
         <div className="grid gap-6 lg:grid-cols-2">
@@ -474,6 +504,22 @@ export default function CampaignEditor() {
             </CardHeader>
             <CardContent>
               <CampaignItemsSection campaignId={id} />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Orders Section - Full width at bottom */}
+        {isEditing && id && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5 text-primary" />
+                <CardTitle>Orders & File Uploads</CardTitle>
+              </div>
+              <CardDescription>View purchases and track pending asset uploads</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CampaignOrdersSection campaignId={id} />
             </CardContent>
           </Card>
         )}
