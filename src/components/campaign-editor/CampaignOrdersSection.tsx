@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { FileCheck, FileWarning, ExternalLink } from "lucide-react";
+import { calculateItemsTotal } from "@/lib/orderUtils";
 
 interface CampaignOrdersSectionProps {
   campaignId: string;
@@ -116,7 +117,7 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
                 <TableCell className="hidden md:table-cell max-w-[200px] truncate">
                   {parseItems(order.items)}
                 </TableCell>
-                <TableCell>${(order.total_amount || 0).toLocaleString()}</TableCell>
+                <TableCell>${calculateItemsTotal(order.items).toLocaleString()}</TableCell>
                 <TableCell className="hidden sm:table-cell">
                   {order.created_at ? format(new Date(order.created_at), "MMM d, yyyy") : "-"}
                 </TableCell>

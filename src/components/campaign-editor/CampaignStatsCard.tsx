@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DollarSign, ShoppingCart, FileWarning, Target } from "lucide-react";
+import { calculateItemsTotal } from "@/lib/orderUtils";
 
 interface CampaignStatsCardProps {
   campaignId: string;
@@ -15,13 +16,13 @@ export function CampaignStatsCard({ campaignId, goalAmount }: CampaignStatsCardP
     queryFn: async () => {
       const { data: orders, error } = await supabase
         .from("orders")
-        .select("total_amount, files_complete")
+        .select("items, files_complete")
         .eq("campaign_id", campaignId)
         .eq("status", "succeeded");
 
       if (error) throw error;
 
-      const totalRaised = orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
+      const totalRaised = orders?.reduce((sum, o) => sum + calculateItemsTotal(o.items), 0) || 0;
       const orderCount = orders?.length || 0;
       const pendingFiles = orders?.filter(o => o.files_complete === false).length || 0;
 
