@@ -32,7 +32,6 @@ interface OrderItem {
 interface OrderDetails {
   id: string;
   created_at: string;
-  total_amount: number;
   status: string;
   files_complete: boolean;
   customer_name: string;
@@ -92,7 +91,6 @@ export default function DonorPortalPurchaseDetails() {
           .select(`
             id,
             created_at,
-            total_amount,
             status,
             files_complete,
             customer_name,
@@ -333,7 +331,7 @@ export default function DonorPortalPurchaseDetails() {
                 <Separator />
                 <div className="flex justify-between font-medium">
                   <span>Total</span>
-                  <span>${order.total_amount.toFixed(2)}</span>
+                  <span>${order.items.reduce((sum: number, item: OrderItem) => sum + (item.price_at_purchase * item.quantity), 0).toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>

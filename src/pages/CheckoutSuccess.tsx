@@ -275,7 +275,7 @@ const CheckoutSuccess = () => {
               <div className="bg-muted p-4 rounded-lg space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Order Total:</span>
-                  <span className="text-lg font-bold">${order.total_amount.toFixed(2)}</span>
+                  <span className="text-lg font-bold">${order.items.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Campaign:</span>
