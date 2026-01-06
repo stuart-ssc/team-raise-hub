@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -378,20 +379,47 @@ export default function CampaignEditor() {
           />
         )}
 
-        {/* Form Sections */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Left Column */}
-          <div className="space-y-6">
-            {/* Basic Details */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
+        {/* Form Sections - Tabbed Interface */}
+        <Card>
+          <CardContent className="pt-6">
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className={`grid w-full mb-6 ${isEditing && id ? 'grid-cols-6' : 'grid-cols-5'}`}>
+                <TabsTrigger value="details" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  <span className="hidden sm:inline">Details</span>
+                </TabsTrigger>
+                <TabsTrigger value="schedule" className="gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span className="hidden sm:inline">Schedule</span>
+                </TabsTrigger>
+                <TabsTrigger value="team" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  <span className="hidden sm:inline">Team</span>
+                </TabsTrigger>
+                <TabsTrigger value="experience" className="gap-2">
+                  <Heart className="h-4 w-4" />
+                  <span className="hidden sm:inline">Experience</span>
+                </TabsTrigger>
+                <TabsTrigger value="fields" className="gap-2">
+                  <ListPlus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Fields</span>
+                </TabsTrigger>
+                {isEditing && id && (
+                  <TabsTrigger value="pitch" className="gap-2">
+                    <Megaphone className="h-4 w-4" />
+                    <span className="hidden sm:inline">Pitch</span>
+                  </TabsTrigger>
+                )}
+              </TabsList>
+
+              <TabsContent value="details" className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
                   <FileText className="h-5 w-5 text-primary" />
-                  <CardTitle>Basic Details</CardTitle>
+                  <div>
+                    <h3 className="font-semibold">Basic Details</h3>
+                    <p className="text-sm text-muted-foreground">Campaign name, URL, and description</p>
+                  </div>
                 </div>
-                <CardDescription>Campaign name, URL, and description</CardDescription>
-              </CardHeader>
-              <CardContent>
                 <BasicDetailsSection
                   data={campaignData}
                   onUpdate={updateCampaignData}
@@ -401,100 +429,82 @@ export default function CampaignEditor() {
                   onSlugExistsChange={setSlugExists}
                   isEditing={isEditing}
                 />
-              </CardContent>
-            </Card>
+              </TabsContent>
 
-            {/* Schedule & Goals */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
+              <TabsContent value="schedule" className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
                   <Calendar className="h-5 w-5 text-primary" />
-                  <CardTitle>Schedule & Goals</CardTitle>
+                  <div>
+                    <h3 className="font-semibold">Schedule & Goals</h3>
+                    <p className="text-sm text-muted-foreground">Set your campaign timeline and fundraising goal</p>
+                  </div>
                 </div>
-                <CardDescription>Set your campaign timeline and fundraising goal</CardDescription>
-              </CardHeader>
-              <CardContent>
                 <ScheduleSection
                   data={campaignData}
                   onUpdate={updateCampaignData}
                 />
-              </CardContent>
-            </Card>
+              </TabsContent>
 
-            {/* Team Settings */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
+              <TabsContent value="team" className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
                   <Users className="h-5 w-5 text-primary" />
-                  <CardTitle>Team Settings</CardTitle>
+                  <div>
+                    <h3 className="font-semibold">Team Settings</h3>
+                    <p className="text-sm text-muted-foreground">Participant directions and roster attribution</p>
+                  </div>
                 </div>
-                <CardDescription>Participant directions and roster attribution</CardDescription>
-              </CardHeader>
-              <CardContent>
                 <TeamSettingsSection
                   data={campaignData}
                   onUpdate={updateCampaignData}
                 />
-              </CardContent>
-            </Card>
-          </div>
+              </TabsContent>
 
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Donor Experience */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
+              <TabsContent value="experience" className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
                   <Heart className="h-5 w-5 text-primary" />
-                  <CardTitle>Donor Experience</CardTitle>
+                  <div>
+                    <h3 className="font-semibold">Donor Experience</h3>
+                    <p className="text-sm text-muted-foreground">Thank you message and checkout options</p>
+                  </div>
                 </div>
-                <CardDescription>Thank you message and checkout options</CardDescription>
-              </CardHeader>
-              <CardContent>
                 <DonorExperienceSection
                   data={campaignData}
                   onUpdate={updateCampaignData}
                 />
-              </CardContent>
-            </Card>
+              </TabsContent>
 
-            {/* Custom Fields */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
+              <TabsContent value="fields" className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
                   <ListPlus className="h-5 w-5 text-primary" />
-                  <CardTitle>Custom Fields</CardTitle>
+                  <div>
+                    <h3 className="font-semibold">Custom Fields</h3>
+                    <p className="text-sm text-muted-foreground">Add custom questions for donors at checkout</p>
+                  </div>
                 </div>
-                <CardDescription>Add custom questions for donors at checkout</CardDescription>
-              </CardHeader>
-              <CardContent>
                 <CustomFieldsSection
                   fields={customFields}
                   onFieldsChange={setCustomFields}
                 />
-              </CardContent>
-            </Card>
+              </TabsContent>
 
-            {/* Campaign Pitch - Only show when editing */}
-            {isEditing && id && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
+              {isEditing && id && (
+                <TabsContent value="pitch" className="space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
                     <Megaphone className="h-5 w-5 text-primary" />
-                    <CardTitle>Campaign Pitch</CardTitle>
+                    <div>
+                      <h3 className="font-semibold">Campaign Pitch</h3>
+                      <p className="text-sm text-muted-foreground">Add a message, photo, or video for your campaign</p>
+                    </div>
                   </div>
-                  <CardDescription>Add a message, photo, or video for your campaign</CardDescription>
-                </CardHeader>
-                <CardContent>
                   <CampaignPitchSection
                     campaignId={id}
                     initialPitch={campaignPitch || undefined}
                   />
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
+                </TabsContent>
+              )}
+            </Tabs>
+          </CardContent>
+        </Card>
 
         {/* Campaign Items - Full width at bottom */}
         {isEditing && id && (
