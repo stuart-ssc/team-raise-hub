@@ -54,9 +54,6 @@ export function CampaignQuickActions({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Badge variant={isPublished ? "default" : "secondary"}>
-        {isPublished ? "Published" : "Draft"}
-      </Badge>
 
       <Button
         variant="outline"

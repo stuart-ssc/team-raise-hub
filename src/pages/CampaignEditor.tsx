@@ -7,7 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, FileText, Calendar, Users, Heart, ListPlus, Megaphone, Package, Loader2, ShoppingCart } from "lucide-react";
+import { Save, FileText, Calendar, Users, Heart, ListPlus, Megaphone, Package, Loader2, ShoppingCart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { BasicDetailsSection } from "@/components/campaign-editor/BasicDetailsSection";
 import { ScheduleSection } from "@/components/campaign-editor/ScheduleSection";
 import { TeamSettingsSection } from "@/components/campaign-editor/TeamSettingsSection";
@@ -329,14 +330,18 @@ export default function CampaignEditor() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/campaigns")}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">
-                {isEditing ? campaignData.name || "Edit Campaign" : "Create New Campaign"}
-              </h1>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {isEditing 
+                ? `${campaignData.name || "Edit"} Campaign` 
+                : "Create New Campaign"}
+            </h1>
+            <div className="flex items-center gap-2 mt-1">
+              {isEditing && (
+                <Badge variant={campaignData.publicationStatus === "published" ? "default" : "secondary"}>
+                  {campaignData.publicationStatus === "published" ? "Published" : "Draft"}
+                </Badge>
+              )}
               <p className="text-muted-foreground">
                 {isEditing ? "Manage your campaign settings and orders" : "Set up your fundraising campaign step by step"}
               </p>
