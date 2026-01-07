@@ -5,11 +5,23 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { UserPlus } from "lucide-react";
+
+interface InvitationInfo {
+  token: string;
+  playerName: string;
+  organizationName: string;
+  relationship: string;
+}
 
 const Signup = () => {
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get("invite");
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -18,16 +30,132 @@ const Signup = () => {
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
+  const [invitationInfo, setInvitationInfo] = useState<InvitationInfo | null>(null);
+  const [loadingInvitation, setLoadingInvitation] = useState(!!inviteToken);
   const navigate = useNavigate();
   const { signUp, signInWithGoogle, user } = useAuth();
   const { toast } = useToast();
 
-  // Redirect if already logged in
+  // Fetch invitation details if token is present
   useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
+    const fetchInvitation = async () => {
+      if (!inviteToken) return;
+
+      try {
+        const { data: invitation, error } = await supabase
+          .from("parent_invitations")
+          .select(`
+            token,
+            email,
+            first_name,
+            last_name,
+            relationship,
+            status,
+            expires_at,
+            inviter:organization_user!inviter_organization_user_id(
+              user_id,
+              organization:organizations(name)
+            )
+          `)
+          .eq("token", inviteToken)
+          .single();
+
+        if (error || !invitation) {
+          toast({
+            title: "Invalid Invitation",
+            description: "This invitation link is invalid or has expired.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (invitation.status !== "pending") {
+          toast({
+            title: "Invitation Already Used",
+            description: "This invitation has already been accepted.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (new Date(invitation.expires_at) < new Date()) {
+          toast({
+            title: "Invitation Expired",
+            description: "This invitation has expired. Please ask for a new one.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Get the player's name
+        const inviterData = invitation.inviter as any;
+        const { data: playerProfile } = await supabase
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("id", inviterData?.user_id)
+          .single();
+
+        setInvitationInfo({
+          token: invitation.token,
+          playerName: playerProfile
+            ? `${playerProfile.first_name || ""} ${playerProfile.last_name || ""}`.trim()
+            : "A student",
+          organizationName: inviterData?.organization?.name || "the organization",
+          relationship: invitation.relationship || "Guardian",
+        });
+
+        // Pre-fill form with invitation data
+        if (invitation.first_name || invitation.last_name || invitation.email) {
+          setFormData((prev) => ({
+            ...prev,
+            firstName: invitation.first_name || "",
+            lastName: invitation.last_name || "",
+            email: invitation.email || "",
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching invitation:", error);
+      } finally {
+        setLoadingInvitation(false);
+      }
+    };
+
+    fetchInvitation();
+  }, [inviteToken, toast]);
+
+  // Handle post-signup invitation acceptance
+  useEffect(() => {
+    const acceptInvitationIfNeeded = async () => {
+      if (user && inviteToken) {
+        try {
+          const { error } = await supabase.functions.invoke("accept-parent-invitation", {
+            body: { token: inviteToken },
+          });
+
+          if (error) {
+            console.error("Error accepting invitation:", error);
+            toast({
+              title: "Note",
+              description: "Account created, but there was an issue linking to the student. Please contact support.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Welcome!",
+              description: "Your account has been created and linked successfully.",
+            });
+          }
+        } catch (error) {
+          console.error("Error accepting invitation:", error);
+        }
+        navigate("/dashboard");
+      } else if (user) {
+        navigate("/dashboard");
+      }
+    };
+
+    acceptInvitationIfNeeded();
+  }, [user, inviteToken, navigate, toast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -119,6 +247,17 @@ const Signup = () => {
             <h1 className="text-3xl font-semibold mb-2">Sign up</h1>
             <p className="text-muted-foreground">Create your account to get started</p>
           </div>
+
+          {invitationInfo && (
+            <Alert className="bg-primary/5 border-primary/20">
+              <UserPlus className="h-4 w-4" />
+              <AlertDescription>
+                <strong>{invitationInfo.playerName}</strong> invited you to join{" "}
+                <strong>{invitationInfo.organizationName}</strong> as their{" "}
+                {invitationInfo.relationship.toLowerCase()}.
+              </AlertDescription>
+            </Alert>
+          )}
 
           <form onSubmit={handleSignup} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
