@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
-import { Save, FileText, Calendar, Users, Heart, ListPlus, Megaphone, Package, Loader2, ShoppingCart } from "lucide-react";
+import { Save, FileText, Calendar, Users, Heart, ListPlus, Megaphone, Loader2, ShoppingCart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { BasicDetailsSection } from "@/components/campaign-editor/BasicDetailsSection";
 import { ScheduleSection } from "@/components/campaign-editor/ScheduleSection";
@@ -567,18 +567,7 @@ export default function CampaignEditor() {
 
         {/* Campaign Items - Full width at bottom */}
         {isEditing && id && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-primary" />
-                <CardTitle>Campaign Items</CardTitle>
-              </div>
-              <CardDescription>Products or sponsorship levels for your campaign</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CampaignItemsSection campaignId={id} />
-            </CardContent>
-          </Card>
+          <CampaignItemsSection campaignId={id} />
         )}
 
         {/* Orders Section - Full width at bottom */}

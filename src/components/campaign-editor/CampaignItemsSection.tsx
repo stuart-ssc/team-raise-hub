@@ -7,11 +7,11 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Edit, Plus, HelpCircle } from "lucide-react";
+import { Trash2, Edit, Plus, HelpCircle, Package, ArrowLeft } from "lucide-react";
 import { SizeVariantsEditor, SizeVariant } from "@/components/SizeVariantsEditor";
 
 interface CampaignItem {
@@ -48,7 +48,7 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
   const { toast } = useToast();
   const [items, setItems] = useState<CampaignItem[]>([]);
   const [editingItem, setEditingItem] = useState<CampaignItem | null>(null);
-  const [accordionValue, setAccordionValue] = useState<string>("");
+  const [isFormVisible, setIsFormVisible] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [hasVariants, setHasVariants] = useState(false);
@@ -138,6 +138,16 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
     setSizeVariants([]);
   };
 
+  const handleCancel = () => {
+    resetForm();
+    setIsFormVisible(false);
+  };
+
+  const handleAddNew = () => {
+    resetForm();
+    setIsFormVisible(true);
+  };
+
   const editItem = (item: CampaignItem) => {
     setEditingItem(item);
     setFormData({
@@ -156,7 +166,7 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
     });
     setHasVariants(item.hasVariants || false);
     setSizeVariants(item.variants || []);
-    setAccordionValue("add-item");
+    setIsFormVisible(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -261,7 +271,7 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
 
       await fetchItems();
       resetForm();
-      setAccordionValue("");
+      setIsFormVisible(false);
     } catch (error) {
       console.error("Error saving item:", error);
       toast({
@@ -294,57 +304,40 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
   };
 
   return (
-    <div className="space-y-6">
-      {items.length > 0 && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Cost</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Available</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.name}</TableCell>
-                <TableCell>${item.cost.toFixed(2)}</TableCell>
-                <TableCell>
-                  {item.isRecurring ? (
-                    <Badge variant="secondary">
-                      {item.recurringInterval === 'month' ? 'Monthly' : 'Annual'}
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground text-sm">One-time</span>
-                  )}
-                </TableCell>
-                <TableCell>{item.quantityAvailable} / {item.quantityOffered}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => editItem(item)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => item.id && deleteItem(item.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Package className="h-5 w-5 text-primary" />
+            <div>
+              <CardTitle>Campaign Items</CardTitle>
+              <CardDescription>Products or sponsorship levels for your campaign</CardDescription>
+            </div>
+          </div>
+          {!isFormVisible && items.length > 0 && (
+            <Button onClick={handleAddNew} className="gap-2">
+              <Plus className="h-4 w-4" /> Add Item
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isFormVisible ? (
+          <div className="space-y-4">
+            {/* Form Header */}
+            <div className="flex items-center justify-between pb-4 border-b">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" onClick={handleCancel}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <h3 className="font-semibold">
+                  {editingItem ? `Edit: ${editingItem.name}` : "Add New Item"}
+                </h3>
+              </div>
+            </div>
 
-      <Accordion type="single" collapsible value={accordionValue} onValueChange={setAccordionValue}>
-        <AccordionItem value="add-item">
-          <AccordionTrigger className="gap-2">
-            <Plus className="h-4 w-4" />
-            {editingItem ? "Edit Item" : "Add Item"}
-          </AccordionTrigger>
-          <AccordionContent>
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Item Name *</Label>
@@ -499,30 +492,70 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                 </div>
               </div>
 
-              <div className="flex gap-2 justify-end">
-                {editingItem && (
-                  <Button type="button" variant="outline" onClick={resetForm}>
-                    Cancel
-                  </Button>
-                )}
+              <div className="flex gap-2 justify-end pt-4">
+                <Button type="button" variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
                 <Button type="submit" disabled={uploading}>
                   {uploading ? "Saving..." : editingItem ? "Update Item" : "Add Item"}
                 </Button>
               </div>
             </form>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-
-      {items.length === 0 && !accordionValue && (
-        <div className="text-center py-8 border-2 border-dashed rounded-lg">
-          <p className="text-muted-foreground mb-4">No items added yet</p>
-          <Button variant="outline" onClick={() => setAccordionValue("add-item")} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Your First Item
-          </Button>
-        </div>
-      )}
-    </div>
+          </div>
+        ) : (
+          <>
+            {items.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Cost</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Available</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell>${item.cost.toFixed(2)}</TableCell>
+                      <TableCell>
+                        {item.isRecurring ? (
+                          <Badge variant="secondary">
+                            {item.recurringInterval === 'month' ? 'Monthly' : 'Annual'}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">One-time</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{item.quantityAvailable} / {item.quantityOffered}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => editItem(item)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => item.id && deleteItem(item.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                <p className="text-muted-foreground mb-4">No items added yet</p>
+                <Button variant="outline" onClick={handleAddNew} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Your First Item
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
