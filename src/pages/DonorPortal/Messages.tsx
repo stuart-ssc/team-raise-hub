@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DonorPortalLayout } from "@/components/DonorPortal/DonorPortalLayout";
+import { NewDonorConversationDialog } from "@/components/DonorPortal/NewDonorConversationDialog";
 import { useDonorPortal } from "@/hooks/useDonorPortal";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageSquare, ArrowRight, Clock } from "lucide-react";
+import { MessageSquare, ArrowRight, Clock, Plus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface Conversation {
@@ -26,6 +26,7 @@ export default function DonorPortalMessages() {
   const { donorProfiles, isLoading: portalLoading } = useDonorPortal();
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -140,17 +141,33 @@ export default function DonorPortalMessages() {
     );
   }
 
+  const handleConversationCreated = (conversationId: string) => {
+    navigate(`/portal/messages/${conversationId}`);
+  };
+
   return (
     <DonorPortalLayout title="Messages" subtitle="Your conversations with organizations">
       <div className="space-y-6">
+        {/* New Message Button */}
+        <div className="flex justify-end">
+          <Button onClick={() => setNewMessageDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Message
+          </Button>
+        </div>
+
         {conversations.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-lg font-semibold mb-2">No Messages Yet</h3>
-              <p className="text-muted-foreground">
-                When organizations send you messages, they'll appear here.
+              <p className="text-muted-foreground mb-4">
+                Start a conversation with a group leader from a campaign you've supported.
               </p>
+              <Button variant="outline" onClick={() => setNewMessageDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Start a Conversation
+              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -202,6 +219,13 @@ export default function DonorPortalMessages() {
           </div>
         )}
       </div>
+
+      <NewDonorConversationDialog
+        open={newMessageDialogOpen}
+        onOpenChange={setNewMessageDialogOpen}
+        donorProfiles={donorProfiles}
+        onConversationCreated={handleConversationCreated}
+      />
     </DonorPortalLayout>
   );
 }
