@@ -9,9 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DonorPortalLayout } from "@/components/DonorPortal/DonorPortalLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { calculateItemsTotal } from "@/lib/orderUtils";
 import { 
-  Package, 
+  Package,
   Clock, 
   CheckCircle, 
   AlertCircle, 
@@ -22,7 +21,7 @@ import {
 interface Order {
   id: string;
   created_at: string;
-  items: any;
+  items_total: number;
   status: string;
   files_complete: boolean;
   campaign: {
@@ -50,7 +49,7 @@ export default function DonorPortalPurchases() {
           .select(`
             id,
             created_at,
-            items,
+            items_total,
             status,
             files_complete,
             campaign:campaigns (
@@ -261,8 +260,8 @@ export default function DonorPortalPurchases() {
                           </TableCell>
                           <TableCell>{order.campaign.name}</TableCell>
                           <TableCell className="hidden md:table-cell">{order.organization_name}</TableCell>
-                          <TableCell>
-                            ${calculateItemsTotal(order.items).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+<TableCell>
+                            ${(order.items_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </TableCell>
                           <TableCell>
                             {order.fileFieldsCount === 0 ? (

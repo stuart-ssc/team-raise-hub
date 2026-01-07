@@ -10,12 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
-import { calculateItemsTotal } from "@/lib/orderUtils";
 
 interface Order {
   id: string;
   created_at: string;
-  items: any;
+  items_total: number;
   status: string;
   files_complete: boolean;
   campaign: {
@@ -43,7 +42,7 @@ const MyOrders = () => {
           .select(`
             id,
             created_at,
-            items,
+            items_total,
             status,
             files_complete,
             campaign:campaigns (
@@ -222,7 +221,7 @@ const MyOrders = () => {
                           <TableCell>
                             {new Date(order.created_at).toLocaleDateString()}
                           </TableCell>
-                          <TableCell>${calculateItemsTotal(order.items).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                          <TableCell>${(order.items_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                           <TableCell>
                             {order.fileFieldsCount === 0 ? (
                               <span className="text-muted-foreground text-sm">N/A</span>

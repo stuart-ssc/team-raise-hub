@@ -184,7 +184,7 @@ const OrganizationDetail = () => {
           ),
         supabase
           .from("orders")
-          .select("total_amount")
+          .select("items_total")
           .in("status", ["succeeded", "completed"])
           .in("campaign_id",
             (await supabase
@@ -197,7 +197,7 @@ const OrganizationDetail = () => {
           ),
       ]);
 
-      const totalRevenue = revenueData.data?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+      const totalRevenue = revenueData.data?.reduce((sum, order) => sum + (order.items_total || 0), 0) || 0;
 
       setStats({
         groupsCount: groupsCount.count || 0,
