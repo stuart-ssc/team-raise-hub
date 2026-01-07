@@ -163,7 +163,7 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate(`/dashboard/orders/${order.id}`)}
+                    onClick={() => navigate(`/dashboard/campaigns/${campaignId}/orders/${order.id}`)}
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>
