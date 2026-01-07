@@ -433,12 +433,12 @@ export function CsvExportOrdersPanel({
   return (
     <Card>
       <CardHeader className="pb-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">Export Orders</CardTitle>
           <Button variant="ghost" size="sm" onClick={onCancel}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Orders
           </Button>
-          <CardTitle className="text-lg">Export Orders</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
