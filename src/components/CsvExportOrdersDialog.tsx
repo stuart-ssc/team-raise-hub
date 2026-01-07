@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format, startOfMonth, endOfMonth, subMonths, startOfQuarter } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Download, Loader2, FileSpreadsheet, FileText } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Download, Loader2, FileSpreadsheet, FileText, CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface CsvExportOrdersDialogProps {
   open: boolean;
@@ -27,6 +31,7 @@ interface CustomField {
 }
 
 type ExportFormat = "csv" | "xlsx";
+type DatePreset = "all" | "this_month" | "last_month" | "this_quarter";
 
 const STANDARD_COLUMNS = [
   { id: "customer_name", label: "Customer Name", default: true },
@@ -54,6 +59,45 @@ export function CsvExportOrdersDialog({
   );
   const [isExporting, setIsExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>("xlsx");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [datePreset, setDatePreset] = useState<DatePreset>("all");
+
+  const handleDatePreset = (preset: DatePreset) => {
+    setDatePreset(preset);
+    const today = new Date();
+    
+    switch (preset) {
+      case "all":
+        setStartDate(undefined);
+        setEndDate(undefined);
+        break;
+      case "this_month":
+        setStartDate(startOfMonth(today));
+        setEndDate(today);
+        break;
+      case "last_month":
+        const lastMonth = subMonths(today, 1);
+        setStartDate(startOfMonth(lastMonth));
+        setEndDate(endOfMonth(lastMonth));
+        break;
+      case "this_quarter":
+        setStartDate(startOfQuarter(today));
+        setEndDate(today);
+        break;
+    }
+  };
+
+  // Reset date preset when manually changing dates
+  const handleStartDateChange = (date: Date | undefined) => {
+    setStartDate(date);
+    setDatePreset("all");
+  };
+
+  const handleEndDateChange = (date: Date | undefined) => {
+    setEndDate(date);
+    setDatePreset("all");
+  };
 
   // Fetch custom fields when dialog opens
   useEffect(() => {
@@ -116,6 +160,8 @@ export function CsvExportOrdersDialog({
           columns: selectedColumns,
           campaignId,
           format: exportFormat,
+          startDate: startDate?.toISOString(),
+          endDate: endDate?.toISOString(),
         },
       });
 
@@ -169,8 +215,96 @@ export function CsvExportOrdersDialog({
 
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Exporting {orderIds.length} order{orderIds.length !== 1 ? "s" : ""}.
+            Exporting {orderIds.length} order{orderIds.length !== 1 ? "s" : ""}
+            {startDate || endDate ? " (filtered by date)" : ""}.
           </p>
+
+          {/* Date Range Filter */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Date Range</Label>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "flex-1 justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "MMM d, yyyy") : "Start date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={handleStartDateChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "flex-1 justify-start text-left font-normal",
+                      !endDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, "MMM d, yyyy") : "End date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={handleEndDateChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <Button
+                variant={datePreset === "all" ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => handleDatePreset("all")}
+              >
+                All Time
+              </Button>
+              <Button
+                variant={datePreset === "this_month" ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => handleDatePreset("this_month")}
+              >
+                This Month
+              </Button>
+              <Button
+                variant={datePreset === "last_month" ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => handleDatePreset("last_month")}
+              >
+                Last Month
+              </Button>
+              <Button
+                variant={datePreset === "this_quarter" ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => handleDatePreset("this_quarter")}
+              >
+                This Quarter
+              </Button>
+            </div>
+          </div>
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Export Format</Label>

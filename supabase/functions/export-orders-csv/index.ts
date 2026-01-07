@@ -11,6 +11,8 @@ interface ExportRequest {
   columns: string[];
   campaignId: string;
   format?: "csv" | "xlsx";
+  startDate?: string;
+  endDate?: string;
 }
 
 Deno.serve(async (req) => {
@@ -41,7 +43,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { orderIds, columns, campaignId, format = "csv" }: ExportRequest = await req.json();
+    const { orderIds, columns, campaignId, format = "csv", startDate, endDate }: ExportRequest = await req.json();
 
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
       return new Response(
@@ -57,12 +59,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch orders
-    const { data: orders, error: ordersError } = await supabase
+    // Build orders query with optional date filtering
+    let ordersQuery = supabase
       .from("orders")
       .select("*")
       .in("id", orderIds)
       .eq("campaign_id", campaignId);
+
+    // Apply date range filter if provided
+    if (startDate) {
+      ordersQuery = ordersQuery.gte("created_at", startDate);
+    }
+    if (endDate) {
+      // Set end date to end of day (23:59:59.999)
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(23, 59, 59, 999);
+      ordersQuery = ordersQuery.lte("created_at", endDateTime.toISOString());
+    }
+
+    const { data: orders, error: ordersError } = await ordersQuery;
 
     if (ordersError) {
       console.error("Error fetching orders:", ordersError);
@@ -71,6 +86,8 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`Date filter: ${startDate || 'none'} to ${endDate || 'none'}, found ${orders?.length || 0} orders`);
 
     // Fetch campaign items for item name lookup
     const { data: campaignItems } = await supabase
