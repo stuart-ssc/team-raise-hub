@@ -36,9 +36,21 @@ interface CampaignData {
   thankYouMessage: string;
   requiresBusinessInfo: boolean;
   fileUploadDeadlineDays: string;
+  assetUploadDeadline: string;
   enableRosterAttribution: boolean;
   rosterId: string;
   publicationStatus: string;
+}
+
+interface RequiredAsset {
+  id?: string;
+  asset_name: string;
+  asset_description: string;
+  file_types: string[];
+  max_file_size_mb: number;
+  dimensions_hint: string;
+  is_required: boolean;
+  display_order: number;
 }
 
 interface CustomField {
@@ -82,10 +94,12 @@ export default function CampaignEditor() {
     thankYouMessage: "",
     requiresBusinessInfo: false,
     fileUploadDeadlineDays: "",
+    assetUploadDeadline: "",
     enableRosterAttribution: false,
     rosterId: "",
     publicationStatus: "draft",
   });
+  const [requiredAssets, setRequiredAssets] = useState<RequiredAsset[]>([]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [campaignPitch, setCampaignPitch] = useState<CampaignPitch | null>(null);
   const [campaignImageFile, setCampaignImageFile] = useState<File | null>(null);
@@ -126,6 +140,7 @@ export default function CampaignEditor() {
           thankYouMessage: data.thank_you_message || "",
           requiresBusinessInfo: data.requires_business_info || false,
           fileUploadDeadlineDays: data.file_upload_deadline_days?.toString() || "",
+          assetUploadDeadline: data.asset_upload_deadline || "",
           enableRosterAttribution: data.enable_roster_attribution || false,
           rosterId: data.roster_id?.toString() || "",
           publicationStatus: data.publication_status || "draft",
@@ -157,6 +172,26 @@ export default function CampaignEditor() {
             is_required: f.is_required,
             help_text: f.help_text || "",
             display_order: f.display_order,
+          })));
+        }
+
+        // Fetch required assets
+        const { data: assetsData } = await supabase
+          .from("campaign_required_assets")
+          .select("*")
+          .eq("campaign_id", id)
+          .order("display_order");
+
+        if (assetsData) {
+          setRequiredAssets(assetsData.map((a: any) => ({
+            id: a.id,
+            asset_name: a.asset_name,
+            asset_description: a.asset_description || "",
+            file_types: a.file_types || [],
+            max_file_size_mb: a.max_file_size_mb || 10,
+            dimensions_hint: a.dimensions_hint || "",
+            is_required: a.is_required,
+            display_order: a.display_order,
           })));
         }
       } catch (error) {
@@ -236,6 +271,7 @@ export default function CampaignEditor() {
         thank_you_message: campaignData.thankYouMessage || null,
         requires_business_info: campaignData.requiresBusinessInfo,
         file_upload_deadline_days: campaignData.fileUploadDeadlineDays ? parseInt(campaignData.fileUploadDeadlineDays) : null,
+        asset_upload_deadline: campaignData.assetUploadDeadline || null,
         enable_roster_attribution: campaignData.enableRosterAttribution,
         roster_id: campaignData.rosterId ? parseInt(campaignData.rosterId) : null,
         status: true,
@@ -279,6 +315,27 @@ export default function CampaignEditor() {
               field_options: field.field_options || null,
               is_required: field.is_required,
               help_text: field.help_text || null,
+              display_order: index,
+            })));
+        }
+
+        // Save required assets
+        await supabase
+          .from("campaign_required_assets")
+          .delete()
+          .eq("campaign_id", campaignId);
+
+        if (requiredAssets.length > 0) {
+          await supabase
+            .from("campaign_required_assets")
+            .insert(requiredAssets.map((asset, index) => ({
+              campaign_id: campaignId,
+              asset_name: asset.asset_name,
+              asset_description: asset.asset_description || null,
+              file_types: asset.file_types,
+              max_file_size_mb: asset.max_file_size_mb,
+              dimensions_hint: asset.dimensions_hint || null,
+              is_required: asset.is_required,
               display_order: index,
             })));
         }
@@ -470,6 +527,8 @@ export default function CampaignEditor() {
                 <DonorExperienceSection
                   data={campaignData}
                   onUpdate={updateCampaignData}
+                  requiredAssets={requiredAssets}
+                  onRequiredAssetsChange={setRequiredAssets}
                 />
               </TabsContent>
 
