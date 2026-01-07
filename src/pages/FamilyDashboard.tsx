@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { supabase } from "@/integrations/supabase/client";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import QRCode from "react-qr-code";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
-import FamilySummaryCard from "@/components/FamilySummaryCard";
 
 interface LinkedChild {
   id: string;
@@ -38,10 +36,6 @@ interface ChildCampaignStats {
   uniqueSupporters: number;
   rank: number;
   totalParticipants: number;
-  // Team campaign (no personal link)
-  isTeamCampaign?: boolean;
-  teamRaised?: number;
-  teamGoal?: number;
 }
 
 interface RecentDonation {
@@ -146,11 +140,12 @@ const FamilyDashboard = () => {
         return;
       }
 
-      // Get ALL active campaigns for these groups (not just roster-enabled)
+      // Get campaigns for these groups
       const { data: campaigns } = await supabase
         .from('campaigns')
-        .select('id, name, slug, enable_roster_attribution, goal_amount, amount_raised')
+        .select('id, name, slug')
         .in('group_id', groupIds)
+        .eq('enable_roster_attribution', true)
         .eq('status', true);
 
       // Fetch campaign stats for each child
@@ -162,82 +157,57 @@ const FamilyDashboard = () => {
         const childName = `${profile?.first_name || 'Unknown'} ${profile?.last_name || ''}`.trim();
 
         for (const campaign of campaigns || []) {
-          // Check if roster attribution is enabled for personal tracking
-          if (campaign.enable_roster_attribution) {
-            // Get roster link for this child and campaign
-            const { data: linkData } = await supabase
-              .from('roster_member_campaign_links')
-              .select('slug')
-              .eq('campaign_id', campaign.id)
-              .eq('roster_member_id', child.id)
-              .single();
+          // Get roster link for this child and campaign
+          const { data: linkData } = await supabase
+            .from('roster_member_campaign_links')
+            .select('slug')
+            .eq('campaign_id', campaign.id)
+            .eq('roster_member_id', child.id)
+            .single();
 
-            if (linkData) {
-              const personalUrl = `${window.location.origin}/c/${campaign.slug}/${linkData.slug}`;
+          if (!linkData) continue;
 
-              // Get stats from the edge function
-              try {
-                const { data: statsData } = await supabase.functions.invoke('get-roster-member-stats', {
-                  body: { campaignId: campaign.id, rosterMemberId: child.id }
-                });
+          const personalUrl = `${window.location.origin}/c/${campaign.slug}/${linkData.slug}`;
 
-                const personalGoal = statsData?.personalGoal || 0;
+          // Get stats from the edge function
+          try {
+            const { data: statsData } = await supabase.functions.invoke('get-roster-member-stats', {
+              body: { campaignId: campaign.id, rosterMemberId: child.id }
+            });
 
-                allStats.push({
-                  childId: child.user_id,
+            const personalGoal = statsData?.personalGoal || 0;
+
+            allStats.push({
+              childId: child.user_id,
+              childName,
+              campaignId: campaign.id,
+              campaignName: campaign.name,
+              personalUrl,
+              totalRaised: statsData?.totalRaised || 0,
+              personalGoal,
+              percentToGoal: personalGoal > 0 ? Math.min(100, ((statsData?.totalRaised || 0) / personalGoal) * 100) : 0,
+              donationCount: statsData?.donationCount || 0,
+              uniqueSupporters: statsData?.uniqueSupporters || 0,
+              rank: statsData?.rank || 0,
+              totalParticipants: statsData?.totalParticipants || 0,
+            });
+
+            // Collect recent donations
+            if (statsData?.recentSupporters) {
+              for (const supporter of statsData.recentSupporters.slice(0, 3)) {
+                allDonations.push({
+                  id: supporter.orderId,
+                  amount: supporter.amount,
+                  donorName: supporter.donorName || 'Anonymous',
                   childName,
-                  campaignId: campaign.id,
                   campaignName: campaign.name,
-                  personalUrl,
-                  totalRaised: statsData?.totalRaised || 0,
-                  personalGoal,
-                  percentToGoal: personalGoal > 0 ? Math.min(100, ((statsData?.totalRaised || 0) / personalGoal) * 100) : 0,
-                  donationCount: statsData?.donationCount || 0,
-                  uniqueSupporters: statsData?.uniqueSupporters || 0,
-                  rank: statsData?.rank || 0,
-                  totalParticipants: statsData?.totalParticipants || 0,
+                  timestamp: supporter.purchasedAt,
                 });
-
-                // Collect recent donations
-                if (statsData?.recentSupporters) {
-                  for (const supporter of statsData.recentSupporters.slice(0, 3)) {
-                    allDonations.push({
-                      id: supporter.orderId,
-                      amount: supporter.amount,
-                      donorName: supporter.donorName || 'Anonymous',
-                      childName,
-                      campaignName: campaign.name,
-                      timestamp: supporter.purchasedAt,
-                    });
-                  }
-                }
-                continue;
-              } catch (err) {
-                console.error('Error fetching stats:', err);
               }
             }
+          } catch (err) {
+            console.error('Error fetching stats:', err);
           }
-
-          // Add as team campaign (no personal tracking)
-          const teamGoal = campaign.goal_amount || 0;
-          const teamRaised = campaign.amount_raised || 0;
-          allStats.push({
-            childId: child.user_id,
-            childName,
-            campaignId: campaign.id,
-            campaignName: campaign.name,
-            personalUrl: `${window.location.origin}/c/${campaign.slug}`,
-            totalRaised: 0,
-            personalGoal: 0,
-            percentToGoal: 0,
-            donationCount: 0,
-            uniqueSupporters: 0,
-            rank: 0,
-            totalParticipants: 0,
-            isTeamCampaign: true,
-            teamRaised,
-            teamGoal,
-          });
         }
       }
 
@@ -347,34 +317,6 @@ const FamilyDashboard = () => {
       ]}
     >
       <div className="space-y-6">
-        {/* Header with Share Button */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Family Dashboard</h1>
-            <p className="text-muted-foreground">Track your family's fundraising progress</p>
-          </div>
-          <FamilySummaryCard
-            totalRaised={totalFamilyRaised}
-            totalSupporters={totalSupporters}
-            activeCampaigns={activeCampaigns}
-            children={linkedChildren.map(child => {
-              const childStats = campaignStats.filter(s => s.childId === child.id);
-              const bestRank = childStats.length > 0 
-                ? Math.min(...childStats.map(s => s.rank).filter(r => r > 0))
-                : null;
-              return {
-                id: child.id,
-                firstName: child.firstName,
-                lastName: child.lastName,
-                groupName: child.groupName,
-                totalRaised: childStats.reduce((sum, s) => sum + s.totalRaised, 0),
-                supporters: childStats.reduce((sum, s) => sum + s.uniqueSupporters, 0),
-                bestRank: bestRank === Infinity ? null : bestRank,
-              };
-            })}
-          />
-        </div>
-
         {/* Hero Stats */}
         <div className="grid gap-4 md:grid-cols-4">
           <Card className="bg-gradient-to-br from-primary/20 to-primary/5">
