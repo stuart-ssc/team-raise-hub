@@ -20,7 +20,10 @@ import {
   DollarSign,
   Image as ImageIcon,
   ArrowRight,
+  Upload,
+  FileImage,
 } from "lucide-react";
+import { format, differenceInDays, parseISO } from "date-fns";
 
 interface OrderItem {
   name: string;
@@ -41,6 +44,8 @@ interface OrderDetails {
     id: string;
     name: string;
     file_upload_deadline_days: number;
+    asset_upload_deadline: string | null;
+    requires_business_info: boolean;
   };
   organization_name: string;
   items: OrderItem[];
@@ -68,6 +73,23 @@ interface BusinessInfo {
   logo_url: string | null;
 }
 
+interface RequiredAsset {
+  id: string;
+  asset_name: string;
+  asset_description: string | null;
+  file_types: string[] | null;
+  is_required: boolean;
+  dimensions_hint: string | null;
+}
+
+interface AssetUpload {
+  id: string;
+  required_asset_id: string;
+  file_url: string;
+  file_name: string;
+  uploaded_at: string;
+}
+
 export default function DonorPortalPurchaseDetails() {
   const { orderId } = useParams();
   const { user } = useAuth();
@@ -79,6 +101,8 @@ export default function DonorPortalPurchaseDetails() {
   const [fieldValues, setFieldValues] = useState<Record<string, any>>({});
   const [campaignAssets, setCampaignAssets] = useState<CampaignAssets | null>(null);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
+  const [requiredAssets, setRequiredAssets] = useState<RequiredAsset[]>([]);
+  const [assetUploads, setAssetUploads] = useState<AssetUpload[]>([]);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -101,6 +125,8 @@ export default function DonorPortalPurchaseDetails() {
               id,
               name,
               file_upload_deadline_days,
+              asset_upload_deadline,
+              requires_business_info,
               group:groups (
                 organization:organizations (
                   name
@@ -121,6 +147,8 @@ export default function DonorPortalPurchaseDetails() {
             id: campaign.id,
             name: campaign.name,
             file_upload_deadline_days: campaign.file_upload_deadline_days,
+            asset_upload_deadline: campaign.asset_upload_deadline,
+            requires_business_info: campaign.requires_business_info,
           },
           organization_name: campaign?.group?.organization?.name || 'Unknown Organization',
           items: (orderData.items as unknown as OrderItem[]) || [],
@@ -150,6 +178,25 @@ export default function DonorPortalPurchaseDetails() {
           values[(v as any).field_id] = (v as any).field_value;
         }
         setFieldValues(values);
+
+        // Fetch required sponsor assets
+        if (campaign.requires_business_info) {
+          const { data: assetsData } = await supabase
+            .from('campaign_required_assets')
+            .select('id, asset_name, asset_description, file_types, is_required, dimensions_hint')
+            .eq('campaign_id', campaign.id)
+            .order('display_order');
+
+          setRequiredAssets(assetsData || []);
+
+          // Fetch uploaded assets for this order
+          const { data: uploadsData } = await supabase
+            .from('order_asset_uploads')
+            .select('id, required_asset_id, file_url, file_name, uploaded_at')
+            .eq('order_id', orderId);
+
+          setAssetUploads(uploadsData || []);
+        }
 
         // Fetch campaign assets if order is linked to a business
         if (orderData.business_id) {
@@ -253,11 +300,35 @@ export default function DonorPortalPurchaseDetails() {
     }
   };
 
-  const getDaysRemaining = () => {
-    if (!order) return 0;
+  const getDeadlineInfo = () => {
+    if (!order) return { daysRemaining: 0, deadlineDate: null };
+    
+    // Use asset_upload_deadline if set, otherwise fall back to legacy calculation
+    if (order.campaign.asset_upload_deadline) {
+      const deadline = parseISO(order.campaign.asset_upload_deadline);
+      const daysRemaining = differenceInDays(deadline, new Date());
+      return { daysRemaining, deadlineDate: deadline };
+    }
+    
+    // Legacy: calculate from order date
     const deadline = new Date(order.created_at);
     deadline.setDate(deadline.getDate() + (order.campaign.file_upload_deadline_days || 30));
-    return Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return { daysRemaining, deadlineDate: deadline };
+  };
+
+  const getAssetUploadStatus = () => {
+    const required = requiredAssets.filter(a => a.is_required);
+    const uploadedRequired = required.filter(a => 
+      assetUploads.some(u => u.required_asset_id === a.id)
+    );
+    return {
+      total: requiredAssets.length,
+      uploaded: assetUploads.length,
+      requiredTotal: required.length,
+      requiredUploaded: uploadedRequired.length,
+      allRequiredComplete: required.length === uploadedRequired.length,
+    };
   };
 
   if (loading) {
@@ -284,7 +355,8 @@ export default function DonorPortalPurchaseDetails() {
     );
   }
 
-  const daysRemaining = getDaysRemaining();
+  const { daysRemaining, deadlineDate } = getDeadlineInfo();
+  const assetStatus = getAssetUploadStatus();
 
   return (
     <DonorPortalLayout title={`Order #${order.id.slice(0, 8).toUpperCase()}`}>
@@ -361,9 +433,9 @@ export default function DonorPortalPurchaseDetails() {
                 </div>
               </div>
 
-              {customFields.length > 0 && (
+              {(customFields.length > 0 || requiredAssets.length > 0) && (
                 <div className="flex items-center gap-3">
-                  {order.files_complete ? (
+                  {order.files_complete || assetStatus.allRequiredComplete ? (
                     <CheckCircle className="h-5 w-5 text-green-500" />
                   ) : daysRemaining < 0 ? (
                     <AlertCircle className="h-5 w-5 text-destructive" />
@@ -371,8 +443,8 @@ export default function DonorPortalPurchaseDetails() {
                     <Clock className="h-5 w-5 text-warning" />
                   )}
                   <div>
-                    <p className="text-sm text-muted-foreground">Files</p>
-                    {order.files_complete ? (
+                    <p className="text-sm text-muted-foreground">Assets</p>
+                    {order.files_complete || assetStatus.allRequiredComplete ? (
                       <Badge className="bg-green-500">Complete</Badge>
                     ) : daysRemaining < 0 ? (
                       <Badge variant="destructive">Overdue</Badge>
@@ -386,7 +458,89 @@ export default function DonorPortalPurchaseDetails() {
           </Card>
         </div>
 
-        {/* File Upload Section */}
+        {/* Required Sponsor Assets Section */}
+        {requiredAssets.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileImage className="h-5 w-5" />
+                    Required Sponsor Assets
+                  </CardTitle>
+                  <CardDescription>
+                    {deadlineDate && (
+                      <>
+                        Deadline: {format(deadlineDate, 'PPP')}
+                        {daysRemaining > 0 && ` (${daysRemaining} days remaining)`}
+                        {daysRemaining < 0 && ` (${Math.abs(daysRemaining)} days overdue)`}
+                        {daysRemaining === 0 && ' (Due today)'}
+                      </>
+                    )}
+                  </CardDescription>
+                </div>
+                <Badge variant={assetStatus.allRequiredComplete ? 'default' : 'secondary'}>
+                  {assetStatus.uploaded} / {assetStatus.total} uploaded
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {requiredAssets.map((asset) => {
+                  const upload = assetUploads.find(u => u.required_asset_id === asset.id);
+                  const isUploaded = !!upload;
+                  
+                  return (
+                    <div
+                      key={asset.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        {isUploaded ? (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <Clock className="h-5 w-5 text-muted-foreground" />
+                        )}
+                        <div>
+                          <p className="font-medium">
+                            {asset.asset_name}
+                            {asset.is_required && (
+                              <span className="text-destructive ml-1">*</span>
+                            )}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {isUploaded 
+                              ? `Uploaded ${format(parseISO(upload.uploaded_at), 'PPP')}`
+                              : asset.asset_description || `${asset.file_types?.join(', ') || 'Any file type'}${asset.dimensions_hint ? ` • ${asset.dimensions_hint}` : ''}`
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant={isUploaded ? 'outline' : 'default'}
+                        size="sm"
+                        asChild
+                      >
+                        <Link to={`/portal/purchases/${orderId}/assets/${asset.id}`}>
+                          {isUploaded ? (
+                            <>Change</>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 mr-1" />
+                              Upload
+                            </>
+                          )}
+                        </Link>
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Legacy File Upload Section */}
         {customFields.length > 0 && (
           <Card>
             <CardHeader>

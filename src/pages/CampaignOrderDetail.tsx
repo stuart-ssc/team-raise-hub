@@ -1,17 +1,20 @@
-import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import MessageButton from "@/components/messaging/MessageButton";
 import { calculateItemsTotal } from "@/lib/orderUtils";
+import { format, differenceInDays, parseISO } from "date-fns";
 import {
   CheckCircle,
   Clock,
@@ -24,6 +27,8 @@ import {
   Image,
   File,
   Send,
+  FileImage,
+  ExternalLink,
 } from "lucide-react";
 
 interface OrderItem {
@@ -32,15 +37,34 @@ interface OrderItem {
   quantity: number;
 }
 
+interface RequiredAsset {
+  id: string;
+  asset_name: string;
+  asset_description: string | null;
+  file_types: string[] | null;
+  is_required: boolean;
+  dimensions_hint: string | null;
+}
+
+interface AssetUpload {
+  id: string;
+  required_asset_id: string;
+  file_url: string;
+  file_name: string;
+  file_type: string;
+  uploaded_at: string;
+}
+
 const CampaignOrderDetail = () => {
   const { campaignId, orderId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // Fetch order details
-  const { data: order, isLoading: orderLoading, error: orderError } = useQuery({
+  const { data: order, isLoading: orderLoading, error: orderError, refetch: refetchOrder } = useQuery({
     queryKey: ["campaign-order-detail", orderId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -60,6 +84,8 @@ const CampaignOrderDetail = () => {
             id,
             name,
             file_upload_deadline_days,
+            asset_upload_deadline,
+            requires_business_info,
             group:groups (
               group_name,
               organization_id
@@ -89,7 +115,7 @@ const CampaignOrderDetail = () => {
     enabled: !!campaignId,
   });
 
-  // Fetch file custom fields
+  // Fetch file custom fields (legacy)
   const { data: fileFields } = useQuery({
     queryKey: ["order-file-fields", campaignId],
     queryFn: async () => {
@@ -105,7 +131,7 @@ const CampaignOrderDetail = () => {
     enabled: !!campaignId,
   });
 
-  // Fetch uploaded files for this order
+  // Fetch uploaded files (legacy)
   const { data: uploadedFiles } = useQuery({
     queryKey: ["order-uploaded-files", orderId],
     queryFn: async () => {
@@ -125,6 +151,35 @@ const CampaignOrderDetail = () => {
       return data;
     },
     enabled: !!orderId,
+  });
+
+  // Fetch required sponsor assets
+  const { data: requiredAssets } = useQuery({
+    queryKey: ["order-required-assets", campaignId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("campaign_required_assets")
+        .select("id, asset_name, asset_description, file_types, is_required, dimensions_hint")
+        .eq("campaign_id", campaignId)
+        .order("display_order");
+      if (error) throw error;
+      return data as RequiredAsset[];
+    },
+    enabled: !!campaignId && order?.campaign?.requires_business_info,
+  });
+
+  // Fetch uploaded sponsor assets
+  const { data: assetUploads, refetch: refetchAssets } = useQuery({
+    queryKey: ["order-asset-uploads", orderId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("order_asset_uploads")
+        .select("id, required_asset_id, file_url, file_name, file_type, uploaded_at")
+        .eq("order_id", orderId);
+      if (error) throw error;
+      return data as AssetUpload[];
+    },
+    enabled: !!orderId && order?.campaign?.requires_business_info,
   });
 
   // Fetch donor profile for messaging
@@ -167,26 +222,44 @@ const CampaignOrderDetail = () => {
 
   const fileUploadedCount = useMemo(() => {
     if (!uploadedFiles || !fileFields) return { uploaded: 0, total: 0 };
-    const fileFieldIds = fileFields.map(f => f.id);
     const uploaded = uploadedFiles.filter(
       (uf) => uf.custom_field?.field_type === "file" && uf.field_value
     ).length;
     return { uploaded, total: fileFields.length };
   }, [uploadedFiles, fileFields]);
 
-  const getDaysRemaining = () => {
-    if (!order) return 0;
+  const assetUploadStatus = useMemo(() => {
+    if (!requiredAssets) return { uploaded: 0, total: 0, requiredComplete: true };
+    const uploaded = assetUploads?.length || 0;
+    const required = requiredAssets.filter(a => a.is_required);
+    const requiredUploaded = required.filter(a => 
+      assetUploads?.some(u => u.required_asset_id === a.id)
+    );
+    return {
+      uploaded,
+      total: requiredAssets.length,
+      requiredComplete: required.length === requiredUploaded.length,
+    };
+  }, [requiredAssets, assetUploads]);
+
+  const getDeadlineInfo = () => {
+    if (!order) return { daysRemaining: 0, deadlineDate: null };
+    
+    // Use asset_upload_deadline if set
+    if (order.campaign?.asset_upload_deadline) {
+      const deadline = parseISO(order.campaign.asset_upload_deadline);
+      const daysRemaining = differenceInDays(deadline, new Date());
+      return { daysRemaining, deadlineDate: deadline };
+    }
+    
+    // Legacy: calculate from order date
     const deadline = new Date(order.created_at);
     deadline.setDate(deadline.getDate() + (order.campaign?.file_upload_deadline_days || 30));
     const today = new Date();
-    return Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  };
-
-  const getDeadlineDate = () => {
-    if (!order) return "";
-    const deadline = new Date(order.created_at);
-    deadline.setDate(deadline.getDate() + (order.campaign?.file_upload_deadline_days || 30));
-    return deadline.toLocaleDateString();
+    return { 
+      daysRemaining: Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
+      deadlineDate: deadline,
+    };
   };
 
   const handleSendReminder = async () => {
@@ -213,7 +286,35 @@ const CampaignOrderDetail = () => {
     }
   };
 
-  const daysRemaining = getDaysRemaining();
+  const handleToggleFilesComplete = async (checked: boolean) => {
+    if (!order) return;
+    setUpdatingStatus(true);
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ files_complete: checked })
+        .eq("id", order.id);
+      
+      if (error) throw error;
+      
+      refetchOrder();
+      toast({
+        title: checked ? "Marked Complete" : "Marked Incomplete",
+        description: `Order files status updated`,
+      });
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update status",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const { daysRemaining, deadlineDate } = getDeadlineInfo();
   const isUrgent = daysRemaining <= 3 && daysRemaining > 0;
   const isPastDue = daysRemaining < 0;
 
@@ -345,7 +446,141 @@ const CampaignOrderDetail = () => {
           </Card>
         </div>
 
-        {/* File Upload Status */}
+        {/* Order Status Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Order Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Payment:</span>
+                <Badge variant={order.status === 'succeeded' ? 'default' : 'secondary'}>
+                  {order.status === 'succeeded' ? (
+                    <><CheckCircle className="h-3 w-3 mr-1" /> Succeeded</>
+                  ) : order.status}
+                </Badge>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Label htmlFor="files-complete" className="text-sm text-muted-foreground">
+                  Assets Complete:
+                </Label>
+                <Switch
+                  id="files-complete"
+                  checked={order.files_complete || false}
+                  onCheckedChange={handleToggleFilesComplete}
+                  disabled={updatingStatus}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Required Sponsor Assets */}
+        {requiredAssets && requiredAssets.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <FileImage className="h-5 w-5" />
+                    Required Sponsor Assets
+                  </CardTitle>
+                  <CardDescription>
+                    {deadlineDate && `Deadline: ${format(deadlineDate, 'PPP')}`}
+                    {daysRemaining > 0 && ` (${daysRemaining} days remaining)`}
+                    {isPastDue && ` (${Math.abs(daysRemaining)} days overdue)`}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={assetUploadStatus.requiredComplete ? 'default' : isPastDue ? 'destructive' : 'secondary'}>
+                    {assetUploadStatus.uploaded} / {assetUploadStatus.total} uploaded
+                  </Badge>
+                  {!assetUploadStatus.requiredComplete && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSendReminder}
+                      disabled={sendingReminder}
+                    >
+                      <Send className="h-4 w-4 mr-1" />
+                      {sendingReminder ? "Sending..." : "Send Reminder"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {requiredAssets.map((asset) => {
+                  const upload = assetUploads?.find(u => u.required_asset_id === asset.id);
+                  const isUploaded = !!upload;
+                  const isImage = upload?.file_type?.startsWith('image/');
+
+                  return (
+                    <div
+                      key={asset.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        {isUploaded ? (
+                          <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
+                        ) : (
+                          <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-medium">
+                            {asset.asset_name}
+                            {asset.is_required && (
+                              <span className="text-destructive ml-1">*</span>
+                            )}
+                          </p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {isUploaded 
+                              ? `${upload.file_name} • Uploaded ${format(parseISO(upload.uploaded_at), 'PPP')}`
+                              : `Pending${asset.file_types?.length ? ` • ${asset.file_types.join(', ')}` : ''}`
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      {isUploaded ? (
+                        <div className="flex items-center gap-2">
+                          {isImage && (
+                            <a
+                              href={upload.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block"
+                            >
+                              <img
+                                src={upload.file_url}
+                                alt={asset.asset_name}
+                                className="h-10 w-10 rounded object-cover border"
+                              />
+                            </a>
+                          )}
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={upload.file_url} target="_blank" rel="noopener noreferrer">
+                              <Download className="h-4 w-4 mr-1" />
+                              Download
+                            </a>
+                          </Button>
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-amber-600">
+                          Pending
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Legacy File Upload Status */}
         {fileFields && fileFields.length > 0 && (
           <Card>
             <CardHeader>
@@ -365,17 +600,6 @@ const CampaignOrderDetail = () => {
                       <Clock className="h-3 w-3 mr-1" />
                       {fileUploadedCount.uploaded} of {fileUploadedCount.total} uploaded
                     </Badge>
-                  )}
-                  {!order.files_complete && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSendReminder}
-                      disabled={sendingReminder}
-                    >
-                      <Send className="h-4 w-4 mr-1" />
-                      {sendingReminder ? "Sending..." : "Send Reminder"}
-                    </Button>
                   )}
                 </div>
               </div>
@@ -402,11 +626,13 @@ const CampaignOrderDetail = () => {
                       : "Files Pending"}
                   </AlertTitle>
                   <AlertDescription>
-                    {isPastDue
-                      ? `Deadline was ${getDeadlineDate()}. Consider sending a reminder.`
-                      : `Due by ${getDeadlineDate()} (${daysRemaining} day${
-                          daysRemaining !== 1 ? "s" : ""
-                        } remaining)`}
+                    {deadlineDate && (
+                      isPastDue
+                        ? `Deadline was ${format(deadlineDate, 'PPP')}. Consider sending a reminder.`
+                        : `Due by ${format(deadlineDate, 'PPP')} (${daysRemaining} day${
+                            daysRemaining !== 1 ? "s" : ""
+                          } remaining)`
+                    )}
                   </AlertDescription>
                 </Alert>
               )}
@@ -414,7 +640,7 @@ const CampaignOrderDetail = () => {
           </Card>
         )}
 
-        {/* Uploaded Assets */}
+        {/* Uploaded Assets (Legacy) */}
         {uploadedFiles && uploadedFiles.length > 0 && (
           <Card>
             <CardHeader>
@@ -480,7 +706,7 @@ const CampaignOrderDetail = () => {
           </Card>
         )}
 
-        {/* Pending Files */}
+        {/* Pending Files (Legacy) */}
         {fileFields && fileFields.length > 0 && !order.files_complete && (
           <Card>
             <CardHeader>

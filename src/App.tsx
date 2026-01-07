@@ -80,6 +80,7 @@ import DistrictLandingPage from "./pages/DistrictLandingPage";
 import DonorPortalHome from "./pages/DonorPortal/Home";
 import DonorPortalPurchases from "./pages/DonorPortal/Purchases";
 import DonorPortalPurchaseDetails from "./pages/DonorPortal/PurchaseDetails";
+import DonorPortalSponsorAssetUpload from "./pages/DonorPortal/SponsorAssetUpload";
 import DonorPortalCampaignAssets from "./pages/DonorPortal/CampaignAssets";
 import DonorPortalMyBusinesses from "./pages/DonorPortal/MyBusinesses";
 import DonorPortalBusinessEditor from "./pages/DonorPortal/BusinessEditor";
@@ -198,6 +199,7 @@ const AppContent = () => {
         <Route path="/portal" element={<ProtectedRoute><DonorPortalHome /></ProtectedRoute>} />
         <Route path="/portal/purchases" element={<ProtectedRoute><DonorPortalPurchases /></ProtectedRoute>} />
         <Route path="/portal/purchases/:orderId" element={<ProtectedRoute><DonorPortalPurchaseDetails /></ProtectedRoute>} />
+        <Route path="/portal/purchases/:orderId/assets/:assetId" element={<ProtectedRoute><DonorPortalSponsorAssetUpload /></ProtectedRoute>} />
         <Route path="/portal/purchases/:orderId/assets" element={<ProtectedRoute><DonorPortalCampaignAssets /></ProtectedRoute>} />
         <Route path="/portal/businesses" element={<ProtectedRoute><DonorPortalMyBusinesses /></ProtectedRoute>} />
         <Route path="/portal/businesses/:businessId" element={<ProtectedRoute><DonorPortalBusinessEditor /></ProtectedRoute>} />
