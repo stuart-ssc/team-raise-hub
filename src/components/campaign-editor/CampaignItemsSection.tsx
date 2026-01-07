@@ -325,7 +325,7 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
         {isFormVisible ? (
           <div className="space-y-4">
             {/* Form Header */}
-            <div className="flex items-center justify-between pb-4 border-b">
+            <div className="flex items-center justify-between p-4 -mx-6 -mt-4 mb-4 bg-muted/50 border-b rounded-t-lg">
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" onClick={handleCancel}>
                   <ArrowLeft className="h-4 w-4" />
@@ -420,7 +420,17 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Max per Order</Label>
+                  <div className="flex items-center gap-1">
+                    <Label>Max per Order</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Limit how many a single buyer can purchase to prevent someone from buying out your entire supply</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <Input
                     type="number"
                     placeholder="No limit"
