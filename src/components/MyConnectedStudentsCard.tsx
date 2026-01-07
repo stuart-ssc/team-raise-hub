@@ -57,7 +57,7 @@ export default function MyConnectedStudentsCard({ userId }: MyConnectedStudentsC
           user_id,
           group_id,
           organization_id,
-          groups(name),
+          groups:groups(group_name),
           organization:organizations(name)
         `)
         .in('id', childOrgUserIds)
@@ -88,7 +88,7 @@ export default function MyConnectedStudentsCard({ userId }: MyConnectedStudentsC
           organizationUserId: child.id,
           firstName: profile?.first_name || 'Unknown',
           lastName: profile?.last_name || '',
-          groupName: (child.groups as any)?.name || null,
+          groupName: (child.groups as any)?.group_name || null,
           organizationName: (child.organization as any)?.name || 'Unknown Organization',
         };
       });
