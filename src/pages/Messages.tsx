@@ -12,10 +12,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MessageSquarePlus, Search, Archive, Users, MessageCircle, Building2, Target, Package, Filter, X } from "lucide-react";
+import { MessageSquarePlus, Search, Archive, Users, MessageCircle, Building2, Target, Package, Filter, X, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import NewConversationDialog from "@/components/messaging/NewConversationDialog";
 import MessageSearchDialog from "@/components/messaging/MessageSearchDialog";
+import { ScheduledMessagesPanel } from "@/components/messaging/ScheduledMessagesPanel";
 
 interface ConversationWithDetails {
   id: string;
@@ -504,7 +505,7 @@ const Messages = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4 mb-4">
+              <TabsList className="grid w-full grid-cols-5 mb-4">
                 <TabsTrigger value="all" className="flex items-center gap-2">
                   <MessageCircle className="h-4 w-4" />
                   <span className="hidden sm:inline">All</span>
@@ -517,104 +518,112 @@ const Messages = () => {
                   <Building2 className="h-4 w-4" />
                   <span className="hidden sm:inline">Donors</span>
                 </TabsTrigger>
+                <TabsTrigger value="scheduled" className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  <span className="hidden sm:inline">Scheduled</span>
+                </TabsTrigger>
                 <TabsTrigger value="archived" className="flex items-center gap-2">
                   <Archive className="h-4 w-4" />
                   <span className="hidden sm:inline">Archived</span>
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value={activeTab} className="mt-0">
-                {loading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-3 p-3">
-                        <Skeleton className="h-10 w-10 rounded-full" />
-                        <div className="flex-1 space-y-2">
-                          <Skeleton className="h-4 w-1/3" />
-                          <Skeleton className="h-3 w-2/3" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : filteredConversations.length === 0 ? (
-                  <div className="text-center py-12">
-                    <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                    <h3 className="text-lg font-medium text-foreground mb-1">No messages yet</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {activeTab === "all" 
-                        ? "Start a conversation to get in touch with your team or donors"
-                        : `No ${activeTab} messages found`}
-                    </p>
-                    <Button onClick={() => setDialogOpen(true)} variant="outline">
-                      <MessageSquarePlus className="h-4 w-4 mr-2" />
-                      Start a Conversation
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {filteredConversations.map((conversation) => (
-                      <div
-                        key={conversation.id}
-                        onClick={() => navigate(`/dashboard/messages/${conversation.id}`)}
-                        className={`flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors rounded-lg ${
-                          conversation.unread_count > 0 ? 'bg-primary/5' : ''
-                        }`}
-                      >
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={getConversationAvatar(conversation) || undefined} />
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {getConversationInitials(conversation)}
-                          </AvatarFallback>
-                        </Avatar>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <h4 className={`text-sm truncate ${conversation.unread_count > 0 ? 'font-semibold' : 'font-medium'}`}>
-                              {getConversationTitle(conversation)}
-                            </h4>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true })}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 flex-1 min-w-0">
-                              <p className={`text-xs truncate ${conversation.unread_count > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                {conversation.last_message?.content || "No messages yet"}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              {conversation.context_name && (
-                                <Badge variant="outline" className="h-5 text-xs max-w-[120px] truncate flex items-center gap-1">
-                                  {conversation.context_type === 'campaign' ? (
-                                    <Target className="h-3 w-3 shrink-0" />
-                                  ) : (
-                                    <Package className="h-3 w-3 shrink-0" />
-                                  )}
-                                  <span className="truncate">{conversation.context_name}</span>
-                                </Badge>
-                              )}
-                              {conversation.context_type && !conversation.context_name && (
-                                <Badge variant="outline" className="h-5 text-xs">
-                                  {conversation.context_type === 'campaign' ? (
-                                    <Target className="h-3 w-3" />
-                                  ) : (
-                                    <Package className="h-3 w-3" />
-                                  )}
-                                </Badge>
-                              )}
-                              {conversation.unread_count > 0 && (
-                                <Badge variant="default" className="h-5 min-w-5 flex items-center justify-center text-xs">
-                                  {conversation.unread_count}
-                                </Badge>
-                              )}
-                            </div>
+              {activeTab === "scheduled" ? (
+                <ScheduledMessagesPanel />
+              ) : (
+                <TabsContent value={activeTab} className="mt-0">
+                  {loading ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center gap-3 p-3">
+                          <Skeleton className="h-10 w-10 rounded-full" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-4 w-1/3" />
+                            <Skeleton className="h-3 w-2/3" />
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
+                      ))}
+                    </div>
+                  ) : filteredConversations.length === 0 ? (
+                    <div className="text-center py-12">
+                      <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-1">No messages yet</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {activeTab === "all" 
+                          ? "Start a conversation to get in touch with your team or donors"
+                          : `No ${activeTab} messages found`}
+                      </p>
+                      <Button onClick={() => setDialogOpen(true)} variant="outline">
+                        <MessageSquarePlus className="h-4 w-4 mr-2" />
+                        Start a Conversation
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border">
+                      {filteredConversations.map((conversation) => (
+                        <div
+                          key={conversation.id}
+                          onClick={() => navigate(`/dashboard/messages/${conversation.id}`)}
+                          className={`flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors rounded-lg ${
+                            conversation.unread_count > 0 ? 'bg-primary/5' : ''
+                          }`}
+                        >
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={getConversationAvatar(conversation) || undefined} />
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {getConversationInitials(conversation)}
+                            </AvatarFallback>
+                          </Avatar>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className={`text-sm truncate ${conversation.unread_count > 0 ? 'font-semibold' : 'font-medium'}`}>
+                                {getConversationTitle(conversation)}
+                              </h4>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1 flex-1 min-w-0">
+                                <p className={`text-xs truncate ${conversation.unread_count > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                  {conversation.last_message?.content || "No messages yet"}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {conversation.context_name && (
+                                  <Badge variant="outline" className="h-5 text-xs max-w-[120px] truncate flex items-center gap-1">
+                                    {conversation.context_type === 'campaign' ? (
+                                      <Target className="h-3 w-3 shrink-0" />
+                                    ) : (
+                                      <Package className="h-3 w-3 shrink-0" />
+                                    )}
+                                    <span className="truncate">{conversation.context_name}</span>
+                                  </Badge>
+                                )}
+                                {conversation.context_type && !conversation.context_name && (
+                                  <Badge variant="outline" className="h-5 text-xs">
+                                    {conversation.context_type === 'campaign' ? (
+                                      <Target className="h-3 w-3" />
+                                    ) : (
+                                      <Package className="h-3 w-3" />
+                                    )}
+                                  </Badge>
+                                )}
+                                {conversation.unread_count > 0 && (
+                                  <Badge variant="default" className="h-5 min-w-5 flex items-center justify-center text-xs">
+                                    {conversation.unread_count}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              )}
             </Tabs>
           </CardContent>
         </Card>
