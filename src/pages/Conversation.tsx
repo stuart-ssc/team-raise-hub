@@ -11,8 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Send, MoreVertical, Archive, Bell, BellOff, Users, Target, Package, Pin, PinOff } from "lucide-react";
-import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
+import { ArrowLeft, Send, MoreVertical, Archive, Bell, BellOff, Users, Target, Package, Pin, PinOff, Clock, ChevronDown, X } from "lucide-react";
+import { formatDistanceToNow, format, isToday, isYesterday, isBefore } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,7 @@ import { MessageReactions } from "@/components/messaging/MessageReactions";
 import { MessageTemplatesPicker } from "@/components/messaging/MessageTemplatesPicker";
 import { TypingIndicator } from "@/components/messaging/TypingIndicator";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { ScheduleMessageDialog } from "@/components/messaging/ScheduleMessageDialog";
 
 interface Attachment {
   name: string;
@@ -53,6 +54,8 @@ interface Message {
   reactions?: Reaction[];
   pinned_at?: string | null;
   pinned_by?: string | null;
+  scheduled_for?: string | null;
+  status?: string;
   sender?: {
     first_name: string | null;
     last_name: string | null;
@@ -104,6 +107,7 @@ const Conversation = () => {
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [recipientReadAt, setRecipientReadAt] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState('Staff');
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
 
   // Fetch current user's name for typing indicator
   useEffect(() => {
@@ -271,7 +275,7 @@ const Conversation = () => {
   };
 
   const fetchMessages = async () => {
-    if (!id) return;
+    if (!id || !user) return;
     
     try {
       const { data, error } = await supabase
@@ -287,6 +291,8 @@ const Conversation = () => {
           attachments,
           pinned_at,
           pinned_by,
+          scheduled_for,
+          status,
           sender:sender_user_id (
             first_name,
             last_name,
@@ -295,7 +301,9 @@ const Conversation = () => {
         `)
         .eq('conversation_id', id)
         .is('deleted_at', null)
-        .order('sent_at', { ascending: true });
+        // Show sent messages + scheduled messages from current user
+        .or(`status.eq.sent,status.is.null,and(status.eq.scheduled,sender_user_id.eq.${user.id})`)
+        .order('sent_at', { ascending: true, nullsFirst: false });
 
       if (error) throw error;
 
@@ -378,7 +386,7 @@ const Conversation = () => {
       .eq('user_id', user.id);
   };
 
-  const sendMessage = async () => {
+  const sendMessage = async (scheduledFor?: Date) => {
     if ((!newMessage.trim() && pendingAttachments.length === 0) || !id || !user) return;
     
     setSending(true);
@@ -391,7 +399,10 @@ const Conversation = () => {
           sender_type: 'internal',
           content: newMessage.trim() || (pendingAttachments.length > 0 ? '' : ''),
           content_type: pendingAttachments.length > 0 ? 'mixed' : 'text',
-          attachments: pendingAttachments.length > 0 ? (pendingAttachments as unknown as any) : null
+          attachments: pendingAttachments.length > 0 ? (pendingAttachments as unknown as any) : null,
+          status: scheduledFor ? 'scheduled' : 'sent',
+          scheduled_for: scheduledFor?.toISOString() || null,
+          sent_at: scheduledFor ? null : new Date().toISOString()
         })
         .select('id')
         .single();
@@ -401,17 +412,65 @@ const Conversation = () => {
       setNewMessage("");
       setPendingAttachments([]);
       
-      // Trigger email notifications (fire and forget)
-      if (data?.id) {
-        supabase.functions.invoke('send-message-notification', {
-          body: { conversationId: id, messageId: data.id }
-        }).catch(err => console.error('Notification error:', err));
+      if (scheduledFor) {
+        toast.success(`Message scheduled for ${format(scheduledFor, "MMM d 'at' h:mm a")}`);
+        fetchMessages(); // Refresh to show scheduled message
+      } else {
+        // Trigger email notifications (fire and forget)
+        if (data?.id) {
+          supabase.functions.invoke('send-message-notification', {
+            body: { conversationId: id, messageId: data.id }
+          }).catch(err => console.error('Notification error:', err));
+        }
       }
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error("Failed to send message");
     } finally {
       setSending(false);
+    }
+  };
+
+  const cancelScheduledMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .update({ status: 'cancelled' })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      toast.success('Scheduled message cancelled');
+    } catch (error) {
+      console.error('Error cancelling message:', error);
+      toast.error('Failed to cancel message');
+    }
+  };
+
+  const sendScheduledNow = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .update({
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          scheduled_for: null,
+        })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      // Trigger notification
+      supabase.functions.invoke('send-message-notification', {
+        body: { conversationId: id, messageId }
+      }).catch(err => console.error('Notification error:', err));
+
+      fetchMessages();
+      toast.success('Message sent successfully');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message');
     }
   };
 
@@ -647,6 +706,7 @@ const Conversation = () => {
                 const isOwn = message.sender_user_id === user?.id;
                 const showAvatar = !isOwn && (index === 0 || messages[index - 1]?.sender_user_id !== message.sender_user_id);
                 const isPinned = !!message.pinned_at;
+                const isScheduled = message.status === 'scheduled' && message.scheduled_for;
                 
                 return (
                   <div key={message.id} className={`flex gap-2 ${isOwn ? 'justify-end' : ''} group`}>
@@ -672,45 +732,83 @@ const Conversation = () => {
                         {isPinned && (
                           <Pin className="absolute -top-1 -right-1 h-3 w-3 text-primary" />
                         )}
+                        {isScheduled && (
+                          <Clock className="absolute -top-1 -right-1 h-3 w-3 text-amber-500" />
+                        )}
                         <div
                           className={`rounded-2xl px-4 py-2 ${
-                            isOwn
-                              ? 'bg-primary text-primary-foreground rounded-br-md'
-                              : 'bg-muted rounded-bl-md'
+                            isScheduled
+                              ? 'bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-br-md'
+                              : isOwn
+                                ? 'bg-primary text-primary-foreground rounded-br-md'
+                                : 'bg-muted rounded-bl-md'
                           } ${isPinned ? 'ring-1 ring-primary/30' : ''}`}
                         >
+                          {isScheduled && (
+                            <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 mb-1">
+                              <Clock className="h-3 w-3" />
+                              <span>Scheduled for {format(new Date(message.scheduled_for!), "MMM d 'at' h:mm a")}</span>
+                            </div>
+                          )}
                           {message.content && (
-                            <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                            <p className={`text-sm whitespace-pre-wrap break-words ${isScheduled ? 'text-amber-900 dark:text-amber-100' : ''}`}>
+                              {message.content}
+                            </p>
                           )}
                           {message.attachments && message.attachments.length > 0 && (
-                            <MessageAttachments attachments={message.attachments} isOwn={isOwn} />
+                            <MessageAttachments attachments={message.attachments} isOwn={isOwn && !isScheduled} />
                           )}
                         </div>
                       </div>
                       <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end mr-1' : 'ml-1'}`}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => togglePin(message.id, isPinned)}
-                        >
-                          {isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
-                        </Button>
-                        <MessageReactions
-                          messageId={message.id}
-                          reactions={message.reactions || []}
-                          currentUserId={user?.id}
-                          onReactionChange={fetchMessages}
-                          isOwn={isOwn}
-                        />
-                        <span className="text-[10px] text-muted-foreground">
-                          {formatMessageDate(message.sent_at)}
-                        </span>
-                        {isOwn && (
-                          <ReadReceiptIndicator
-                            status={recipientReadAt && new Date(message.sent_at) <= new Date(recipientReadAt) ? 'read' : 'sent'}
-                            readAt={recipientReadAt && new Date(message.sent_at) <= new Date(recipientReadAt) ? recipientReadAt : undefined}
-                          />
+                        {isScheduled ? (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => sendScheduledNow(message.id)}
+                            >
+                              <Send className="h-3 w-3 mr-1" />
+                              Send Now
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 px-2 text-xs text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => cancelScheduledMessage(message.id)}
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => togglePin(message.id, isPinned)}
+                            >
+                              {isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+                            </Button>
+                            <MessageReactions
+                              messageId={message.id}
+                              reactions={message.reactions || []}
+                              currentUserId={user?.id}
+                              onReactionChange={fetchMessages}
+                              isOwn={isOwn}
+                            />
+                            <span className="text-[10px] text-muted-foreground">
+                              {formatMessageDate(message.sent_at)}
+                            </span>
+                            {isOwn && (
+                              <ReadReceiptIndicator
+                                status={recipientReadAt && new Date(message.sent_at) <= new Date(recipientReadAt) ? 'read' : 'sent'}
+                                readAt={recipientReadAt && new Date(message.sent_at) <= new Date(recipientReadAt) ? recipientReadAt : undefined}
+                              />
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -763,13 +861,47 @@ const Conversation = () => {
                 disabled={sending}
                 className="flex-1"
               />
-              <Button type="submit" disabled={sending || (!newMessage.trim() && pendingAttachments.length === 0)}>
-                <Send className="h-4 w-4" />
-              </Button>
+              <div className="flex">
+                <Button 
+                  type="submit" 
+                  disabled={sending || (!newMessage.trim() && pendingAttachments.length === 0)}
+                  className="rounded-r-none"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      type="button"
+                      variant="default" 
+                      size="icon"
+                      className="rounded-l-none border-l border-primary-foreground/20"
+                      disabled={sending || (!newMessage.trim() && pendingAttachments.length === 0)}
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setScheduleDialogOpen(true)}>
+                      <Clock className="h-4 w-4 mr-2" />
+                      Schedule for later
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </form>
           </div>
         </Card>
       </div>
+
+      <ScheduleMessageDialog
+        open={scheduleDialogOpen}
+        onOpenChange={setScheduleDialogOpen}
+        onSchedule={(scheduledFor) => {
+          setIsTyping(false);
+          sendMessage(scheduledFor);
+        }}
+      />
     </DashboardPageLayout>
   );
 };

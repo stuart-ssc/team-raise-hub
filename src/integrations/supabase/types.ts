@@ -2509,10 +2509,12 @@ export type Database = {
           pinned_at: string | null
           pinned_by: string | null
           reply_to_id: string | null
+          scheduled_for: string | null
           sender_donor_profile_id: string | null
           sender_type: string
           sender_user_id: string | null
           sent_at: string | null
+          status: string | null
         }
         Insert: {
           attachments?: Json | null
@@ -2526,10 +2528,12 @@ export type Database = {
           pinned_at?: string | null
           pinned_by?: string | null
           reply_to_id?: string | null
+          scheduled_for?: string | null
           sender_donor_profile_id?: string | null
           sender_type: string
           sender_user_id?: string | null
           sent_at?: string | null
+          status?: string | null
         }
         Update: {
           attachments?: Json | null
@@ -2543,10 +2547,12 @@ export type Database = {
           pinned_at?: string | null
           pinned_by?: string | null
           reply_to_id?: string | null
+          scheduled_for?: string | null
           sender_donor_profile_id?: string | null
           sender_type?: string
           sender_user_id?: string | null
           sent_at?: string | null
+          status?: string | null
         }
         Relationships: [
           {
