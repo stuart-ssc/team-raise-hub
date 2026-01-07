@@ -35,6 +35,7 @@ interface OrderDetails {
     file_upload_deadline_days: number;
     group: {
       group_name: string;
+      organization_id: string;
       organization: {
         name: string;
       };
@@ -90,6 +91,7 @@ const OrderDetails = () => {
               file_upload_deadline_days,
               group:groups (
                 group_name,
+                organization_id,
                 organization:organizations (
                   name
                 )
@@ -127,10 +129,28 @@ const OrderDetails = () => {
           }
           
           console.log("Public access with valid token");
-        } else if (!user || orderData.user_id !== user.id) {
-          // No token and not logged in as owner
-          setUnauthorized(true);
-          return;
+        } else {
+          // Check if user is the order owner
+          const isOrderOwner = user && orderData.user_id === user.id;
+          
+          // Check if user is a member of the organization
+          let isOrgMember = false;
+          if (user && orderData.campaign?.group?.organization_id) {
+            const { data: membership } = await supabase
+              .from('organization_user')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('organization_id', orderData.campaign.group.organization_id)
+              .eq('active_user', true)
+              .maybeSingle();
+            
+            isOrgMember = !!membership;
+          }
+          
+          if (!isOrderOwner && !isOrgMember) {
+            setUnauthorized(true);
+            return;
+          }
         }
 
         // Fetch file type custom fields for this campaign
