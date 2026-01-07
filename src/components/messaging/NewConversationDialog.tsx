@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -28,12 +29,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Check, ChevronsUpDown, X, Users, Heart, Target, Package, Link2 } from "lucide-react";
+import { Check, ChevronsUpDown, X, Users, Heart, Target, Package, Link2, Clock, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ScheduleMessageDialog } from "./ScheduleMessageDialog";
 
 interface NewConversationDialogProps {
   open: boolean;
@@ -104,6 +112,7 @@ const NewConversationDialog = ({
   const [orders, setOrders] = useState<Order[]>([]);
   const [contextSelectorOpen, setContextSelectorOpen] = useState(false);
   const [contextPickerOpen, setContextPickerOpen] = useState(false);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
 
   useEffect(() => {
     if (open && organizationUser?.organization_id) {
@@ -233,7 +242,7 @@ const NewConversationDialog = ({
     }
   };
 
-  const handleCreateConversation = async () => {
+  const handleCreateConversation = async (scheduledFor?: Date) => {
     if (!user || !organizationUser?.organization_id) return;
     
     if (activeTab === "internal" && selectedUsers.length === 0) {
@@ -274,8 +283,13 @@ const NewConversationDialog = ({
                   sender_user_id: user.id,
                   sender_type: 'internal',
                   content: initialMessage.trim(),
-                  content_type: 'text'
+                  content_type: 'text',
+                  status: scheduledFor ? 'scheduled' : 'sent',
+                  scheduled_for: scheduledFor?.toISOString() || null
                 });
+                if (scheduledFor) {
+                  toast.success(`Message scheduled for ${format(scheduledFor, "MMM d 'at' h:mm a")}`);
+                }
                 onConversationCreated(ec.conversation_id);
                 resetForm();
                 return;
@@ -334,8 +348,14 @@ const NewConversationDialog = ({
         sender_user_id: user.id,
         sender_type: 'internal',
         content: initialMessage.trim(),
-        content_type: 'text'
+        content_type: 'text',
+        status: scheduledFor ? 'scheduled' : 'sent',
+        scheduled_for: scheduledFor?.toISOString() || null
       });
+
+      if (scheduledFor) {
+        toast.success(`Message scheduled for ${format(scheduledFor, "MMM d 'at' h:mm a")}`);
+      }
 
       onConversationCreated(conv.id);
       resetForm();
@@ -356,6 +376,7 @@ const NewConversationDialog = ({
     setContextId(undefined);
     setContextLabel(undefined);
     setContextSelectorOpen(false);
+    setScheduleDialogOpen(false);
     onOpenChange(false);
   };
 
@@ -705,10 +726,37 @@ const NewConversationDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleCreateConversation} disabled={loading}>
-            {loading ? "Sending..." : "Send Message"}
-          </Button>
+          <DropdownMenu>
+            <div className="flex">
+              <Button 
+                onClick={() => handleCreateConversation()} 
+                disabled={loading}
+                className="rounded-r-none"
+              >
+                {loading ? "Sending..." : "Send Message"}
+              </Button>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default" size="icon" className="rounded-l-none border-l border-primary-foreground/20" disabled={loading}>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+            </div>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setScheduleDialogOpen(true)}>
+                <Clock className="h-4 w-4 mr-2" />
+                Schedule for later
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </DialogFooter>
+
+        <ScheduleMessageDialog
+          open={scheduleDialogOpen}
+          onOpenChange={setScheduleDialogOpen}
+          onSchedule={(date) => {
+            handleCreateConversation(date);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
