@@ -2966,6 +2966,7 @@ export type Database = {
           files_complete: boolean | null
           id: string
           items: Json
+          items_total: number | null
           payment_processor: string | null
           platform_fee_amount: number | null
           processor_session_id: string | null
@@ -2996,6 +2997,7 @@ export type Database = {
           files_complete?: boolean | null
           id?: string
           items: Json
+          items_total?: number | null
           payment_processor?: string | null
           platform_fee_amount?: number | null
           processor_session_id?: string | null
@@ -3026,6 +3028,7 @@ export type Database = {
           files_complete?: boolean | null
           id?: string
           items?: Json
+          items_total?: number | null
           payment_processor?: string | null
           platform_fee_amount?: number | null
           processor_session_id?: string | null

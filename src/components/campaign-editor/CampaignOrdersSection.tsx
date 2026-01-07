@@ -14,8 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import { FileCheck, FileWarning, ExternalLink } from "lucide-react";
-import { calculateItemsTotal } from "@/lib/orderUtils";
+import { FileCheck, FileWarning } from "lucide-react";
 
 interface CampaignOrdersSectionProps {
   campaignId: string;
@@ -32,7 +31,7 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, customer_name, customer_email, customer_phone, items, total_amount, created_at, files_complete, status")
+        .select("id, customer_name, customer_email, customer_phone, items, items_total, created_at, files_complete, status")
         .eq("campaign_id", campaignId)
         .eq("status", "succeeded")
         .order("created_at", { ascending: false });
@@ -142,7 +141,7 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
                 <TableCell className="hidden md:table-cell max-w-[200px] truncate">
                   {parseItems(order.items)}
                 </TableCell>
-                <TableCell>${calculateItemsTotal(order.items).toLocaleString()}</TableCell>
+                <TableCell>${(Number(order.items_total) || 0).toLocaleString()}</TableCell>
                 <TableCell className="hidden sm:table-cell">
                   {order.created_at ? format(new Date(order.created_at), "MMM d, yyyy") : "-"}
                 </TableCell>

@@ -202,6 +202,7 @@ Deno.serve(async (req) => {
       .insert({
         campaign_id: campaign.id,
         total_amount: finalTotal,
+        items_total: totalAmount, // Just the items, excluding platform fee
         platform_fee_amount: platformFeeAmount,
         status: 'pending',
         customer_email: customerInfo?.email || 'pending@example.com',
