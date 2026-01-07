@@ -81,6 +81,43 @@ Deno.serve(async (req) => {
       itemsLookup[item.id] = item.name;
     });
 
+    // Handle custom fields
+    const customFieldColumns = columns.filter((c: string) => c.startsWith("custom_"));
+    const customFieldIds = customFieldColumns.map((c: string) => c.replace("custom_", ""));
+    
+    let customFieldDefs: Record<string, { field_name: string; field_type: string }> = {};
+    let customFieldValues: Record<string, Record<string, string>> = {}; // orderId -> fieldId -> value
+
+    if (customFieldIds.length > 0) {
+      // Fetch field definitions
+      const { data: fields } = await supabase
+        .from("campaign_custom_fields")
+        .select("id, field_name, field_type")
+        .in("id", customFieldIds);
+      
+      if (fields) {
+        customFieldDefs = Object.fromEntries(
+          fields.map((f: any) => [f.id, { field_name: f.field_name, field_type: f.field_type }])
+        );
+      }
+
+      // Fetch values for all orders
+      const { data: values } = await supabase
+        .from("order_custom_field_values")
+        .select("order_id, field_id, field_value")
+        .in("order_id", orderIds)
+        .in("field_id", customFieldIds);
+
+      if (values) {
+        for (const v of values as any[]) {
+          if (!customFieldValues[v.order_id]) {
+            customFieldValues[v.order_id] = {};
+          }
+          customFieldValues[v.order_id][v.field_id] = v.field_value || "";
+        }
+      }
+    }
+
     // Column label mapping
     const columnLabels: Record<string, string> = {
       customer_name: "Customer Name",
@@ -96,78 +133,123 @@ Deno.serve(async (req) => {
       tax_receipt_issued: "Tax Receipt Issued",
     };
 
+    // Add custom field labels
+    for (const fieldId of customFieldIds) {
+      const def = customFieldDefs[fieldId];
+      if (def) {
+        columnLabels[`custom_${fieldId}`] = def.field_name;
+      }
+    }
+
     // Generate CSV header
     const header = columns.map((col) => columnLabels[col] || col).join(",");
 
     // Format value for CSV
-    const formatValue = (value: any, column: string): string => {
-      if (value === null || value === undefined) return "";
-
+    const formatValue = (order: any, column: string): string => {
       let formatted = "";
 
-      switch (column) {
-        case "items":
-          try {
-            const parsed = typeof value === "string" ? JSON.parse(value) : value;
-            if (Array.isArray(parsed)) {
-              formatted = parsed
-                .map((item: any) => {
-                  const name = item.campaign_item_id && itemsLookup[item.campaign_item_id]
-                    ? itemsLookup[item.campaign_item_id]
-                    : item.name || item.item_name || "Unknown";
-                  const qty = item.quantity || 1;
-                  const size = item.size || item.variant_size;
-                  return size ? `${name} (${size}) x${qty}` : `${name} x${qty}`;
-                })
-                .join("; ");
-            }
-          } catch {
-            formatted = String(value);
+      // Handle custom fields
+      if (column.startsWith("custom_")) {
+        const fieldId = column.replace("custom_", "");
+        const orderValues = customFieldValues[order.id] || {};
+        const rawValue = orderValues[fieldId] || "";
+        const fieldDef = customFieldDefs[fieldId];
+        
+        if (fieldDef) {
+          switch (fieldDef.field_type) {
+            case "checkbox":
+              formatted = rawValue === "true" ? "Yes" : rawValue === "false" ? "No" : rawValue;
+              break;
+            case "date":
+              if (rawValue) {
+                try {
+                  formatted = new Date(rawValue).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  });
+                } catch {
+                  formatted = rawValue;
+                }
+              }
+              break;
+            default:
+              formatted = rawValue;
           }
-          break;
+        } else {
+          formatted = rawValue;
+        }
+      } else {
+        // Handle standard fields
+        const value = order[column];
+        if (value === null || value === undefined) {
+          formatted = "";
+        } else {
+          switch (column) {
+            case "items":
+              try {
+                const parsed = typeof value === "string" ? JSON.parse(value) : value;
+                if (Array.isArray(parsed)) {
+                  formatted = parsed
+                    .map((item: any) => {
+                      const name = item.campaign_item_id && itemsLookup[item.campaign_item_id]
+                        ? itemsLookup[item.campaign_item_id]
+                        : item.name || item.item_name || "Unknown";
+                      const qty = item.quantity || 1;
+                      const size = item.size || item.variant_size;
+                      return size ? `${name} (${size}) x${qty}` : `${name} x${qty}`;
+                    })
+                    .join("; ");
+                }
+              } catch {
+                formatted = String(value);
+              }
+              break;
 
-        case "items_total":
-          formatted = `$${Number(value).toFixed(2)}`;
-          break;
+            case "items_total":
+              formatted = `$${Number(value).toFixed(2)}`;
+              break;
 
-        case "created_at":
-          formatted = new Date(value).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          });
-          break;
+            case "created_at":
+              formatted = new Date(value).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              });
+              break;
 
-        case "files_complete":
-          formatted = value === true ? "Complete" : "Pending";
-          break;
+            case "files_complete":
+              formatted = value === true ? "Complete" : "Pending";
+              break;
 
-        case "business_purchase":
-        case "tax_receipt_issued":
-          formatted = value === true ? "Yes" : "No";
-          break;
+            case "business_purchase":
+            case "tax_receipt_issued":
+              formatted = value === true ? "Yes" : "No";
+              break;
 
-        case "shipping_address":
-          try {
-            const addr = typeof value === "string" ? JSON.parse(value) : value;
-            if (addr && typeof addr === "object") {
-              const parts = [
-                addr.line1,
-                addr.line2,
-                addr.city,
-                addr.state,
-                addr.postal_code,
-                addr.country,
-              ].filter(Boolean);
-              formatted = parts.join(", ");
-            }
-          } catch {
-            formatted = String(value);
+            case "shipping_address":
+              try {
+                const addr = typeof value === "string" ? JSON.parse(value) : value;
+                if (addr && typeof addr === "object") {
+                  const parts = [
+                    addr.line1,
+                    addr.line2,
+                    addr.city,
+                    addr.state,
+                    addr.postal_code,
+                    addr.country,
+                  ].filter(Boolean);
+                  formatted = parts.join(", ");
+                }
+              } catch {
+                formatted = String(value);
+              }
+              break;
+
+            default:
+              formatted = String(value);
           }
-          break;
-
-        default:
-          formatted = String(value);
+        }
       }
 
       // Escape quotes and wrap in quotes if contains comma, quote, or newline
@@ -180,7 +262,7 @@ Deno.serve(async (req) => {
 
     // Generate CSV rows
     const rows = orders.map((order: any) => {
-      return columns.map((col) => formatValue(order[col], col)).join(",");
+      return columns.map((col) => formatValue(order, col)).join(",");
     });
 
     const csv = [header, ...rows].join("\n");

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -20,7 +20,12 @@ interface CsvExportOrdersDialogProps {
   orderIds: string[];
 }
 
-const AVAILABLE_COLUMNS = [
+interface CustomField {
+  id: string;
+  field_name: string;
+}
+
+const STANDARD_COLUMNS = [
   { id: "customer_name", label: "Customer Name", default: true },
   { id: "customer_email", label: "Customer Email", default: true },
   { id: "customer_phone", label: "Customer Phone", default: true },
@@ -40,10 +45,35 @@ export function CsvExportOrdersDialog({
   campaignId,
   orderIds,
 }: CsvExportOrdersDialogProps) {
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [selectedColumns, setSelectedColumns] = useState<string[]>(
-    AVAILABLE_COLUMNS.filter((col) => col.default).map((col) => col.id)
+    STANDARD_COLUMNS.filter((col) => col.default).map((col) => col.id)
   );
   const [isExporting, setIsExporting] = useState(false);
+
+  // Fetch custom fields when dialog opens
+  useEffect(() => {
+    if (open && campaignId) {
+      supabase
+        .from("campaign_custom_fields")
+        .select("id, field_name")
+        .eq("campaign_id", campaignId)
+        .order("display_order")
+        .then(({ data }) => {
+          setCustomFields(data || []);
+        });
+    }
+  }, [open, campaignId]);
+
+  // Combine standard and custom columns
+  const allColumns = useMemo(() => {
+    const customCols = customFields.map((field) => ({
+      id: `custom_${field.id}`,
+      label: field.field_name,
+      default: false,
+    }));
+    return [...STANDARD_COLUMNS, ...customCols];
+  }, [customFields]);
 
   const handleColumnToggle = (columnId: string) => {
     setSelectedColumns((prev) =>
@@ -54,12 +84,12 @@ export function CsvExportOrdersDialog({
   };
 
   const handleSelectAll = () => {
-    setSelectedColumns(AVAILABLE_COLUMNS.map((col) => col.id));
+    setSelectedColumns(allColumns.map((col) => col.id));
   };
 
   const handleSelectDefault = () => {
     setSelectedColumns(
-      AVAILABLE_COLUMNS.filter((col) => col.default).map((col) => col.id)
+      STANDARD_COLUMNS.filter((col) => col.default).map((col) => col.id)
     );
   };
 
@@ -128,19 +158,46 @@ export function CsvExportOrdersDialog({
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto">
-            {AVAILABLE_COLUMNS.map((column) => (
-              <div key={column.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={column.id}
-                  checked={selectedColumns.includes(column.id)}
-                  onCheckedChange={() => handleColumnToggle(column.id)}
-                />
-                <Label htmlFor={column.id} className="text-sm cursor-pointer">
-                  {column.label}
-                </Label>
-              </div>
-            ))}
+          <div className="max-h-[300px] overflow-y-auto space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              {STANDARD_COLUMNS.map((column) => (
+                <div key={column.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={column.id}
+                    checked={selectedColumns.includes(column.id)}
+                    onCheckedChange={() => handleColumnToggle(column.id)}
+                  />
+                  <Label htmlFor={column.id} className="text-sm cursor-pointer">
+                    {column.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            
+            {customFields.length > 0 && (
+              <>
+                <div className="border-t pt-3">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Custom Fields</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {customFields.map((field) => {
+                      const colId = `custom_${field.id}`;
+                      return (
+                        <div key={colId} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={colId}
+                            checked={selectedColumns.includes(colId)}
+                            onCheckedChange={() => handleColumnToggle(colId)}
+                          />
+                          <Label htmlFor={colId} className="text-sm cursor-pointer">
+                            {field.field_name}
+                          </Label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
