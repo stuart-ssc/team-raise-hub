@@ -326,7 +326,7 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
         {isFormVisible ? (
           <div className="space-y-4">
             {/* Form Header */}
-            <div className="flex items-center justify-between p-4 -mx-6 -mt-4 mb-4 bg-muted/50 border-b rounded-t-lg">
+            <div className="flex items-center justify-between p-4 -mx-6 -mt-4 mb-4 bg-primary/10 border-b rounded-t-lg">
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" onClick={handleCancel}>
                   <ArrowLeft className="h-4 w-4" />
