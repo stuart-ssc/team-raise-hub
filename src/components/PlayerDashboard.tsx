@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import ManageGuardiansCard from "./ManageGuardiansCard";
 interface Campaign {
   id: string;
   name: string;
@@ -51,6 +52,12 @@ export default function PlayerDashboard() {
   const [attributedCampaigns, setAttributedCampaigns] = useState<AttributedCampaign[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rosterMembership, setRosterMembership] = useState<{
+    id: string;
+    organization_id: string;
+    group_id: string | null;
+    roster_id: number | null;
+  } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -131,6 +138,18 @@ export default function PlayerDashboard() {
       });
 
       setCurrentCampaigns(current);
+
+      // Store roster membership for ManageGuardiansCard
+      if (rosterMemberships.length > 0) {
+        const membership = rosterMemberships[0];
+        const roster = filteredRosters.find(r => r.id === membership.roster_id);
+        setRosterMembership({
+          id: membership.id,
+          organization_id: membership.organization_id,
+          group_id: roster?.group_id || null,
+          roster_id: membership.roster_id,
+        });
+      }
 
       // Fetch attributed campaign stats (campaigns where user has roster_member_campaign_links)
       const rosterMembership = rosterMemberships[0];
@@ -579,6 +598,16 @@ export default function PlayerDashboard() {
             })}
           </CardContent>
         </Card>
+      )}
+
+      {/* Family Members Section */}
+      {rosterMembership && (
+        <ManageGuardiansCard
+          organizationUserId={rosterMembership.id}
+          organizationId={rosterMembership.organization_id}
+          groupId={rosterMembership.group_id}
+          rosterId={rosterMembership.roster_id}
+        />
       )}
     </div>
   );
