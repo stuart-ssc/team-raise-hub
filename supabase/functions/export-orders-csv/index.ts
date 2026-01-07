@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// @deno-types="https://cdn.sheetjs.com/xlsx-0.20.3/package/types/index.d.ts"
+import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +11,7 @@ interface ExportRequest {
   orderIds: string[];
   columns: string[];
   campaignId: string;
+  format?: "csv" | "xlsx";
 }
 
 Deno.serve(async (req) => {
@@ -39,7 +42,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { orderIds, columns, campaignId }: ExportRequest = await req.json();
+    const { orderIds, columns, campaignId, format = "csv" }: ExportRequest = await req.json();
 
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
       return new Response(
@@ -141,12 +144,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Generate CSV header
-    const header = columns.map((col) => columnLabels[col] || col).join(",");
-
-    // Format value for CSV
-    const formatValue = (order: any, column: string): string => {
-      let formatted = "";
+    // Format value for export (returns raw value for Excel, formatted string for CSV)
+    const formatValue = (order: any, column: string, forExcel = false): any => {
+      let formatted: any = "";
 
       // Handle custom fields
       if (column.startsWith("custom_")) {
@@ -163,7 +163,8 @@ Deno.serve(async (req) => {
             case "date":
               if (rawValue) {
                 try {
-                  formatted = new Date(rawValue).toLocaleDateString("en-US", {
+                  const date = new Date(rawValue);
+                  formatted = forExcel ? date : date.toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "short",
                     day: "numeric",
@@ -207,11 +208,16 @@ Deno.serve(async (req) => {
               break;
 
             case "items_total":
-              formatted = `$${Number(value).toFixed(2)}`;
+              if (forExcel) {
+                formatted = Number(value); // Return raw number for Excel
+              } else {
+                formatted = `$${Number(value).toFixed(2)}`;
+              }
               break;
 
             case "created_at":
-              formatted = new Date(value).toLocaleDateString("en-US", {
+              const date = new Date(value);
+              formatted = forExcel ? date : date.toLocaleDateString("en-US", {
                 year: "numeric",
                 month: "short",
                 day: "numeric",
@@ -252,27 +258,65 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Escape quotes and wrap in quotes if contains comma, quote, or newline
-      if (formatted.includes('"') || formatted.includes(",") || formatted.includes("\n")) {
-        formatted = `"${formatted.replace(/"/g, '""')}"`;
-      }
-
       return formatted;
     };
 
-    // Generate CSV rows
-    const rows = orders.map((order: any) => {
-      return columns.map((col) => formatValue(order, col)).join(",");
-    });
+    // CSV escape function
+    const escapeForCsv = (value: any): string => {
+      const str = String(value);
+      if (str.includes('"') || str.includes(",") || str.includes("\n")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
 
-    const csv = [header, ...rows].join("\n");
+    console.log(`Exporting ${orders.length} orders for campaign ${campaignId} as ${format}`);
 
-    console.log(`Exported ${orders.length} orders for campaign ${campaignId}`);
+    if (format === "xlsx") {
+      // Generate Excel
+      const headers = columns.map((col) => columnLabels[col] || col);
+      const rows = orders.map((order: any) => {
+        return columns.map((col) => formatValue(order, col, true));
+      });
 
-    return new Response(
-      JSON.stringify({ csv, count: orders.length }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      // Create worksheet
+      const wsData = [headers, ...rows];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      // Set column widths
+      const colWidths = columns.map((col) => {
+        if (col === "items" || col === "shipping_address") return { wch: 40 };
+        if (col === "customer_email") return { wch: 25 };
+        if (col === "items_total") return { wch: 12 };
+        return { wch: 18 };
+      });
+      ws["!cols"] = colWidths;
+
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Orders");
+
+      // Write to buffer and encode as base64
+      const xlsxBuffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(xlsxBuffer)));
+
+      return new Response(
+        JSON.stringify({ xlsx: base64, count: orders.length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } else {
+      // Generate CSV
+      const header = columns.map((col) => columnLabels[col] || col).join(",");
+      const rows = orders.map((order: any) => {
+        return columns.map((col) => escapeForCsv(formatValue(order, col, false))).join(",");
+      });
+      const csv = [header, ...rows].join("\n");
+
+      return new Response(
+        JSON.stringify({ csv, count: orders.length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
   } catch (error) {
     console.error("Export error:", error);
     return new Response(
