@@ -64,7 +64,7 @@ interface RecentDonation {
 
 const Reports = () => {
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
-  const { activeGroup, groups } = useActiveGroup();
+  const { activeGroup, groups, handleGroupClick } = useActiveGroup();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [campaigns, setCampaigns] = useState<CampaignReport[]>([]);
@@ -464,7 +464,7 @@ const Reports = () => {
       <div className="flex h-screen bg-background">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
+          <DashboardHeader activeGroup={activeGroup} onGroupClick={handleGroupClick} />
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
               <div className="flex items-center justify-between">
@@ -492,7 +492,7 @@ const Reports = () => {
     <div className="flex h-screen bg-background">
       <DashboardSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader />
+        <DashboardHeader activeGroup={activeGroup} onGroupClick={handleGroupClick} />
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
             <div className="flex flex-col gap-4">
