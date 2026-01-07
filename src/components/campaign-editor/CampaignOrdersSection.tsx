@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import { Download, FileCheck, FileWarning } from "lucide-react";
+import { Download, FileCheck, FileWarning, Building2 } from "lucide-react";
 import { CsvExportOrdersDialog } from "@/components/CsvExportOrdersDialog";
 
 interface CampaignOrdersSectionProps {

@@ -9,10 +9,15 @@ const corsHeaders = {
 interface ExportRequest {
   orderIds: string[];
   columns: string[];
-  campaignId: string;
+  campaignId?: string;
+  campaignIds?: string[];
   format?: "csv" | "xlsx";
   startDate?: string;
   endDate?: string;
+  statusFilter?: string;
+  includeSummary?: boolean;
+  filename?: string;
+  organizationId?: string;
 }
 
 Deno.serve(async (req) => {
@@ -43,7 +48,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { orderIds, columns, campaignId, format = "csv", startDate, endDate }: ExportRequest = await req.json();
+    const { 
+      orderIds, 
+      columns, 
+      campaignId, 
+      campaignIds,
+      format = "csv", 
+      startDate, 
+      endDate,
+      statusFilter,
+      includeSummary = false,
+      filename = "orders-export",
+      organizationId
+    }: ExportRequest = await req.json();
 
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
       return new Response(
@@ -59,12 +76,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Build orders query with optional date filtering
+    // Determine which campaign IDs to use
+    const targetCampaignIds = campaignIds && campaignIds.length > 0 
+      ? campaignIds 
+      : campaignId 
+        ? [campaignId] 
+        : [];
+
+    // Build orders query with optional date and status filtering
     let ordersQuery = supabase
       .from("orders")
       .select("*")
-      .in("id", orderIds)
-      .eq("campaign_id", campaignId);
+      .in("id", orderIds);
+
+    // Filter by campaign(s)
+    if (targetCampaignIds.length === 1) {
+      ordersQuery = ordersQuery.eq("campaign_id", targetCampaignIds[0]);
+    } else if (targetCampaignIds.length > 1) {
+      ordersQuery = ordersQuery.in("campaign_id", targetCampaignIds);
+    }
 
     // Apply date range filter if provided
     if (startDate) {
@@ -77,6 +107,11 @@ Deno.serve(async (req) => {
       ordersQuery = ordersQuery.lte("created_at", endDateTime.toISOString());
     }
 
+    // Apply status filter if provided
+    if (statusFilter && statusFilter !== "all") {
+      ordersQuery = ordersQuery.eq("status", statusFilter);
+    }
+
     const { data: orders, error: ordersError } = await ordersQuery;
 
     if (ordersError) {
@@ -87,18 +122,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Date filter: ${startDate || 'none'} to ${endDate || 'none'}, found ${orders?.length || 0} orders`);
+    console.log(`Filters: date=${startDate || 'none'} to ${endDate || 'none'}, status=${statusFilter || 'all'}, found ${orders?.length || 0} orders`);
 
-    // Fetch campaign items for item name lookup
+    // Fetch campaign items for item name lookup (for all target campaigns)
     const { data: campaignItems } = await supabase
       .from("campaign_items")
-      .select("id, name")
-      .eq("campaign_id", campaignId);
+      .select("id, name, campaign_id")
+      .in("campaign_id", targetCampaignIds.length > 0 ? targetCampaignIds : [campaignId || ""]);
 
     const itemsLookup: Record<string, string> = {};
     campaignItems?.forEach((item: any) => {
       itemsLookup[item.id] = item.name;
     });
+
+    // Fetch campaign names for multi-campaign export
+    let campaignNamesLookup: Record<string, string> = {};
+    if (columns.includes("campaign_name") && targetCampaignIds.length > 0) {
+      const { data: campaigns } = await supabase
+        .from("campaigns")
+        .select("id, name")
+        .in("id", targetCampaignIds);
+      
+      if (campaigns) {
+        campaignNamesLookup = Object.fromEntries(
+          campaigns.map((c: any) => [c.id, c.name])
+        );
+      }
+    }
 
     // Handle custom fields
     const customFieldColumns = columns.filter((c: string) => c.startsWith("custom_"));
@@ -139,6 +189,7 @@ Deno.serve(async (req) => {
 
     // Column label mapping
     const columnLabels: Record<string, string> = {
+      campaign_name: "Campaign Name",
       customer_name: "Customer Name",
       customer_email: "Customer Email",
       customer_phone: "Customer Phone",
@@ -163,6 +214,11 @@ Deno.serve(async (req) => {
     // Format value for export (returns raw value for Excel, formatted string for CSV)
     const formatValue = (order: any, column: string, forExcel = false): any => {
       let formatted: any = "";
+
+      // Handle campaign_name column
+      if (column === "campaign_name") {
+        return campaignNamesLookup[order.campaign_id] || "";
+      }
 
       // Handle custom fields
       if (column.startsWith("custom_")) {
@@ -286,7 +342,36 @@ Deno.serve(async (req) => {
       return str;
     };
 
-    console.log(`Exporting ${orders.length} orders for campaign ${campaignId} as ${format}`);
+    // Calculate summary values
+    const calculateSummary = () => {
+      const summary: Record<string, any> = {};
+      
+      for (const col of columns) {
+        switch (col) {
+          case "customer_name":
+          case "campaign_name":
+            summary[col] = "TOTAL";
+            break;
+          case "items_total":
+            const total = orders.reduce((sum, order) => sum + (Number(order.items_total) || 0), 0);
+            summary[col] = total;
+            break;
+          case "customer_email":
+            summary[col] = `${orders.length} orders`;
+            break;
+          case "files_complete":
+            const completeCount = orders.filter(o => o.files_complete === true).length;
+            summary[col] = `${completeCount}/${orders.length} complete`;
+            break;
+          default:
+            summary[col] = "";
+        }
+      }
+      
+      return summary;
+    };
+
+    console.log(`Exporting ${orders.length} orders for campaign(s) ${targetCampaignIds.join(', ')} as ${format}, includeSummary=${includeSummary}`);
 
     if (format === "xlsx") {
       // Generate Excel
@@ -294,6 +379,17 @@ Deno.serve(async (req) => {
       const rows = orders.map((order: any) => {
         return columns.map((col) => formatValue(order, col, true));
       });
+
+      // Add summary row if requested
+      if (includeSummary && orders.length > 0) {
+        const summaryData = calculateSummary();
+        const summaryRow = columns.map((col) => {
+          const val = summaryData[col];
+          if (col === "items_total") return val; // Keep as number for Excel
+          return val;
+        });
+        rows.push(summaryRow);
+      }
 
       // Create worksheet
       const wsData = [headers, ...rows];
@@ -303,6 +399,7 @@ Deno.serve(async (req) => {
       const colWidths = columns.map((col) => {
         if (col === "items" || col === "shipping_address") return { wch: 40 };
         if (col === "customer_email") return { wch: 25 };
+        if (col === "campaign_name") return { wch: 25 };
         if (col === "items_total") return { wch: 12 };
         return { wch: 18 };
       });
@@ -316,6 +413,21 @@ Deno.serve(async (req) => {
       const xlsxBuffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
       const base64 = btoa(String.fromCharCode(...new Uint8Array(xlsxBuffer)));
 
+      // Log export to history if organizationId provided
+      if (organizationId) {
+        await logExportHistory(supabase, {
+          organizationId,
+          userId: user.id,
+          campaignId: targetCampaignIds.length === 1 ? targetCampaignIds[0] : null,
+          campaignIds: targetCampaignIds.length > 1 ? targetCampaignIds : null,
+          format: "xlsx",
+          columns,
+          filters: { statusFilter, startDate, endDate, includeSummary },
+          orderCount: orders.length,
+          filename,
+        });
+      }
+
       return new Response(
         JSON.stringify({ xlsx: base64, count: orders.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -326,7 +438,34 @@ Deno.serve(async (req) => {
       const rows = orders.map((order: any) => {
         return columns.map((col) => escapeForCsv(formatValue(order, col, false))).join(",");
       });
+
+      // Add summary row if requested
+      if (includeSummary && orders.length > 0) {
+        const summaryData = calculateSummary();
+        const summaryRow = columns.map((col) => {
+          const val = summaryData[col];
+          if (col === "items_total") return `$${Number(val).toFixed(2)}`;
+          return escapeForCsv(val);
+        }).join(",");
+        rows.push(summaryRow);
+      }
+
       const csv = [header, ...rows].join("\n");
+
+      // Log export to history if organizationId provided
+      if (organizationId) {
+        await logExportHistory(supabase, {
+          organizationId,
+          userId: user.id,
+          campaignId: targetCampaignIds.length === 1 ? targetCampaignIds[0] : null,
+          campaignIds: targetCampaignIds.length > 1 ? targetCampaignIds : null,
+          format: "csv",
+          columns,
+          filters: { statusFilter, startDate, endDate, includeSummary },
+          orderCount: orders.length,
+          filename,
+        });
+      }
 
       return new Response(
         JSON.stringify({ csv, count: orders.length }),
@@ -341,3 +480,37 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// Helper function to log export to history table
+async function logExportHistory(
+  supabase: any,
+  data: {
+    organizationId: string;
+    userId: string;
+    campaignId: string | null;
+    campaignIds: string[] | null;
+    format: string;
+    columns: string[];
+    filters: any;
+    orderCount: number;
+    filename: string;
+  }
+) {
+  try {
+    await supabase.from("order_export_history").insert({
+      organization_id: data.organizationId,
+      user_id: data.userId,
+      campaign_id: data.campaignId,
+      campaign_ids: data.campaignIds,
+      export_format: data.format,
+      columns: data.columns,
+      filters: data.filters,
+      order_count: data.orderCount,
+      filename: data.filename,
+    });
+    console.log("Export history logged successfully");
+  } catch (error) {
+    console.error("Failed to log export history:", error);
+    // Don't throw - logging failure shouldn't stop the export
+  }
+}

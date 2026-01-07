@@ -2950,6 +2950,77 @@ export type Database = {
           },
         ]
       }
+      order_export_history: {
+        Row: {
+          campaign_id: string | null
+          campaign_ids: string[] | null
+          columns: string[]
+          created_at: string | null
+          export_format: string
+          filename: string
+          filters: Json | null
+          id: string
+          order_count: number
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          campaign_ids?: string[] | null
+          columns: string[]
+          created_at?: string | null
+          export_format: string
+          filename: string
+          filters?: Json | null
+          id?: string
+          order_count: number
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          campaign_ids?: string[] | null
+          columns?: string[]
+          created_at?: string | null
+          export_format?: string
+          filename?: string
+          filters?: Json | null
+          id?: string
+          order_count?: number
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_export_history_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_export_history_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "order_export_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_export_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           access_token: string | null
