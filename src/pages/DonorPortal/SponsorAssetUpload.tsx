@@ -4,19 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { DonorPortalLayout } from "@/components/DonorPortal/DonorPortalLayout";
+import { AssetPickerDialog } from "@/components/DonorPortal/AssetPickerDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   ArrowLeft, 
-  Upload,
   File,
   Image as ImageIcon,
   CheckCircle,
-  X,
+  FolderOpen,
+  Upload,
   Loader2,
 } from "lucide-react";
 
@@ -36,6 +35,7 @@ interface ExistingUpload {
   file_name: string;
   file_type: string;
   uploaded_at: string;
+  business_asset_id: string | null;
 }
 
 export default function SponsorAssetUpload() {
@@ -44,21 +44,21 @@ export default function SponsorAssetUpload() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [asset, setAsset] = useState<RequiredAsset | null>(null);
   const [existingUpload, setExistingUpload] = useState<ExistingUpload | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [businessId, setBusinessId] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
     const fetchAssetDetails = async () => {
       if (!user || !orderId || !assetId) return;
 
       try {
-        // Verify user owns this order
+        // Verify user owns this order and get business_id
         const { data: order, error: orderError } = await supabase
           .from('orders')
-          .select('id, user_id')
+          .select('id, user_id, business_id')
           .eq('id', orderId)
           .eq('user_id', user.id)
           .single();
@@ -68,6 +68,8 @@ export default function SponsorAssetUpload() {
           navigate('/portal/purchases');
           return;
         }
+
+        setBusinessId(order.business_id);
 
         // Fetch the required asset details
         const { data: assetData, error: assetError } = await supabase
@@ -87,16 +89,13 @@ export default function SponsorAssetUpload() {
         // Check for existing upload
         const { data: uploadData } = await supabase
           .from('order_asset_uploads')
-          .select('id, file_url, file_name, file_type, uploaded_at')
+          .select('id, file_url, file_name, file_type, uploaded_at, business_asset_id')
           .eq('order_id', orderId)
           .eq('required_asset_id', assetId)
           .maybeSingle();
 
         if (uploadData) {
           setExistingUpload(uploadData);
-          if (uploadData.file_type?.startsWith('image/')) {
-            setPreviewUrl(uploadData.file_url);
-          }
         }
       } catch (error) {
         console.error('Error fetching asset details:', error);
@@ -109,75 +108,27 @@ export default function SponsorAssetUpload() {
     fetchAssetDetails();
   }, [user, orderId, assetId, navigate, toast]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !asset) return;
+  const handleAssetSelected = async (selectedAsset: {
+    file_url: string;
+    file_name: string;
+    file_type: string;
+    business_asset_id?: string;
+  }) => {
+    if (!user || !orderId || !assetId) return;
 
-    // Validate file size
-    if (asset.max_file_size_mb && file.size > asset.max_file_size_mb * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: `Maximum file size is ${asset.max_file_size_mb}MB`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate file type
-    if (asset.file_types && asset.file_types.length > 0) {
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      const allowed = asset.file_types.map(t => t.toLowerCase().replace('.', ''));
-      if (ext && !allowed.includes(ext)) {
-        toast({
-          title: "Invalid file type",
-          description: `Allowed types: ${asset.file_types.join(', ')}`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    setSelectedFile(file);
-    
-    // Create preview for images
-    if (file.type.startsWith('image/')) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    } else {
-      setPreviewUrl(null);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile || !user || !orderId || !assetId) return;
-
-    setUploading(true);
+    setSaving(true);
     try {
-      // Upload to storage
-      const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${orderId}/${assetId}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError, data: uploadData } = await supabase.storage
-        .from('sponsor-assets')
-        .upload(fileName, selectedFile);
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('sponsor-assets')
-        .getPublicUrl(fileName);
-
       // Upsert the upload record
       const { error: dbError } = await supabase
         .from('order_asset_uploads')
         .upsert({
           order_id: orderId,
           required_asset_id: assetId,
-          file_url: publicUrl,
-          file_name: selectedFile.name,
-          file_type: selectedFile.type,
+          file_url: selectedAsset.file_url,
+          file_name: selectedAsset.file_name,
+          file_type: selectedAsset.file_type,
           uploaded_by: user.id,
+          business_asset_id: selectedAsset.business_asset_id || null,
         }, {
           onConflict: 'order_id,required_asset_id',
         });
@@ -187,24 +138,11 @@ export default function SponsorAssetUpload() {
       toast({ title: "Success", description: "Asset uploaded successfully" });
       navigate(`/portal/purchases/${orderId}`);
     } catch (error) {
-      console.error('Error uploading asset:', error);
-      toast({ title: "Error", description: "Failed to upload asset", variant: "destructive" });
+      console.error('Error saving asset:', error);
+      toast({ title: "Error", description: "Failed to save asset", variant: "destructive" });
     } finally {
-      setUploading(false);
+      setSaving(false);
     }
-  };
-
-  const handleRemove = () => {
-    setSelectedFile(null);
-    if (previewUrl && !existingUpload) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setPreviewUrl(existingUpload?.file_type?.startsWith('image/') ? existingUpload.file_url : null);
-  };
-
-  const getAcceptedTypes = () => {
-    if (!asset?.file_types?.length) return undefined;
-    return asset.file_types.map(t => t.startsWith('.') ? t : `.${t}`).join(',');
   };
 
   if (loading) {
@@ -231,7 +169,7 @@ export default function SponsorAssetUpload() {
     );
   }
 
-  const isImage = selectedFile?.type.startsWith('image/') || existingUpload?.file_type?.startsWith('image/');
+  const isImage = existingUpload?.file_type?.startsWith('image/');
 
   return (
     <DonorPortalLayout title={`Upload ${asset.asset_name}`}>
@@ -272,92 +210,89 @@ export default function SponsorAssetUpload() {
               )}
             </div>
 
-            {/* Preview Area */}
-            {(previewUrl || selectedFile || existingUpload) && (
-              <div className="relative border rounded-lg p-4 bg-muted/50">
-                {previewUrl ? (
+            {/* Existing Upload Preview */}
+            {existingUpload && (
+              <div className="border rounded-lg p-4 bg-muted/50">
+                <div className="flex items-center gap-2 text-sm text-green-600 mb-3">
+                  <CheckCircle className="h-4 w-4" />
+                  Current upload
+                  {existingUpload.business_asset_id && (
+                    <Badge variant="secondary" className="ml-2">
+                      <FolderOpen className="h-3 w-3 mr-1" />
+                      From Library
+                    </Badge>
+                  )}
+                </div>
+                {isImage ? (
                   <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="max-h-64 mx-auto rounded object-contain"
+                    src={existingUpload.file_url}
+                    alt="Current upload"
+                    className="max-h-48 mx-auto rounded object-contain"
                   />
                 ) : (
-                  <div className="flex items-center justify-center gap-3 py-8">
-                    <File className="h-12 w-12 text-muted-foreground" />
+                  <div className="flex items-center justify-center gap-3 py-4">
+                    <File className="h-10 w-10 text-muted-foreground" />
                     <div>
-                      <p className="font-medium">
-                        {selectedFile?.name || existingUpload?.file_name}
-                      </p>
+                      <p className="font-medium">{existingUpload.file_name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {selectedFile 
-                          ? `${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`
-                          : 'Uploaded file'
-                        }
+                        Uploaded {new Date(existingUpload.uploaded_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                 )}
-                {selectedFile && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2"
-                    onClick={handleRemove}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
               </div>
             )}
 
-            {/* File Input */}
-            <div className="space-y-2">
-              <Label htmlFor="file-upload">
-                {existingUpload || selectedFile ? 'Replace file' : 'Select file'}
-              </Label>
-              <Input
-                id="file-upload"
-                type="file"
-                accept={getAcceptedTypes()}
-                onChange={handleFileSelect}
-                disabled={uploading}
-              />
-            </div>
-
-            {/* Status */}
-            {existingUpload && !selectedFile && (
-              <div className="flex items-center gap-2 text-sm text-green-600">
-                <CheckCircle className="h-4 w-4" />
-                Uploaded on {new Date(existingUpload.uploaded_at).toLocaleDateString()}
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <Button
-                onClick={handleUpload}
-                disabled={!selectedFile || uploading}
-                className="flex-1"
+            {/* Action Button */}
+            {businessId ? (
+              <Button 
+                onClick={() => setPickerOpen(true)} 
+                className="w-full"
+                disabled={saving}
               >
-                {uploading ? (
+                {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading...
+                    Saving...
                   </>
                 ) : (
                   <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    {existingUpload ? 'Update Asset' : 'Upload Asset'}
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    {existingUpload ? 'Replace Asset' : 'Select Asset'}
                   </>
                 )}
               </Button>
-              <Button variant="outline" asChild>
-                <Link to={`/portal/purchases/${orderId}`}>Cancel</Link>
-              </Button>
-            </div>
+            ) : (
+              <div className="text-center text-muted-foreground text-sm">
+                No business linked to this order. Please contact support.
+              </div>
+            )}
+
+            {/* Info about asset library */}
+            {businessId && (
+              <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                <p>
+                  <strong>Tip:</strong> Assets you upload are saved to your business library 
+                  and can be reused across future sponsorships.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Asset Picker Dialog */}
+      {businessId && (
+        <AssetPickerDialog
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          businessId={businessId}
+          assetName={asset.asset_name}
+          acceptedTypes={asset.file_types || undefined}
+          maxSizeMb={asset.max_file_size_mb || undefined}
+          onSelect={handleAssetSelected}
+        />
+      )}
     </DonorPortalLayout>
   );
 }
