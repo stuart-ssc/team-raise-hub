@@ -215,3 +215,6 @@ verify_jwt = true
 
 [functions.accept-parent-invitation]
 verify_jwt = true
+
+[functions.send-parent-donation-notification]
+verify_jwt = false
