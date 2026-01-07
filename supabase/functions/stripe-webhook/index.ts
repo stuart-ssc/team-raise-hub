@@ -197,6 +197,17 @@ Deno.serve(async (req) => {
               }
             }
           }
+          
+          // Notify parents of roster member if applicable
+          try {
+            await supabaseAdmin.functions.invoke('send-parent-donation-notification', {
+              body: { orderId }
+            });
+            console.log('Parent notification triggered for order:', orderId);
+          } catch (parentNotifError) {
+            console.error('Error triggering parent notification:', parentNotifError);
+            // Don't fail the webhook for notification errors
+          }
         }
 
         console.log('Order updated successfully:', orderId);
