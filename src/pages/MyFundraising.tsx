@@ -37,6 +37,10 @@ interface CampaignStat {
   // Parent view additions
   childName?: string;
   childOrganizationUserId?: string;
+  // Team campaign (no personal link)
+  isTeamCampaign?: boolean;
+  teamRaised?: number;
+  teamGoal?: number;
 }
 
 interface RosterMembership {
@@ -176,12 +180,11 @@ export default function MyFundraising() {
         return;
       }
 
-      // Get campaigns with roster attribution enabled for children's groups
+      // Get ALL active campaigns for children's groups (not just roster-enabled)
       const { data: campaigns, error: campaignError } = await supabase
         .from('campaigns')
-        .select('id, name, slug, group_directions')
+        .select('id, name, slug, group_directions, enable_roster_attribution, goal_amount, amount_raised')
         .in('group_id', groupIds)
-        .eq('enable_roster_attribution', true)
         .eq('status', true);
 
       if (campaignError) throw campaignError;
@@ -206,43 +209,69 @@ export default function MyFundraising() {
         });
 
         for (const campaign of childCampaigns) {
-          const { data: linkData } = await supabase
-            .from('roster_member_campaign_links')
-            .select('slug, pitch_message, pitch_image_url, pitch_video_url, pitch_recorded_video_url')
-            .eq('campaign_id', campaign.id)
-            .eq('roster_member_id', child.organizationUserId)
-            .single();
+          // Check if roster attribution is enabled for personal tracking
+          if (campaign.enable_roster_attribution) {
+            const { data: linkData } = await supabase
+              .from('roster_member_campaign_links')
+              .select('slug, pitch_message, pitch_image_url, pitch_video_url, pitch_recorded_video_url')
+              .eq('campaign_id', campaign.id)
+              .eq('roster_member_id', child.organizationUserId)
+              .single();
 
-          if (!linkData) continue;
+            if (linkData) {
+              const { data: statsData, error: statsError } = await supabase.functions.invoke(
+                'get-roster-member-stats',
+                {
+                  body: {
+                    campaignId: campaign.id,
+                    rosterMemberId: child.organizationUserId,
+                  },
+                }
+              );
 
-          const { data: statsData, error: statsError } = await supabase.functions.invoke(
-            'get-roster-member-stats',
-            {
-              body: {
-                campaignId: campaign.id,
-                rosterMemberId: child.organizationUserId,
-              },
+              if (!statsError) {
+                allStats.push({
+                  campaignId: campaign.id,
+                  campaignName: campaign.name,
+                  campaignSlug: campaign.slug,
+                  groupDirections: campaign.group_directions,
+                  personalUrl: `${window.location.origin}/c/${campaign.slug}/${linkData.slug}`,
+                  pitchMessage: linkData.pitch_message,
+                  pitchImageUrl: linkData.pitch_image_url,
+                  pitchVideoUrl: linkData.pitch_video_url,
+                  pitchRecordedVideoUrl: linkData.pitch_recorded_video_url,
+                  childName: `${child.firstName} ${child.lastName}`.trim(),
+                  childOrganizationUserId: child.organizationUserId,
+                  ...statsData,
+                });
+                continue;
+              }
             }
-          );
-
-          if (statsError) {
-            console.error('Error fetching stats:', statsError);
-            continue;
           }
 
+          // Add as team campaign (no personal tracking)
           allStats.push({
             campaignId: campaign.id,
             campaignName: campaign.name,
             campaignSlug: campaign.slug,
             groupDirections: campaign.group_directions,
-            personalUrl: `${window.location.origin}/c/${campaign.slug}/${linkData.slug}`,
-            pitchMessage: linkData.pitch_message,
-            pitchImageUrl: linkData.pitch_image_url,
-            pitchVideoUrl: linkData.pitch_video_url,
-            pitchRecordedVideoUrl: linkData.pitch_recorded_video_url,
+            personalUrl: `${window.location.origin}/c/${campaign.slug}`,
+            totalRaised: 0,
+            donationCount: 0,
+            uniqueSupporters: 0,
+            rank: 0,
+            totalParticipants: 0,
+            personalGoal: 0,
+            percentToGoal: 0,
+            pitchMessage: null,
+            pitchImageUrl: null,
+            pitchVideoUrl: null,
+            pitchRecordedVideoUrl: null,
             childName: `${child.firstName} ${child.lastName}`.trim(),
             childOrganizationUserId: child.organizationUserId,
-            ...statsData,
+            isTeamCampaign: true,
+            teamRaised: campaign.amount_raised || 0,
+            teamGoal: campaign.goal_amount || 0,
           });
         }
       }
@@ -299,11 +328,11 @@ export default function MyFundraising() {
         return;
       }
 
+      // Get ALL active campaigns (not just roster-enabled)
       const { data: campaigns, error: campaignError } = await supabase
         .from('campaigns')
-        .select('id, name, slug, group_directions')
+        .select('id, name, slug, group_directions, enable_roster_attribution, goal_amount, amount_raised')
         .in('group_id', groupIds)
-        .eq('enable_roster_attribution', true)
         .eq('status', true);
 
       if (campaignError) throw campaignError;
@@ -318,41 +347,64 @@ export default function MyFundraising() {
       const statsPromises = campaigns.map(async (campaign) => {
         const rosterMembershipData = rosterMemberships[0];
         
-        const { data: linkData } = await supabase
-          .from('roster_member_campaign_links')
-          .select('slug, pitch_message, pitch_image_url, pitch_video_url, pitch_recorded_video_url')
-          .eq('campaign_id', campaign.id)
-          .eq('roster_member_id', rosterMembershipData.id)
-          .single();
+        // Check if roster attribution is enabled for personal tracking
+        if (campaign.enable_roster_attribution) {
+          const { data: linkData } = await supabase
+            .from('roster_member_campaign_links')
+            .select('slug, pitch_message, pitch_image_url, pitch_video_url, pitch_recorded_video_url')
+            .eq('campaign_id', campaign.id)
+            .eq('roster_member_id', rosterMembershipData.id)
+            .single();
 
-        if (!linkData) return null;
+          if (linkData) {
+            const { data: statsData, error: statsError } = await supabase.functions.invoke(
+              'get-roster-member-stats',
+              {
+                body: {
+                  campaignId: campaign.id,
+                  rosterMemberId: rosterMembershipData.id,
+                },
+              }
+            );
 
-        const { data: statsData, error: statsError } = await supabase.functions.invoke(
-          'get-roster-member-stats',
-          {
-            body: {
-              campaignId: campaign.id,
-              rosterMemberId: rosterMembershipData.id,
-            },
+            if (!statsError) {
+              return {
+                campaignId: campaign.id,
+                campaignName: campaign.name,
+                campaignSlug: campaign.slug,
+                groupDirections: campaign.group_directions,
+                personalUrl: `${window.location.origin}/c/${campaign.slug}/${linkData.slug}`,
+                pitchMessage: linkData.pitch_message,
+                pitchImageUrl: linkData.pitch_image_url,
+                pitchVideoUrl: linkData.pitch_video_url,
+                pitchRecordedVideoUrl: linkData.pitch_recorded_video_url,
+                ...statsData,
+              };
+            }
           }
-        );
-
-        if (statsError) {
-          console.error('Error fetching stats:', statsError);
-          return null;
         }
 
+        // Return as team campaign (no personal tracking)
         return {
           campaignId: campaign.id,
           campaignName: campaign.name,
           campaignSlug: campaign.slug,
           groupDirections: campaign.group_directions,
-          personalUrl: `${window.location.origin}/c/${campaign.slug}/${linkData.slug}`,
-          pitchMessage: linkData.pitch_message,
-          pitchImageUrl: linkData.pitch_image_url,
-          pitchVideoUrl: linkData.pitch_video_url,
-          pitchRecordedVideoUrl: linkData.pitch_recorded_video_url,
-          ...statsData,
+          personalUrl: `${window.location.origin}/c/${campaign.slug}`,
+          totalRaised: 0,
+          donationCount: 0,
+          uniqueSupporters: 0,
+          rank: 0,
+          totalParticipants: 0,
+          personalGoal: 0,
+          percentToGoal: 0,
+          pitchMessage: null,
+          pitchImageUrl: null,
+          pitchVideoUrl: null,
+          pitchRecordedVideoUrl: null,
+          isTeamCampaign: true,
+          teamRaised: campaign.amount_raised || 0,
+          teamGoal: campaign.goal_amount || 0,
         };
       });
 
