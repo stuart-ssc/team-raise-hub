@@ -117,19 +117,47 @@ const Dashboard = () => {
   }, [activeGroup?.id]);
 
   // Fetch donors from database
-  const fetchDonors = async () => {
+  const fetchDonors = async (groupId?: string | null) => {
     if (!organizationUser?.organization_id) return;
 
     try {
+      let donorEmailsForGroup: string[] | null = null;
+
+      // If a specific group is selected, filter donors by group via orders -> campaigns
+      if (groupId) {
+        const { data: donorEmails, error: emailError } = await supabase
+          .from("orders")
+          .select("customer_email, campaigns!inner(group_id)")
+          .eq("campaigns.group_id", groupId)
+          .not("customer_email", "is", null);
+
+        if (emailError) {
+          console.error('Error fetching donor emails for group:', emailError);
+          return;
+        }
+
+        donorEmailsForGroup = [...new Set(donorEmails?.map(o => o.customer_email).filter(Boolean) || [])];
+        
+        if (donorEmailsForGroup.length === 0) {
+          setDonors([]);
+          setDonorCount(0);
+          return;
+        }
+      }
+
       // Get donors for this organization
       let query = supabase
         .from('donor_profiles')
         .select('*')
-        .eq('organization_id', organizationUser.organization_id)
+        .eq('organization_id', organizationUser.organization_id);
+
+      if (donorEmailsForGroup) {
+        query = query.in("email", donorEmailsForGroup);
+      }
+
+      const { data, error } = await query
         .order('total_donations', { ascending: false })
         .limit(10);
-
-      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching donors:', error);
@@ -138,12 +166,17 @@ const Dashboard = () => {
 
       setDonors(data || []);
 
-      // Get total count
-      const { count } = await supabase
+      // Get total count with same filter
+      let countQuery = supabase
         .from('donor_profiles')
         .select('*', { count: 'exact', head: true })
         .eq('organization_id', organizationUser.organization_id);
 
+      if (donorEmailsForGroup) {
+        countQuery = countQuery.in("email", donorEmailsForGroup);
+      }
+
+      const { count } = await countQuery;
       setDonorCount(count || 0);
     } catch (error) {
       console.error('Error fetching donors:', error);
@@ -153,9 +186,9 @@ const Dashboard = () => {
   // Fetch donors when component mounts or dependencies change
   useEffect(() => {
     if (organizationUser?.organization_id) {
-      fetchDonors();
+      fetchDonors(activeGroup?.id);
     }
-  }, [organizationUser?.organization_id]);
+  }, [organizationUser?.organization_id, activeGroup?.id]);
 
   // Calculate stats from campaigns data
   const activeCampaignsCount = campaigns.length;
