@@ -14,7 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import { FileCheck, FileWarning } from "lucide-react";
+import { Download, FileCheck, FileWarning } from "lucide-react";
+import { CsvExportOrdersDialog } from "@/components/CsvExportOrdersDialog";
 
 interface CampaignOrdersSectionProps {
   campaignId: string;
@@ -25,6 +26,7 @@ type FilterType = "all" | "pending" | "complete";
 export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>("all");
+  const [exportOpen, setExportOpen] = useState(false);
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["campaign-orders", campaignId],
@@ -107,15 +109,29 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
 
   return (
     <div className="space-y-4">
-      <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
-        <TabsList>
-          <TabsTrigger value="all">All ({orders.length})</TabsTrigger>
-          <TabsTrigger value="pending" className="gap-2">
-            Pending Files ({pendingCount})
-          </TabsTrigger>
-          <TabsTrigger value="complete">Complete ({completeCount})</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
+          <TabsList>
+            <TabsTrigger value="all">All ({orders.length})</TabsTrigger>
+            <TabsTrigger value="pending" className="gap-2">
+              Pending Files ({pendingCount})
+            </TabsTrigger>
+            <TabsTrigger value="complete">Complete ({completeCount})</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
+      </div>
+
+      <CsvExportOrdersDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        campaignId={campaignId}
+        orderIds={filteredOrders?.map((o) => o.id) || []}
+      />
 
       <div className="rounded-md border">
         <Table>
