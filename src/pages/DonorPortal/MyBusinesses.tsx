@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DonorPortalLayout } from "@/components/DonorPortal/DonorPortalLayout";
 import { useDonorPortal } from "@/hooks/useDonorPortal";
-import { Building2, Edit, Star, ArrowRight } from "lucide-react";
+import { Building2, Edit, Star, ArrowRight, FolderOpen } from "lucide-react";
 
 export default function DonorPortalMyBusinesses() {
   const { linkedBusinesses, isLoading } = useDonorPortal();
@@ -77,11 +77,17 @@ export default function DonorPortalMyBusinesses() {
                     )}
                   </div>
 
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" asChild className="flex-1">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" asChild>
                       <Link to={`/portal/businesses/${link.business_id}`}>
                         <Edit className="h-4 w-4 mr-2" />
                         Edit Info
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={`/portal/businesses/${link.business_id}/assets`}>
+                        <FolderOpen className="h-4 w-4 mr-2" />
+                        Asset Library
                       </Link>
                     </Button>
                     <Button variant="ghost" size="sm" asChild>

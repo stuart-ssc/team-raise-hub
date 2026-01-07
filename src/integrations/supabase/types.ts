@@ -46,6 +46,59 @@ export type Database = {
           },
         ]
       }
+      business_assets: {
+        Row: {
+          asset_name: string
+          asset_type: string
+          business_id: string
+          created_at: string
+          created_by: string | null
+          file_name: string
+          file_size_bytes: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_name: string
+          asset_type?: string
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_name?: string
+          asset_type?: string
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_assets_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_campaign_assets: {
         Row: {
           additional_files: Json | null
@@ -2793,6 +2846,7 @@ export type Database = {
       }
       order_asset_uploads: {
         Row: {
+          business_asset_id: string | null
           created_at: string | null
           file_name: string
           file_size_bytes: number | null
@@ -2806,6 +2860,7 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
+          business_asset_id?: string | null
           created_at?: string | null
           file_name: string
           file_size_bytes?: number | null
@@ -2819,6 +2874,7 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
+          business_asset_id?: string | null
           created_at?: string | null
           file_name?: string
           file_size_bytes?: number | null
@@ -2832,6 +2888,13 @@ export type Database = {
           uploaded_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "order_asset_uploads_business_asset_id_fkey"
+            columns: ["business_asset_id"]
+            isOneToOne: false
+            referencedRelation: "business_assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_asset_uploads_order_id_fkey"
             columns: ["order_id"]

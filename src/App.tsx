@@ -84,6 +84,7 @@ import DonorPortalSponsorAssetUpload from "./pages/DonorPortal/SponsorAssetUploa
 import DonorPortalCampaignAssets from "./pages/DonorPortal/CampaignAssets";
 import DonorPortalMyBusinesses from "./pages/DonorPortal/MyBusinesses";
 import DonorPortalBusinessEditor from "./pages/DonorPortal/BusinessEditor";
+import DonorPortalBusinessAssetLibrary from "./pages/DonorPortal/BusinessAssetLibrary";
 import DonorPortalMessages from "./pages/DonorPortal/Messages";
 import DonorPortalConversationView from "./pages/DonorPortal/ConversationView";
 import DonorPortalReceipts from "./pages/DonorPortal/Receipts";
@@ -203,6 +204,7 @@ const AppContent = () => {
         <Route path="/portal/purchases/:orderId/assets" element={<ProtectedRoute><DonorPortalCampaignAssets /></ProtectedRoute>} />
         <Route path="/portal/businesses" element={<ProtectedRoute><DonorPortalMyBusinesses /></ProtectedRoute>} />
         <Route path="/portal/businesses/:businessId" element={<ProtectedRoute><DonorPortalBusinessEditor /></ProtectedRoute>} />
+        <Route path="/portal/businesses/:businessId/assets" element={<ProtectedRoute><DonorPortalBusinessAssetLibrary /></ProtectedRoute>} />
         <Route path="/portal/messages" element={<ProtectedRoute><DonorPortalMessages /></ProtectedRoute>} />
         <Route path="/portal/messages/:id" element={<ProtectedRoute><DonorPortalConversationView /></ProtectedRoute>} />
         <Route path="/portal/receipts" element={<ProtectedRoute><DonorPortalReceipts /></ProtectedRoute>} />
