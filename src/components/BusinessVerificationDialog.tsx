@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -49,6 +49,14 @@ export function BusinessVerificationDialog({
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Reset state when dialog opens or business changes
+  useEffect(() => {
+    if (open) {
+      setStatus((business.verification_status as VerificationStatus) || "pending");
+      setNotes("");
+    }
+  }, [open, business.verification_status]);
+
   const handleSubmit = async () => {
     if (status === "blocked" && !notes.trim()) {
       toast.error("Please provide a reason for blocking this business");
@@ -70,25 +78,32 @@ export function BusinessVerificationDialog({
         updateData.verified_at = null;
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("businesses")
         .update(updateData)
-        .eq("id", business.id);
+        .eq("id", business.id)
+        .select()
+        .single();
 
       if (error) throw error;
+      if (!data) throw new Error("No rows updated - you may not have permission");
 
-      // Log the status change to activity log
-      await supabase.from("business_activity_log").insert({
-        business_id: business.id,
-        activity_type: "verification_status_changed",
-        activity_data: {
-          old_status: previousStatus,
-          new_status: status,
-          notes: notes.trim() || null,
-          changed_by: user?.id,
-          changed_at: new Date().toISOString(),
-        },
-      });
+      // Log the status change to activity log (non-blocking)
+      try {
+        await supabase.from("business_activity_log").insert({
+          business_id: business.id,
+          activity_type: "verification_status_changed",
+          activity_data: {
+            old_status: previousStatus,
+            new_status: status,
+            notes: notes.trim() || null,
+            changed_by: user?.id,
+            changed_at: new Date().toISOString(),
+          },
+        });
+      } catch (logError) {
+        console.warn("Failed to log activity:", logError);
+      }
 
       toast.success(
         status === "verified"
@@ -102,7 +117,7 @@ export function BusinessVerificationDialog({
       onOpenChange(false);
     } catch (error: any) {
       console.error("Error updating verification status:", error);
-      toast.error("Failed to update verification status");
+      toast.error(error.message || "Failed to update verification status");
     } finally {
       setIsSubmitting(false);
     }
