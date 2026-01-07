@@ -161,11 +161,11 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
                 </TableCell>
                 <TableCell>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => navigate(`/dashboard/campaigns/${campaignId}/orders/${order.id}`)}
                   >
-                    <ExternalLink className="h-4 w-4" />
+                    Details
                   </Button>
                 </TableCell>
               </TableRow>
