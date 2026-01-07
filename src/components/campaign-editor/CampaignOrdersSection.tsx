@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +42,18 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
     },
   });
 
+  const { data: campaignItems } = useQuery({
+    queryKey: ["campaign-items-lookup", campaignId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("campaign_items")
+        .select("id, name")
+        .eq("campaign_id", campaignId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const filteredOrders = orders?.filter((order) => {
     if (filter === "pending") return order.files_complete === false;
     if (filter === "complete") return order.files_complete === true;
@@ -51,12 +63,25 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
   const pendingCount = orders?.filter((o) => o.files_complete === false).length || 0;
   const completeCount = orders?.filter((o) => o.files_complete === true).length || 0;
 
+  const itemsLookup = useMemo(() => {
+    const lookup: Record<string, string> = {};
+    campaignItems?.forEach((item) => {
+      lookup[item.id] = item.name;
+    });
+    return lookup;
+  }, [campaignItems]);
+
   const parseItems = (items: any): string => {
     if (!items) return "-";
     try {
       const parsed = typeof items === "string" ? JSON.parse(items) : items;
       if (Array.isArray(parsed)) {
-        return parsed.map((item: any) => item.name || item.item_name).filter(Boolean).join(", ") || "-";
+        return parsed.map((item: any) => {
+          if (item.campaign_item_id && itemsLookup[item.campaign_item_id]) {
+            return itemsLookup[item.campaign_item_id];
+          }
+          return item.name || item.item_name;
+        }).filter(Boolean).join(", ") || "-";
       }
       return "-";
     } catch {
