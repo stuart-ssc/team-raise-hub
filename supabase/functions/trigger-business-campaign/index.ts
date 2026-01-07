@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
@@ -13,7 +12,7 @@ interface TriggerRequest {
   queueItemId?: string;
 }
 
-const handler = async (req: Request): Promise<Response> => {
+Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -65,7 +64,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Check if business is already enrolled
-    const { data: existingEnrollment, error: checkError } = await supabaseClient
+    const { data: existingEnrollment } = await supabaseClient
       .from("business_nurture_enrollments")
       .select("id, status")
       .eq("business_id", businessId)
@@ -192,6 +191,4 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   }
-};
-
-serve(handler);
+});
