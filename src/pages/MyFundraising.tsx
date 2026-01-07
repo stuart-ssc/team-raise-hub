@@ -15,6 +15,8 @@ import { PitchEditor } from "@/components/PitchEditor";
 import QRCode from "react-qr-code";
 import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "@/components/ManageGuardiansCard";
+import MyConnectedStudentsCard from "@/components/MyConnectedStudentsCard";
+
 interface CampaignStat {
   campaignId: string;
   campaignName: string;
@@ -32,6 +34,9 @@ interface CampaignStat {
   pitchImageUrl: string | null;
   pitchVideoUrl: string | null;
   pitchRecordedVideoUrl: string | null;
+  // Parent view additions
+  childName?: string;
+  childOrganizationUserId?: string;
 }
 
 interface RosterMembership {
@@ -40,6 +45,15 @@ interface RosterMembership {
   organization_id: string;
   group_id: string | null;
   rosters: { group_id: string } | null;
+}
+
+interface LinkedChild {
+  organizationUserId: string;
+  firstName: string;
+  lastName: string;
+  rosterId: number | null;
+  groupId: string | null;
+  organizationId: string;
 }
 
 export default function MyFundraising() {
@@ -51,6 +65,8 @@ export default function MyFundraising() {
   const [showQRCode, setShowQRCode] = useState<string | null>(null);
   const [editingPitchId, setEditingPitchId] = useState<string | null>(null);
   const [rosterMembership, setRosterMembership] = useState<RosterMembership | null>(null);
+  const [isParentView, setIsParentView] = useState(false);
+  const [linkedChildren, setLinkedChildren] = useState<LinkedChild[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -59,6 +75,188 @@ export default function MyFundraising() {
   }, [user, activeGroup?.id]);
 
   const fetchFundraisingStats = async () => {
+    try {
+      // First, check if user is a parent/guardian (has linked_organization_user_id)
+      const { data: parentLinks, error: parentError } = await supabase
+        .from('organization_user')
+        .select('id, linked_organization_user_id, organization_id, group_id')
+        .eq('user_id', user?.id)
+        .eq('active_user', true)
+        .not('linked_organization_user_id', 'is', null);
+
+      if (parentError) throw parentError;
+
+      // If user has parent links, fetch children's data
+      if (parentLinks && parentLinks.length > 0) {
+        await fetchParentViewStats(parentLinks);
+        return;
+      }
+
+      // Otherwise, proceed with regular player view
+      setIsParentView(false);
+      setLinkedChildren([]);
+      await fetchPlayerViewStats();
+    } catch (error) {
+      console.error('Error fetching fundraising stats:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load fundraising statistics",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
+
+  const fetchParentViewStats = async (parentLinks: any[]) => {
+    try {
+      setIsParentView(true);
+
+      // Get the children's organization_user IDs
+      const childOrgUserIds = parentLinks
+        .map(p => p.linked_organization_user_id)
+        .filter(Boolean) as string[];
+
+      // Fetch children's organization_user records with roster info
+      const { data: childOrgUsers, error: childError } = await supabase
+        .from('organization_user')
+        .select(`
+          id,
+          user_id,
+          roster_id,
+          group_id,
+          organization_id,
+          rosters(id, group_id)
+        `)
+        .in('id', childOrgUserIds)
+        .eq('active_user', true);
+
+      if (childError) throw childError;
+
+      if (!childOrgUsers || childOrgUsers.length === 0) {
+        setStats([]);
+        setLinkedChildren([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get profiles for the children
+      const childUserIds = childOrgUsers.map(c => c.user_id).filter(Boolean) as string[];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', childUserIds);
+
+      // Build linked children list
+      const children: LinkedChild[] = childOrgUsers.map(child => {
+        const profile = profiles?.find(p => p.id === child.user_id);
+        return {
+          organizationUserId: child.id,
+          firstName: profile?.first_name || 'Unknown',
+          lastName: profile?.last_name || '',
+          rosterId: child.roster_id,
+          groupId: child.group_id || (child.rosters as any)?.group_id || null,
+          organizationId: child.organization_id,
+        };
+      });
+      setLinkedChildren(children);
+
+      // Get group IDs from children's rosters
+      let groupIds = childOrgUsers
+        .map(m => (m.rosters as any)?.group_id)
+        .filter(Boolean);
+
+      // Filter by active group if one is selected
+      if (activeGroup) {
+        groupIds = groupIds.filter((id: string) => id === activeGroup.id);
+      }
+
+      if (groupIds.length === 0) {
+        setStats([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get campaigns with roster attribution enabled for children's groups
+      const { data: campaigns, error: campaignError } = await supabase
+        .from('campaigns')
+        .select('id, name, slug, group_directions')
+        .in('group_id', groupIds)
+        .eq('enable_roster_attribution', true)
+        .eq('status', true);
+
+      if (campaignError) throw campaignError;
+
+      if (!campaigns || campaigns.length === 0) {
+        setStats([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch stats for each campaign for each child
+      const allStats: CampaignStat[] = [];
+
+      for (const child of children) {
+        const childOrgUser = childOrgUsers.find(c => c.id === child.organizationUserId);
+        if (!childOrgUser) continue;
+
+        const childGroupId = (childOrgUser.rosters as any)?.group_id;
+        const childCampaigns = campaigns.filter(c => {
+          // Match campaigns for this child's group
+          return groupIds.includes(childGroupId);
+        });
+
+        for (const campaign of childCampaigns) {
+          const { data: linkData } = await supabase
+            .from('roster_member_campaign_links')
+            .select('slug, pitch_message, pitch_image_url, pitch_video_url, pitch_recorded_video_url')
+            .eq('campaign_id', campaign.id)
+            .eq('roster_member_id', child.organizationUserId)
+            .single();
+
+          if (!linkData) continue;
+
+          const { data: statsData, error: statsError } = await supabase.functions.invoke(
+            'get-roster-member-stats',
+            {
+              body: {
+                campaignId: campaign.id,
+                rosterMemberId: child.organizationUserId,
+              },
+            }
+          );
+
+          if (statsError) {
+            console.error('Error fetching stats:', statsError);
+            continue;
+          }
+
+          allStats.push({
+            campaignId: campaign.id,
+            campaignName: campaign.name,
+            campaignSlug: campaign.slug,
+            groupDirections: campaign.group_directions,
+            personalUrl: `${window.location.origin}/c/${campaign.slug}/${linkData.slug}`,
+            pitchMessage: linkData.pitch_message,
+            pitchImageUrl: linkData.pitch_image_url,
+            pitchVideoUrl: linkData.pitch_video_url,
+            pitchRecordedVideoUrl: linkData.pitch_recorded_video_url,
+            childName: `${child.firstName} ${child.lastName}`.trim(),
+            childOrganizationUserId: child.organizationUserId,
+            ...statsData,
+          });
+        }
+      }
+
+      setStats(allStats);
+    } catch (error) {
+      console.error('Error fetching parent view stats:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPlayerViewStats = async () => {
     try {
       // Get user's roster memberships
       const { data: rosterMemberships, error: rosterError } = await supabase
@@ -118,13 +316,13 @@ export default function MyFundraising() {
 
       // Fetch stats for each campaign
       const statsPromises = campaigns.map(async (campaign) => {
-        const rosterMembership = rosterMemberships[0]; // Use first membership for now
+        const rosterMembershipData = rosterMemberships[0];
         
         const { data: linkData } = await supabase
           .from('roster_member_campaign_links')
           .select('slug, pitch_message, pitch_image_url, pitch_video_url, pitch_recorded_video_url')
           .eq('campaign_id', campaign.id)
-          .eq('roster_member_id', rosterMembership.id)
+          .eq('roster_member_id', rosterMembershipData.id)
           .single();
 
         if (!linkData) return null;
@@ -134,7 +332,7 @@ export default function MyFundraising() {
           {
             body: {
               campaignId: campaign.id,
-              rosterMemberId: rosterMembership.id,
+              rosterMemberId: rosterMembershipData.id,
             },
           }
         );
@@ -161,12 +359,8 @@ export default function MyFundraising() {
       const resolvedStats = (await Promise.all(statsPromises)).filter(Boolean) as CampaignStat[];
       setStats(resolvedStats);
     } catch (error) {
-      console.error('Error fetching fundraising stats:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load fundraising statistics",
-        variant: "destructive",
-      });
+      console.error('Error fetching player view stats:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -176,16 +370,20 @@ export default function MyFundraising() {
     navigator.clipboard.writeText(url);
     toast({
       title: "Link copied!",
-      description: "Your personal fundraising link has been copied to clipboard",
+      description: isParentView 
+        ? "Your child's fundraising link has been copied to clipboard"
+        : "Your personal fundraising link has been copied to clipboard",
     });
   };
 
-  const shareLink = async (url: string, campaignName: string) => {
+  const shareLink = async (url: string, campaignName: string, childName?: string) => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Support me in ${campaignName}`,
-          text: `Help me reach my fundraising goal for ${campaignName}!`,
+          title: childName ? `Support ${childName} in ${campaignName}` : `Support me in ${campaignName}`,
+          text: childName 
+            ? `Help ${childName} reach their fundraising goal for ${campaignName}!`
+            : `Help me reach my fundraising goal for ${campaignName}!`,
           url: url,
         });
       } catch (error) {
@@ -199,18 +397,29 @@ export default function MyFundraising() {
   const totalRaisedAll = stats.reduce((sum, s) => sum + s.totalRaised, 0);
   const totalSupportersAll = stats.reduce((sum, s) => sum + s.uniqueSupporters, 0);
 
+  // Get unique child names for parent view title
+  const uniqueChildNames = [...new Set(linkedChildren.map(c => `${c.firstName} ${c.lastName}`.trim()))];
+  const pageTitle = isParentView 
+    ? uniqueChildNames.length === 1 
+      ? `${uniqueChildNames[0]}'s Fundraising`
+      : "Your Children's Fundraising"
+    : "My Fundraising";
+
   return (
     <DashboardPageLayout
       segments={[
         { label: 'Dashboard', path: '/dashboard' },
-        { label: 'My Fundraising' },
+        { label: isParentView ? "Student Fundraising" : 'My Fundraising' },
       ]}
     >
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">My Fundraising</h1>
+          <h1 className="text-3xl font-bold text-foreground">{pageTitle}</h1>
           <p className="text-muted-foreground mt-2">
-            Track your personal fundraising progress and share your links
+            {isParentView 
+              ? "Track your student's fundraising progress and share their links"
+              : "Track your personal fundraising progress and share your links"
+            }
           </p>
         </div>
 
@@ -225,8 +434,10 @@ export default function MyFundraising() {
               <Trophy className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Active Campaigns</h3>
               <p className="text-muted-foreground text-center max-w-md">
-                You're not currently enrolled in any fundraising campaigns with roster attribution enabled.
-                Contact your campaign manager to get started!
+                {isParentView 
+                  ? "Your connected students are not currently enrolled in any fundraising campaigns with roster attribution enabled."
+                  : "You're not currently enrolled in any fundraising campaigns with roster attribution enabled. Contact your campaign manager to get started!"
+                }
               </p>
             </CardContent>
           </Card>
@@ -281,11 +492,16 @@ export default function MyFundraising() {
             {/* Campaign Cards */}
             <div className="space-y-4">
               {stats.map((stat) => (
-                <Card key={stat.campaignId}>
+                <Card key={`${stat.campaignId}-${stat.childOrganizationUserId || 'self'}`}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle>{stat.campaignName}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CardTitle>{stat.campaignName}</CardTitle>
+                          {isParentView && stat.childName && (
+                            <Badge variant="secondary">{stat.childName}</Badge>
+                          )}
+                        </div>
                         <CardDescription className="mt-1">
                           Rank #{stat.rank} of {stat.totalParticipants} participants
                         </CardDescription>
@@ -310,7 +526,9 @@ export default function MyFundraising() {
                     {/* Progress */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">Personal Goal Progress</span>
+                        <span className="text-sm font-medium">
+                          {isParentView ? "Goal Progress" : "Personal Goal Progress"}
+                        </span>
                         <span className="text-sm text-muted-foreground">
                           ${stat.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${stat.personalGoal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
@@ -341,7 +559,9 @@ export default function MyFundraising() {
 
                     {/* Share Link */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Your Personal Link</label>
+                      <label className="text-sm font-medium">
+                        {isParentView && stat.childName ? `${stat.childName}'s Link` : "Your Personal Link"}
+                      </label>
                       <div className="flex gap-2">
                         <div className="flex-1 p-2 bg-muted rounded-md text-sm font-mono truncate">
                           {stat.personalUrl}
@@ -356,7 +576,7 @@ export default function MyFundraising() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => shareLink(stat.personalUrl, stat.campaignName)}
+                          onClick={() => shareLink(stat.personalUrl, stat.campaignName, stat.childName)}
                         >
                           <Share2 className="h-4 w-4" />
                         </Button>
@@ -377,24 +597,27 @@ export default function MyFundraising() {
                         >
                           {showQRCode === stat.personalUrl ? 'Hide' : 'Show'} QR Code
                         </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setEditingPitchId(editingPitchId === stat.campaignId ? null : stat.campaignId)}
-                          className="flex-1"
-                        >
-                          {editingPitchId === stat.campaignId ? (
-                            <>
-                              <ChevronUp className="h-4 w-4 mr-2" />
-                              Close Pitch Editor
-                            </>
-                          ) : (
-                            <>
-                              <Edit className="h-4 w-4 mr-2" />
-                              {stat.pitchMessage ? 'Edit' : 'Add'} Personal Pitch
-                            </>
-                          )}
-                        </Button>
+                        {/* Only show pitch editor for players, not parents */}
+                        {!isParentView && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setEditingPitchId(editingPitchId === stat.campaignId ? null : stat.campaignId)}
+                            className="flex-1"
+                          >
+                            {editingPitchId === stat.campaignId ? (
+                              <>
+                                <ChevronUp className="h-4 w-4 mr-2" />
+                                Close Pitch Editor
+                              </>
+                            ) : (
+                              <>
+                                <Edit className="h-4 w-4 mr-2" />
+                                {stat.pitchMessage ? 'Edit' : 'Add'} Personal Pitch
+                              </>
+                            )}
+                          </Button>
+                        )}
                       </div>
                       {showQRCode === stat.personalUrl && (
                         <div className="flex justify-center p-4 bg-white rounded-md">
@@ -403,8 +626,8 @@ export default function MyFundraising() {
                       )}
                     </div>
 
-                    {/* Inline Pitch Editor */}
-                    {editingPitchId === stat.campaignId && (
+                    {/* Inline Pitch Editor - only for players */}
+                    {!isParentView && editingPitchId === stat.campaignId && (
                       <>
                         <Separator className="my-4" />
                         <PitchEditor
@@ -431,8 +654,12 @@ export default function MyFundraising() {
           </>
         )}
 
-        {/* Family Members Section */}
-        {rosterMembership && (
+        {/* Show different cards based on view type */}
+        {isParentView && user?.id && (
+          <MyConnectedStudentsCard userId={user.id} />
+        )}
+        
+        {!isParentView && rosterMembership && (
           <ManageGuardiansCard
             organizationUserId={rosterMembership.id}
             organizationId={rosterMembership.organization_id}
