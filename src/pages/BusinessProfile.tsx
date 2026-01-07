@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore, TrendingUp, Activity, Play, Pause, XCircle, ChevronDown } from "lucide-react";
+import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore, TrendingUp, Activity, Play, Pause, XCircle, ChevronDown, ShieldCheck, ShieldX, Clock } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getSegmentInfo } from "@/lib/businessEngagement";
 import { Progress } from "@/components/ui/progress";
@@ -29,6 +29,7 @@ import { BusinessActivityTimeline } from "@/components/BusinessActivityTimeline"
 import { BusinessInsightsPanel } from "@/components/BusinessInsightsPanel";
 import { BusinessCampaignAssetsList } from "@/components/BusinessCampaignAssetsList";
 import { ManualEnrollmentDialog } from "@/components/ManualEnrollmentDialog";
+import { BusinessVerificationDialog } from "@/components/BusinessVerificationDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -138,6 +139,7 @@ const BusinessProfile = () => {
   const [engagementExpanded, setEngagementExpanded] = useState(false);
   const [enrollmentsExpanded, setEnrollmentsExpanded] = useState(true);
   const [donationsExpanded, setDonationsExpanded] = useState(true);
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false);
 
   useEffect(() => {
     if (businessId && organizationUser?.organization_id) {
@@ -640,11 +642,26 @@ const BusinessProfile = () => {
   const getVerificationBadge = (status: string) => {
     switch (status) {
       case "verified":
-        return <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">Verified</Badge>;
-      case "rejected":
-        return <Badge variant="destructive">Rejected</Badge>;
+        return (
+          <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
+            <ShieldCheck className="h-3 w-3 mr-1" />
+            Verified
+          </Badge>
+        );
+      case "blocked":
+        return (
+          <Badge className="bg-red-500/10 text-red-700 dark:text-red-400">
+            <ShieldX className="h-3 w-3 mr-1" />
+            Blocked
+          </Badge>
+        );
       default:
-        return <Badge variant="secondary">Pending</Badge>;
+        return (
+          <Badge className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
+            <Clock className="h-3 w-3 mr-1" />
+            Pending
+          </Badge>
+        );
     }
   };
 
@@ -701,6 +718,23 @@ const BusinessProfile = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Businesses
         </Button>
+
+        {/* Blocked Warning Banner */}
+        {business.verification_status === 'blocked' && (
+          <Card className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                <ShieldX className="h-5 w-5" />
+                <div>
+                  <p className="font-semibold">This business is blocked</p>
+                  <p className="text-sm text-red-600 dark:text-red-500">
+                    Blocked businesses cannot participate in campaigns
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Archived Warning Banner */}
         {business.archived_at && (
@@ -765,6 +799,28 @@ const BusinessProfile = () => {
                     Enroll in Campaign
                   </Button>
                 )}
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowVerificationDialog(true)}
+                  className={business.verification_status === 'blocked' ? 'text-red-600 hover:text-red-700' : ''}
+                >
+                  {business.verification_status === 'verified' ? (
+                    <>
+                      <ShieldCheck className="h-4 w-4 mr-2" />
+                      Verified
+                    </>
+                  ) : business.verification_status === 'blocked' ? (
+                    <>
+                      <ShieldX className="h-4 w-4 mr-2" />
+                      Blocked
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-4 w-4 mr-2" />
+                      Verify
+                    </>
+                  )}
+                </Button>
                 {organizationUser?.user_type?.permission_level === 'organization_admin' && (
                   business?.archived_at ? (
                     <Button variant="outline" onClick={() => setShowRestoreDialog(true)}>
@@ -1429,6 +1485,17 @@ const BusinessProfile = () => {
           fetchEnrollments();
           setShowEnrollmentDialog(false);
         }}
+      />
+
+      <BusinessVerificationDialog
+        open={showVerificationDialog}
+        onOpenChange={setShowVerificationDialog}
+        business={{
+          id: business.id,
+          business_name: business.business_name,
+          verification_status: business.verification_status,
+        }}
+        onSuccess={fetchBusinessDetails}
       />
     </DashboardPageLayout>
   );

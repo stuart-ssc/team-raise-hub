@@ -507,8 +507,8 @@ const Businesses = () => {
     switch (status) {
       case "verified":
         return <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20">Verified</Badge>;
-      case "rejected":
-        return <Badge variant="destructive">Rejected</Badge>;
+      case "blocked":
+        return <Badge className="bg-red-500/10 text-red-700 dark:text-red-400 hover:bg-red-500/20">Blocked</Badge>;
       default:
         return <Badge className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-500/20">Pending</Badge>;
     }
