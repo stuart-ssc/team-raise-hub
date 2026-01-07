@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Edit, Plus, HelpCircle, Package, ArrowLeft } from "lucide-react";
@@ -369,90 +370,84 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1">
-                    <Label>Qty Offered *</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">Total inventory available to sell</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+              {/* Inventory Management Tabs */}
+              <Tabs 
+                value={hasVariants ? "variants" : "single"} 
+                onValueChange={(v) => setHasVariants(v === "variants")}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="single">Single Offering</TabsTrigger>
+                  <TabsTrigger value="variants">Size Variants</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="single" className="space-y-4 pt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1">
+                        <Label>Qty Offered *</Label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-xs">Total inventory available to sell</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={formData.quantityOffered}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData(prev => ({
+                            ...prev,
+                            quantityOffered: val,
+                            quantityAvailable: !editingItem ? val : prev.quantityAvailable,
+                          }));
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1">
+                        <Label>Qty Available *</Label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-xs">Current stock remaining</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={formData.quantityAvailable}
+                        onChange={(e) => setFormData(prev => ({ ...prev, quantityAvailable: e.target.value }))}
+                      />
+                    </div>
                   </div>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={formData.quantityOffered}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData(prev => ({
-                        ...prev,
-                        quantityOffered: val,
-                        quantityAvailable: !editingItem ? val : prev.quantityAvailable,
-                      }));
-                    }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1">
-                    <Label>Qty Available *</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">Current stock remaining</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                  
+                  <div className="space-y-2">
+                    <Label>Size (optional)</Label>
+                    <Input
+                      placeholder="e.g. One Size, Large"
+                      value={formData.size}
+                      onChange={(e) => setFormData(prev => ({ ...prev, size: e.target.value }))}
+                    />
                   </div>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={formData.quantityAvailable}
-                    onChange={(e) => setFormData(prev => ({ ...prev, quantityAvailable: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1">
-                    <Label>Max per Order</Label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Limit how many a single buyer can purchase to prevent someone from buying out your entire supply</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <Input
-                    type="number"
-                    placeholder="No limit"
-                    value={formData.maxItemsPurchased}
-                    onChange={(e) => setFormData(prev => ({ ...prev, maxItemsPurchased: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              {/* Size Variants */}
-              <div className="rounded-lg border p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-base">Size Variants</Label>
-                    <p className="text-sm text-muted-foreground">Track inventory by size</p>
-                  </div>
-                  <Switch checked={hasVariants} onCheckedChange={setHasVariants} />
-                </div>
-                {hasVariants && (
+                </TabsContent>
+                
+                <TabsContent value="variants" className="pt-4">
                   <SizeVariantsEditor variants={sizeVariants} onChange={setSizeVariants} />
-                )}
-              </div>
+                </TabsContent>
+              </Tabs>
 
               {/* Recurring */}
               <div className="rounded-lg border p-4 space-y-3">
@@ -480,6 +475,30 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                     </SelectContent>
                   </Select>
                 )}
+              </div>
+
+              {/* Max per Order */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <Label>Max per Order</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Limit how many a single buyer can purchase to prevent someone from buying out your entire supply</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Input
+                  type="number"
+                  placeholder="No limit"
+                  value={formData.maxItemsPurchased}
+                  onChange={(e) => setFormData(prev => ({ ...prev, maxItemsPurchased: e.target.value }))}
+                  className="max-w-[200px]"
+                />
               </div>
 
               {/* Image */}
