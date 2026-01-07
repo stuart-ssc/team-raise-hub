@@ -825,6 +825,63 @@ export type Database = {
           },
         ]
       }
+      campaign_required_assets: {
+        Row: {
+          asset_description: string | null
+          asset_name: string
+          campaign_id: string
+          created_at: string | null
+          dimensions_hint: string | null
+          display_order: number | null
+          file_types: string[] | null
+          id: string
+          is_required: boolean | null
+          max_file_size_mb: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          asset_description?: string | null
+          asset_name: string
+          campaign_id: string
+          created_at?: string | null
+          dimensions_hint?: string | null
+          display_order?: number | null
+          file_types?: string[] | null
+          id?: string
+          is_required?: boolean | null
+          max_file_size_mb?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          asset_description?: string | null
+          asset_name?: string
+          campaign_id?: string
+          created_at?: string | null
+          dimensions_hint?: string | null
+          display_order?: number | null
+          file_types?: string[] | null
+          id?: string
+          is_required?: boolean | null
+          max_file_size_mb?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_required_assets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_required_assets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["campaign_id"]
+          },
+        ]
+      }
       campaign_type: {
         Row: {
           created_at: string
@@ -897,6 +954,7 @@ export type Database = {
       campaigns: {
         Row: {
           amount_raised: number | null
+          asset_upload_deadline: string | null
           campaign_type_id: string | null
           created_at: string
           description: string | null
@@ -924,6 +982,7 @@ export type Database = {
         }
         Insert: {
           amount_raised?: number | null
+          asset_upload_deadline?: string | null
           campaign_type_id?: string | null
           created_at?: string
           description?: string | null
@@ -951,6 +1010,7 @@ export type Database = {
         }
         Update: {
           amount_raised?: number | null
+          asset_upload_deadline?: string | null
           campaign_type_id?: string | null
           created_at?: string
           description?: string | null
@@ -2727,6 +2787,63 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "nurture_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_asset_uploads: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_size_bytes: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          order_id: string
+          required_asset_id: string
+          updated_at: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          order_id: string
+          required_asset_id: string
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          order_id?: string
+          required_asset_id?: string
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_asset_uploads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_asset_uploads_required_asset_id_fkey"
+            columns: ["required_asset_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_required_assets"
             referencedColumns: ["id"]
           },
         ]

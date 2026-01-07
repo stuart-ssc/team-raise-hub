@@ -2,19 +2,42 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { RequiredAssetsEditor, RequiredAsset } from "./RequiredAssetsEditor";
 
 interface DonorExperienceData {
   thankYouMessage: string;
   requiresBusinessInfo: boolean;
   fileUploadDeadlineDays: string;
+  assetUploadDeadline?: string;
 }
 
 interface DonorExperienceSectionProps {
   data: DonorExperienceData;
   onUpdate: (updates: Partial<DonorExperienceData>) => void;
+  requiredAssets?: RequiredAsset[];
+  onRequiredAssetsChange?: (assets: RequiredAsset[]) => void;
 }
 
-export function DonorExperienceSection({ data, onUpdate }: DonorExperienceSectionProps) {
+export function DonorExperienceSection({ 
+  data, 
+  onUpdate, 
+  requiredAssets = [],
+  onRequiredAssetsChange 
+}: DonorExperienceSectionProps) {
+  const deadlineDate = data.assetUploadDeadline ? new Date(data.assetUploadDeadline) : undefined;
+
+  const handleDateChange = (date: Date | undefined) => {
+    onUpdate({ 
+      assetUploadDeadline: date ? format(date, "yyyy-MM-dd") : undefined 
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -34,9 +57,9 @@ export function DonorExperienceSection({ data, onUpdate }: DonorExperienceSectio
       <div className="rounded-lg border p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label className="text-base">Require Business Info</Label>
+            <Label className="text-base">Sponsorship Campaign</Label>
             <p className="text-sm text-muted-foreground">
-              Collect sponsor details at checkout
+              Collect sponsor details and assets at checkout
             </p>
           </div>
           <Switch
@@ -46,18 +69,43 @@ export function DonorExperienceSection({ data, onUpdate }: DonorExperienceSectio
         </div>
 
         {data.requiresBusinessInfo && (
-          <div className="space-y-2">
-            <Label htmlFor="fileUploadDeadline">Upload Deadline (days)</Label>
-            <Input
-              id="fileUploadDeadline"
-              type="number"
-              placeholder="e.g., 14"
-              value={data.fileUploadDeadlineDays}
-              onChange={(e) => onUpdate({ fileUploadDeadlineDays: e.target.value })}
-            />
-            <p className="text-sm text-muted-foreground">
-              Days after purchase to upload files (logo, ad copy, etc.)
-            </p>
+          <div className="space-y-4 pt-2 border-t">
+            <div className="space-y-2">
+              <Label>Asset Upload Deadline</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !deadlineDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {deadlineDate ? format(deadlineDate, "PPP") : "Select deadline date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={deadlineDate}
+                    onSelect={handleDateChange}
+                    initialFocus
+                    disabled={(date) => date < new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-sm text-muted-foreground">
+                The date by which sponsors must upload their assets
+              </p>
+            </div>
+
+            {onRequiredAssetsChange && (
+              <RequiredAssetsEditor
+                assets={requiredAssets}
+                onChange={onRequiredAssetsChange}
+              />
+            )}
           </div>
         )}
       </div>
