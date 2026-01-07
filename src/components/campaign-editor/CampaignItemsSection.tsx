@@ -371,7 +371,7 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
               </div>
 
               {/* Inventory Management Tabs */}
-                <div className="border rounded-lg p-4">
+                <div className="border rounded-lg p-4 bg-muted/30">
                   <Tabs 
                     value={hasVariants ? "variants" : "single"} 
                     onValueChange={(v) => setHasVariants(v === "variants")}
