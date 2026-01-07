@@ -15,7 +15,15 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Download, Loader2, FileSpreadsheet, FileText, CalendarIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Download, Loader2, FileSpreadsheet, FileText, CalendarIcon, Save, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CsvExportOrdersDialogProps {
@@ -30,8 +38,15 @@ interface CustomField {
   field_name: string;
 }
 
+interface ColumnPreset {
+  name: string;
+  columns: string[];
+}
+
 type ExportFormat = "csv" | "xlsx";
 type DatePreset = "all" | "this_month" | "last_month" | "this_quarter";
+
+const PRESETS_STORAGE_KEY = "order-export-column-presets";
 
 const STANDARD_COLUMNS = [
   { id: "customer_name", label: "Customer Name", default: true },
@@ -46,6 +61,21 @@ const STANDARD_COLUMNS = [
   { id: "business_purchase", label: "Business Purchase", default: false },
   { id: "tax_receipt_issued", label: "Tax Receipt Issued", default: false },
 ];
+
+// Load presets from localStorage
+const loadPresets = (): ColumnPreset[] => {
+  try {
+    const stored = localStorage.getItem(PRESETS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+// Save presets to localStorage
+const savePresets = (presets: ColumnPreset[]) => {
+  localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(presets));
+};
 
 export function CsvExportOrdersDialog({
   open,
@@ -62,6 +92,11 @@ export function CsvExportOrdersDialog({
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
+  
+  // Preset management
+  const [presets, setPresets] = useState<ColumnPreset[]>(loadPresets);
+  const [newPresetName, setNewPresetName] = useState("");
+  const [showSavePreset, setShowSavePreset] = useState(false);
 
   const handleDatePreset = (preset: DatePreset) => {
     setDatePreset(preset);
@@ -139,6 +174,56 @@ export function CsvExportOrdersDialog({
     setSelectedColumns(
       STANDARD_COLUMNS.filter((col) => col.default).map((col) => col.id)
     );
+  };
+
+  // Preset handlers
+  const handleSavePreset = () => {
+    if (!newPresetName.trim()) {
+      toast.error("Please enter a preset name");
+      return;
+    }
+    if (selectedColumns.length === 0) {
+      toast.error("Please select at least one column");
+      return;
+    }
+    
+    const existingIndex = presets.findIndex(
+      (p) => p.name.toLowerCase() === newPresetName.trim().toLowerCase()
+    );
+    
+    let updatedPresets: ColumnPreset[];
+    if (existingIndex >= 0) {
+      updatedPresets = [...presets];
+      updatedPresets[existingIndex] = { name: newPresetName.trim(), columns: selectedColumns };
+      toast.success(`Updated preset "${newPresetName.trim()}"`);
+    } else {
+      updatedPresets = [...presets, { name: newPresetName.trim(), columns: selectedColumns }];
+      toast.success(`Saved preset "${newPresetName.trim()}"`);
+    }
+    
+    setPresets(updatedPresets);
+    savePresets(updatedPresets);
+    setNewPresetName("");
+    setShowSavePreset(false);
+  };
+
+  const handleLoadPreset = (presetName: string) => {
+    const preset = presets.find((p) => p.name === presetName);
+    if (preset) {
+      // Only load columns that exist in current context (standard + custom)
+      const validColumns = preset.columns.filter(
+        (col) => allColumns.some((c) => c.id === col)
+      );
+      setSelectedColumns(validColumns);
+      toast.success(`Loaded preset "${presetName}"`);
+    }
+  };
+
+  const handleDeletePreset = (presetName: string) => {
+    const updatedPresets = presets.filter((p) => p.name !== presetName);
+    setPresets(updatedPresets);
+    savePresets(updatedPresets);
+    toast.success(`Deleted preset "${presetName}"`);
   };
 
   const handleExport = async () => {
@@ -330,13 +415,89 @@ export function CsvExportOrdersDialog({
             </RadioGroup>
           </div>
 
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleSelectAll}>
-              Select All
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleSelectDefault}>
-              Default Columns
-            </Button>
+          {/* Column Selection Header */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Columns</Label>
+              {presets.length > 0 && (
+                <Select onValueChange={handleLoadPreset}>
+                  <SelectTrigger className="w-[140px] h-8 text-xs">
+                    <SelectValue placeholder="Load preset..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {presets.map((preset) => (
+                      <div
+                        key={preset.name}
+                        className="flex items-center justify-between px-2 py-1.5 hover:bg-accent rounded-sm"
+                      >
+                        <SelectItem value={preset.name} className="flex-1 p-0">
+                          {preset.name}
+                        </SelectItem>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 ml-2 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeletePreset(preset.name);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleSelectAll}>
+                Select All
+              </Button>
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleSelectDefault}>
+                Default
+              </Button>
+              {!showSavePreset ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setShowSavePreset(true)}
+                >
+                  <Save className="h-3 w-3 mr-1" />
+                  Save Preset
+                </Button>
+              ) : (
+                <div className="flex gap-1">
+                  <Input
+                    placeholder="Preset name..."
+                    value={newPresetName}
+                    onChange={(e) => setNewPresetName(e.target.value)}
+                    className="h-7 w-28 text-xs"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSavePreset();
+                      if (e.key === "Escape") setShowSavePreset(false);
+                    }}
+                    autoFocus
+                  />
+                  <Button size="sm" className="h-7 text-xs" onClick={handleSavePreset}>
+                    Save
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setShowSavePreset(false);
+                      setNewPresetName("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="max-h-[300px] overflow-y-auto space-y-4">
