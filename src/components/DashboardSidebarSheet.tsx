@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, LogOut, User, Trophy, MessageCircle, UserCircle } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, LogOut, User, Trophy, MessageCircle, UserCircle, Users2 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -17,6 +17,7 @@ const sidebarItems = [
   { title: "Home", icon: Home, url: "/dashboard", end: true },
   { title: "My Orders", icon: Package, url: "/dashboard/orders" },
   { title: "My Fundraising", icon: Trophy, url: "/dashboard/my-fundraising", participantOnly: true },
+  { title: "Family Dashboard", icon: Users2, url: "/dashboard/family", parentOnly: true },
   { title: "Messages", icon: MessageCircle, url: "/dashboard/messages" },
   { title: "Groups", icon: Users, url: "/dashboard/groups" },
   { title: "Campaigns", icon: Target, url: "/dashboard/campaigns" },
@@ -50,12 +51,31 @@ const DashboardSidebarSheet = ({
   const { organizationUser } = useOrganizationUser();
   const { donorProfiles } = useDonorPortal();
   const [pendingCount, setPendingCount] = useState(0);
+  const [isParent, setIsParent] = useState(false);
   
   const hasDonorAccess = donorProfiles.length > 0;
 
   // Check if user has permission to see Users menu item
   const permissionLevel = organizationUser?.user_type?.permission_level;
   const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
+
+  // Check if user is a parent (has linked children)
+  useEffect(() => {
+    const checkIfParent = async () => {
+      if (!organizationUser?.user_id) return;
+      
+      const { data } = await supabase
+        .from('organization_user')
+        .select('id')
+        .eq('user_id', organizationUser.user_id)
+        .eq('active_user', true)
+        .not('linked_organization_user_id', 'is', null)
+        .limit(1);
+      
+      setIsParent(data && data.length > 0);
+    };
+    checkIfParent();
+  }, [organizationUser?.user_id]);
 
   // Fetch pending membership requests count
   const fetchPendingCount = () => {
@@ -137,6 +157,11 @@ const DashboardSidebarSheet = ({
                 
                 // Show participant-only items only for participants/supporters
                 if (item.participantOnly && canSeeUsers) {
+                  return null;
+                }
+                
+                // Show parent-only items only for parents
+                if ((item as any).parentOnly && !isParent) {
                   return null;
                 }
                 

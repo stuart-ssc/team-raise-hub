@@ -62,6 +62,7 @@ import BusinessOutreachQueue from "./pages/BusinessOutreachQueue";
 import BusinessNurtureCampaigns from "./pages/BusinessNurtureCampaigns";
 import BusinessCampaignAnalytics from "./pages/BusinessCampaignAnalytics";
 import MyFundraising from "./pages/MyFundraising";
+import FamilyDashboard from "./pages/FamilyDashboard";
 import OrganizationSettings from "./pages/OrganizationSettings";
 import Contact from "./pages/Contact";
 import ContactSubmissions from "./pages/SystemAdmin/ContactSubmissions";
@@ -182,6 +183,7 @@ const AppContent = () => {
         <Route path="/dashboard/messages/:id" element={<ProtectedRoute><Conversation /></ProtectedRoute>} />
         <Route path="/dashboard/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
         <Route path="/dashboard/my-fundraising" element={<ProtectedRoute><MyFundraising /></ProtectedRoute>} />
+        <Route path="/dashboard/family" element={<ProtectedRoute><FamilyDashboard /></ProtectedRoute>} />
         <Route path="/system-admin" element={<ProtectedRoute><SystemAdminGuard><SystemAdminDashboard /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/organizations" element={<ProtectedRoute><SystemAdminGuard><OrganizationsList /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/organizations/:orgId" element={<ProtectedRoute><SystemAdminGuard><OrganizationDetail /></SystemAdminGuard></ProtectedRoute>} />
