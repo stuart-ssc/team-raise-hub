@@ -4419,6 +4419,10 @@ export type Database = {
           variant_name: string
         }[]
       }
+      has_purchased_from_group: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       increment_campaign_amount: {
         Args: { amount: number; campaign_id: string }
         Returns: undefined
