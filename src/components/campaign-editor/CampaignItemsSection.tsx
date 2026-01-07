@@ -371,11 +371,12 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
               </div>
 
               {/* Inventory Management Tabs */}
-              <Tabs 
-                value={hasVariants ? "variants" : "single"} 
-                onValueChange={(v) => setHasVariants(v === "variants")}
-                className="w-full"
-              >
+                <div className="border rounded-lg p-4">
+                  <Tabs 
+                    value={hasVariants ? "variants" : "single"} 
+                    onValueChange={(v) => setHasVariants(v === "variants")}
+                    className="w-full"
+                  >
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="single">Single Offering</TabsTrigger>
                   <TabsTrigger value="variants">Size Variants</TabsTrigger>
@@ -447,7 +448,8 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                 <TabsContent value="variants" className="pt-4">
                   <SizeVariantsEditor variants={sizeVariants} onChange={setSizeVariants} />
                 </TabsContent>
-              </Tabs>
+                </Tabs>
+                </div>
 
               {/* Recurring */}
               <div className="rounded-lg border p-4 space-y-3">
