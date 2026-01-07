@@ -11,7 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Download, Loader2 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Download, Loader2, FileSpreadsheet, FileText } from "lucide-react";
 
 interface CsvExportOrdersDialogProps {
   open: boolean;
@@ -24,6 +25,8 @@ interface CustomField {
   id: string;
   field_name: string;
 }
+
+type ExportFormat = "csv" | "xlsx";
 
 const STANDARD_COLUMNS = [
   { id: "customer_name", label: "Customer Name", default: true },
@@ -50,6 +53,7 @@ export function CsvExportOrdersDialog({
     STANDARD_COLUMNS.filter((col) => col.default).map((col) => col.id)
   );
   const [isExporting, setIsExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("xlsx");
 
   // Fetch custom fields when dialog opens
   useEffect(() => {
@@ -111,23 +115,42 @@ export function CsvExportOrdersDialog({
           orderIds,
           columns: selectedColumns,
           campaignId,
+          format: exportFormat,
         },
       });
 
       if (error) throw error;
 
-      // Create and download the CSV file
-      const blob = new Blob([data.csv], { type: "text/csv;charset=utf-8;" });
+      const dateStr = new Date().toISOString().split("T")[0];
+      let blob: Blob;
+      let filename: string;
+
+      if (exportFormat === "xlsx") {
+        // Decode base64 and create Excel blob
+        const binaryString = atob(data.xlsx);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        blob = new Blob([bytes], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+        filename = `campaign-orders-${dateStr}.xlsx`;
+      } else {
+        blob = new Blob([data.csv], { type: "text/csv;charset=utf-8;" });
+        filename = `campaign-orders-${dateStr}.csv`;
+      }
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `campaign-orders-${new Date().toISOString().split("T")[0]}.csv`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${data.count} orders`);
+      toast.success(`Exported ${data.count} orders as ${exportFormat.toUpperCase()}`);
       onOpenChange(false);
     } catch (error: any) {
       console.error("Export error:", error);
@@ -141,13 +164,37 @@ export function CsvExportOrdersDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Export Orders to CSV</DialogTitle>
+          <DialogTitle>Export Orders</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Exporting {orderIds.length} order{orderIds.length !== 1 ? "s" : ""}. Select the columns to include:
+            Exporting {orderIds.length} order{orderIds.length !== 1 ? "s" : ""}.
           </p>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Export Format</Label>
+            <RadioGroup
+              value={exportFormat}
+              onValueChange={(value) => setExportFormat(value as ExportFormat)}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="xlsx" id="format-xlsx" />
+                <Label htmlFor="format-xlsx" className="flex items-center gap-1.5 cursor-pointer">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Excel (.xlsx)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="csv" id="format-csv" />
+                <Label htmlFor="format-csv" className="flex items-center gap-1.5 cursor-pointer">
+                  <FileText className="h-4 w-4" />
+                  CSV (.csv)
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
 
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleSelectAll}>
@@ -216,8 +263,12 @@ export function CsvExportOrdersDialog({
               </>
             ) : (
               <>
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
+                {exportFormat === "xlsx" ? (
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Export {exportFormat.toUpperCase()}
               </>
             )}
           </Button>
