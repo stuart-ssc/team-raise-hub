@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Archive, Trash2, Download, X, Tag, Mail, ArchiveRestore, UserPlus } from "lucide-react";
+import { Archive, Trash2, Download, X, Tag, Mail, ArchiveRestore, UserPlus, ShieldCheck } from "lucide-react";
 
 interface BulkActionToolbarBusinessProps {
   selectedCount: number;
@@ -12,6 +12,7 @@ interface BulkActionToolbarBusinessProps {
   onAddTags: () => void;
   onSendEmail: () => void;
   onEnrollInCampaign?: () => void;
+  onVerify?: () => void;
   selectedBusinessesStatus: 'active' | 'archived' | 'mixed';
 }
 
@@ -25,6 +26,7 @@ const BulkActionToolbarBusiness = ({
   onAddTags,
   onSendEmail,
   onEnrollInCampaign,
+  onVerify,
   selectedBusinessesStatus,
 }: BulkActionToolbarBusinessProps) => {
   if (selectedCount === 0) return null;
@@ -44,6 +46,18 @@ const BulkActionToolbarBusiness = ({
         <div className="h-6 w-px bg-primary-foreground/20" />
 
         <div className="flex gap-2">
+          {onVerify && selectedBusinessesStatus === 'active' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onVerify}
+              className="gap-2"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              Verify
+            </Button>
+          )}
+
           <Button
             variant="secondary"
             size="sm"

@@ -51,6 +51,7 @@ import { ImportBusinessesDialog } from "@/components/ImportBusinessesDialog";
 import BulkActionToolbarBusiness from "@/components/BulkActionToolbarBusiness";
 import BulkTagDialogBusiness from "@/components/BulkTagDialogBusiness";
 import BulkEmailDialogBusiness from "@/components/BulkEmailDialogBusiness";
+import { BulkVerificationDialogBusiness } from "@/components/BulkVerificationDialogBusiness";
 import { ManualEnrollmentDialog } from "@/components/ManualEnrollmentDialog";
 
 interface BusinessProfile {
@@ -95,6 +96,7 @@ const Businesses = () => {
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
   const [showBulkEmailDialog, setShowBulkEmailDialog] = useState(false);
+  const [showBulkVerificationDialog, setShowBulkVerificationDialog] = useState(false);
   const [showEnrollmentDialog, setShowEnrollmentDialog] = useState(false);
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [segmentFilter, setSegmentFilter] = useState<string>("all");
@@ -1089,8 +1091,19 @@ const Businesses = () => {
           onExportCsv={handleBulkExport}
           onAddTags={handleBulkTag}
           onSendEmail={handleBulkEmail}
+          onVerify={() => setShowBulkVerificationDialog(true)}
           onEnrollInCampaign={() => setShowEnrollmentDialog(true)}
           selectedBusinessesStatus={getSelectedBusinessesStatus()}
+        />
+
+        <BulkVerificationDialogBusiness
+          open={showBulkVerificationDialog}
+          onOpenChange={setShowBulkVerificationDialog}
+          businessIds={selectedBusinessIds}
+          onComplete={() => {
+            setSelectedBusinessIds([]);
+            fetchBusinesses();
+          }}
         />
 
       <AlertDialog open={showBulkArchiveDialog} onOpenChange={setShowBulkArchiveDialog}>
