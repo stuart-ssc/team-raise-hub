@@ -97,7 +97,7 @@ export function NewDonorConversationDialog({
             )
           `)
           .eq('user_id', user.id)
-          .eq('status', 'complete');
+          .eq('status', 'succeeded');
 
         if (error) throw error;
 
