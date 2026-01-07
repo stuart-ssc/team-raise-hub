@@ -39,7 +39,7 @@ interface PendingCampaignAsset {
 interface RecentOrder {
   id: string;
   created_at: string;
-  total_amount: number;
+  items_total: number;
   campaign_name: string;
   organization_name: string | null;
   group_name: string | null;
@@ -91,7 +91,7 @@ export default function DonorPortalHome() {
           .select(`
             id,
             created_at,
-            total_amount,
+            items_total,
             status,
             files_complete,
             business_id,
@@ -120,7 +120,7 @@ export default function DonorPortalHome() {
           return {
             id: o.id,
             created_at: o.created_at,
-            total_amount: o.total_amount,
+            items_total: o.items_total || 0,
             campaign_name: campaign?.name || 'Unknown Campaign',
             organization_name: organization?.name || null,
             group_name: group?.group_name || null,
@@ -441,7 +441,7 @@ export default function DonorPortalHome() {
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge variant={order.status === 'succeeded' ? 'default' : 'secondary'}>
-                        ${order.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        ${order.items_total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </Badge>
                       <Button variant="ghost" size="sm" asChild>
                         <Link to={`/portal/purchases/${order.id}`}>

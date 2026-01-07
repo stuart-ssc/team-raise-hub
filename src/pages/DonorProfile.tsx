@@ -56,7 +56,7 @@ interface DonationHistoryItem {
 
 interface DonationHistory {
   id: string;
-  total_amount: number;
+  items_total: number;
   platform_fee_amount: number | null;
   created_at: string;
   campaign_name: string;
@@ -116,7 +116,7 @@ const DonorProfile = () => {
         .from("orders")
         .select(`
           id,
-          total_amount,
+          items_total,
           platform_fee_amount,
           items,
           created_at,
@@ -157,7 +157,7 @@ const DonorProfile = () => {
         const orderItems = order.items as Array<{ campaign_item_id: string; price_at_purchase: number; quantity: number }> || [];
         return {
           id: order.id,
-          total_amount: order.total_amount,
+          items_total: order.items_total || 0,
           platform_fee_amount: order.platform_fee_amount,
           created_at: order.created_at,
           campaign_name: order.campaigns?.name || "Unknown Campaign",
@@ -412,7 +412,7 @@ const DonorProfile = () => {
                             </div>
                             <div className="text-right ml-4">
                               <p className="font-bold text-primary text-lg">
-                                Total: {formatCurrency(donation.total_amount)}
+                                Total: {formatCurrency(donation.items_total)}
                               </p>
                               {(donation.items || []).map((item, idx) => (
                                 <p key={idx} className="text-sm text-muted-foreground">

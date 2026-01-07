@@ -57,7 +57,7 @@ interface TopCampaign {
 interface RecentDonation {
   id: string;
   customer_name: string | null;
-  total_amount: number;
+  items_total: number;
   created_at: string;
   campaign_name: string;
 }
@@ -229,7 +229,7 @@ const Reports = () => {
         .from("orders")
         .select(`
           created_at,
-          total_amount,
+          items_total,
           campaign_id,
           campaigns!inner(
             id,
@@ -268,7 +268,7 @@ const Reports = () => {
         }
         const monthData = monthlyMap.get(monthKey)!;
         monthData.donations += 1;
-        monthData.amount += order.total_amount || 0;
+        monthData.amount += order.items_total || 0;
         monthData.campaigns.add(order.campaign_id);
       });
 
@@ -286,7 +286,7 @@ const Reports = () => {
       let ordersQuery = supabase
         .from("orders")
         .select(`
-          total_amount,
+          items_total,
           campaigns!inner(
             id,
             group_id,
@@ -319,7 +319,7 @@ const Reports = () => {
       const totalDonations = ordersData?.length || 0;
       const avgDonation =
         totalDonations > 0
-          ? ordersData.reduce((sum, o) => sum + (o.total_amount || 0), 0) / totalDonations
+          ? ordersData.reduce((sum, o) => sum + (o.items_total || 0), 0) / totalDonations
           : 0;
 
       setStats({
@@ -351,7 +351,7 @@ const Reports = () => {
         .select(`
           id,
           customer_name,
-          total_amount,
+          items_total,
           created_at,
           campaigns!inner(
             name,
@@ -376,7 +376,7 @@ const Reports = () => {
           recentData.map((order: any) => ({
             id: order.id,
             customer_name: order.customer_name,
-            total_amount: order.total_amount,
+            items_total: order.items_total,
             created_at: order.created_at,
             campaign_name: order.campaigns?.name || 'Unknown Campaign',
           }))
@@ -773,7 +773,7 @@ const Reports = () => {
                           </div>
                           <div className="text-right ml-4">
                             <p className="font-bold text-primary">
-                              {formatCurrency(donation.total_amount)}
+                              {formatCurrency(donation.items_total)}
                             </p>
                           </div>
                         </div>

@@ -13,7 +13,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import MessageButton from "@/components/messaging/MessageButton";
-import { calculateItemsTotal } from "@/lib/orderUtils";
 import { format, differenceInDays, parseISO } from "date-fns";
 import {
   CheckCircle,
@@ -81,10 +80,10 @@ const CampaignOrderDetail = () => {
           customer_email,
           customer_phone,
           items,
+          items_total,
           status,
           files_complete,
           user_id,
-          campaign_id,
           campaign:campaigns (
             id,
             name,
@@ -569,7 +568,7 @@ const CampaignOrderDetail = () => {
                 ))}
                 <div className="border-t pt-2 mt-2 flex justify-between font-semibold">
                   <span>Total</span>
-                  <span>${calculateItemsTotal(order.items).toLocaleString()}</span>
+                  <span>${(order.items_total || 0).toLocaleString()}</span>
                 </div>
               </div>
             </CardContent>
