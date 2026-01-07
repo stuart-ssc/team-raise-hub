@@ -3388,6 +3388,110 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          first_name: string | null
+          group_id: string | null
+          id: string
+          inviter_organization_user_id: string
+          last_name: string | null
+          organization_id: string
+          relationship: string | null
+          roster_id: number | null
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          first_name?: string | null
+          group_id?: string | null
+          id?: string
+          inviter_organization_user_id: string
+          last_name?: string | null
+          organization_id: string
+          relationship?: string | null
+          roster_id?: number | null
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          first_name?: string | null
+          group_id?: string | null
+          id?: string
+          inviter_organization_user_id?: string
+          last_name?: string | null
+          organization_id?: string
+          relationship?: string | null
+          roster_id?: number | null
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_invitations_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_invitations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_invitations_inviter_organization_user_id_fkey"
+            columns: ["inviter_organization_user_id"]
+            isOneToOne: false
+            referencedRelation: "organization_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_invitations_inviter_organization_user_id_fkey"
+            columns: ["inviter_organization_user_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["roster_member_id"]
+          },
+          {
+            foreignKeyName: "parent_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_invitations_roster_id_fkey"
+            columns: ["roster_id"]
+            isOneToOne: false
+            referencedRelation: "rosters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

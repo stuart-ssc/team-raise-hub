@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PitchEditor } from "@/components/PitchEditor";
 import QRCode from "react-qr-code";
 import { Separator } from "@/components/ui/separator";
+import ManageGuardiansCard from "@/components/ManageGuardiansCard";
 interface CampaignStat {
   campaignId: string;
   campaignName: string;
@@ -33,6 +34,14 @@ interface CampaignStat {
   pitchRecordedVideoUrl: string | null;
 }
 
+interface RosterMembership {
+  id: string;
+  roster_id: number | null;
+  organization_id: string;
+  group_id: string | null;
+  rosters: { group_id: string } | null;
+}
+
 export default function MyFundraising() {
   const { user } = useAuth();
   const { activeGroup } = useActiveGroup();
@@ -41,6 +50,7 @@ export default function MyFundraising() {
   const [loading, setLoading] = useState(true);
   const [showQRCode, setShowQRCode] = useState<string | null>(null);
   const [editingPitchId, setEditingPitchId] = useState<string | null>(null);
+  const [rosterMembership, setRosterMembership] = useState<RosterMembership | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -56,6 +66,8 @@ export default function MyFundraising() {
         .select(`
           id,
           roster_id,
+          organization_id,
+          group_id,
           rosters(group_id)
         `)
         .eq('user_id', user?.id)
@@ -65,9 +77,13 @@ export default function MyFundraising() {
 
       if (!rosterMemberships || rosterMemberships.length === 0) {
         setStats([]);
+        setRosterMembership(null);
         setLoading(false);
         return;
       }
+
+      // Store the first roster membership for the guardian card
+      setRosterMembership(rosterMemberships[0] as RosterMembership);
 
       // Get campaigns with roster attribution enabled for these groups
       let groupIds = rosterMemberships
@@ -413,6 +429,16 @@ export default function MyFundraising() {
               ))}
             </div>
           </>
+        )}
+
+        {/* Family Members Section */}
+        {rosterMembership && (
+          <ManageGuardiansCard
+            organizationUserId={rosterMembership.id}
+            organizationId={rosterMembership.organization_id}
+            groupId={rosterMembership.group_id || rosterMembership.rosters?.group_id || null}
+            rosterId={rosterMembership.roster_id}
+          />
         )}
       </div>
     </DashboardPageLayout>
