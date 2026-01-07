@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import ManageGuardiansCard from "./ManageGuardiansCard";
+
 interface Campaign {
   id: string;
   name: string;
@@ -33,6 +34,8 @@ interface AttributedCampaign extends Campaign {
   totalParticipants: number;
   personalGoal: number;
   percentToGoal: number;
+  childName?: string; // For parent view
+  childOrganizationUserId?: string; // For parent view
 }
 
 interface LeaderboardEntry {
@@ -44,6 +47,15 @@ interface LeaderboardEntry {
   isCurrentUser: boolean;
 }
 
+interface LinkedChild {
+  organizationUserId: string;
+  firstName: string;
+  lastName: string;
+  rosterId: number | null;
+  groupId: string | null;
+  organizationId: string;
+}
+
 export default function PlayerDashboard() {
   const { user } = useAuth();
   const { activeGroup } = useActiveGroup();
@@ -52,6 +64,8 @@ export default function PlayerDashboard() {
   const [attributedCampaigns, setAttributedCampaigns] = useState<AttributedCampaign[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isParentView, setIsParentView] = useState(false);
+  const [linkedChildren, setLinkedChildren] = useState<LinkedChild[]>([]);
   const [rosterMembership, setRosterMembership] = useState<{
     id: string;
     organization_id: string;
@@ -67,6 +81,26 @@ export default function PlayerDashboard() {
 
   const fetchPlayerData = async () => {
     try {
+      // First, check if user is a parent/guardian (has linked_organization_user_id)
+      const { data: parentLinks, error: parentError } = await supabase
+        .from('organization_user')
+        .select('id, linked_organization_user_id, organization_id, group_id')
+        .eq('user_id', user?.id)
+        .eq('active_user', true)
+        .not('linked_organization_user_id', 'is', null);
+
+      if (parentError) throw parentError;
+
+      // If user is a parent, fetch their children's data
+      if (parentLinks && parentLinks.length > 0) {
+        setIsParentView(true);
+        await fetchParentData(parentLinks);
+        return;
+      }
+
+      // Otherwise, proceed with regular player logic
+      setIsParentView(false);
+      
       // Step 1: Get user's roster memberships with roster IDs
       const { data: rosterMemberships, error: rosterError } = await supabase
         .from('organization_user')
@@ -209,6 +243,190 @@ export default function PlayerDashboard() {
     }
   };
 
+  const fetchParentData = async (parentLinks: { id: string; linked_organization_user_id: string | null; organization_id: string; group_id: string | null }[]) => {
+    try {
+      const linkedIds = parentLinks.map(p => p.linked_organization_user_id).filter(Boolean) as string[];
+
+      if (linkedIds.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      // Get children's organization_user records (which have roster_id)
+      const { data: childrenRecords, error: childrenError } = await supabase
+        .from('organization_user')
+        .select('id, roster_id, organization_id, user_id')
+        .in('id', linkedIds)
+        .eq('active_user', true);
+
+      if (childrenError) throw childrenError;
+
+      if (!childrenRecords || childrenRecords.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      // Get children's profiles
+      const childUserIds = childrenRecords.map(c => c.user_id).filter(Boolean);
+      const { data: childProfiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', childUserIds);
+
+      if (profilesError) throw profilesError;
+
+      const profilesMap: Record<string, { first_name: string | null; last_name: string | null }> = {};
+      childProfiles?.forEach(p => {
+        profilesMap[p.id] = { first_name: p.first_name, last_name: p.last_name };
+      });
+
+      // Get roster info for each child
+      const rosterIds = childrenRecords.map(c => c.roster_id).filter(Boolean) as number[];
+      const { data: rosters, error: rostersError } = await supabase
+        .from('rosters')
+        .select('id, group_id')
+        .in('id', rosterIds);
+
+      if (rostersError) throw rostersError;
+
+      const rosterGroupMap: Record<number, string | null> = {};
+      rosters?.forEach(r => {
+        rosterGroupMap[r.id] = r.group_id;
+      });
+
+      // Build linked children array
+      const children: LinkedChild[] = childrenRecords.map(child => {
+        const profile = child.user_id ? profilesMap[child.user_id] : null;
+        return {
+          organizationUserId: child.id,
+          firstName: profile?.first_name || 'Child',
+          lastName: profile?.last_name || '',
+          rosterId: child.roster_id,
+          groupId: child.roster_id ? rosterGroupMap[child.roster_id] || null : null,
+          organizationId: child.organization_id,
+        };
+      });
+
+      setLinkedChildren(children);
+
+      // Filter by active group if one is selected
+      let filteredChildren = children;
+      if (activeGroup) {
+        filteredChildren = children.filter(c => c.groupId === activeGroup.id);
+      }
+
+      const groupIds = filteredChildren.map(c => c.groupId).filter(Boolean) as string[];
+
+      if (groupIds.length === 0) {
+        setCurrentCampaigns([]);
+        setAttributedCampaigns([]);
+        setLeaderboard([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch campaigns for children's groups
+      const { data: allCampaigns, error: campaignError } = await supabase
+        .from('campaigns')
+        .select('id, name, slug, goal_amount, amount_raised, start_date, end_date, status, enable_roster_attribution, group_id')
+        .in('group_id', groupIds)
+        .order('created_at', { ascending: false });
+
+      if (campaignError) throw campaignError;
+
+      if (!allCampaigns || allCampaigns.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Categorize campaigns - only active ones
+      const current: Campaign[] = [];
+
+      allCampaigns.forEach(campaign => {
+        const endDate = campaign.end_date ? new Date(campaign.end_date) : null;
+        const isActive = campaign.status === true;
+        const isPast = endDate && endDate < today;
+
+        if (isActive && !isPast) {
+          current.push(campaign);
+        }
+      });
+
+      setCurrentCampaigns(current);
+
+      // For each child, fetch their attributed campaign stats
+      const allAttributedCampaigns: AttributedCampaign[] = [];
+
+      for (const child of filteredChildren) {
+        if (!child.rosterId) continue;
+
+        const { data: childLinks, error: linksError } = await supabase
+          .from('roster_member_campaign_links')
+          .select('campaign_id, slug')
+          .eq('roster_member_id', child.organizationUserId);
+
+        if (linksError) {
+          console.error('Error fetching links for child:', linksError);
+          continue;
+        }
+
+        if (childLinks && childLinks.length > 0) {
+          const attributedPromises = childLinks.map(async (link) => {
+            const campaign = allCampaigns.find(c => c.id === link.campaign_id);
+            if (!campaign) return null;
+
+            try {
+              const { data: statsData, error: statsError } = await supabase.functions.invoke(
+                'get-roster-member-stats',
+                {
+                  body: {
+                    campaignId: campaign.id,
+                    rosterMemberId: child.organizationUserId,
+                  },
+                }
+              );
+
+              if (statsError) {
+                console.error('Error fetching stats:', statsError);
+                return null;
+              }
+
+              return {
+                ...campaign,
+                personalSlug: link.slug,
+                personalUrl: `${window.location.origin}/c/${campaign.slug}/${link.slug}`,
+                childName: `${child.firstName} ${child.lastName}`.trim(),
+                childOrganizationUserId: child.organizationUserId,
+                ...statsData,
+              } as AttributedCampaign;
+            } catch (err) {
+              console.error('Error fetching stats:', err);
+              return null;
+            }
+          });
+
+          const resolvedAttributed = (await Promise.all(attributedPromises)).filter(Boolean) as AttributedCampaign[];
+          allAttributedCampaigns.push(...resolvedAttributed);
+        }
+      }
+
+      setAttributedCampaigns(allAttributedCampaigns);
+
+      // Fetch leaderboard for first child's roster
+      if (rosterIds.length > 0 && children[0]) {
+        await fetchLeaderboard(rosterIds, children[0].organizationId);
+      }
+
+    } catch (error) {
+      console.error('Error fetching parent data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchLeaderboard = async (rosterIds: number[], organizationId: string) => {
     try {
       // Get all teammates on the same rosters
@@ -289,31 +507,36 @@ export default function PlayerDashboard() {
     }
   };
 
-  const copyLink = (url: string, isPersonal: boolean = false) => {
+  const copyLink = (url: string, isPersonal: boolean = false, childName?: string) => {
     navigator.clipboard.writeText(url);
     toast({
       title: "Link copied!",
       description: isPersonal 
-        ? "Your personal fundraising link has been copied" 
+        ? (childName ? `${childName}'s fundraising link has been copied` : "Your personal fundraising link has been copied")
         : "Campaign link has been copied",
     });
   };
 
-  const shareLink = async (url: string, campaignName: string, isPersonal: boolean = false) => {
+  const shareLink = async (url: string, campaignName: string, isPersonal: boolean = false, childName?: string) => {
+    const shareTitle = isPersonal 
+      ? (childName ? `Support ${childName} in ${campaignName}` : `Support me in ${campaignName}`)
+      : `Support ${campaignName}`;
+    const shareText = isPersonal 
+      ? (childName ? `Help ${childName} reach their fundraising goal for ${campaignName}!` : `Help me reach my fundraising goal for ${campaignName}!`)
+      : `Support our ${campaignName} fundraiser!`;
+      
     if (navigator.share) {
       try {
         await navigator.share({
-          title: isPersonal ? `Support me in ${campaignName}` : `Support ${campaignName}`,
-          text: isPersonal 
-            ? `Help me reach my fundraising goal for ${campaignName}!`
-            : `Support our ${campaignName} fundraiser!`,
+          title: shareTitle,
+          text: shareText,
           url: url,
         });
       } catch (error) {
         console.error('Error sharing:', error);
       }
     } else {
-      copyLink(url, isPersonal);
+      copyLink(url, isPersonal, childName);
     }
   };
 
@@ -357,13 +580,17 @@ export default function PlayerDashboard() {
           <Trophy className="h-16 w-16 text-muted-foreground mb-4" />
           <h3 className="text-xl font-semibold mb-2">No Active Campaigns</h3>
           <p className="text-muted-foreground text-center max-w-md mb-4">
-            Your team doesn't have any active campaigns right now.
-            Contact your coach or team manager when fundraising begins!
+            {isParentView 
+              ? "Your child's team doesn't have any active campaigns right now. Contact their coach or team manager when fundraising begins!"
+              : "Your team doesn't have any active campaigns right now. Contact your coach or team manager when fundraising begins!"}
           </p>
         </CardContent>
       </Card>
     );
   }
+
+  // Get first child name for single-child parent view
+  const singleChildName = linkedChildren.length === 1 ? `${linkedChildren[0].firstName} ${linkedChildren[0].lastName}`.trim() : null;
 
   return (
     <div className="space-y-6">
@@ -372,7 +599,9 @@ export default function PlayerDashboard() {
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">My Total Raised</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {isParentView && singleChildName ? `${singleChildName}'s Total Raised` : (isParentView ? "Total Raised" : "My Total Raised")}
+              </CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -385,12 +614,16 @@ export default function PlayerDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">My Supporters</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {isParentView && singleChildName ? `${singleChildName}'s Supporters` : (isParentView ? "Supporters" : "My Supporters")}
+              </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalSupportersAll}</div>
-              <p className="text-xs text-muted-foreground">Unique donors via my links</p>
+              <p className="text-xs text-muted-foreground">
+                {isParentView && singleChildName ? `Unique donors via ${singleChildName}'s links` : (isParentView ? "Unique donors" : "Unique donors via my links")}
+              </p>
             </CardContent>
           </Card>
 
@@ -463,18 +696,31 @@ export default function PlayerDashboard() {
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-primary" />
               <div>
-                <CardTitle>My Fundraising</CardTitle>
-                <CardDescription>Campaigns with your personal fundraising link</CardDescription>
+                <CardTitle>
+                  {isParentView && singleChildName 
+                    ? `${singleChildName}'s Fundraising` 
+                    : (isParentView && linkedChildren.length > 1 
+                      ? "Your Children's Fundraising" 
+                      : "My Fundraising")}
+                </CardTitle>
+                <CardDescription>
+                  {isParentView 
+                    ? "Campaigns with personal fundraising links - share to help raise funds!"
+                    : "Campaigns with your personal fundraising link"}
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {attributedCampaigns.map((campaign) => (
-              <Card key={campaign.id} className="border-2 border-primary/20 bg-primary/5">
+              <Card key={`${campaign.id}-${campaign.childOrganizationUserId || 'self'}`} className="border-2 border-primary/20 bg-primary/5">
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h4 className="font-semibold">{campaign.name}</h4>
+                      {isParentView && linkedChildren.length > 1 && campaign.childName && (
+                        <Badge variant="outline" className="mt-1 mb-1">{campaign.childName}</Badge>
+                      )}
                       <p className="text-sm text-muted-foreground">
                         Rank #{campaign.rank} of {campaign.totalParticipants}
                       </p>
@@ -486,7 +732,9 @@ export default function PlayerDashboard() {
 
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">My Progress</span>
+                      <span className="text-muted-foreground">
+                        {isParentView && campaign.childName ? `${campaign.childName}'s Progress` : "My Progress"}
+                      </span>
                       <span className="font-medium">
                         ${campaign.totalRaised.toFixed(2)} / ${campaign.personalGoal.toFixed(2)}
                       </span>
@@ -499,16 +747,18 @@ export default function PlayerDashboard() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => copyLink(campaign.personalUrl, true)}
+                      onClick={() => copyLink(campaign.personalUrl, true, isParentView ? campaign.childName : undefined)}
                     >
                       <Copy className="h-4 w-4 mr-2" />
-                      Copy My Link
+                      {isParentView && campaign.childName 
+                        ? (linkedChildren.length > 1 ? `Copy ${campaign.childName?.split(' ')[0]}'s Link` : "Copy Link")
+                        : "Copy My Link"}
                     </Button>
                     <Button
                       variant="default"
                       size="sm"
                       className="flex-1"
-                      onClick={() => shareLink(campaign.personalUrl, campaign.name, true)}
+                      onClick={() => shareLink(campaign.personalUrl, campaign.name, true, isParentView ? campaign.childName : undefined)}
                     >
                       <Share2 className="h-4 w-4 mr-2" />
                       Share
@@ -529,7 +779,11 @@ export default function PlayerDashboard() {
               <Clock className="h-5 w-5 text-primary" />
               <div>
                 <CardTitle>Current Campaigns</CardTitle>
-                <CardDescription>Active campaigns for your team - share to help raise funds</CardDescription>
+                <CardDescription>
+                  {isParentView 
+                    ? "Active campaigns for your child's team - share to help raise funds"
+                    : "Active campaigns for your team - share to help raise funds"}
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -600,8 +854,8 @@ export default function PlayerDashboard() {
         </Card>
       )}
 
-      {/* Family Members Section */}
-      {rosterMembership && (
+      {/* Family Members Section - Only show for players, not parents */}
+      {!isParentView && rosterMembership && (
         <ManageGuardiansCard
           organizationUserId={rosterMembership.id}
           organizationId={rosterMembership.organization_id}
