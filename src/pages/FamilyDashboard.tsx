@@ -13,6 +13,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import QRCode from "react-qr-code";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import FamilySummaryCard from "@/components/FamilySummaryCard";
 
 interface LinkedChild {
   id: string;
@@ -317,6 +318,34 @@ const FamilyDashboard = () => {
       ]}
     >
       <div className="space-y-6">
+        {/* Header with Share Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Family Dashboard</h1>
+            <p className="text-muted-foreground">Track your family's fundraising progress</p>
+          </div>
+          <FamilySummaryCard
+            totalRaised={totalFamilyRaised}
+            totalSupporters={totalSupporters}
+            activeCampaigns={activeCampaigns}
+            children={linkedChildren.map(child => {
+              const childStats = campaignStats.filter(s => s.childId === child.id);
+              const bestRank = childStats.length > 0 
+                ? Math.min(...childStats.map(s => s.rank).filter(r => r > 0))
+                : null;
+              return {
+                id: child.id,
+                firstName: child.firstName,
+                lastName: child.lastName,
+                groupName: child.groupName,
+                totalRaised: childStats.reduce((sum, s) => sum + s.totalRaised, 0),
+                supporters: childStats.reduce((sum, s) => sum + s.uniqueSupporters, 0),
+                bestRank: bestRank === Infinity ? null : bestRank,
+              };
+            })}
+          />
+        </div>
+
         {/* Hero Stats */}
         <div className="grid gap-4 md:grid-cols-4">
           <Card className="bg-gradient-to-br from-primary/20 to-primary/5">
