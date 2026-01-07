@@ -53,6 +53,7 @@ import OutreachQueue from "./pages/OutreachQueue";
 import InstallApp from "./pages/InstallApp";
 import NativeFeatures from "./pages/NativeFeatures";
 import OrderDetails from "./pages/OrderDetails";
+import CampaignOrderDetail from "./pages/CampaignOrderDetail";
 import MyOrders from "./pages/MyOrders";
 import Businesses from "./pages/Businesses";
 import BusinessProfile from "./pages/BusinessProfile";
@@ -158,6 +159,7 @@ const AppContent = () => {
         <Route path="/dashboard/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
         <Route path="/dashboard/campaigns/new" element={<ProtectedRoute><CampaignEditor /></ProtectedRoute>} />
         <Route path="/dashboard/campaigns/:id/edit" element={<ProtectedRoute><CampaignEditor /></ProtectedRoute>} />
+        <Route path="/dashboard/campaigns/:campaignId/orders/:orderId" element={<ProtectedRoute><CampaignOrderDetail /></ProtectedRoute>} />
         <Route path="/dashboard/donors" element={<ProtectedRoute><Donors /></ProtectedRoute>} />
         <Route path="/dashboard/donors/:donorId" element={<ProtectedRoute><DonorProfile /></ProtectedRoute>} />
         <Route path="/dashboard/donors/analytics" element={<ProtectedRoute><DonorAnalytics /></ProtectedRoute>} />
