@@ -331,9 +331,12 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                 <Button variant="ghost" size="icon" onClick={handleCancel}>
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <h3 className="font-semibold">
-                  {editingItem ? `Edit: ${editingItem.name}` : "Add New Item"}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold">
+                    {editingItem ? `Edit: ${editingItem.name}` : "Add New Item"}
+                  </h3>
+                </div>
               </div>
             </div>
 
