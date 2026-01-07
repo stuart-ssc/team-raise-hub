@@ -14,19 +14,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import { Download, FileCheck, FileWarning, Building2 } from "lucide-react";
-import { CsvExportOrdersDialog } from "@/components/CsvExportOrdersDialog";
+import { Download, FileCheck, FileWarning } from "lucide-react";
+import { CsvExportOrdersPanel } from "@/components/CsvExportOrdersPanel";
 
 interface CampaignOrdersSectionProps {
   campaignId: string;
 }
 
 type FilterType = "all" | "pending" | "complete";
+type ViewMode = "table" | "export";
 
 export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>("all");
-  const [exportOpen, setExportOpen] = useState(false);
+  const [view, setView] = useState<ViewMode>("table");
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["campaign-orders", campaignId],
@@ -107,6 +108,17 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
     );
   }
 
+  if (view === "export") {
+    return (
+      <CsvExportOrdersPanel
+        campaignId={campaignId}
+        orderIds={filteredOrders?.map((o) => o.id) || []}
+        onCancel={() => setView("table")}
+        onExportComplete={() => setView("table")}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -120,18 +132,11 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
           </TabsList>
         </Tabs>
 
-        <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
+        <Button variant="outline" size="sm" onClick={() => setView("export")}>
           <Download className="h-4 w-4 mr-2" />
           Export CSV
         </Button>
       </div>
-
-      <CsvExportOrdersDialog
-        open={exportOpen}
-        onOpenChange={setExportOpen}
-        campaignId={campaignId}
-        orderIds={filteredOrders?.map((o) => o.id) || []}
-      />
 
       <div className="rounded-md border">
         <Table>
