@@ -5,8 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Package, UserPlus } from "lucide-react";
+import { UserPlus, MoreHorizontal } from "lucide-react";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
 import { AddCampaignForm } from "@/components/AddCampaignForm";
@@ -28,8 +27,6 @@ const Dashboard = () => {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [totalCampaigns, setTotalCampaigns] = useState(0);
   const [showAddCampaignForm, setShowAddCampaignForm] = useState(false);
-  const [editCampaign, setEditCampaign] = useState<any>(null);
-  const [manageCampaignId, setManageCampaignId] = useState<string | null>(null);
   const [donors, setDonors] = useState<any[]>([]);
   const [donorCount, setDonorCount] = useState(0);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
@@ -358,37 +355,13 @@ const Dashboard = () => {
                             <h4 className="font-semibold truncate">{campaign.name}</h4>
                             <p className="text-xs text-muted-foreground">{campaign.groups?.group_name}</p>
                           </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-background border">
-                              <DropdownMenuItem 
-                                className="cursor-pointer"
-                                onClick={() => {
-                                  setEditCampaign(campaign);
-                                  setManageCampaignId(null);
-                                  setShowAddCampaignForm(true);
-                                }}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Update Campaign
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="cursor-pointer"
-                                onClick={() => {
-                                  setEditCampaign(null);
-                                  setManageCampaignId(campaign.id);
-                                  setShowAddCampaignForm(true);
-                                }}
-                              >
-                                <Package className="mr-2 h-4 w-4" />
-                                Manage Items
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
+                          >
+                            Manage
+                          </Button>
                         </div>
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
@@ -438,37 +411,13 @@ const Dashboard = () => {
                         </TableCell>
                         <TableCell>{formatDateRange(campaign.start_date, campaign.end_date)}</TableCell>
                          <TableCell>
-                           <DropdownMenu>
-                             <DropdownMenuTrigger asChild>
-                               <Button variant="outline" size="sm">
-                                 <MoreHorizontal className="h-4 w-4" />
-                               </Button>
-                             </DropdownMenuTrigger>
-                             <DropdownMenuContent align="end" className="bg-background border">
-                               <DropdownMenuItem 
-                                 className="cursor-pointer"
-                                 onClick={() => {
-                                   setEditCampaign(campaign);
-                                   setManageCampaignId(null);
-                                   setShowAddCampaignForm(true);
-                                 }}
-                               >
-                                 <Edit className="mr-2 h-4 w-4" />
-                                 Update Campaign
-                               </DropdownMenuItem>
-                               <DropdownMenuItem 
-                                 className="cursor-pointer"
-                                 onClick={() => {
-                                   setEditCampaign(null);
-                                   setManageCampaignId(campaign.id);
-                                   setShowAddCampaignForm(true);
-                                 }}
-                               >
-                                 <Package className="mr-2 h-4 w-4" />
-                                 Manage Items
-                               </DropdownMenuItem>
-                             </DropdownMenuContent>
-                           </DropdownMenu>
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
+                           >
+                             Manage
+                           </Button>
                          </TableCell>
                       </TableRow>)}
                   </TableBody>
@@ -573,18 +522,10 @@ const Dashboard = () => {
         {/* Add Campaign Form */}
         <AddCampaignForm 
           open={showAddCampaignForm}
-          onOpenChange={(open) => {
-            setShowAddCampaignForm(open);
-            if (!open) {
-              setEditCampaign(null);
-              setManageCampaignId(null);
-            }
-          }}
+          onOpenChange={setShowAddCampaignForm}
           onCampaignAdded={() => {
             fetchCampaigns();
           }}
-          editCampaign={editCampaign}
-          manageCampaignId={manageCampaignId}
         />
       </div>
       </DashboardPageLayout>
