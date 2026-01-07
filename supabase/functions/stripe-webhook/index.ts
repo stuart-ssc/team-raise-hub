@@ -100,18 +100,11 @@ Deno.serve(async (req) => {
           .single();
 
         if (order) {
-          // Calculate net amount (total minus platform fee)
+          // Calculate net amount (total minus platform fee) for donor profile
           const netAmount = order.total_amount - (order.platform_fee_amount || 0);
           
-          // Update campaign amount_raised
-          const { error: campaignError } = await supabaseAdmin.rpc('increment_campaign_amount', {
-            campaign_id: order.campaign_id,
-            amount: netAmount,
-          });
-
-          if (campaignError) {
-            console.error('Error updating campaign amount:', campaignError);
-          }
+          // Note: Campaign amount_raised is updated automatically by the sync_campaign_amount_raised trigger
+          // when the order status is set to 'succeeded' above
 
           // Create or update donor profile
           if (customerEmail) {
@@ -267,25 +260,22 @@ Deno.serve(async (req) => {
             .single();
 
           if (sub) {
-            // Update campaign amount_raised for recurring payment
-            const { error: campaignError } = await supabaseAdmin.rpc('increment_campaign_amount', {
-              campaign_id: sub.campaign_id,
-              amount: sub.amount,
-            });
-
-            if (campaignError) {
-              console.error('Error updating campaign amount for renewal:', campaignError);
-            }
-
-            // Update donor profile stats
+            // Get donor info for order creation
+            let donorEmail: string | null = null;
+            let donorName: string | null = null;
+            
             if (sub.donor_profile_id) {
               const { data: donor } = await supabaseAdmin
                 .from('donor_profiles')
-                .select('donation_count, total_donations, lifetime_value')
+                .select('email, first_name, last_name, donation_count, total_donations, lifetime_value')
                 .eq('id', sub.donor_profile_id)
                 .single();
 
               if (donor) {
+                donorEmail = donor.email;
+                donorName = [donor.first_name, donor.last_name].filter(Boolean).join(' ') || null;
+                
+                // Update donor profile stats
                 await supabaseAdmin
                   .from('donor_profiles')
                   .update({
@@ -297,6 +287,37 @@ Deno.serve(async (req) => {
                   })
                   .eq('id', sub.donor_profile_id);
               }
+            }
+
+            // Create a new order record for this renewal payment
+            // This triggers sync_campaign_amount_raised automatically
+            const { data: renewalOrder, error: orderError } = await supabaseAdmin
+              .from('orders')
+              .insert({
+                campaign_id: sub.campaign_id,
+                status: 'succeeded',
+                total_amount: sub.amount,
+                items_total: sub.amount,
+                platform_fee_amount: 0,
+                customer_email: donorEmail,
+                customer_name: donorName,
+                stripe_payment_intent_id: invoice.payment_intent as string,
+                is_subscription_renewal: true,
+                subscription_id: sub.id,
+                items: [{
+                  campaign_item_id: sub.campaign_item_id,
+                  quantity: 1,
+                  price_at_purchase: sub.amount,
+                  is_recurring: true,
+                }],
+              })
+              .select('id')
+              .single();
+
+            if (orderError) {
+              console.error('Error creating renewal order:', orderError);
+            } else {
+              console.log('Created renewal order:', renewalOrder?.id);
             }
 
             console.log('Processed subscription renewal for:', invoice.subscription);
