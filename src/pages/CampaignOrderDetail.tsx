@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -29,6 +29,8 @@ import {
   Send,
   FileImage,
   ExternalLink,
+  Upload,
+  Loader2,
 } from "lucide-react";
 
 interface OrderItem {
@@ -62,6 +64,9 @@ const CampaignOrderDetail = () => {
   const { toast } = useToast();
   const [sendingReminder, setSendingReminder] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [uploadingAssetId, setUploadingAssetId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectedAssetRef = useRef<string | null>(null);
 
   // Fetch order details
   const { data: order, isLoading: orderLoading, error: orderError, refetch: refetchOrder } = useQuery({
@@ -314,6 +319,123 @@ const CampaignOrderDetail = () => {
     }
   };
 
+  const handleAdminUpload = async (file: File, assetId: string, asset: RequiredAsset) => {
+    if (!orderId || !order?.campaign?.group?.organization_id) return;
+    
+    // Validate file type if asset has restrictions
+    if (asset.file_types && asset.file_types.length > 0) {
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      const allowedExtensions = asset.file_types.map(t => t.replace('.', '').toLowerCase());
+      if (fileExtension && !allowedExtensions.includes(fileExtension)) {
+        toast({
+          title: "Invalid File Type",
+          description: `Allowed types: ${asset.file_types.join(', ')}`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    setUploadingAssetId(assetId);
+    try {
+      // Upload to storage
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${order.campaign.group.organization_id}/${orderId}/${assetId}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('sponsor-assets')
+        .upload(filePath, file, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('sponsor-assets')
+        .getPublicUrl(filePath);
+
+      // Check if there's an existing upload to replace
+      const existingUpload = assetUploads?.find(u => u.required_asset_id === assetId);
+      
+      if (existingUpload) {
+        // Update existing record
+        const { error: updateError } = await supabase
+          .from('order_asset_uploads')
+          .update({
+            file_url: publicUrl,
+            file_name: file.name,
+            file_type: file.type,
+            uploaded_at: new Date().toISOString(),
+          })
+          .eq('id', existingUpload.id);
+        
+        if (updateError) throw updateError;
+      } else {
+        // Insert new record
+        const { error: insertError } = await supabase
+          .from('order_asset_uploads')
+          .insert({
+            order_id: orderId,
+            required_asset_id: assetId,
+            file_url: publicUrl,
+            file_name: file.name,
+            file_type: file.type,
+          });
+        
+        if (insertError) throw insertError;
+      }
+
+      await refetchAssets();
+      toast({
+        title: "Asset Uploaded",
+        description: `${asset.asset_name} has been uploaded successfully.`,
+      });
+
+      // Check if all required assets are now complete
+      const updatedUploads = await supabase
+        .from('order_asset_uploads')
+        .select('required_asset_id')
+        .eq('order_id', orderId);
+      
+      const uploadedAssetIds = new Set(updatedUploads.data?.map(u => u.required_asset_id) || []);
+      const allRequiredComplete = requiredAssets
+        ?.filter(a => a.is_required)
+        .every(a => uploadedAssetIds.has(a.id));
+      
+      if (allRequiredComplete && !order.files_complete) {
+        await supabase
+          .from('orders')
+          .update({ files_complete: true })
+          .eq('id', orderId);
+        refetchOrder();
+      }
+    } catch (error) {
+      console.error("Error uploading asset:", error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload the asset. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingAssetId(null);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const assetId = selectedAssetRef.current;
+    if (!file || !assetId) return;
+    
+    const asset = requiredAssets?.find(a => a.id === assetId);
+    if (!asset) return;
+    
+    handleAdminUpload(file, assetId, asset);
+    e.target.value = ''; // Reset input
+  };
+
+  const triggerFileUpload = (assetId: string) => {
+    selectedAssetRef.current = assetId;
+    fileInputRef.current?.click();
+  };
+
   const { daysRemaining, deadlineDate } = getDeadlineInfo();
   const isUrgent = daysRemaining <= 3 && daysRemaining > 0;
   const isPastDue = daysRemaining < 0;
@@ -375,6 +497,14 @@ const CampaignOrderDetail = () => {
       ]}
     >
       <div className="space-y-6 max-w-4xl">
+        {/* Hidden file input for admin uploads */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileInputChange}
+          className="hidden"
+        />
+
         {/* Header with actions */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -566,11 +696,38 @@ const CampaignOrderDetail = () => {
                               Download
                             </a>
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => triggerFileUpload(asset.id)}
+                            disabled={uploadingAssetId === asset.id}
+                          >
+                            {uploadingAssetId === asset.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-1" />
+                                Replace
+                              </>
+                            )}
+                          </Button>
                         </div>
                       ) : (
-                        <Badge variant="outline" className="text-amber-600">
-                          Pending
-                        </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => triggerFileUpload(asset.id)}
+                          disabled={uploadingAssetId === asset.id}
+                        >
+                          {uploadingAssetId === asset.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 mr-1" />
+                              Upload
+                            </>
+                          )}
+                        </Button>
                       )}
                     </div>
                   );
