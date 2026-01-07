@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -596,53 +596,41 @@ export function CsvExportOrdersDialog({
             {/* Status Filter (Feature 1) */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Status Filter</Label>
-              <RadioGroup
-                value={statusFilter}
-                onValueChange={(value) => setStatusFilter(value as StatusFilter)}
-                className="flex flex-wrap gap-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="all" id="status-all" />
-                  <Label htmlFor="status-all" className="cursor-pointer text-sm">All</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="succeeded" id="status-succeeded" />
-                  <Label htmlFor="status-succeeded" className="cursor-pointer text-sm">Succeeded</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="pending" id="status-pending" />
-                  <Label htmlFor="status-pending" className="cursor-pointer text-sm">Pending</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="failed" id="status-failed" />
-                  <Label htmlFor="status-failed" className="cursor-pointer text-sm">Failed</Label>
-                </div>
-              </RadioGroup>
+              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="succeeded">Succeeded</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Export Format */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Export Format</Label>
-              <RadioGroup
-                value={exportFormat}
-                onValueChange={(value) => setExportFormat(value as ExportFormat)}
-                className="flex gap-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="xlsx" id="format-xlsx" />
-                  <Label htmlFor="format-xlsx" className="flex items-center gap-1.5 cursor-pointer">
-                    <FileSpreadsheet className="h-4 w-4" />
-                    Excel (.xlsx)
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="csv" id="format-csv" />
-                  <Label htmlFor="format-csv" className="flex items-center gap-1.5 cursor-pointer">
-                    <FileText className="h-4 w-4" />
-                    CSV (.csv)
-                  </Label>
-                </div>
-              </RadioGroup>
+              <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as ExportFormat)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="xlsx">
+                    <span className="flex items-center gap-2">
+                      <FileSpreadsheet className="h-4 w-4" />
+                      Excel (.xlsx)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="csv">
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      CSV (.csv)
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Options (Feature 2: Summary Row) */}
@@ -759,24 +747,24 @@ export function CsvExportOrdersDialog({
               </div>
             </div>
 
-            <div className="max-h-[200px] overflow-y-auto space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                {(mode === "multi" ? [{ id: "campaign_name", label: "Campaign Name", default: true }] : []).concat(STANDARD_COLUMNS).map((column) => (
-                  <div key={column.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={column.id}
-                      checked={selectedColumns.includes(column.id)}
-                      onCheckedChange={() => handleColumnToggle(column.id)}
-                    />
-                    <Label htmlFor={column.id} className="text-sm cursor-pointer">
-                      {column.label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-              
-              {customFields.length > 0 && (
-                <>
+            <ScrollArea className="h-[200px] pr-4">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {(mode === "multi" ? [{ id: "campaign_name", label: "Campaign Name", default: true }] : []).concat(STANDARD_COLUMNS).map((column) => (
+                    <div key={column.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={column.id}
+                        checked={selectedColumns.includes(column.id)}
+                        onCheckedChange={() => handleColumnToggle(column.id)}
+                      />
+                      <Label htmlFor={column.id} className="text-sm cursor-pointer">
+                        {column.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                
+                {customFields.length > 0 && (
                   <div className="border-t pt-3">
                     <p className="text-sm font-medium text-muted-foreground mb-2">Custom Fields</p>
                     <div className="grid grid-cols-2 gap-3">
@@ -797,9 +785,9 @@ export function CsvExportOrdersDialog({
                       })}
                     </div>
                   </div>
-                </>
-              )}
-            </div>
+                )}
+              </div>
+            </ScrollArea>
 
             {/* Export History (Feature 5) */}
             {exportHistory.length > 0 && (
