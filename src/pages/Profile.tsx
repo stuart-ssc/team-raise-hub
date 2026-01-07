@@ -17,8 +17,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, Smartphone } from "lucide-react";
+import { Loader2, Smartphone, Users } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import ManageGuardiansCard from "@/components/ManageGuardiansCard";
 
 const profileSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -54,6 +55,12 @@ const Profile = () => {
     push_notify_messages: true,
   });
   const [digestFrequency, setDigestFrequency] = useState<string>("weekly");
+  const [rosterMembership, setRosterMembership] = useState<{
+    id: string;
+    organization_id: string;
+    group_id: string | null;
+    roster_id: number | null;
+  } | null>(null);
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -113,12 +120,23 @@ const Profile = () => {
           organization:organization_id(name),
           groups(group_name, group_type(name)),
           user_type(name),
-          rosters(roster_year)
+          rosters(roster_year, group_id)
         `)
         .eq("user_id", user.id);
 
       if (data) {
         setSchoolUserData(data);
+        
+        // Find roster membership for family tab
+        const memberWithRoster = data.find(d => d.roster_id != null);
+        if (memberWithRoster) {
+          setRosterMembership({
+            id: memberWithRoster.id,
+            organization_id: memberWithRoster.organization_id,
+            group_id: memberWithRoster.rosters?.group_id || memberWithRoster.group_id || null,
+            roster_id: memberWithRoster.roster_id,
+          });
+        }
       }
     };
 
@@ -303,6 +321,12 @@ const Profile = () => {
                 <TabsTrigger value="security" className="w-full md:w-auto justify-start md:justify-center">Security</TabsTrigger>
                 <TabsTrigger value="notifications" className="w-full md:w-auto justify-start md:justify-center">Notifications</TabsTrigger>
                 <TabsTrigger value="groups" className="w-full md:w-auto justify-start md:justify-center">Groups & Roles</TabsTrigger>
+                {rosterMembership && (
+                  <TabsTrigger value="family" className="w-full md:w-auto justify-start md:justify-center">
+                    <Users className="h-4 w-4 mr-2" />
+                    Family
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="personal">
@@ -633,6 +657,17 @@ const Profile = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              {rosterMembership && (
+                <TabsContent value="family">
+                  <ManageGuardiansCard
+                    organizationUserId={rosterMembership.id}
+                    organizationId={rosterMembership.organization_id}
+                    groupId={rosterMembership.group_id}
+                    rosterId={rosterMembership.roster_id}
+                  />
+                </TabsContent>
+              )}
             </Tabs>
           </div>
     </DashboardPageLayout>
