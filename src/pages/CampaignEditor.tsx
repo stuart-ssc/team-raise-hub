@@ -513,6 +513,8 @@ export default function CampaignEditor() {
                 <TeamSettingsSection
                   data={campaignData}
                   onUpdate={updateCampaignData}
+                  campaignId={id}
+                  isPublished={campaignData.publicationStatus === 'published'}
                 />
               </TabsContent>
 
