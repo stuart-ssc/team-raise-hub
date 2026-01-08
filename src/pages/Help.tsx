@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
+import { HelpAttachmentUploader, HelpAttachment } from "@/components/HelpAttachmentUploader";
 
 interface HelpSubmission {
   id: string;
@@ -40,6 +41,7 @@ const Help = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submissions, setSubmissions] = useState<HelpSubmission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
+  const [attachments, setAttachments] = useState<HelpAttachment[]>([]);
 
   useEffect(() => {
     fetchSubmissions();
@@ -80,6 +82,7 @@ const Help = () => {
           priority: activeTab === "bug" ? priority : "medium",
           browser_info: browserInfo,
           page_url: pageUrl,
+          attachments: attachments.length > 0 ? JSON.parse(JSON.stringify(attachments)) : null,
         })
         .select()
         .single();
@@ -102,6 +105,7 @@ const Help = () => {
       setSubject("");
       setDescription("");
       setPriority("medium");
+      setAttachments([]);
       fetchSubmissions();
     } catch (error: any) {
       console.error("Error submitting help request:", error);
@@ -250,6 +254,25 @@ const Help = () => {
                     </Select>
                   </div>
                 )}
+
+                <div className="space-y-2">
+                  <Label>Attachments (optional)</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {activeTab === "bug"
+                      ? "Upload screenshots showing the issue"
+                      : activeTab === "feature"
+                      ? "Upload mockups or examples"
+                      : "Upload any helpful screenshots or documents"}
+                  </p>
+                  {user && (
+                    <HelpAttachmentUploader
+                      userId={user.id}
+                      attachments={attachments}
+                      onAttachmentsChange={setAttachments}
+                      disabled={submitting}
+                    />
+                  )}
+                </div>
 
                 <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
                   {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
