@@ -11,8 +11,10 @@ const DashboardRedirect = () => {
   const { isDonorOnly, isLoading: donorLoading, hasOrgAccess } = useDonorPortal();
   const [isSystemAdmin, setIsSystemAdmin] = useState<boolean | null>(null);
   const [hasExistingOrders, setHasExistingOrders] = useState<boolean | null>(null);
+  const [isParentOnly, setIsParentOnly] = useState<boolean | null>(null);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [checkingOrders, setCheckingOrders] = useState(true);
+  const [checkingParent, setCheckingParent] = useState(true);
 
   // Check if user is system admin
   useEffect(() => {
@@ -33,6 +35,44 @@ const DashboardRedirect = () => {
     };
     
     checkSystemAdmin();
+  }, [user?.id]);
+
+  // Check if user is a parent-only user (has linked children but is not an admin)
+  useEffect(() => {
+    const checkIfParentOnly = async () => {
+      if (!user?.id) {
+        setCheckingParent(false);
+        return;
+      }
+      
+      // Get all organization_user records for this user
+      const { data: orgUsers } = await supabase
+        .from('organization_user')
+        .select('id, linked_organization_user_id, user_type:user_type_id(permission_level)')
+        .eq('user_id', user.id)
+        .eq('active_user', true);
+      
+      if (!orgUsers || orgUsers.length === 0) {
+        setIsParentOnly(false);
+        setCheckingParent(false);
+        return;
+      }
+      
+      // Check if user has any parent links (linked_organization_user_id is set)
+      const hasParentLinks = orgUsers.some(ou => ou.linked_organization_user_id !== null);
+      
+      // Check if user has admin/manager permissions
+      const hasAdminAccess = orgUsers.some(ou => {
+        const permLevel = (ou.user_type as any)?.permission_level;
+        return permLevel === 'organization_admin' || permLevel === 'program_manager';
+      });
+      
+      // Parent-only means: has parent links AND no admin access
+      setIsParentOnly(hasParentLinks && !hasAdminAccess);
+      setCheckingParent(false);
+    };
+    
+    checkIfParentOnly();
   }, [user?.id]);
 
   // Check if user has existing orders by email (for donors who haven't set up yet)
@@ -91,7 +131,7 @@ const DashboardRedirect = () => {
   }, [user?.id, user?.email]);
 
   // Show loading state while determining user type
-  if (donorLoading || checkingAdmin || checkingOrders) {
+  if (donorLoading || checkingAdmin || checkingOrders || checkingParent) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -113,6 +153,16 @@ const DashboardRedirect = () => {
   // System admins without org access go to admin dashboard
   if (isSystemAdmin && !hasOrgAccess) {
     navigate('/system-admin', { replace: true });
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Parent-only users go to family dashboard
+  if (isParentOnly) {
+    navigate('/dashboard/family', { replace: true });
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, Trophy, MessageCircle, UserCircle, Users2 } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, Trophy, MessageCircle, UserCircle } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -8,11 +8,11 @@ import { getLabel } from "@/lib/terminology";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 
-const sidebarItems = [
-  { title: "Home", icon: Home, url: "/dashboard", end: true },
+// Base items - Home URL will be dynamic based on user type
+const getSidebarItems = (isParent: boolean) => [
+  { title: "Home", icon: Home, url: isParent ? "/dashboard/family" : "/dashboard", end: true },
   { title: "My Orders", icon: Package, url: "/dashboard/orders" },
   { title: "My Fundraising", icon: Trophy, url: "/dashboard/my-fundraising", participantOnly: true },
-  { title: "Family Dashboard", icon: Users2, url: "/dashboard/family", parentOnly: true },
   { title: "Messages", icon: MessageCircle, url: "/dashboard/messages" },
   { title: "Groups", icon: Users, url: "/dashboard/groups" },
   { title: "Campaigns", icon: Target, url: "/dashboard/campaigns" },
@@ -122,7 +122,7 @@ const DashboardSidebar = () => {
       {/* Navigation */}
       <nav className="flex-1 p-2 lg:p-4">
         <ul className="space-y-2">
-          {sidebarItems.map((item) => {
+          {getSidebarItems(isParent).map((item) => {
             const Icon = item.icon;
             const active = isActive(item.url, item.end);
             
@@ -133,11 +133,6 @@ const DashboardSidebar = () => {
             
             // Show participant-only items only for participants/supporters
             if (item.participantOnly && canSeeUsers) {
-              return null;
-            }
-            
-            // Show parent-only items only for parents
-            if ((item as any).parentOnly && !isParent) {
               return null;
             }
             
