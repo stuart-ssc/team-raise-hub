@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, Trophy, MessageCircle, UserCircle } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, Trophy, MessageCircle, UserCircle, HelpCircle } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -185,6 +185,22 @@ const DashboardSidebar = () => {
               </NavLink>
             </li>
           )}
+          
+          {/* Help & Support link at bottom */}
+          <li className={hasDonorAccess ? "" : "pt-4 border-t border-sidebar-border mt-4"}>
+            <NavLink
+              to="/dashboard/help"
+              className={`flex items-center transition-colors rounded-md px-3 py-2 ${
+                isActive("/dashboard/help")
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+              }`}
+              title="Help & Support"
+            >
+              <HelpCircle className="h-5 w-5 flex-shrink-0" />
+              <span className="font-medium ml-3 hidden lg:inline">Help & Support</span>
+            </NavLink>
+          </li>
         </ul>
       </nav>
     </aside>

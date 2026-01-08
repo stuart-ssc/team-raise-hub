@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, ShoppingBag, Building2, MessageSquare, User, LogOut, Users } from "lucide-react";
+import { Home, ShoppingBag, Building2, MessageSquare, User, LogOut, Users, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ const sidebarItems = [
   { title: "My Businesses", icon: Building2, url: "/portal/businesses", requiresBusiness: true },
   { title: "Messages", icon: MessageSquare, url: "/portal/messages" },
   { title: "Profile", icon: User, url: "/portal/profile" },
+  { title: "Help & Support", icon: HelpCircle, url: "/portal/help" },
 ];
 
 export function DonorPortalSidebar({ hasBusinesses = false, onLogout }: DonorPortalSidebarProps) {

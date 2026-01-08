@@ -2094,6 +2094,60 @@ export type Database = {
           },
         ]
       }
+      help_submissions: {
+        Row: {
+          admin_notes: string | null
+          assigned_to: string | null
+          browser_info: string | null
+          created_at: string | null
+          description: string
+          id: string
+          page_url: string | null
+          priority: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          subject: string
+          submission_type: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          browser_info?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          page_url?: string | null
+          priority?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject: string
+          submission_type: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          browser_info?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          page_url?: string | null
+          priority?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject?: string
+          submission_type?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       landing_page_configs: {
         Row: {
           created_at: string | null

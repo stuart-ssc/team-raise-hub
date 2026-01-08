@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, ShoppingBag, Building2, MessageSquare, Receipt, User, LogOut, Menu, Users } from "lucide-react";
+import { Home, ShoppingBag, Building2, MessageSquare, Receipt, User, LogOut, Menu, Users, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ const sidebarItems = [
   { title: "Messages", icon: MessageSquare, url: "/portal/messages" },
   { title: "Tax Receipts", icon: Receipt, url: "/portal/receipts" },
   { title: "Profile", icon: User, url: "/portal/profile" },
+  { title: "Help & Support", icon: HelpCircle, url: "/portal/help" },
 ];
 
 export function DonorPortalSidebarSheet({ 
