@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,11 +9,21 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, DollarSign, Trophy, Target, Copy, Share2, QrCode, Medal, Heart, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Users, DollarSign, Trophy, Target, Copy, Share2, QrCode, Medal, Heart, Loader2, Zap, MessageCircle, ArrowDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import QRCode from "react-qr-code";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+
+interface GroupLeader {
+  id: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  groupName: string;
+  userType: string;
+}
 
 interface LinkedChild {
   id: string;
@@ -52,11 +63,18 @@ interface RecentDonation {
 
 const FamilyDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [linkedChildren, setLinkedChildren] = useState<LinkedChild[]>([]);
   const [campaignStats, setCampaignStats] = useState<ChildCampaignStats[]>([]);
   const [recentDonations, setRecentDonations] = useState<RecentDonation[]>([]);
   const [showQRCode, setShowQRCode] = useState<string | null>(null);
+  
+  // Quick Actions state
+  const [messageCoachOpen, setMessageCoachOpen] = useState(false);
+  const [groupLeaders, setGroupLeaders] = useState<GroupLeader[]>([]);
+  const [loadingLeaders, setLoadingLeaders] = useState(false);
+  const recentDonationsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -261,6 +279,187 @@ const FamilyDashboard = () => {
     return <Badge variant="outline">#{rank}</Badge>;
   };
 
+  // Quick Actions: Share All Links
+  const shareableLinks = campaignStats.filter(s => s.hasPersonalLink && s.personalUrl);
+  
+  const handleShareAllLinks = async () => {
+    if (shareableLinks.length === 0) return;
+    
+    const linksText = shareableLinks
+      .map(l => `${l.childName} - ${l.campaignName}:\n${l.personalUrl}`)
+      .join('\n\n');
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Family Fundraising Links',
+          text: linksText,
+        });
+      } catch (err) {
+        navigator.clipboard.writeText(linksText);
+        toast.success('All links copied to clipboard!');
+      }
+    } else {
+      navigator.clipboard.writeText(linksText);
+      toast.success('All links copied to clipboard!');
+    }
+  };
+
+  // Quick Actions: Scroll to Recent Donations
+  const scrollToRecentDonations = () => {
+    recentDonationsRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Quick Actions: Message Coach
+  const fetchGroupLeaders = async () => {
+    setLoadingLeaders(true);
+    try {
+      // Get unique group IDs from linked children
+      const groupIds = [...new Set(linkedChildren.map(c => c.groupName).filter(Boolean))];
+      
+      // Get organization IDs
+      const orgIds = [...new Set(linkedChildren.map(c => c.organizationName))];
+      
+      // Fetch the parent's linked org user IDs to get the actual group_ids
+      const { data: parentOrgUsers } = await supabase
+        .from('organization_user')
+        .select('linked_organization_user_id')
+        .eq('user_id', user!.id)
+        .eq('active_user', true)
+        .not('linked_organization_user_id', 'is', null);
+      
+      const childOrgUserIds = parentOrgUsers?.map(p => p.linked_organization_user_id).filter(Boolean) as string[] || [];
+      
+      // Get the actual group IDs from children's org users
+      const { data: childOrgUsers } = await supabase
+        .from('organization_user')
+        .select('group_id, organization_id')
+        .in('id', childOrgUserIds);
+      
+      const actualGroupIds = [...new Set(childOrgUsers?.map(c => c.group_id).filter(Boolean) as string[])];
+      const actualOrgIds = [...new Set(childOrgUsers?.map(c => c.organization_id).filter(Boolean) as string[])];
+      
+      if (actualGroupIds.length === 0) {
+        setGroupLeaders([]);
+        return;
+      }
+      
+      // Get leader user types
+      const { data: leaderTypes } = await supabase
+        .from('user_type')
+        .select('id, name')
+        .in('name', ['Coach', 'Club Sponsor', 'Program Director', 'Booster Leader', 'Manager', 'Administrator']);
+      
+      const leaderTypeIds = leaderTypes?.map(t => t.id) || [];
+      
+      // Get leaders in these groups
+      const { data: leaders } = await supabase
+        .from('organization_user')
+        .select(`
+          id,
+          user_id,
+          group_id,
+          user_type_id,
+          groups:groups(group_name),
+          user_type:user_type(name),
+          profiles:profiles(first_name, last_name)
+        `)
+        .in('group_id', actualGroupIds)
+        .in('organization_id', actualOrgIds)
+        .in('user_type_id', leaderTypeIds)
+        .eq('active_user', true);
+      
+      const leadersList: GroupLeader[] = (leaders || []).map(l => ({
+        id: l.id,
+        userId: l.user_id,
+        firstName: (l.profiles as any)?.first_name || 'Unknown',
+        lastName: (l.profiles as any)?.last_name || '',
+        groupName: (l.groups as any)?.group_name || 'Unknown Group',
+        userType: (l.user_type as any)?.name || 'Leader',
+      }));
+      
+      setGroupLeaders(leadersList);
+    } catch (error) {
+      console.error('Error fetching group leaders:', error);
+      toast.error('Failed to load coaches');
+    } finally {
+      setLoadingLeaders(false);
+    }
+  };
+
+  const handleMessageCoach = async (leader: GroupLeader) => {
+    try {
+      // Check if there's an existing conversation with this leader
+      const { data: existingConversations } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', leader.userId);
+      
+      if (existingConversations && existingConversations.length > 0) {
+        // Check if user is also in any of these conversations
+        const { data: userParticipation } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', user!.id)
+          .in('conversation_id', existingConversations.map(c => c.conversation_id));
+        
+        if (userParticipation && userParticipation.length > 0) {
+          // Navigate to existing conversation
+          navigate(`/dashboard/messages/${userParticipation[0].conversation_id}`);
+          setMessageCoachOpen(false);
+          return;
+        }
+      }
+      
+      // Get user's organization ID
+      const { data: userOrg } = await supabase
+        .from('organization_user')
+        .select('organization_id')
+        .eq('user_id', user!.id)
+        .eq('active_user', true)
+        .limit(1)
+        .single();
+      
+      if (!userOrg) {
+        toast.error('Could not find your organization');
+        return;
+      }
+      
+      // Create new conversation
+      const { data: newConversation, error: convError } = await supabase
+        .from('conversations')
+        .insert({
+          organization_id: userOrg.organization_id,
+          conversation_type: 'direct',
+          subject: `Message to ${leader.firstName}`,
+          created_by: user!.id,
+        })
+        .select()
+        .single();
+      
+      if (convError) throw convError;
+      
+      // Add participants
+      await supabase.from('conversation_participants').insert([
+        { conversation_id: newConversation.id, user_id: user!.id, participant_type: 'user', role: 'member' },
+        { conversation_id: newConversation.id, user_id: leader.userId, participant_type: 'user', role: 'member' },
+      ]);
+      
+      navigate(`/dashboard/messages/${newConversation.id}`);
+      setMessageCoachOpen(false);
+      toast.success(`Started conversation with ${leader.firstName}`);
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      toast.error('Failed to start conversation');
+    }
+  };
+
+  useEffect(() => {
+    if (messageCoachOpen && linkedChildren.length > 0) {
+      fetchGroupLeaders();
+    }
+  }, [messageCoachOpen, linkedChildren]);
+
   // Aggregate stats
   const totalFamilyRaised = campaignStats.reduce((sum, s) => sum + s.totalRaised, 0);
   const totalSupporters = campaignStats.reduce((sum, s) => sum + s.uniqueSupporters, 0);
@@ -373,6 +572,42 @@ const FamilyDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Zap className="h-5 w-5 text-primary" />
+              Quick Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              <Button 
+                onClick={handleShareAllLinks} 
+                disabled={shareableLinks.length === 0}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Share All Links ({shareableLinks.length})
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={scrollToRecentDonations}
+                disabled={recentDonations.length === 0}
+              >
+                <ArrowDown className="h-4 w-4 mr-2" />
+                View Recent Donations
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setMessageCoachOpen(true)}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Message Coach
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Children Cards */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -584,7 +819,7 @@ const FamilyDashboard = () => {
 
         {/* Recent Activity */}
         {recentDonations.length > 0 && (
-          <Card>
+          <Card ref={recentDonationsRef}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Heart className="h-5 w-5" />
@@ -615,6 +850,50 @@ const FamilyDashboard = () => {
           </Card>
         )}
       </div>
+
+      {/* Message Coach Dialog */}
+      <Dialog open={messageCoachOpen} onOpenChange={setMessageCoachOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Message a Coach</DialogTitle>
+            <DialogDescription>
+              Select a coach or group leader to start a conversation
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            {loadingLeaders ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : groupLeaders.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                No coaches found for your children's groups
+              </p>
+            ) : (
+              groupLeaders.map(leader => (
+                <Button
+                  key={leader.id}
+                  variant="outline"
+                  className="w-full justify-start h-auto py-3"
+                  onClick={() => handleMessageCoach(leader)}
+                >
+                  <Avatar className="h-10 w-10 mr-3">
+                    <AvatarFallback>
+                      {leader.firstName.charAt(0)}{leader.lastName.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="text-left">
+                    <p className="font-medium">{leader.firstName} {leader.lastName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {leader.userType} • {leader.groupName}
+                    </p>
+                  </div>
+                </Button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardPageLayout>
   );
 };
