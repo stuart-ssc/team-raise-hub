@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface TeamSettingsData {
   groupId: string;
@@ -18,6 +19,8 @@ interface TeamSettingsData {
 interface TeamSettingsSectionProps {
   data: TeamSettingsData;
   onUpdate: (updates: Partial<TeamSettingsData>) => void;
+  campaignId?: string;
+  isPublished?: boolean;
 }
 
 interface Roster {
@@ -26,8 +29,10 @@ interface Roster {
   current_roster: boolean;
 }
 
-export function TeamSettingsSection({ data, onUpdate }: TeamSettingsSectionProps) {
+export function TeamSettingsSection({ data, onUpdate, campaignId, isPublished }: TeamSettingsSectionProps) {
   const [rosters, setRosters] = useState<Roster[]>([]);
+  const [generatingLinks, setGeneratingLinks] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchRosters = async () => {
@@ -47,6 +52,93 @@ export function TeamSettingsSection({ data, onUpdate }: TeamSettingsSectionProps
 
     fetchRosters();
   }, [data.groupId]);
+
+  const handleRosterAttributionChange = async (enabled: boolean) => {
+    onUpdate({ enableRosterAttribution: enabled });
+
+    // Only do link operations if campaign is already published
+    if (!campaignId || !isPublished) return;
+
+    setGeneratingLinks(true);
+    try {
+      if (enabled) {
+        // Generate links for all roster members
+        const { data: result, error } = await supabase.functions.invoke('generate-roster-member-links', {
+          body: { campaignId, rosterId: data.rosterId ? parseInt(data.rosterId) : undefined }
+        });
+
+        if (error) throw error;
+
+        const linkCount = result?.links?.length || 0;
+        if (linkCount > 0) {
+          toast({
+            title: "Personal links created",
+            description: `Created ${linkCount} personal fundraising links`,
+          });
+        }
+      } else {
+        // Delete all roster member links for this campaign
+        const { error } = await supabase
+          .from('roster_member_campaign_links')
+          .delete()
+          .eq('campaign_id', campaignId);
+
+        if (error) throw error;
+
+        toast({
+          title: "Personal links removed",
+          description: "Personal fundraising links have been removed. Old URLs will redirect to the main campaign page.",
+        });
+      }
+    } catch (error) {
+      console.error('Error managing roster links:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update personal fundraising links",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingLinks(false);
+    }
+  };
+
+  const handleRosterChange = async (newRosterId: string) => {
+    onUpdate({ rosterId: newRosterId });
+
+    // Regenerate links if campaign is published and roster attribution is enabled
+    if (campaignId && isPublished && data.enableRosterAttribution) {
+      setGeneratingLinks(true);
+      try {
+        // Delete old links
+        await supabase
+          .from('roster_member_campaign_links')
+          .delete()
+          .eq('campaign_id', campaignId);
+
+        // Generate new links for new roster
+        const { data: result, error } = await supabase.functions.invoke('generate-roster-member-links', {
+          body: { campaignId, rosterId: parseInt(newRosterId) }
+        });
+
+        if (error) throw error;
+
+        const linkCount = result?.links?.length || 0;
+        toast({
+          title: "Personal links updated",
+          description: `Created ${linkCount} personal fundraising links for the new roster`,
+        });
+      } catch (error) {
+        console.error('Error regenerating roster links:', error);
+        toast({
+          title: "Error",
+          description: "Failed to regenerate personal fundraising links",
+          variant: "destructive",
+        });
+      } finally {
+        setGeneratingLinks(false);
+      }
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -75,10 +167,14 @@ export function TeamSettingsSection({ data, onUpdate }: TeamSettingsSectionProps
               Allow roster members to get credit for donations
             </p>
           </div>
-          <Switch
-            checked={data.enableRosterAttribution}
-            onCheckedChange={(checked) => onUpdate({ enableRosterAttribution: checked })}
-          />
+          <div className="flex items-center gap-2">
+            {generatingLinks && <Loader2 className="h-4 w-4 animate-spin" />}
+            <Switch
+              checked={data.enableRosterAttribution}
+              onCheckedChange={handleRosterAttributionChange}
+              disabled={generatingLinks}
+            />
+          </div>
         </div>
 
         {data.enableRosterAttribution && (
@@ -87,7 +183,8 @@ export function TeamSettingsSection({ data, onUpdate }: TeamSettingsSectionProps
               <Label>Select Roster</Label>
               <Select 
                 value={data.rosterId} 
-                onValueChange={(v) => onUpdate({ rosterId: v })}
+                onValueChange={handleRosterChange}
+                disabled={generatingLinks}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select roster" />
@@ -111,6 +208,7 @@ export function TeamSettingsSection({ data, onUpdate }: TeamSettingsSectionProps
               <Info className="h-4 w-4" />
               <AlertDescription>
                 Each roster member will get a unique shareable link. When donors use that link, the donation will be attributed to that member.
+                {isPublished && " Links are automatically created when you enable this setting."}
               </AlertDescription>
             </Alert>
           </>
