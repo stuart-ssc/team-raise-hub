@@ -68,6 +68,7 @@ import Contact from "./pages/Contact";
 import ContactSubmissions from "./pages/SystemAdmin/ContactSubmissions";
 import HelpSubmissions from "./pages/SystemAdmin/HelpSubmissions";
 import Help from "./pages/Help";
+import { SystemAdminGuard } from "./components/SystemAdminGuard";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import { HubSpotTracker } from "./components/HubSpotTracker";
 import { GoogleAnalyticsTracker } from "./components/GoogleAnalyticsTracker";
