@@ -66,7 +66,8 @@ import FamilyDashboard from "./pages/FamilyDashboard";
 import OrganizationSettings from "./pages/OrganizationSettings";
 import Contact from "./pages/Contact";
 import ContactSubmissions from "./pages/SystemAdmin/ContactSubmissions";
-import { SystemAdminGuard } from "./components/SystemAdminGuard";
+import HelpSubmissions from "./pages/SystemAdmin/HelpSubmissions";
+import Help from "./pages/Help";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import { HubSpotTracker } from "./components/HubSpotTracker";
 import { GoogleAnalyticsTracker } from "./components/GoogleAnalyticsTracker";
@@ -184,7 +185,7 @@ const AppContent = () => {
         <Route path="/dashboard/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
         <Route path="/dashboard/my-fundraising" element={<ProtectedRoute><MyFundraising /></ProtectedRoute>} />
         <Route path="/dashboard/family" element={<ProtectedRoute><FamilyDashboard /></ProtectedRoute>} />
-        <Route path="/system-admin" element={<ProtectedRoute><SystemAdminGuard><SystemAdminDashboard /></SystemAdminGuard></ProtectedRoute>} />
+        <Route path="/dashboard/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
         <Route path="/system-admin/organizations" element={<ProtectedRoute><SystemAdminGuard><OrganizationsList /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/organizations/:orgId" element={<ProtectedRoute><SystemAdminGuard><OrganizationDetail /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/businesses" element={<ProtectedRoute><SystemAdminGuard><BusinessesList /></SystemAdminGuard></ProtectedRoute>} />
@@ -211,7 +212,7 @@ const AppContent = () => {
         <Route path="/portal/messages/:id" element={<ProtectedRoute><DonorPortalConversationView /></ProtectedRoute>} />
         <Route path="/portal/receipts" element={<ProtectedRoute><DonorPortalReceipts /></ProtectedRoute>} />
         <Route path="/portal/profile" element={<ProtectedRoute><DonorPortalProfile /></ProtectedRoute>} />
-        
+        <Route path="/portal/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
