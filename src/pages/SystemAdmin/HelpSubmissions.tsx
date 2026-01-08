@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { format } from "date-fns";
-import { HelpCircle, Bug, Lightbulb, HeadphonesIcon, Loader2, Eye, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { HelpCircle, Bug, Lightbulb, HeadphonesIcon, Loader2, Eye, CheckCircle, Clock, AlertCircle, FileText, Download, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
@@ -14,7 +14,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+interface HelpAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
 
 interface HelpSubmission {
   id: string;
@@ -31,6 +37,7 @@ interface HelpSubmission {
   updated_at: string;
   resolved_at: string | null;
   user_email?: string;
+  attachments?: HelpAttachment[] | null;
 }
 
 const HelpSubmissions = () => {
@@ -83,9 +90,10 @@ const HelpSubmissions = () => {
     const enrichedSubmissions = (submissionsData || []).map(s => ({
       ...s,
       user_email: s.user_id ? userEmails[s.user_id] || "Unknown" : "Anonymous",
+      attachments: Array.isArray(s.attachments) ? (s.attachments as unknown as HelpAttachment[]) : null,
     }));
 
-    setSubmissions(enrichedSubmissions as HelpSubmission[]);
+    setSubmissions(enrichedSubmissions);
     setLoading(false);
   };
 
@@ -373,9 +381,52 @@ const HelpSubmissions = () => {
               {selectedSubmission.page_url && (
                 <div>
                   <Label className="text-muted-foreground">Page URL</Label>
-                  <p className="text-xs text-muted-foreground bg-muted p-2 rounded-md truncate">
+                  <a 
+                    href={selectedSubmission.page_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline bg-muted p-2 rounded-md block truncate"
+                  >
                     {selectedSubmission.page_url}
-                  </p>
+                  </a>
+                </div>
+              )}
+
+              {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (
+                <div>
+                  <Label className="text-muted-foreground">Attachments ({selectedSubmission.attachments.length})</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                    {selectedSubmission.attachments.map((att, idx) => (
+                      <a
+                        key={idx}
+                        href={att.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group relative border rounded-lg overflow-hidden bg-muted/50 hover:border-primary transition-colors"
+                      >
+                        {att.type.startsWith("image/") ? (
+                          <div className="relative">
+                            <img
+                              src={att.url}
+                              alt={att.name}
+                              className="w-full h-24 object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <ExternalLink className="h-5 w-5 text-white" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-full h-24 flex flex-col items-center justify-center gap-1 p-2">
+                            <FileText className="h-8 w-8 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground truncate w-full text-center">
+                              {att.name}
+                            </span>
+                            <Download className="h-3 w-3 text-muted-foreground" />
+                          </div>
+                        )}
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
 
