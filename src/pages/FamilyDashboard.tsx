@@ -28,7 +28,10 @@ interface ChildCampaignStats {
   childName: string;
   campaignId: string;
   campaignName: string;
-  personalUrl: string;
+  campaignSlug: string;
+  enableRosterAttribution: boolean;
+  hasPersonalLink: boolean;
+  personalUrl: string | null;
   totalRaised: number;
   personalGoal: number;
   percentToGoal: number;
@@ -128,26 +131,6 @@ const FamilyDashboard = () => {
 
       setLinkedChildren(children);
 
-      // Get group IDs from children's rosters
-      const groupIds = (childOrgUsers || [])
-        .map(m => (m.rosters as any)?.group_id)
-        .filter(Boolean);
-
-      if (groupIds.length === 0) {
-        setCampaignStats([]);
-        setRecentDonations([]);
-        setLoading(false);
-        return;
-      }
-
-      // Get campaigns for these groups
-      const { data: campaigns } = await supabase
-        .from('campaigns')
-        .select('id, name, slug')
-        .in('group_id', groupIds)
-        .eq('enable_roster_attribution', true)
-        .eq('status', true);
-
       // Fetch campaign stats for each child
       const allStats: ChildCampaignStats[] = [];
       const allDonations: RecentDonation[] = [];
@@ -155,59 +138,82 @@ const FamilyDashboard = () => {
       for (const child of childOrgUsers || []) {
         const profile = profileMap.get(child.user_id);
         const childName = `${profile?.first_name || 'Unknown'} ${profile?.last_name || ''}`.trim();
+        
+        // Get the group ID for this child
+        const childGroupId = child.group_id || (child.rosters as any)?.group_id;
+        
+        if (!childGroupId) continue;
 
-        for (const campaign of campaigns || []) {
-          // Get roster link for this child and campaign
-          const { data: linkData } = await supabase
-            .from('roster_member_campaign_links')
-            .select('slug')
-            .eq('campaign_id', campaign.id)
-            .eq('roster_member_id', child.id)
-            .single();
+        // Get ALL active campaigns for this child's group
+        const { data: campaigns } = await supabase
+          .from('campaigns')
+          .select('id, name, slug, enable_roster_attribution, goal_amount')
+          .eq('group_id', childGroupId)
+          .eq('status', true);
 
-          if (!linkData) continue;
+        if (!campaigns || campaigns.length === 0) continue;
 
-          const personalUrl = `${window.location.origin}/c/${campaign.slug}/${linkData.slug}`;
+        // Get all roster links for this child
+        const { data: rosterLinks } = await supabase
+          .from('roster_member_campaign_links')
+          .select('campaign_id, slug')
+          .eq('roster_member_id', child.id);
 
-          // Get stats from the edge function
-          try {
-            const { data: statsData } = await supabase.functions.invoke('get-roster-member-stats', {
-              body: { campaignId: campaign.id, rosterMemberId: child.id }
-            });
+        const linkMap = new Map(rosterLinks?.map(l => [l.campaign_id, l.slug]) || []);
 
-            const personalGoal = statsData?.personalGoal || 0;
+        for (const campaign of campaigns) {
+          const personalSlug = linkMap.get(campaign.id);
+          const hasPersonalLink = !!personalSlug;
+          const personalUrl = hasPersonalLink 
+            ? `${window.location.origin}/c/${campaign.slug}/${personalSlug}` 
+            : null;
 
-            allStats.push({
-              childId: child.user_id,
-              childName,
-              campaignId: campaign.id,
-              campaignName: campaign.name,
-              personalUrl,
-              totalRaised: statsData?.totalRaised || 0,
-              personalGoal,
-              percentToGoal: personalGoal > 0 ? Math.min(100, ((statsData?.totalRaised || 0) / personalGoal) * 100) : 0,
-              donationCount: statsData?.donationCount || 0,
-              uniqueSupporters: statsData?.uniqueSupporters || 0,
-              rank: statsData?.rank || 0,
-              totalParticipants: statsData?.totalParticipants || 0,
-            });
+          // Get stats if there's a personal link
+          let statsData: any = null;
+          if (hasPersonalLink) {
+            try {
+              const { data } = await supabase.functions.invoke('get-roster-member-stats', {
+                body: { campaignId: campaign.id, rosterMemberId: child.id }
+              });
+              statsData = data;
 
-            // Collect recent donations
-            if (statsData?.recentSupporters) {
-              for (const supporter of statsData.recentSupporters.slice(0, 3)) {
-                allDonations.push({
-                  id: supporter.orderId,
-                  amount: supporter.amount,
-                  donorName: supporter.donorName || 'Anonymous',
-                  childName,
-                  campaignName: campaign.name,
-                  timestamp: supporter.purchasedAt,
-                });
+              // Collect recent donations
+              if (statsData?.supporters) {
+                for (const supporter of statsData.supporters.slice(0, 3)) {
+                  allDonations.push({
+                    id: `${campaign.id}-${supporter.email}-${supporter.date}`,
+                    amount: supporter.amount,
+                    donorName: supporter.name || 'Anonymous',
+                    childName,
+                    campaignName: campaign.name,
+                    timestamp: supporter.date,
+                  });
+                }
               }
+            } catch (err) {
+              console.error('Error fetching stats:', err);
             }
-          } catch (err) {
-            console.error('Error fetching stats:', err);
           }
+
+          const personalGoal = statsData?.personalGoal || (campaign.goal_amount || 0) / 10;
+
+          allStats.push({
+            childId: child.user_id,
+            childName,
+            campaignId: campaign.id,
+            campaignName: campaign.name,
+            campaignSlug: campaign.slug || '',
+            enableRosterAttribution: campaign.enable_roster_attribution || false,
+            hasPersonalLink,
+            personalUrl,
+            totalRaised: statsData?.totalRaised || 0,
+            personalGoal,
+            percentToGoal: personalGoal > 0 ? Math.min(100, ((statsData?.totalRaised || 0) / personalGoal) * 100) : 0,
+            donationCount: statsData?.donationCount || 0,
+            uniqueSupporters: statsData?.uniqueSupporters || 0,
+            rank: statsData?.rank || 0,
+            totalParticipants: statsData?.totalParticipants || 0,
+          });
         }
       }
 
@@ -449,59 +455,88 @@ const FamilyDashboard = () => {
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
                                   <h4 className="font-semibold">{stat.campaignName}</h4>
-                                  {stat.rank > 0 && getRankBadge(stat.rank)}
-                                </div>
-                                
-                                <div className="space-y-2">
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Progress</span>
-                                    <span className="font-medium">
-                                      ${stat.totalRaised.toFixed(2)} / ${stat.personalGoal.toFixed(2)}
-                                    </span>
-                                  </div>
-                                  <Progress value={stat.percentToGoal} className="h-2" />
-                                </div>
-
-                                <div className="flex gap-4 mt-3 text-sm text-muted-foreground">
-                                  <span>{stat.donationCount} donations</span>
-                                  <span>{stat.uniqueSupporters} supporters</span>
-                                  {stat.totalParticipants > 0 && (
-                                    <span>Rank {stat.rank} of {stat.totalParticipants}</span>
+                                  {stat.hasPersonalLink && stat.rank > 0 && getRankBadge(stat.rank)}
+                                  {!stat.enableRosterAttribution && (
+                                    <Badge variant="secondary">Team Campaign</Badge>
                                   )}
                                 </div>
+                                
+                                {stat.hasPersonalLink ? (
+                                  <>
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Progress</span>
+                                        <span className="font-medium">
+                                          ${stat.totalRaised.toFixed(2)} / ${stat.personalGoal.toFixed(2)}
+                                        </span>
+                                      </div>
+                                      <Progress value={stat.percentToGoal} className="h-2" />
+                                    </div>
+
+                                    <div className="flex gap-4 mt-3 text-sm text-muted-foreground">
+                                      <span>{stat.donationCount} donations</span>
+                                      <span>{stat.uniqueSupporters} supporters</span>
+                                      {stat.totalParticipants > 0 && (
+                                        <span>Rank {stat.rank} of {stat.totalParticipants}</span>
+                                      )}
+                                    </div>
+                                  </>
+                                ) : stat.enableRosterAttribution ? (
+                                  <div className="bg-muted/50 rounded-lg p-4 mt-2">
+                                    <p className="text-sm text-muted-foreground">
+                                      Personal fundraising link not set up yet. Contact the campaign manager to get started.
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground mt-2">
+                                    This is a team campaign without individual tracking.
+                                  </p>
+                                )}
                               </div>
 
                               <div className="flex flex-col gap-2">
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => copyToClipboard(stat.personalUrl)}
-                                  >
-                                    <Copy className="h-4 w-4 mr-1" />
-                                    Copy
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => shareLink(stat.personalUrl, stat.childName)}
-                                  >
-                                    <Share2 className="h-4 w-4 mr-1" />
-                                    Share
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setShowQRCode(showQRCode === stat.personalUrl ? null : stat.personalUrl)}
-                                  >
-                                    <QrCode className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                                {stat.hasPersonalLink && stat.personalUrl ? (
+                                  <>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => copyToClipboard(stat.personalUrl!)}
+                                      >
+                                        <Copy className="h-4 w-4 mr-1" />
+                                        Copy
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => shareLink(stat.personalUrl!, stat.childName)}
+                                      >
+                                        <Share2 className="h-4 w-4 mr-1" />
+                                        Share
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowQRCode(showQRCode === stat.personalUrl ? null : stat.personalUrl!)}
+                                      >
+                                        <QrCode className="h-4 w-4" />
+                                      </Button>
+                                    </div>
 
-                                {showQRCode === stat.personalUrl && (
-                                  <div className="bg-white p-3 rounded-lg">
-                                    <QRCode value={stat.personalUrl} size={100} />
-                                  </div>
+                                    {showQRCode === stat.personalUrl && (
+                                      <div className="bg-white p-3 rounded-lg">
+                                        <QRCode value={stat.personalUrl} size={100} />
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => window.open(`/campaign/${stat.campaignSlug}`, '_blank')}
+                                  >
+                                    View Campaign
+                                  </Button>
                                 )}
                               </div>
                             </div>
