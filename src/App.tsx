@@ -50,7 +50,6 @@ import DonorSegmentation from "./pages/DonorSegmentation";
 import DonorAnalytics from "./pages/DonorAnalytics";
 import NurtureCampaigns from "./pages/NurtureCampaigns";
 import OutreachQueue from "./pages/OutreachQueue";
-import InstallApp from "./pages/InstallApp";
 import NativeFeatures from "./pages/NativeFeatures";
 import OrderDetails from "./pages/OrderDetails";
 import CampaignOrderDetail from "./pages/CampaignOrderDetail";
@@ -69,7 +68,6 @@ import ContactSubmissions from "./pages/SystemAdmin/ContactSubmissions";
 import HelpSubmissions from "./pages/SystemAdmin/HelpSubmissions";
 import Help from "./pages/Help";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
-import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import { HubSpotTracker } from "./components/HubSpotTracker";
 import { GoogleAnalyticsTracker } from "./components/GoogleAnalyticsTracker";
 import { RB2BTracker } from "./components/RB2BTracker";
@@ -131,7 +129,6 @@ const AppContent = () => {
       <HubSpotTracker />
       <GoogleAnalyticsTracker />
       <RB2BTracker />
-      <PWAInstallPrompt />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/schools" element={<Schools />} />
@@ -145,7 +142,6 @@ const AppContent = () => {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/dpa" element={<DataProcessingAgreement />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/install" element={<InstallApp />} />
         <Route path="/native-features" element={<ProtectedRoute><NativeFeatures /></ProtectedRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
