@@ -13,6 +13,14 @@ interface DonationConfirmationRequest {
   orderId: string;
 }
 
+const PAYMENT_TYPE_LABELS: Record<string, string> = {
+  check: "Check",
+  cash: "Cash",
+  money_order: "Money Order",
+  bank_transfer: "Bank Transfer",
+  other: "Offline Payment",
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -36,6 +44,10 @@ const handler = async (req: Request): Promise<Response> => {
         customer_email,
         items,
         created_at,
+        manual_entry,
+        payment_received,
+        offline_payment_type,
+        payment_notes,
         campaigns (
           name,
           groups (
@@ -97,26 +109,56 @@ const handler = async (req: Request): Promise<Response> => {
       </tr>
     `).join("");
 
-    console.log("Sending donation confirmation to:", order.customer_email);
+    // Build manual order payment status section
+    const paymentTypeLabel = order.offline_payment_type 
+      ? PAYMENT_TYPE_LABELS[order.offline_payment_type] || order.offline_payment_type 
+      : "Offline Payment";
+    
+    const manualOrderSection = order.manual_entry ? `
+      <div style="background-color: ${order.payment_received ? '#ECFDF5' : '#FEF3C7'}; 
+                  border-left: 4px solid ${order.payment_received ? '#10B981' : '#F59E0B'}; 
+                  padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="font-weight: bold; margin: 0 0 8px 0; color: ${order.payment_received ? '#065F46' : '#92400E'};">
+          Payment Method: ${paymentTypeLabel}
+        </p>
+        <p style="font-size: 14px; margin: 0; color: ${order.payment_received ? '#065F46' : '#92400E'};">
+          ${order.payment_received 
+            ? '✓ Payment has been received. Thank you!' 
+            : 'Your order has been recorded. Please submit your payment to complete the donation. You will receive confirmation once payment is received.'}
+        </p>
+      </div>
+    ` : '';
+
+    console.log("Sending donation confirmation to:", order.customer_email, "Manual entry:", order.manual_entry);
 
     const emailResponse = await resend.emails.send({
       from: "Sponsorly <onboarding@resend.dev>",
       to: [order.customer_email],
-      subject: `Thank you for your donation to ${displayName}!`,
+      subject: order.manual_entry && !order.payment_received 
+        ? `Your order with ${displayName} - Payment Pending`
+        : `Thank you for your donation to ${displayName}!`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #333; font-size: 24px; margin-bottom: 20px;">Thank You for Your Donation!</h1>
+          <h1 style="color: #333; font-size: 24px; margin-bottom: 20px;">
+            ${order.manual_entry && !order.payment_received 
+              ? 'Your Order Has Been Recorded' 
+              : 'Thank You for Your Donation!'}
+          </h1>
           
           <p style="color: #555; font-size: 16px; line-height: 1.5;">
             Hi ${order.customer_name || "Supporter"},
           </p>
           
           <p style="color: #555; font-size: 16px; line-height: 1.5;">
-            Thank you for supporting <strong>${displayName}</strong> through the <strong>${campaignName}</strong> campaign on Sponsorly!
+            ${order.manual_entry && !order.payment_received 
+              ? `Your order with <strong>${displayName}</strong> for the <strong>${campaignName}</strong> campaign has been recorded.`
+              : `Thank you for supporting <strong>${displayName}</strong> through the <strong>${campaignName}</strong> campaign on Sponsorly!`}
           </p>
           
+          ${manualOrderSection}
+          
           <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <h2 style="color: #333; font-size: 18px; margin-top: 0;">Donation Summary</h2>
+            <h2 style="color: #333; font-size: 18px; margin-top: 0;">Order Summary</h2>
             
             <table style="width: 100%; border-collapse: collapse;">
               <thead>
@@ -131,7 +173,7 @@ const handler = async (req: Request): Promise<Response> => {
               </tbody>
               <tfoot>
                 <tr>
-                  <td colspan="2" style="padding: 12px 8px; text-align: right; font-weight: bold;">Total Donation:</td>
+                  <td colspan="2" style="padding: 12px 8px; text-align: right; font-weight: bold;">Total:</td>
                   <td style="padding: 12px 8px; text-align: right; font-weight: bold; font-size: 18px; color: #4F46E5;">
                     $${(order.total_amount / 100).toFixed(2)}
                   </td>
@@ -149,12 +191,14 @@ const handler = async (req: Request): Promise<Response> => {
             Your contribution makes a real difference. 100% of your donation goes directly to support ${displayName}.
           </p>
           
-          <div style="background-color: #EEF2FF; border-left: 4px solid #4F46E5; padding: 15px; margin: 20px 0;">
-            <p style="color: #4F46E5; font-weight: bold; margin: 0 0 5px 0;">Tax Receipt</p>
-            <p style="color: #666; font-size: 14px; margin: 0;">
-              If applicable, a tax receipt will be sent separately for your records.
-            </p>
-          </div>
+          ${!order.manual_entry ? `
+            <div style="background-color: #EEF2FF; border-left: 4px solid #4F46E5; padding: 15px; margin: 20px 0;">
+              <p style="color: #4F46E5; font-weight: bold; margin: 0 0 5px 0;">Tax Receipt</p>
+              <p style="color: #666; font-size: 14px; margin: 0;">
+                If applicable, a tax receipt will be sent separately for your records.
+              </p>
+            </div>
+          ` : ''}
           
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
           
