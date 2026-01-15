@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { BusinessInfoForm } from "@/components/BusinessInfoForm";
 import { CustomFieldsRenderer } from "@/components/CustomFieldsRenderer";
 import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
+import SimpleFooter from "@/components/SimpleFooter";
 
 interface CampaignData {
   id: string;
@@ -1297,6 +1298,7 @@ const CampaignLanding = () => {
           </Card>
         )}
       </div>
+      <SimpleFooter />
     </div>
   );
 };
