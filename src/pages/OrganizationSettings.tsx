@@ -19,7 +19,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, FileText, Upload, CheckCircle2, XCircle, AlertCircle, Pencil } from "lucide-react";
+import { Loader2, FileText, Upload, CheckCircle2, XCircle, AlertCircle, Pencil, Banknote } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 const US_STATES = [
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
@@ -462,6 +463,51 @@ const OrganizationSettings = () => {
                     </div>
                   </form>
                 </Form>
+              </CardContent>
+            </Card>
+
+            {/* Order Settings Card */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Banknote className="h-5 w-5" />
+                  Order Settings
+                </CardTitle>
+                <CardDescription>Configure order entry options for your organization</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between py-3 border-b">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="allow-manual-orders">Allow Manual Order Entry</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Enable admins to manually enter orders for offline payments (check, cash, etc.)
+                    </p>
+                  </div>
+                  <Switch
+                    id="allow-manual-orders"
+                    checked={organization?.allow_manual_orders ?? true}
+                    onCheckedChange={async (checked) => {
+                      if (!organizationUser?.organization_id) return;
+                      const { error } = await supabase
+                        .from("organizations")
+                        .update({ allow_manual_orders: checked })
+                        .eq("id", organizationUser.organization_id);
+                      if (error) {
+                        toast({
+                          title: "Error",
+                          description: "Failed to update setting",
+                          variant: "destructive",
+                        });
+                      } else {
+                        setOrganization((prev: any) => ({ ...prev, allow_manual_orders: checked }));
+                        toast({
+                          title: "Setting Updated",
+                          description: `Manual order entry ${checked ? "enabled" : "disabled"}`,
+                        });
+                      }
+                    }}
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
