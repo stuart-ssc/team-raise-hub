@@ -2022,11 +2022,13 @@ export type Database = {
       }
       groups: {
         Row: {
+          allow_manual_orders: boolean | null
           created_at: string
           group_name: string
           group_type_id: string | null
           id: string
           logo_url: string | null
+          manual_order_notes: string | null
           organization_id: string | null
           payment_processor_config: Json | null
           school_id: string | null
@@ -2036,11 +2038,13 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          allow_manual_orders?: boolean | null
           created_at?: string
           group_name: string
           group_type_id?: string | null
           id?: string
           logo_url?: string | null
+          manual_order_notes?: string | null
           organization_id?: string | null
           payment_processor_config?: Json | null
           school_id?: string | null
@@ -2050,11 +2054,13 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          allow_manual_orders?: boolean | null
           created_at?: string
           group_name?: string
           group_type_id?: string | null
           id?: string
           logo_url?: string | null
+          manual_order_notes?: string | null
           organization_id?: string | null
           payment_processor_config?: Json | null
           school_id?: string | null
@@ -3097,11 +3103,19 @@ export type Database = {
           customer_email: string | null
           customer_name: string | null
           customer_phone: string | null
+          entered_by: string | null
           files_complete: boolean | null
           id: string
           items: Json
           items_total: number | null
+          manual_entry: boolean | null
+          offline_payment_type: string | null
+          payment_method: string | null
+          payment_notes: string | null
           payment_processor: string | null
+          payment_received: boolean | null
+          payment_received_at: string | null
+          payment_received_by: string | null
           platform_fee_amount: number | null
           processor_session_id: string | null
           processor_transaction_id: string | null
@@ -3128,11 +3142,19 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          entered_by?: string | null
           files_complete?: boolean | null
           id?: string
           items: Json
           items_total?: number | null
+          manual_entry?: boolean | null
+          offline_payment_type?: string | null
+          payment_method?: string | null
+          payment_notes?: string | null
           payment_processor?: string | null
+          payment_received?: boolean | null
+          payment_received_at?: string | null
+          payment_received_by?: string | null
           platform_fee_amount?: number | null
           processor_session_id?: string | null
           processor_transaction_id?: string | null
@@ -3159,11 +3181,19 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          entered_by?: string | null
           files_complete?: boolean | null
           id?: string
           items?: Json
           items_total?: number | null
+          manual_entry?: boolean | null
+          offline_payment_type?: string | null
+          payment_method?: string | null
+          payment_notes?: string | null
           payment_processor?: string | null
+          payment_received?: boolean | null
+          payment_received_at?: string | null
+          payment_received_by?: string | null
           platform_fee_amount?: number | null
           processor_session_id?: string | null
           processor_transaction_id?: string | null
@@ -3372,6 +3402,7 @@ export type Database = {
           active_user_count: number | null
           address_line1: string | null
           address_line2: string | null
+          allow_manual_orders: boolean | null
           city: string | null
           created_at: string | null
           email: string | null
@@ -3397,6 +3428,7 @@ export type Database = {
           active_user_count?: number | null
           address_line1?: string | null
           address_line2?: string | null
+          allow_manual_orders?: boolean | null
           city?: string | null
           created_at?: string | null
           email?: string | null
@@ -3422,6 +3454,7 @@ export type Database = {
           active_user_count?: number | null
           address_line1?: string | null
           address_line2?: string | null
+          allow_manual_orders?: boolean | null
           city?: string | null
           created_at?: string | null
           email?: string | null
