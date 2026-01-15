@@ -150,10 +150,12 @@ serve(async (req) => {
     // Create/update donor profile
     const { data: existingDonor } = await supabaseClient
       .from('donor_profiles')
-      .select('id, donation_count, total_donations')
+      .select('id, donation_count, total_donations, user_id')
       .eq('email', customerEmail)
       .eq('organization_id', organizationId)
       .maybeSingle();
+
+    let donorId = existingDonor?.id;
 
     if (existingDonor) {
       // Update existing donor
@@ -168,7 +170,7 @@ serve(async (req) => {
     } else {
       // Create new donor profile
       const nameParts = customerName.split(' ');
-      await supabaseClient
+      const { data: newDonor } = await supabaseClient
         .from('donor_profiles')
         .insert({
           email: customerEmail,
@@ -180,22 +182,162 @@ serve(async (req) => {
           total_donations: itemsTotal,
           first_donation_date: new Date().toISOString(),
           last_donation_date: new Date().toISOString(),
-        });
+        })
+        .select('id')
+        .single();
+      
+      donorId = newDonor?.id;
     }
 
     // Log activity
-    await supabaseClient
-      .from('donor_activity_log')
-      .insert({
-        donor_id: existingDonor?.id,
-        activity_type: 'manual_order',
-        activity_data: {
-          order_id: order.id,
-          amount: itemsTotal,
-          payment_type: offlinePaymentType,
-          entered_by: enteredBy,
-        },
-      });
+    if (donorId) {
+      await supabaseClient
+        .from('donor_activity_log')
+        .insert({
+          donor_id: donorId,
+          activity_type: 'manual_order',
+          activity_data: {
+            order_id: order.id,
+            amount: itemsTotal,
+            payment_type: offlinePaymentType,
+            entered_by: enteredBy,
+          },
+        });
+    }
+
+    // Send donation confirmation email
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      const confirmationResponse = await fetch(
+        `${supabaseUrl}/functions/v1/send-donation-confirmation`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${serviceRoleKey}`,
+          },
+          body: JSON.stringify({ orderId: order.id }),
+        }
+      );
+      
+      if (confirmationResponse.ok) {
+        console.log('Donation confirmation email sent for order:', order.id);
+      } else {
+        const errorText = await confirmationResponse.text();
+        console.error('Failed to send donation confirmation:', errorText);
+      }
+    } catch (emailError) {
+      console.error('Error sending donation confirmation email:', emailError);
+      // Don't fail the order creation if email fails
+    }
+
+    // Check if user needs an account invitation
+    const hasExistingAccount = existingDonor?.user_id != null;
+    
+    if (!hasExistingAccount) {
+      try {
+        // Check if there's already an auth user with this email
+        const { data: existingUsers } = await supabaseClient.auth.admin.listUsers();
+        const existingAuthUser = existingUsers?.users?.find(u => u.email === customerEmail);
+        
+        if (!existingAuthUser) {
+          console.log('Creating account invitation for new donor:', customerEmail);
+          
+          const nameParts = customerName.split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+          
+          // Create auth user
+          const { data: authData, error: authError } = await supabaseClient.auth.admin.createUser({
+            email: customerEmail,
+            email_confirm: false,
+            user_metadata: { first_name: firstName, last_name: lastName },
+          });
+          
+          if (authError) {
+            console.error('Error creating auth user:', authError);
+          } else if (authData.user) {
+            console.log('Created auth user:', authData.user.id);
+            
+            // Link the donor profile to this user
+            if (donorId) {
+              await supabaseClient
+                .from('donor_profiles')
+                .update({ user_id: authData.user.id })
+                .eq('id', donorId);
+            }
+            
+            // Get organization name for the invitation email
+            const { data: orgData } = await supabaseClient
+              .from('organizations')
+              .select('name')
+              .eq('id', organizationId)
+              .single();
+            
+            const organizationName = orgData?.name || 'the organization';
+            
+            // Generate password setup link
+            const siteUrl = Deno.env.get('SITE_URL') || 'https://team-raise-hub.lovable.app';
+            const { data: linkData, error: linkError } = await supabaseClient.auth.admin.generateLink({
+              type: 'recovery',
+              email: customerEmail,
+              options: { redirectTo: `${siteUrl}/login` },
+            });
+            
+            if (linkError) {
+              console.error('Error generating invite link:', linkError);
+            } else if (linkData?.properties?.action_link) {
+              console.log('Generated invitation link for:', customerEmail);
+              
+              // Send invitation email
+              const supabaseUrl = Deno.env.get('SUPABASE_URL');
+              const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+              
+              const inviteResponse = await fetch(
+                `${supabaseUrl}/functions/v1/send-invitation-email`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${serviceRoleKey}`,
+                  },
+                  body: JSON.stringify({
+                    email: customerEmail,
+                    firstName,
+                    lastName,
+                    organizationName,
+                    roleName: 'Supporter',
+                    inviteLink: linkData.properties.action_link,
+                  }),
+                }
+              );
+              
+              if (inviteResponse.ok) {
+                console.log('Invitation email sent for:', customerEmail);
+              } else {
+                const errorText = await inviteResponse.text();
+                console.error('Failed to send invitation email:', errorText);
+              }
+            }
+          }
+        } else {
+          console.log('User already has an auth account:', customerEmail);
+          
+          // Link the donor profile to this existing user if not already linked
+          if (donorId && !existingDonor?.user_id) {
+            await supabaseClient
+              .from('donor_profiles')
+              .update({ user_id: existingAuthUser.id })
+              .eq('id', donorId);
+          }
+        }
+      } catch (inviteError) {
+        console.error('Error in account invitation process:', inviteError);
+        // Don't fail the order creation if invitation fails
+      }
+    }
 
     return new Response(
       JSON.stringify({ 
