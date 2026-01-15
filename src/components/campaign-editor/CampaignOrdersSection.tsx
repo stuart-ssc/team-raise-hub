@@ -14,27 +14,30 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import { Download, FileCheck, FileWarning } from "lucide-react";
+import { Download, FileCheck, FileWarning, Plus, Banknote, CreditCard } from "lucide-react";
 import { CsvExportOrdersPanel } from "@/components/CsvExportOrdersPanel";
+import { ManualOrderDialog } from "@/components/ManualOrderDialog";
 
 interface CampaignOrdersSectionProps {
   campaignId: string;
+  organizationId?: string;
 }
 
 type FilterType = "all" | "pending" | "complete";
 type ViewMode = "table" | "export";
 
-export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps) {
+export function CampaignOrdersSection({ campaignId, organizationId }: CampaignOrdersSectionProps) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>("all");
   const [view, setView] = useState<ViewMode>("table");
+  const [showManualOrderDialog, setShowManualOrderDialog] = useState(false);
 
-  const { data: orders, isLoading } = useQuery({
+  const { data: orders, isLoading, refetch } = useQuery({
     queryKey: ["campaign-orders", campaignId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, customer_name, customer_email, customer_phone, items, items_total, created_at, files_complete, status")
+        .select("id, customer_name, customer_email, customer_phone, items, items_total, created_at, files_complete, status, manual_entry, payment_received, offline_payment_type")
         .eq("campaign_id", campaignId)
         .eq("status", "succeeded")
         .order("created_at", { ascending: false });
@@ -132,11 +135,25 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
           </TabsList>
         </Tabs>
 
+        {organizationId && (
+          <Button variant="outline" size="sm" onClick={() => setShowManualOrderDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Manual Order
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={() => setView("export")}>
           <Download className="h-4 w-4 mr-2" />
           Export CSV
         </Button>
       </div>
+
+      <ManualOrderDialog
+        open={showManualOrderDialog}
+        onOpenChange={setShowManualOrderDialog}
+        campaignId={campaignId}
+        organizationId={organizationId || ""}
+        onSuccess={() => refetch()}
+      />
 
       <div className="rounded-md border">
         <Table>
@@ -167,17 +184,28 @@ export function CampaignOrdersSection({ campaignId }: CampaignOrdersSectionProps
                   {order.created_at ? format(new Date(order.created_at), "MMM d, yyyy") : "-"}
                 </TableCell>
                 <TableCell>
-                  {order.files_complete ? (
-                    <Badge variant="outline" className="gap-1 text-green-600 border-green-200 bg-green-50">
-                      <FileCheck className="h-3 w-3" />
-                      Complete
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="gap-1 text-amber-600 border-amber-200 bg-amber-50">
-                      <FileWarning className="h-3 w-3" />
-                      Pending
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {order.manual_entry && (
+                      <Badge variant="outline" className="gap-1 text-xs">
+                        {order.payment_received ? (
+                          <Banknote className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <Banknote className="h-3 w-3 text-amber-600" />
+                        )}
+                      </Badge>
+                    )}
+                    {order.files_complete ? (
+                      <Badge variant="outline" className="gap-1 text-green-600 border-green-200 bg-green-50">
+                        <FileCheck className="h-3 w-3" />
+                        Complete
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="gap-1 text-amber-600 border-amber-200 bg-amber-50">
+                        <FileWarning className="h-3 w-3" />
+                        Pending
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Button
