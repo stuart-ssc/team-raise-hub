@@ -539,7 +539,10 @@ const CampaignLanding = () => {
     return brightness < 128;
   };
   
-  const isDarkBackground = schoolPrimaryColor && isColorDark(schoolPrimaryColor);
+  // If there's a campaign image, treat background as dark (we overlay it with black)
+  // Otherwise, check the school's primary color
+  const hasImage = !!campaign.image_url;
+  const isDarkBackground = hasImage || (schoolPrimaryColor && isColorDark(schoolPrimaryColor));
   const heroStyle = schoolPrimaryColor 
     ? {
         background: `linear-gradient(to right, ${schoolPrimaryColor}CC, ${schoolPrimaryColor}AD)`,
@@ -547,6 +550,9 @@ const CampaignLanding = () => {
     : {
         background: `linear-gradient(to right, #ADD8E6CC, #ADD8E6AD)`, // Light blue fallback color
       };
+  
+  // Text shadow for better readability over images
+  const imageTextShadow = hasImage ? { textShadow: '0 2px 4px rgba(0,0,0,0.5)' } : {};
 
   // Get dynamic content based on campaign type
   const getSectionTitle = () => {
@@ -605,7 +611,7 @@ const CampaignLanding = () => {
               alt={campaign.name}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-black/50"></div>
+            <div className="absolute inset-0 bg-black/70"></div>
           </div>
         )}
         <div className="max-w-6xl mx-auto p-6 md:p-8 relative z-10">
@@ -622,7 +628,10 @@ const CampaignLanding = () => {
               )}
             </div>
             
-            <h1 className={`text-3xl md:text-4xl font-bold ${isDarkBackground ? 'text-white' : 'text-foreground'}`}>
+            <h1 
+              className={`text-3xl md:text-4xl font-bold ${isDarkBackground ? 'text-white' : 'text-foreground'}`}
+              style={imageTextShadow}
+            >
               {campaign.name}
             </h1>
             
