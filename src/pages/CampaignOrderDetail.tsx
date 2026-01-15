@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import MessageButton from "@/components/messaging/MessageButton";
+import { PaymentReceivedCard } from "@/components/PaymentReceivedCard";
 import { format, differenceInDays, parseISO } from "date-fns";
 import {
   CheckCircle,
@@ -84,6 +85,12 @@ const CampaignOrderDetail = () => {
           status,
           files_complete,
           user_id,
+          manual_entry,
+          payment_received,
+          payment_received_at,
+          payment_received_by,
+          offline_payment_type,
+          payment_notes,
           campaign:campaigns (
             id,
             name,
@@ -605,6 +612,18 @@ const CampaignOrderDetail = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Payment Received Card for Manual Orders */}
+        <PaymentReceivedCard
+          orderId={order.id}
+          manualEntry={order.manual_entry || false}
+          paymentReceived={order.payment_received || false}
+          paymentReceivedAt={order.payment_received_at}
+          paymentReceivedBy={order.payment_received_by}
+          offlinePaymentType={order.offline_payment_type}
+          paymentNotes={order.payment_notes}
+          onUpdate={() => refetchOrder()}
+        />
 
         {/* Required Sponsor Assets */}
         {requiredAssets && requiredAssets.length > 0 && (

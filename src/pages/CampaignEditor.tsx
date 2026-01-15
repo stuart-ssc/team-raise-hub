@@ -583,7 +583,7 @@ export default function CampaignEditor() {
               <CardDescription>View purchases and track pending asset uploads</CardDescription>
             </CardHeader>
             <CardContent>
-              <CampaignOrdersSection campaignId={id} />
+              <CampaignOrdersSection campaignId={id} organizationId={organizationUser?.organization_id} />
             </CardContent>
           </Card>
         )}
