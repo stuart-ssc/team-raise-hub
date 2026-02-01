@@ -183,6 +183,7 @@ const AppContent = () => {
         <Route path="/dashboard/my-fundraising" element={<ProtectedRoute><MyFundraising /></ProtectedRoute>} />
         <Route path="/dashboard/family" element={<ProtectedRoute><FamilyDashboard /></ProtectedRoute>} />
         <Route path="/dashboard/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
+        <Route path="/system-admin" element={<ProtectedRoute><SystemAdminGuard><SystemAdminDashboard /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/organizations" element={<ProtectedRoute><SystemAdminGuard><OrganizationsList /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/organizations/:orgId" element={<ProtectedRoute><SystemAdminGuard><OrganizationDetail /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/businesses" element={<ProtectedRoute><SystemAdminGuard><BusinessesList /></SystemAdminGuard></ProtectedRoute>} />
