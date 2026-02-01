@@ -155,13 +155,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "business_campaign_assets_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "roster_member_fundraising_stats"
-            referencedColumns: ["campaign_id"]
-          },
-          {
             foreignKeyName: "business_campaign_assets_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -753,13 +746,6 @@ export type Database = {
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "campaign_custom_fields_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "roster_member_fundraising_stats"
-            referencedColumns: ["campaign_id"]
-          },
         ]
       }
       campaign_item_variants: {
@@ -869,13 +855,6 @@ export type Database = {
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_campaign_items_campaign_id"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "roster_member_fundraising_stats"
-            referencedColumns: ["campaign_id"]
-          },
         ]
       }
       campaign_required_assets: {
@@ -925,13 +904,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "campaign_required_assets_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "roster_member_fundraising_stats"
-            referencedColumns: ["campaign_id"]
           },
         ]
       }
@@ -994,13 +966,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "campaign_views_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "roster_member_fundraising_stats"
-            referencedColumns: ["campaign_id"]
           },
         ]
       }
@@ -3068,13 +3033,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "order_export_history_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "roster_member_fundraising_stats"
-            referencedColumns: ["campaign_id"]
-          },
-          {
             foreignKeyName: "order_export_history_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -3236,13 +3194,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "roster_member_fundraising_stats"
-            referencedColumns: ["campaign_id"]
           },
         ]
       }
@@ -3760,13 +3711,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "roster_member_campaign_links_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "roster_member_fundraising_stats"
-            referencedColumns: ["campaign_id"]
           },
           {
             foreignKeyName: "roster_member_campaign_links_roster_member_id_fkey"
@@ -4373,13 +4317,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subscriptions_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "roster_member_fundraising_stats"
-            referencedColumns: ["campaign_id"]
           },
           {
             foreignKeyName: "subscriptions_campaign_item_id_fkey"
