@@ -1,72 +1,64 @@
 
 
-## Fix: Checkout Fails Due to Materialized View Refresh Error
+## Clear Test Stripe Data from Database
 
-### Problem
-When you try to complete a checkout, the order creation triggers a database function that attempts to refresh a materialized view (`roster_member_fundraising_stats`). This refresh fails with error code 55000 because the unique index uses a `COALESCE` expression, which PostgreSQL doesn't support for concurrent refresh.
+### Summary
+Execute a database migration to remove all test Stripe data, preparing the system for production use with your first real team.
 
-### Root Cause
-PostgreSQL's `REFRESH MATERIALIZED VIEW CONCURRENTLY` requires a unique index on **actual columns**, not expressions. The current index uses:
-```sql
-COALESCE(campaign_id, '00000000-0000-0000-0000-000000000000'::uuid)
-```
+---
 
-This expression-based index cannot be used for concurrent refresh.
+### Data to be Cleaned
 
-### Solution
-Modify the materialized view to handle NULL campaign_ids in the view definition itself (using COALESCE), then create a simple unique index on the plain columns.
+| Table | Records Found | Action |
+|-------|---------------|--------|
+| `stripe_connect_accounts` | 4 test accounts | Delete all |
+| `organizations` | ~20 with payment config | Reset to NULL |
+| `groups` | 10 with payment config (1 has active test account) | Reset to NULL |
+| `orders` | 7 orders (2 succeeded, 5 pending) | Archive as `test_archived` |
+| `stripe_payouts` | 0 records | No action needed |
+| `subscriptions` | 0 records | No action needed |
 
-### Changes Required
+---
 
-**Database Migration:**
-
-1. Drop the existing materialized view
-2. Recreate it with a guaranteed non-NULL `campaign_id` using COALESCE in the SELECT
-3. Create a simple unique index on `(roster_member_id, campaign_id)` without expressions
+### Migration SQL
 
 ```sql
--- Drop existing view
-DROP MATERIALIZED VIEW IF EXISTS roster_member_fundraising_stats;
+-- Step 1: Delete all test Stripe Connect accounts
+DELETE FROM stripe_connect_accounts;
 
--- Recreate with non-NULL campaign_id
-CREATE MATERIALIZED VIEW roster_member_fundraising_stats AS
-SELECT 
-    ou.id AS roster_member_id,
-    ou.roster_id,
-    ou.user_id,
-    r.group_id,
-    COALESCE(c.id, '00000000-0000-0000-0000-000000000000'::uuid) AS campaign_id,
-    count(DISTINCT o.id) AS donation_count,
-    COALESCE(sum(calculate_order_items_total(o.items)), 0) AS total_raised,
-    COALESCE(avg(calculate_order_items_total(o.items)), 0) AS avg_donation,
-    max(o.created_at) AS last_donation_date,
-    count(DISTINCT o.customer_email) AS unique_supporters
-FROM organization_user ou
-JOIN rosters r ON r.id = ou.roster_id
-LEFT JOIN campaigns c ON c.group_id = r.group_id AND c.enable_roster_attribution = true
-LEFT JOIN orders o ON o.attributed_roster_member_id = ou.id 
-    AND o.campaign_id = c.id 
-    AND o.status = ANY (ARRAY['succeeded', 'completed'])
-GROUP BY ou.id, ou.roster_id, ou.user_id, r.group_id, c.id;
+-- Step 2: Reset payment processor config on all organizations
+UPDATE organizations 
+SET payment_processor_config = NULL
+WHERE payment_processor_config IS NOT NULL;
 
--- Create simple unique index (no expressions)
-CREATE UNIQUE INDEX roster_member_fundraising_stats_unique_idx 
-ON roster_member_fundraising_stats (roster_member_id, campaign_id);
+-- Step 3: Reset payment processor config on all groups
+UPDATE groups 
+SET payment_processor_config = NULL
+WHERE payment_processor_config IS NOT NULL;
 
--- Refresh the view
-REFRESH MATERIALIZED VIEW roster_member_fundraising_stats;
+-- Step 4: Archive all existing orders as test data
+UPDATE orders 
+SET status = 'test_archived'
+WHERE status IN ('pending', 'succeeded', 'completed');
 ```
 
-### Technical Details
+---
 
-| Component | Current Issue | Fix |
-|-----------|--------------|-----|
-| Materialized View | `campaign_id` can be NULL | Use COALESCE in SELECT to guarantee non-NULL |
-| Unique Index | Uses `COALESCE(campaign_id, ...)` expression | Simple index on `(roster_member_id, campaign_id)` |
-| Concurrent Refresh | Fails with error 55000 | Will work after fix |
+### Expected Results
 
-### Result
-- Checkout will complete successfully
-- Orders will be created without database errors
-- The materialized view will refresh correctly when orders are placed
+After running this migration:
+
+1. **Stripe Connect Accounts**: Empty table, ready for production accounts
+2. **Organizations**: All `payment_processor_config` reset to NULL
+3. **Groups**: All `payment_processor_config` reset to NULL  
+4. **Orders**: All existing orders marked as `test_archived` (preserved for reference)
+
+---
+
+### Next Steps After Migration
+
+1. Navigate to **Organization Settings → Payment Setup**
+2. Click **"Connect with Stripe"** to start production onboarding
+3. Complete Stripe Express verification
+4. Publish a campaign and process a small real transaction to verify
 
