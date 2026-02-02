@@ -76,6 +76,28 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: any) {
     console.error("Error sending invitation email:", error);
+    
+    // Send admin alert for email delivery failures
+    try {
+      await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-admin-alert`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
+        },
+        body: JSON.stringify({
+          functionName: "send-invitation-email",
+          errorMessage: error.message,
+          severity: "high",
+          context: {
+            errorStack: error.stack
+          }
+        })
+      });
+    } catch (alertError) {
+      console.error('Failed to send admin alert:', alertError);
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }

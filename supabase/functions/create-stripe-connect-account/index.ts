@@ -170,6 +170,30 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error creating Stripe Connect account:', error);
+    
+    // Send admin alert for Stripe errors
+    try {
+      await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-admin-alert`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
+        },
+        body: JSON.stringify({
+          functionName: "create-stripe-connect-account",
+          errorMessage: error.message,
+          severity: "high",
+          context: {
+            organizationId: (await req.json().catch(() => ({}))).organizationId,
+            groupId: (await req.json().catch(() => ({}))).groupId,
+            errorStack: error.stack
+          }
+        })
+      });
+    } catch (alertError) {
+      console.error('Failed to send admin alert:', alertError);
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
