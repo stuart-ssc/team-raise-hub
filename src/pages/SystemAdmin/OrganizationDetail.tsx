@@ -499,7 +499,7 @@ const OrganizationDetail = () => {
             onClick={() => navigate("/system-admin/organizations")}
             className="mb-4"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="mr-2" style={{ height: '1rem', width: '1rem' }} />
             Back to Organizations
           </Button>
           
@@ -543,11 +543,11 @@ const OrganizationDetail = () => {
                   setActiveTab("settings");
                 }}
               >
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit className="mr-2" style={{ height: '1rem', width: '1rem' }} />
                 Edit
               </Button>
               <Button variant="outline" size="sm">
-                <Archive className="h-4 w-4 mr-2" />
+                <Archive className="mr-2" style={{ height: '1rem', width: '1rem' }} />
                 Archive
               </Button>
             </div>
@@ -559,7 +559,7 @@ const OrganizationDetail = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <FolderOpen className="h-4 w-4 text-primary" />
+                <FolderOpen className="text-primary" style={{ height: '1rem', width: '1rem' }} />
                 Groups
               </CardTitle>
             </CardHeader>
@@ -572,7 +572,7 @@ const OrganizationDetail = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" />
+                <Users className="text-primary" style={{ height: '1rem', width: '1rem' }} />
                 Users
               </CardTitle>
             </CardHeader>
@@ -585,7 +585,7 @@ const OrganizationDetail = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
+                <TrendingUp className="text-primary" style={{ height: '1rem', width: '1rem' }} />
                 Campaigns
               </CardTitle>
             </CardHeader>
@@ -598,7 +598,7 @@ const OrganizationDetail = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-success" />
+                <DollarSign className="text-success" style={{ height: '1rem', width: '1rem' }} />
                 Revenue
               </CardTitle>
             </CardHeader>

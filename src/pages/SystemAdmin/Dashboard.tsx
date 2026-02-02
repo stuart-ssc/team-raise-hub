@@ -48,7 +48,7 @@ const SystemAdminDashboard = () => {
                 <CardTitle className="text-sm font-medium">
                   Total Organizations
                 </CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <Building2 className="text-muted-foreground" style={{ height: '1rem', width: '1rem' }} />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalOrgs}</div>
@@ -63,7 +63,7 @@ const SystemAdminDashboard = () => {
                 <CardTitle className="text-sm font-medium">
                   Pending Verifications
                 </CardTitle>
-                <FileCheck className="h-4 w-4 text-muted-foreground" />
+                <FileCheck className="text-muted-foreground" style={{ height: '1rem', width: '1rem' }} />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.pendingVerifications}</div>
@@ -78,7 +78,7 @@ const SystemAdminDashboard = () => {
                 <CardTitle className="text-sm font-medium">
                   Active Campaigns
                 </CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <Building2 className="text-muted-foreground" style={{ height: '1rem', width: '1rem' }} />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.activeCampaigns}</div>
@@ -93,7 +93,7 @@ const SystemAdminDashboard = () => {
                 <CardTitle className="text-sm font-medium">
                   Total Users
                 </CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <Building2 className="text-muted-foreground" style={{ height: '1rem', width: '1rem' }} />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalUsers}</div>
@@ -110,7 +110,7 @@ const SystemAdminDashboard = () => {
               <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate('/system-admin/organizations')}>
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
+                    <Building2 style={{ height: '1.25rem', width: '1.25rem' }} />
                     <CardTitle>Manage Organizations</CardTitle>
                   </div>
                   <CardDescription>
@@ -122,7 +122,7 @@ const SystemAdminDashboard = () => {
               <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate('/system-admin/verification')}>
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <FileCheck className="h-5 w-5" />
+                    <FileCheck style={{ height: '1.25rem', width: '1.25rem' }} />
                     <CardTitle>Verification Queue</CardTitle>
                   </div>
                   <CardDescription>
@@ -134,7 +134,7 @@ const SystemAdminDashboard = () => {
               <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate('/system-admin/emails')}>
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <Mail className="h-5 w-5" />
+                    <Mail style={{ height: '1.25rem', width: '1.25rem' }} />
                     <CardTitle>Email Management</CardTitle>
                   </div>
                   <CardDescription>
@@ -146,7 +146,7 @@ const SystemAdminDashboard = () => {
               <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate('/system-admin/ab-tests')}>
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <FlaskConical className="h-5 w-5" />
+                    <FlaskConical style={{ height: '1.25rem', width: '1.25rem' }} />
                     <CardTitle>A/B Testing</CardTitle>
                   </div>
                   <CardDescription>
@@ -158,7 +158,7 @@ const SystemAdminDashboard = () => {
               <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate('/system-admin/reports')}>
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
+                    <BarChart3 style={{ height: '1.25rem', width: '1.25rem' }} />
                     <CardTitle>Platform Reports</CardTitle>
                   </div>
                   <CardDescription>

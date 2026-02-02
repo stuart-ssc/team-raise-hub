@@ -206,7 +206,7 @@ const BusinessesList = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Businesses</CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <Building2 className="text-muted-foreground" style={{ height: '1rem', width: '1rem' }} />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalBusinesses}</div>
@@ -216,7 +216,7 @@ const BusinessesList = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Partnership Value</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <DollarSign className="text-muted-foreground" style={{ height: '1rem', width: '1rem' }} />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -228,7 +228,7 @@ const BusinessesList = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Avg Engagement</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <TrendingUp className="text-muted-foreground" style={{ height: '1rem', width: '1rem' }} />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.avgEngagementScore}</div>
@@ -238,7 +238,7 @@ const BusinessesList = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Top Segment</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Users className="text-muted-foreground" style={{ height: '1rem', width: '1rem' }} />
               </CardHeader>
               <CardContent>
                 <div className="text-sm font-medium">
@@ -256,7 +256,7 @@ const BusinessesList = () => {
               <CardTitle>All Businesses</CardTitle>
               <div className="space-y-4 mt-4">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" style={{ height: '1rem', width: '1rem' }} />
                   <Input
                     placeholder="Search by business name or city..."
                     value={searchQuery}
@@ -382,7 +382,7 @@ const BusinessesList = () => {
                                 size="sm"
                                 onClick={() => navigate(`/system-admin/businesses/${biz.id}`)}
                               >
-                                <Eye className="h-4 w-4 mr-1" />
+                                <Eye className="mr-1" style={{ height: '1rem', width: '1rem' }} />
                                 Manage
                               </Button>
                             </TableCell>

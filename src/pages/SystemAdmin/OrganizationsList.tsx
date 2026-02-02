@@ -234,7 +234,7 @@ const OrganizationsList = () => {
               <div className="space-y-4 mt-4">
                 <div className="flex gap-4">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" style={{ height: '1rem', width: '1rem' }} />
                     <Input
                       placeholder="Search by name, city, or state..."
                       value={searchQuery}
@@ -243,7 +243,7 @@ const OrganizationsList = () => {
                     />
                   </div>
                   <Button onClick={() => setShowAddDialog(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
+                    <Plus className="mr-2" style={{ height: '1rem', width: '1rem' }} />
                     Add Organization
                   </Button>
                 </div>
@@ -295,7 +295,7 @@ const OrganizationsList = () => {
                 <div className="text-center py-8 text-muted-foreground">Loading organizations...</div>
               ) : !hasActiveFilters ? (
                 <div className="flex flex-col items-center gap-4 text-muted-foreground text-center py-12">
-                  <Search className="h-12 w-12 opacity-50" />
+                  <Search className="opacity-50" style={{ height: '3rem', width: '3rem' }} />
                   <div>
                     <p className="text-lg font-medium">Select a filter to view organizations</p>
                     <p className="text-sm mt-1">Choose a state, organization type, or search by name to get started</p>
@@ -340,7 +340,7 @@ const OrganizationsList = () => {
                               size="sm"
                               onClick={() => navigate(`/system-admin/organizations/${org.id}`)}
                             >
-                              <Settings className="h-4 w-4 mr-1" />
+                              <Settings className="mr-1" style={{ height: '1rem', width: '1rem' }} />
                               Manage
                             </Button>
                           </TableCell>
