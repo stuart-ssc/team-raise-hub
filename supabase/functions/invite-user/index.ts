@@ -31,22 +31,23 @@ serve(async (req: Request) => {
 
     const { email, firstName, lastName, userTypeId, organizationId, groupId, rosterId, linkedOrganizationUserId }: InviteUserRequest = await req.json();
 
-    // Check if user already exists in profiles
-    const { data: existingProfiles } = await supabaseAdmin
-      .from("profiles")
-      .select("id, first_name, last_name")
-      .ilike("first_name", firstName.trim())
-      .ilike("last_name", lastName.trim());
-
+    const normalizedEmail = email.trim().toLowerCase();
+    
+    // Check if user already exists by EMAIL (not name!)
     let userId: string;
+    
+    const { data: existingAuthData, error: lookupError } = await supabaseAdmin.auth.admin
+      .getUserByEmail(normalizedEmail);
 
-    if (existingProfiles && existingProfiles.length > 0) {
-      userId = existingProfiles[0].id;
+    if (existingAuthData?.user && !lookupError) {
+      // User exists - use their existing ID
+      userId = existingAuthData.user.id;
+      console.log(`Found existing user with email ${normalizedEmail}: ${userId}`);
     } else {
-      // Create user using admin client (doesn't affect current session)
+      // Create new user
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        email_confirm: false, // Require email confirmation
+        email: normalizedEmail,
+        email_confirm: false,
         user_metadata: {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
@@ -69,6 +70,7 @@ serve(async (req: Request) => {
       }
 
       userId = authData.user.id;
+      console.log(`Created new user with email ${normalizedEmail}: ${userId}`);
     }
 
     // Check if an inactive organization_user record already exists
