@@ -36,12 +36,17 @@ serve(async (req: Request) => {
     // Check if user already exists by EMAIL (not name!)
     let userId: string;
     
-    const { data: existingAuthData, error: lookupError } = await supabaseAdmin.auth.admin
-      .getUserByEmail(normalizedEmail);
+    const { data: userListData, error: lookupError } = await supabaseAdmin.auth.admin
+      .listUsers();
 
-    if (existingAuthData?.user && !lookupError) {
+    // Find user by email in the returned list
+    const existingUser = userListData?.users?.find(
+      (u) => u.email?.toLowerCase() === normalizedEmail
+    );
+
+    if (existingUser && !lookupError) {
       // User exists - use their existing ID
-      userId = existingAuthData.user.id;
+      userId = existingUser.id;
       console.log(`Found existing user with email ${normalizedEmail}: ${userId}`);
     } else {
       // Create new user
