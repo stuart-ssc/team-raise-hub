@@ -1,64 +1,37 @@
 
 
-## Clear Test Stripe Data from Database
+## Add Facebook Login to Signup Page
 
 ### Summary
-Execute a database migration to remove all test Stripe data, preparing the system for production use with your first real team.
+Add a "Continue with Facebook" button to the Signup page to match the Login page, providing users with consistent social login options across both authentication flows.
 
 ---
 
-### Data to be Cleaned
+### Changes Required
 
-| Table | Records Found | Action |
-|-------|---------------|--------|
-| `stripe_connect_accounts` | 4 test accounts | Delete all |
-| `organizations` | ~20 with payment config | Reset to NULL |
-| `groups` | 10 with payment config (1 has active test account) | Reset to NULL |
-| `orders` | 7 orders (2 succeeded, 5 pending) | Archive as `test_archived` |
-| `stripe_payouts` | 0 records | No action needed |
-| `subscriptions` | 0 records | No action needed |
+**File: `src/pages/Signup.tsx`**
+
+1. Import `signInWithFacebook` from the auth hook (line 36)
+2. Add a `handleFacebookSignup` function similar to `handleGoogleSignup`
+3. Add the Facebook button below the Google button (after line 365)
 
 ---
 
-### Migration SQL
+### Implementation Details
 
-```sql
--- Step 1: Delete all test Stripe Connect accounts
-DELETE FROM stripe_connect_accounts;
-
--- Step 2: Reset payment processor config on all organizations
-UPDATE organizations 
-SET payment_processor_config = NULL
-WHERE payment_processor_config IS NOT NULL;
-
--- Step 3: Reset payment processor config on all groups
-UPDATE groups 
-SET payment_processor_config = NULL
-WHERE payment_processor_config IS NOT NULL;
-
--- Step 4: Archive all existing orders as test data
-UPDATE orders 
-SET status = 'test_archived'
-WHERE status IN ('pending', 'succeeded', 'completed');
-```
+The Facebook button will:
+- Use the same SVG icon and styling as the Login page
+- Call `signInWithFacebook()` from the auth context
+- Handle loading state and error toasts consistently
+- Support the invitation flow (OAuth redirect will preserve the session)
 
 ---
 
-### Expected Results
+### Visual Result
 
-After running this migration:
+The signup form's social login section will display:
+1. "Continue with Google" button
+2. "Continue with Facebook" button
 
-1. **Stripe Connect Accounts**: Empty table, ready for production accounts
-2. **Organizations**: All `payment_processor_config` reset to NULL
-3. **Groups**: All `payment_processor_config` reset to NULL  
-4. **Orders**: All existing orders marked as `test_archived` (preserved for reference)
-
----
-
-### Next Steps After Migration
-
-1. Navigate to **Organization Settings → Payment Setup**
-2. Click **"Connect with Stripe"** to start production onboarding
-3. Complete Stripe Express verification
-4. Publish a campaign and process a small real transaction to verify
+Both buttons will have matching styles with their respective brand colors.
 
