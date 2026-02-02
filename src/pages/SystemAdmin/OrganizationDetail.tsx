@@ -8,6 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   ArrowLeft, 
   Users, 
@@ -25,13 +32,20 @@ import {
   Clock,
   XCircle,
   Save,
-  X
+  X,
+  Plus,
+  MoreHorizontal,
+  UserPlus,
+  Power
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CreateGroupDialog } from "@/components/SystemAdmin/CreateGroupDialog";
+import { InviteUserDialog } from "@/components/SystemAdmin/InviteUserDialog";
+import { EditUserRoleDialog } from "@/components/SystemAdmin/EditUserRoleDialog";
 
 interface Organization {
   id: string;
@@ -65,10 +79,16 @@ interface UserRecord {
   profiles: {
     first_name: string | null;
     last_name: string | null;
+    email?: string | null;
   };
   user_type: {
     name: string;
   };
+  user_type_id?: string;
+  group_id?: string | null;
+  group?: {
+    group_name: string;
+  } | null;
   active_user: boolean;
   created_at: string;
 }
@@ -144,6 +164,12 @@ const OrganizationDetail = () => {
     logo_url: '',
     verification_status: '',
   });
+
+  // Dialog states
+  const [showCreateGroupDialog, setShowCreateGroupDialog] = useState(false);
+  const [showInviteUserDialog, setShowInviteUserDialog] = useState(false);
+  const [showEditUserDialog, setShowEditUserDialog] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
 
   useEffect(() => {
     if (orgId) {
@@ -253,7 +279,7 @@ const OrganizationDetail = () => {
           break;
 
         case "users":
-          // Step 1: Get organization_user records
+          // Step 1: Get organization_user records with group info
           const { data: orgUsersData, error: orgUsersError } = await supabase
             .from("organization_user")
             .select(`
@@ -261,7 +287,10 @@ const OrganizationDetail = () => {
               user_id,
               active_user,
               created_at,
-              user_type:user_type_id(name)
+              user_type_id,
+              group_id,
+              user_type:user_type_id(name),
+              group:group_id(group_name)
             `)
             .eq("organization_id", organization.id)
             .order("created_at", { ascending: false })
@@ -452,6 +481,63 @@ const OrganizationDetail = () => {
     }
   };
 
+  const handleToggleGroupStatus = async (groupId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("groups")
+        .update({ status: !currentStatus })
+        .eq("id", groupId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Group ${currentStatus ? "deactivated" : "activated"} successfully`,
+      });
+
+      loadTabData("groups");
+      fetchOrganizationData();
+    } catch (error) {
+      console.error("Error toggling group status:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update group status",
+      });
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("organization_user")
+        .update({ active_user: !currentStatus })
+        .eq("id", userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `User ${currentStatus ? "deactivated" : "activated"} successfully`,
+      });
+
+      loadTabData("users");
+      fetchOrganizationData();
+    } catch (error) {
+      console.error("Error toggling user status:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update user status",
+      });
+    }
+  };
+
+  const handleEditUser = (user: UserRecord) => {
+    setEditingUser(user);
+    setShowEditUserDialog(true);
+  };
+
   if (loading) {
     return (
       <SystemAdminPageLayout title="Loading..." subtitle="Organization details">
@@ -633,6 +719,18 @@ const OrganizationDetail = () => {
               ) : (
                 <>
                   <TabsContent value="groups" className="mt-0">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm text-muted-foreground">
+                        {groups.length} group{groups.length !== 1 ? 's' : ''}
+                      </p>
+                      <Button
+                        size="sm"
+                        onClick={() => setShowCreateGroupDialog(true)}
+                      >
+                        <Plus className="mr-2" style={{ height: '1rem', width: '1rem' }} />
+                        New Group
+                      </Button>
+                    </div>
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -641,13 +739,21 @@ const OrganizationDetail = () => {
                           <TableHead>Status</TableHead>
                           <TableHead>Campaigns</TableHead>
                           <TableHead>Created</TableHead>
+                          <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {groups.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                              No groups found
+                            <TableCell colSpan={6} className="text-center py-8">
+                              <div className="text-muted-foreground mb-4">No groups found</div>
+                              <Button
+                                variant="outline"
+                                onClick={() => setShowCreateGroupDialog(true)}
+                              >
+                                <Plus className="mr-2" style={{ height: '1rem', width: '1rem' }} />
+                                Create First Group
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -658,6 +764,23 @@ const OrganizationDetail = () => {
                               <TableCell>{getStatusBadge(group.status)}</TableCell>
                               <TableCell>{group.campaigns_count}</TableCell>
                               <TableCell>{format(new Date(group.created_at), 'MMM d, yyyy')}</TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal style={{ height: '1rem', width: '1rem' }} />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => handleToggleGroupStatus(group.id, group.status)}
+                                    >
+                                      <Power className="mr-2" style={{ height: '1rem', width: '1rem' }} />
+                                      {group.status ? "Deactivate" : "Activate"}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
                             </TableRow>
                           ))
                         )}
@@ -666,20 +789,41 @@ const OrganizationDetail = () => {
                   </TabsContent>
 
                   <TabsContent value="users" className="mt-0">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm text-muted-foreground">
+                        {users.length} user{users.length !== 1 ? 's' : ''}
+                      </p>
+                      <Button
+                        size="sm"
+                        onClick={() => setShowInviteUserDialog(true)}
+                      >
+                        <UserPlus className="mr-2" style={{ height: '1rem', width: '1rem' }} />
+                        Invite User
+                      </Button>
+                    </div>
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
                           <TableHead>Role</TableHead>
+                          <TableHead>Group</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Joined</TableHead>
+                          <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {users.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                              No users found
+                            <TableCell colSpan={6} className="text-center py-8">
+                              <div className="text-muted-foreground mb-4">No users found</div>
+                              <Button
+                                variant="outline"
+                                onClick={() => setShowInviteUserDialog(true)}
+                              >
+                                <UserPlus className="mr-2" style={{ height: '1rem', width: '1rem' }} />
+                                Invite First User
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -691,8 +835,31 @@ const OrganizationDetail = () => {
                                   : '-'}
                               </TableCell>
                               <TableCell>{user.user_type.name}</TableCell>
+                              <TableCell>{user.group?.group_name || '-'}</TableCell>
                               <TableCell>{getStatusBadge(user.active_user)}</TableCell>
                               <TableCell>{format(new Date(user.created_at), 'MMM d, yyyy')}</TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal style={{ height: '1rem', width: '1rem' }} />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                                      <Edit className="mr-2" style={{ height: '1rem', width: '1rem' }} />
+                                      Edit Role
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleToggleUserStatus(user.id, user.active_user)}
+                                    >
+                                      <Power className="mr-2" style={{ height: '1rem', width: '1rem' }} />
+                                      {user.active_user ? "Deactivate" : "Activate"}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
                             </TableRow>
                           ))
                         )}
@@ -996,6 +1163,41 @@ const OrganizationDetail = () => {
           </Tabs>
         </Card>
       </div>
+
+      {/* Dialogs */}
+      <CreateGroupDialog
+        open={showCreateGroupDialog}
+        onOpenChange={setShowCreateGroupDialog}
+        organizationId={organization.id}
+        organizationType={organization.organization_type}
+        onSuccess={() => {
+          loadTabData("groups");
+          fetchOrganizationData();
+        }}
+      />
+
+      <InviteUserDialog
+        open={showInviteUserDialog}
+        onOpenChange={setShowInviteUserDialog}
+        organizationId={organization.id}
+        organizationType={organization.organization_type}
+        onSuccess={() => {
+          loadTabData("users");
+          fetchOrganizationData();
+        }}
+      />
+
+      <EditUserRoleDialog
+        open={showEditUserDialog}
+        onOpenChange={setShowEditUserDialog}
+        user={editingUser}
+        organizationId={organization.id}
+        organizationType={organization.organization_type}
+        onSuccess={() => {
+          loadTabData("users");
+          fetchOrganizationData();
+        }}
+      />
     </SystemAdminPageLayout>
   );
 };
