@@ -1,71 +1,139 @@
 
+# Fix: Broken Database Trigger Causing User Creation Failure
 
-## Fix: Update invite-user Function to Use Correct Supabase API
+## Root Cause Identified
 
-### Problem
-The `getUserByEmail` method doesn't exist in the Supabase JS client. The error logs show:
+The error occurs in a **database trigger chain**, not in the edge function code itself:
+
 ```
-TypeError: supabaseAdmin.auth.admin.getUserByEmail is not a function
+ERROR: record "new" has no field "email"
 ```
 
-### Solution
-Replace `getUserByEmail` with `listUsers()` and filter the results by email.
+### The Problem Flow
+
+1. Edge function calls `createUser()` → Creates row in `auth.users`
+2. Trigger `on_auth_user_created` fires → Inserts row into `profiles`
+3. Trigger `on_profile_created_link_donor` fires on `profiles` → Calls `link_donor_profile_on_signup()`
+4. This function tries `WHERE LOWER(email) = LOWER(NEW.email)` → **FAILS** because `profiles` table has no `email` column
+
+### Current Broken Function
+
+```sql
+CREATE OR REPLACE FUNCTION public.link_donor_profile_on_signup()
+RETURNS trigger AS $function$
+BEGIN
+  UPDATE donor_profiles
+  SET user_id = NEW.id
+  WHERE LOWER(email) = LOWER(NEW.email)  -- ERROR: profiles has no email column!
+  AND user_id IS NULL;
+  
+  RETURN NEW;
+END;
+$function$
+```
+
+### Table Structures
+
+| Table | Has `email` column? |
+|-------|---------------------|
+| `auth.users` | Yes |
+| `profiles` | No |
+| `donor_profiles` | Yes |
 
 ---
 
-### Changes Required
+## Solution
 
-**File: `supabase/functions/invite-user/index.ts`**
+Fix the `link_donor_profile_on_signup` function to fetch the email from `auth.users` instead of referencing `NEW.email` from the profiles row.
 
-Update lines 39-46 to use the correct API:
+### Fixed Function
 
-```typescript
-// Current (BROKEN)
-const { data: existingAuthData, error: lookupError } = await supabaseAdmin.auth.admin
-  .getUserByEmail(normalizedEmail);
+```sql
+CREATE OR REPLACE FUNCTION public.link_donor_profile_on_signup()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  user_email text;
+BEGIN
+  -- Get the email from auth.users since profiles doesn't have an email column
+  SELECT email INTO user_email
+  FROM auth.users
+  WHERE id = NEW.id;
 
-if (existingAuthData?.user && !lookupError) {
-  userId = existingAuthData.user.id;
-}
+  -- Link any existing donor_profiles with matching email to this new user
+  IF user_email IS NOT NULL THEN
+    UPDATE donor_profiles
+    SET user_id = NEW.id
+    WHERE LOWER(email) = LOWER(user_email)
+    AND user_id IS NULL;
+  END IF;
+  
+  RETURN NEW;
+END;
+$function$;
 ```
 
-```typescript
-// Fixed (WORKING)
-const { data: userListData, error: lookupError } = await supabaseAdmin.auth.admin
-  .listUsers();
+---
 
-// Find user by email in the returned list
-const existingUser = userListData?.users?.find(
-  (u) => u.email?.toLowerCase() === normalizedEmail
-);
+## Technical Details
 
-if (existingUser && !lookupError) {
-  // User exists - use their existing ID
-  userId = existingUser.id;
-  console.log(`Found existing user with email ${normalizedEmail}: ${userId}`);
-} else {
-  // Create new user
-  // ... existing creation logic
-}
+- **Trigger Location**: `on_profile_created_link_donor` on `public.profiles`
+- **Called Function**: `link_donor_profile_on_signup()`
+- **Issue**: References `NEW.email` but `profiles` table doesn't have email column
+- **Fix**: Query `auth.users` table to get email using `NEW.id`
+
+---
+
+## Implementation
+
+Create a database migration to fix the function:
+
+```sql
+-- Fix the link_donor_profile_on_signup function to work with profiles table
+-- The profiles table doesn't have an email column, so we need to look it up from auth.users
+CREATE OR REPLACE FUNCTION public.link_donor_profile_on_signup()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  user_email text;
+BEGIN
+  -- Get the email from auth.users since profiles doesn't have an email column
+  SELECT email INTO user_email
+  FROM auth.users
+  WHERE id = NEW.id;
+
+  -- Link any existing donor_profiles with matching email to this new user
+  IF user_email IS NOT NULL THEN
+    UPDATE donor_profiles
+    SET user_id = NEW.id
+    WHERE LOWER(email) = LOWER(user_email)
+    AND user_id IS NULL;
+  END IF;
+  
+  RETURN NEW;
+END;
+$function$;
 ```
 
 ---
 
-### Technical Notes
+## After Fix
 
-1. **API Difference**: The Supabase Admin API uses `listUsers()` to get all users, then we filter client-side by email
-2. **Performance**: For production systems with many users, you'd want pagination, but for now this approach is simple and effective
-3. **Case Insensitivity**: Both emails are lowercased to ensure proper matching
-
----
-
-### Files to Modify
-- `supabase/functions/invite-user/index.ts`
+1. Database migration will update the function
+2. User invitation will work correctly
+3. Existing functionality (linking donor profiles on signup) will be preserved
+4. No edge function changes required - the current code is correct
 
 ---
 
-### After Deployment
-1. The edge function will be automatically redeployed
-2. Try inviting `stuartborders@gmail.com` again
-3. A new user should be created with that email (not your admin account)
+## Files to Create/Modify
 
+- **Database Migration**: Fix `link_donor_profile_on_signup` function to query email from `auth.users`
+
+No code file changes required - the edge function is correct, it's a database-level bug.
