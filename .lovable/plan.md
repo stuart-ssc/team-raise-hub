@@ -1,71 +1,75 @@
 
 
-# Simplified Platform Menu with Clickable Title
+# Platform Submenu: Hover Trigger and Centered Position
 
 ## Change Summary
 
-Simplify the Platform dropdown to only show 2 items, and make "Platform" itself clickable to navigate to the Platform page.
+Update the Platform dropdown to:
+1. Open on hover instead of click
+2. Position the dropdown directly below "Platform" text (centered), not offset to the side
 
 ---
 
-## Current vs New Structure
+## Technical Approach
 
-**Current:**
-```text
-Platform ▼
-  └── Platform Overview
-  └── All Campaign Types
-  └── Sponsorship Campaigns
-  └── Donation Campaigns
-  └── Event Campaigns
-  └── Merchandise Campaigns
-  └── Roster-Enabled Campaigns
-```
+The current implementation uses Radix UI's `DropdownMenu` which is click-triggered by default. To achieve hover behavior, we'll:
 
-**New:**
-```text
-Platform (clickable → /platform) ▼
-  └── Campaigns
-  └── Roster Enabled Campaigns
-```
+1. **Replace DropdownMenu with a custom hover-based dropdown** using React state and CSS
+2. **Use relative positioning** on the parent container and absolute positioning on the dropdown to center it below the trigger
+3. **Add hover handlers** with a small delay to prevent flickering when moving between trigger and menu
 
 ---
 
 ## Changes to MarketingHeader.tsx
 
-### 1. Simplify platformItems array
-Reduce from 7 items to just 2:
+### 1. Add hover state
 ```typescript
-const platformItems = [
-  { name: 'Campaigns', href: '/campaigns-overview' },
-  { name: 'Roster Enabled Campaigns', href: '/campaigns/roster' },
-];
+const [platformMenuOpen, setPlatformMenuOpen] = useState(false);
 ```
 
-### 2. Make Platform clickable in Desktop Navigation
-Replace the current dropdown trigger with a split design where "Platform" is a clickable link and the chevron opens the dropdown:
+### 2. Replace DropdownMenu with custom hover dropdown
+Replace the current Radix DropdownMenu implementation with a custom div-based dropdown:
+
 ```typescript
-<div className="flex items-center">
+{/* Platform with Hover Dropdown */}
+<div 
+  className="relative flex items-center"
+  onMouseEnter={() => setPlatformMenuOpen(true)}
+  onMouseLeave={() => setPlatformMenuOpen(false)}
+>
   <Link
     to="/platform"
-    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
   >
     Platform
+    <ChevronDown className="h-4 w-4" />
   </Link>
-  <DropdownMenu>
-    <DropdownMenuTrigger className="flex items-center text-muted-foreground hover:text-foreground transition-colors ml-1">
-      <ChevronDown className="h-4 w-4" />
-    </DropdownMenuTrigger>
-    <DropdownMenuContent>
-      {platformItems.map(...)}
-    </DropdownMenuContent>
-  </DropdownMenu>
+  
+  {platformMenuOpen && (
+    <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2">
+      <div className="bg-popover border rounded-md shadow-md p-1 min-w-[200px]">
+        {platformItems.map((item) => (
+          <Link
+            key={item.name}
+            to={item.href}
+            className="block px-3 py-2 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            {item.name}
+          </Link>
+        ))}
+      </div>
+    </div>
+  )}
 </div>
 ```
 
-### 3. Update Mobile Navigation
-- Make "Platform" a clickable link to `/platform`
-- Show only the 2 submenu items (Campaigns, Roster Enabled Campaigns)
+### Key Styling Details:
+- **`relative`** on parent: establishes positioning context
+- **`absolute top-full`**: positions dropdown directly below the trigger
+- **`left-1/2 -translate-x-1/2`**: centers the dropdown horizontally relative to the trigger
+- **`pt-2`**: adds padding-top to create a small gap (prevents hover loss when moving to menu)
+- **`bg-popover border rounded-md shadow-md`**: matches Radix dropdown styling for consistency
+- **`z-50`** (inherited from header): ensures dropdown appears above other content
 
 ---
 
@@ -73,5 +77,5 @@ Replace the current dropdown trigger with a split design where "Platform" is a c
 
 | File | Change |
 |------|--------|
-| `src/components/MarketingHeader.tsx` | Simplify dropdown items and make Platform title clickable |
+| `src/components/MarketingHeader.tsx` | Replace Radix DropdownMenu with custom hover-based dropdown, center positioning |
 
