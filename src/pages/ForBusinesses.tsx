@@ -404,7 +404,7 @@ const ForBusinesses = () => {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               { stat: '80%', label: 'Less admin time', desc: 'managing sponsorships' },
-              { stat: '100%', label: 'Tax-deductible', desc: 'with instant receipts' },
+              { stat: '1', label: 'Central hub', desc: 'for all community giving' },
               { stat: '5min', label: 'Average setup', desc: 'to start sponsoring' },
             ].map((item, index) => (
               <div key={index} className="text-center">
