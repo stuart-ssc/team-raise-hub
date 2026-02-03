@@ -1,35 +1,35 @@
 
+# Update Stat to Option B: Organizational Reach
 
-# Fix "Why Businesses Choose Sponsorly" Section
+## Change
 
-## Problem
-
-The current stats section incorrectly claims "100% Tax-deductible" which is not accurate. This needs to be replaced with messaging that highlights the centralization of community support - a core value proposition of the platform.
+Replace the current "1 Central hub" stat with the organizational reach metric.
 
 ---
 
-## Current Content (Line 407)
+## Implementation
 
-```typescript
-{ stat: '100%', label: 'Tax-deductible', desc: 'with instant receipts' },
-```
+**File:** `src/pages/ForBusinesses.tsx`  
+**Line:** 407
 
-## Updated Content
-
+**Current:**
 ```typescript
 { stat: '1', label: 'Central hub', desc: 'for all community giving' },
 ```
 
-This change:
-- Removes the inaccurate tax claim
-- Highlights the centralization benefit (one place to manage all sponsorships)
-- Aligns with the page's core messaging about streamlining community support
+**New:**
+```typescript
+{ stat: '100+', label: 'Organizations', desc: 'ready to support' },
+```
 
 ---
 
-## File to Modify
+## Final Stats Section
 
-| File | Line | Change |
-|------|------|--------|
-| `src/pages/ForBusinesses.tsx` | 407 | Replace tax-deductible stat with centralization messaging |
+| Stat | Label | Description |
+|------|-------|-------------|
+| 80% | Less admin time | managing sponsorships |
+| 100+ | Organizations | ready to support |
+| 5min | Average setup | to start sponsoring |
 
+This creates a strong trio: time savings, network scale, and ease of getting started.
