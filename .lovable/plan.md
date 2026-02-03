@@ -1,108 +1,80 @@
 
 
-# Add Internal Links to New Marketing Pages
+# Redesign Footer "Get Started" Section
 
-## Overview
+## Problem
 
-Several existing marketing pages should link to the recently created campaign-type pages and the For Businesses page to improve discoverability and SEO. This plan adds strategic internal links across the site.
+The current footer has 5 sections in a 4-column grid:
+1. Logo/tagline
+2. Product links
+3. Campaigns links
+4. Company links
+5. Get Started (wraps to its own row)
+
+This causes the "Get Started" section to appear on its own row, looking awkward and disconnected.
 
 ---
 
-## Changes by File
+## Solution
 
-### 1. Marketing Footer (`MarketingFooter.tsx`)
+Restructure the footer layout to place the "Get Started" section as a styled card on the right side of the main content row, with a colored background to make it stand out as a call-to-action.
 
-Add a new "Campaigns" column with links to campaign type pages:
+---
+
+## New Layout Structure
 
 ```text
-Current columns: Product | Company | Get Started
-New columns:     Product | Campaigns | Company | Get Started
++--------------------------------------------------+
+|  Logo/Tagline  |  Product  |  Campaigns  |  Company  |  [ Get Started Card ]  |
++--------------------------------------------------+
+|          Copyright  |  Terms  Privacy  DPA           |
++--------------------------------------------------+
 ```
 
-**New links to add:**
-- Campaigns Overview (`/campaigns-overview`)
-- Sponsorships (`/campaigns/sponsorships`)
-- Donations (`/campaigns/donations`)
-- Events (`/campaigns/events`)
-- Merchandise (`/campaigns/merchandise`)
-- For Businesses (`/for-businesses`)
+---
+
+## Implementation
+
+**File:** `src/components/MarketingFooter.tsx`
+
+### Changes:
+
+1. **Update grid to 5 columns** on large screens: `lg:grid-cols-5`
+2. **Style "Get Started" as a card** with:
+   - Primary blue background (`bg-primary`)
+   - White text (`text-primary-foreground`)
+   - Rounded corners (`rounded-lg`)
+   - Padding (`p-6`)
+   - Ghost/outline button style for contrast
+
+### Updated Grid Classes:
+```typescript
+// Current
+className="grid grid-cols-1 md:grid-cols-4 gap-8"
+
+// New
+className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8"
+```
+
+### Updated "Get Started" Section (lines 94-105):
+```typescript
+<div className="bg-primary text-primary-foreground rounded-lg p-6">
+  <h3 className="font-semibold mb-3">Get Started</h3>
+  <p className="text-sm text-primary-foreground/80 mb-4">
+    Ready to transform your fundraising?
+  </p>
+  <Link 
+    to="/signup" 
+    className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-white text-primary hover:bg-white/90 h-10 px-4 py-2"
+  >
+    Sign Up Free
+  </Link>
+</div>
+```
 
 ---
 
-### 2. Home Page (`Index.tsx`)
+## Visual Result
 
-**Location:** Final CTA section (around line 341)
-
-Add a third CTA button for businesses:
-- "For Businesses" button linking to `/for-businesses`
-
-**Location:** Features section or after testimonials
-
-Add a "See Campaign Types" link to `/campaigns-overview`
-
----
-
-### 3. Platform Page (`Platform.tsx`)
-
-**Location:** After the "Key Features Preview" section (around line 276)
-
-Add a new section: "Explore Campaign Types" with links to:
-- `/campaigns-overview` (primary CTA)
-- `/campaigns/roster` (highlighted as unique feature)
-
----
-
-### 4. Schools Page (`Schools.tsx`)
-
-**Location:** Within the "Team & Club Features" section or as a new subsection
-
-Add contextual links:
-- "See how Roster-Enabled Campaigns work" → `/campaigns/roster`
-- "Explore all campaign types" → `/campaigns-overview`
-
----
-
-### 5. Nonprofits Page (`Nonprofits.tsx`)
-
-**Location:** Within the "Program Director Features" section or as a new subsection
-
-Add contextual links:
-- "Donation Campaigns" → `/campaigns/donations`
-- "Event Fundraising" → `/campaigns/events`
-- "Explore all campaign types" → `/campaigns-overview`
-
----
-
-### 6. Features Page (`Features.tsx`)
-
-**Location:** Campaign Types section (lines 27-104)
-
-Make each campaign type card clickable with links to corresponding pages:
-- Standard Campaigns → `/campaigns-overview`
-- Recurring Donations → `/campaigns/donations`
-- Peer-to-Peer → `/campaigns/roster`
-- Event Fundraising → `/campaigns/events`
-- Custom Campaigns → `/campaigns-overview`
-
----
-
-## Summary Table
-
-| File | New Links Added |
-|------|-----------------|
-| `MarketingFooter.tsx` | 6 new links (all campaign pages + For Businesses) |
-| `Index.tsx` | 2 new links (For Businesses CTA, Campaigns Overview) |
-| `Platform.tsx` | 2 new links (Campaigns Overview, Roster Campaigns) |
-| `Schools.tsx` | 2 new links (Roster Campaigns, Campaigns Overview) |
-| `Nonprofits.tsx` | 3 new links (Donations, Events, Campaigns Overview) |
-| `Features.tsx` | 5 clickable campaign type cards |
-
----
-
-## Technical Notes
-
-- All links use React Router's `Link` component (already imported in all files)
-- Maintains consistent styling with existing link patterns
-- Footer uses existing column structure pattern
-- CTAs follow existing Button styling conventions
+The footer will now display all sections in a single row on large screens, with the "Get Started" section appearing as an eye-catching blue card on the right side, drawing attention to the signup CTA while maintaining visual harmony with the rest of the footer.
 
