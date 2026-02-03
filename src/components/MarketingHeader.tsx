@@ -21,13 +21,8 @@ const MarketingHeader = () => {
   ];
 
   const platformItems = [
-    { name: 'Platform Overview', href: '/platform' },
-    { name: 'All Campaign Types', href: '/campaigns-overview' },
-    { name: 'Sponsorship Campaigns', href: '/campaigns/sponsorships' },
-    { name: 'Donation Campaigns', href: '/campaigns/donations' },
-    { name: 'Event Campaigns', href: '/campaigns/events' },
-    { name: 'Merchandise Campaigns', href: '/campaigns/merchandise' },
-    { name: 'Roster-Enabled Campaigns', href: '/campaigns/roster' },
+    { name: 'Campaigns', href: '/campaigns-overview' },
+    { name: 'Roster Enabled Campaigns', href: '/campaigns/roster' },
   ];
 
   return (
@@ -51,21 +46,29 @@ const MarketingHeader = () => {
               </Link>
             ))}
             
-            {/* Platform Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Platform <ChevronDown className="h-4 w-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                {platformItems.map((item) => (
-                  <DropdownMenuItem key={item.name} asChild>
-                    <Link to={item.href} className="w-full cursor-pointer">
-                      {item.name}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Platform with Dropdown */}
+            <div className="flex items-center">
+              <Link
+                to="/platform"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Platform
+              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center text-muted-foreground hover:text-foreground transition-colors ml-1">
+                  <ChevronDown className="h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  {platformItems.map((item) => (
+                    <DropdownMenuItem key={item.name} asChild>
+                      <Link to={item.href} className="w-full cursor-pointer">
+                        {item.name}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
             {navigation.slice(2).map((item) => (
               <Link
@@ -124,12 +127,18 @@ const MarketingHeader = () => {
               
               {/* Mobile Platform Links */}
               <div className="border-t pt-4 mt-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Platform</p>
+                <Link
+                  to="/platform"
+                  className="text-base font-medium text-foreground hover:text-foreground transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Platform
+                </Link>
                 {platformItems.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className="block py-2 text-base font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    className="block py-2 pl-4 text-base font-medium text-muted-foreground hover:text-foreground transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.name}
