@@ -1,35 +1,50 @@
 
-# Update Stat to Option B: Organizational Reach
+# Fix Landing Page Tracking Error
 
-## Change
+## Problem
 
-Replace the current "1 Central hub" stat with the organizational reach metric.
+The `/for-businesses` page is triggering an error because:
+- The page calls `useLandingPageTracking({ pageType: 'marketing', ... })`
+- The edge function `track-landing-page-view` only accepts: `['home', 'school', 'district', 'state']`
+- When `'marketing'` is sent, the function returns a 400 error: `"Invalid pageType"`
 
 ---
 
-## Implementation
+## Solution
 
-**File:** `src/pages/ForBusinesses.tsx`  
-**Line:** 407
+Add `'marketing'` to the list of valid page types in the edge function.
+
+---
+
+## Change Required
+
+**File:** `supabase/functions/track-landing-page-view/index.ts`  
+**Line:** 93
 
 **Current:**
 ```typescript
-{ stat: '1', label: 'Central hub', desc: 'for all community giving' },
+const validPageTypes = ['home', 'school', 'district', 'state'];
 ```
 
-**New:**
+**Updated:**
 ```typescript
-{ stat: '100+', label: 'Organizations', desc: 'ready to support' },
+const validPageTypes = ['home', 'school', 'district', 'state', 'marketing'];
 ```
 
 ---
 
-## Final Stats Section
+## Why This Fix is Correct
 
-| Stat | Label | Description |
-|------|-------|-------------|
-| 80% | Less admin time | managing sponsorships |
-| 100+ | Organizations | ready to support |
-| 5min | Average setup | to start sponsoring |
+- The TypeScript interface in `useLandingPageTracking.tsx` already includes `'marketing'` as a valid type
+- The ForBusinesses page is correctly using this type for analytics
+- The edge function validation was simply missing this valid type
+- No database schema changes needed - `page_type` column stores strings
 
-This creates a strong trio: time savings, network scale, and ease of getting started.
+---
+
+## Impact
+
+After this fix:
+- Marketing pages like `/for-businesses` will track successfully
+- Error dialog will no longer appear
+- Analytics data will be properly captured for marketing page views
