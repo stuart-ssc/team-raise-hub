@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface UseLandingPageTrackingProps {
-  pageType: 'home' | 'school' | 'district' | 'state';
+  pageType: 'home' | 'school' | 'district' | 'state' | 'marketing';
   pagePath: string;
   schoolId?: string;
   districtId?: string;

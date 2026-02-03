@@ -77,6 +77,15 @@ import StateLandingPage from "./pages/StateLandingPage";
 import SchoolLandingPage from "./pages/SchoolLandingPage";
 import DistrictLandingPage from "./pages/DistrictLandingPage";
 
+// Marketing Campaign Pages
+import CampaignsOverview from "./pages/CampaignsOverview";
+import SponsorshipCampaigns from "./pages/SponsorshipCampaigns";
+import DonationCampaigns from "./pages/DonationCampaigns";
+import EventCampaigns from "./pages/EventCampaigns";
+import MerchandiseCampaigns from "./pages/MerchandiseCampaigns";
+import RosterCampaigns from "./pages/RosterCampaigns";
+import ForBusinesses from "./pages/ForBusinesses";
+
 // Donor Portal Pages
 import DonorPortalHome from "./pages/DonorPortal/Home";
 import DonorPortalPurchases from "./pages/DonorPortal/Purchases";
@@ -138,10 +147,18 @@ const AppContent = () => {
         <Route path="/features" element={<Features />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/dpa" element={<DataProcessingAgreement />} />
-          <Route path="/contact" element={<Contact />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/dpa" element={<DataProcessingAgreement />} />
+        <Route path="/contact" element={<Contact />} />
+        
+        {/* Marketing Campaign Pages */}
+        <Route path="/campaigns-overview" element={<CampaignsOverview />} />
+        <Route path="/campaigns/sponsorships" element={<SponsorshipCampaigns />} />
+        <Route path="/campaigns/donations" element={<DonationCampaigns />} />
+        <Route path="/campaigns/events" element={<EventCampaigns />} />
+        <Route path="/campaigns/merchandise" element={<MerchandiseCampaigns />} />
+        <Route path="/campaigns/roster" element={<RosterCampaigns />} />
+        <Route path="/for-businesses" element={<ForBusinesses />} />
         <Route path="/native-features" element={<ProtectedRoute><NativeFeatures /></ProtectedRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
