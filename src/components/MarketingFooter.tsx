@@ -27,13 +27,44 @@ const MarketingFooter = () => {
                 </Link>
               </li>
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Security
-                </a>
+                <Link to="/for-businesses" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  For Businesses
+                </Link>
               </li>
               <li>
                 <Link to="/donor-receipts" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Tax Receipts
+                </Link>
+              </li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="font-semibold mb-4">Campaigns</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/campaigns-overview" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Overview
+                </Link>
+              </li>
+              <li>
+                <Link to="/campaigns/sponsorships" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Sponsorships
+                </Link>
+              </li>
+              <li>
+                <Link to="/campaigns/donations" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Donations
+                </Link>
+              </li>
+              <li>
+                <Link to="/campaigns/events" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Events
+                </Link>
+              </li>
+              <li>
+                <Link to="/campaigns/merchandise" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Merchandise
                 </Link>
               </li>
             </ul>

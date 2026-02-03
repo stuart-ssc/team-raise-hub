@@ -276,6 +276,29 @@ const Platform = () => {
           </div>
         </section>
 
+        {/* Explore Campaign Types */}
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-accent/20">
+          <div className="container mx-auto max-w-4xl text-center">
+            <h2 className="text-3xl font-bold mb-4">Explore Campaign Types</h2>
+            <p className="text-lg text-muted-foreground mb-8">
+              Discover the different ways you can raise funds with Sponsorly
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/campaigns-overview">
+                <Button size="lg" className="gap-2">
+                  View All Campaign Types
+                </Button>
+              </Link>
+              <Link to="/campaigns/roster">
+                <Button size="lg" variant="outline" className="gap-2">
+                  <Users className="h-5 w-5" />
+                  Roster-Enabled Campaigns
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* Final CTA */}
         <section className="py-20 px-4 sm:px-6 lg:px-8 bg-primary text-primary-foreground">
           <div className="container mx-auto text-center max-w-3xl">

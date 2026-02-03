@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
 import { useLandingPageTracking } from "@/hooks/useLandingPageTracking";
@@ -20,7 +20,8 @@ import {
   BarChart3,
   DollarSign,
   Globe,
-  Star
+  Star,
+  Briefcase
 } from "lucide-react";
 import heroImage from "@/assets/hero-celebration.jpg";
 
@@ -226,6 +227,15 @@ const Index = () => {
               </Card>
             ))}
           </div>
+          
+          <div className="text-center mt-10">
+            <Link to="/campaigns-overview">
+              <Button variant="outline" size="lg" className="gap-2">
+                See All Campaign Types
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -357,6 +367,16 @@ const Index = () => {
               >
                 <Building2 className="h-5 w-5" />
                 Start as a Non-Profit
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              <Button 
+                size="lg"
+                variant="outline"
+                onClick={() => navigate('/for-businesses')}
+                className="gap-2 text-lg px-8 py-6 bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+              >
+                <Briefcase className="h-5 w-5" />
+                For Businesses
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>

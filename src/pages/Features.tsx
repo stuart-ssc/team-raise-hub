@@ -33,72 +33,84 @@ const Features = () => {
               </p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader>
-                  <Target className="h-10 w-10 text-primary mb-2" />
-                  <CardTitle>Standard Campaigns</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Perfect for one-time fundraising drives with clear goals and deadlines
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <Repeat className="h-10 w-10 text-primary mb-2" />
-                  <CardTitle>Recurring Donations</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Build sustainable funding with monthly supporter programs
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <Share2 className="h-10 w-10 text-primary mb-2" />
-                  <CardTitle>Peer-to-Peer</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Empower team members to create personal fundraising pages
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <Calendar className="h-10 w-10 text-primary mb-2" />
-                  <CardTitle>Event Fundraising</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Sell tickets and raise funds for galas, tournaments, and events
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <Handshake className="h-10 w-10 text-primary mb-2" />
-                  <CardTitle>Matching Campaigns</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Double the impact with corporate matching gift programs
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <Heart className="h-10 w-10 text-primary mb-2" />
-                  <CardTitle>Custom Campaigns</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Flexible options to fit your unique fundraising needs
-                  </p>
-                </CardContent>
-              </Card>
+              <Link to="/campaigns-overview" className="block group">
+                <Card className="h-full transition-shadow hover:shadow-lg">
+                  <CardHeader>
+                    <Target className="h-10 w-10 text-primary mb-2" />
+                    <CardTitle className="group-hover:text-primary transition-colors">Standard Campaigns</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Perfect for one-time fundraising drives with clear goals and deadlines
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link to="/campaigns/donations" className="block group">
+                <Card className="h-full transition-shadow hover:shadow-lg">
+                  <CardHeader>
+                    <Repeat className="h-10 w-10 text-primary mb-2" />
+                    <CardTitle className="group-hover:text-primary transition-colors">Recurring Donations</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Build sustainable funding with monthly supporter programs
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link to="/campaigns/roster" className="block group">
+                <Card className="h-full transition-shadow hover:shadow-lg">
+                  <CardHeader>
+                    <Share2 className="h-10 w-10 text-primary mb-2" />
+                    <CardTitle className="group-hover:text-primary transition-colors">Peer-to-Peer</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Empower team members to create personal fundraising pages
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link to="/campaigns/events" className="block group">
+                <Card className="h-full transition-shadow hover:shadow-lg">
+                  <CardHeader>
+                    <Calendar className="h-10 w-10 text-primary mb-2" />
+                    <CardTitle className="group-hover:text-primary transition-colors">Event Fundraising</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Sell tickets and raise funds for galas, tournaments, and events
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link to="/campaigns/sponsorships" className="block group">
+                <Card className="h-full transition-shadow hover:shadow-lg">
+                  <CardHeader>
+                    <Handshake className="h-10 w-10 text-primary mb-2" />
+                    <CardTitle className="group-hover:text-primary transition-colors">Sponsorship Campaigns</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Partner with local businesses for tiered sponsorship packages
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link to="/campaigns-overview" className="block group">
+                <Card className="h-full transition-shadow hover:shadow-lg">
+                  <CardHeader>
+                    <Heart className="h-10 w-10 text-primary mb-2" />
+                    <CardTitle className="group-hover:text-primary transition-colors">Custom Campaigns</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Flexible options to fit your unique fundraising needs
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
             </div>
           </div>
         </section>
