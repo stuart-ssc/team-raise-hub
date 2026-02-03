@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
     }
 
     // Validate pageType
-    const validPageTypes = ['home', 'school', 'district', 'state'];
+    const validPageTypes = ['home', 'school', 'district', 'state', 'marketing'];
     if (!validPageTypes.includes(body.pageType)) {
       return new Response(
         JSON.stringify({ error: "Invalid pageType" }),
