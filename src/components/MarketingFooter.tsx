@@ -5,7 +5,7 @@ const MarketingFooter = () => {
   return (
     <footer className="border-t bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           <div className="space-y-4">
             <SponsorlyLogo variant="full" theme="light" />
             <p className="text-sm text-muted-foreground">
@@ -91,14 +91,14 @@ const MarketingFooter = () => {
             </ul>
           </div>
           
-          <div>
-            <h3 className="font-semibold mb-4">Get Started</h3>
-            <p className="text-sm text-muted-foreground mb-4">
+          <div className="bg-primary text-primary-foreground rounded-lg p-6">
+            <h3 className="font-semibold mb-3">Get Started</h3>
+            <p className="text-sm text-primary-foreground/80 mb-4">
               Ready to transform your fundraising?
             </p>
             <Link 
               to="/signup" 
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-white text-primary hover:bg-white/90 h-10 px-4 py-2"
             >
               Sign Up Free
             </Link>
