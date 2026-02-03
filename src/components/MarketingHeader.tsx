@@ -2,16 +2,11 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import SponsorlyLogo from '@/components/SponsorlyLogo';
 
 const MarketingHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [platformMenuOpen, setPlatformMenuOpen] = useState(false);
 
   const navigation = [
     { name: 'Schools', href: '/schools' },
@@ -46,28 +41,35 @@ const MarketingHeader = () => {
               </Link>
             ))}
             
-            {/* Platform with Dropdown */}
-            <div className="flex items-center">
+            {/* Platform with Hover Dropdown */}
+            <div 
+              className="relative flex items-center"
+              onMouseEnter={() => setPlatformMenuOpen(true)}
+              onMouseLeave={() => setPlatformMenuOpen(false)}
+            >
               <Link
                 to="/platform"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
               >
                 Platform
+                <ChevronDown className="h-4 w-4" />
               </Link>
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center text-muted-foreground hover:text-foreground transition-colors ml-1">
-                  <ChevronDown className="h-4 w-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  {platformItems.map((item) => (
-                    <DropdownMenuItem key={item.name} asChild>
-                      <Link to={item.href} className="w-full cursor-pointer">
+              
+              {platformMenuOpen && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50">
+                  <div className="bg-popover border rounded-md shadow-md p-1 min-w-[200px]">
+                    {platformItems.map((item) => (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className="block px-3 py-2 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                      >
                         {item.name}
                       </Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {navigation.slice(2).map((item) => (
