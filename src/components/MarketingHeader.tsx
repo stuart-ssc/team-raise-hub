@@ -16,12 +16,12 @@ const MarketingHeader = () => {
   const navigation = [
     { name: 'Schools', href: '/schools' },
     { name: 'Nonprofits', href: '/nonprofits' },
-    { name: 'Platform', href: '/platform' },
     { name: 'Features', href: '/features' },
     { name: 'Pricing', href: '/pricing' },
   ];
 
-  const campaignTypes = [
+  const platformItems = [
+    { name: 'Platform Overview', href: '/platform' },
     { name: 'All Campaign Types', href: '/campaigns-overview' },
     { name: 'Sponsorship Campaigns', href: '/campaigns/sponsorships' },
     { name: 'Donation Campaigns', href: '/campaigns/donations' },
@@ -51,13 +51,13 @@ const MarketingHeader = () => {
               </Link>
             ))}
             
-            {/* Campaigns Dropdown */}
+            {/* Platform Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Campaigns <ChevronDown className="h-4 w-4" />
+                Platform <ChevronDown className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
-                {campaignTypes.map((item) => (
+                {platformItems.map((item) => (
                   <DropdownMenuItem key={item.name} asChild>
                     <Link to={item.href} className="w-full cursor-pointer">
                       {item.name}
@@ -111,7 +111,7 @@ const MarketingHeader = () => {
         {mobileMenuOpen && (
           <div className="md:hidden border-t py-4">
             <div className="flex flex-col gap-4">
-              {navigation.map((item) => (
+              {navigation.slice(0, 2).map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
@@ -122,10 +122,10 @@ const MarketingHeader = () => {
                 </Link>
               ))}
               
-              {/* Mobile Campaign Links */}
+              {/* Mobile Platform Links */}
               <div className="border-t pt-4 mt-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Campaign Types</p>
-                {campaignTypes.map((item) => (
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Platform</p>
+                {platformItems.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}
@@ -136,6 +136,17 @@ const MarketingHeader = () => {
                   </Link>
                 ))}
               </div>
+
+              {navigation.slice(2).map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors border-t pt-4"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
 
               <Link
                 to="/for-businesses"
