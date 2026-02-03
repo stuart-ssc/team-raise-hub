@@ -284,6 +284,25 @@ const Nonprofits = () => {
                   </li>
                 ))}
               </ul>
+              <div className="flex flex-wrap gap-3 mt-8">
+                <Link to="/campaigns/donations">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Heart className="h-4 w-4" />
+                    Donation Campaigns
+                  </Button>
+                </Link>
+                <Link to="/campaigns/events">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Event Fundraising
+                  </Button>
+                </Link>
+                <Link to="/campaigns-overview">
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    Explore All Campaign Types
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

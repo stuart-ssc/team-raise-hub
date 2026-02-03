@@ -269,6 +269,22 @@ const Schools = () => {
               </Card>
             ))}
           </div>
+          <div className="text-center mt-10">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/campaigns/roster">
+                <Button variant="outline" size="lg" className="gap-2">
+                  <Share2 className="h-5 w-5" />
+                  See How Roster-Enabled Campaigns Work
+                </Button>
+              </Link>
+              <Link to="/campaigns-overview">
+                <Button variant="ghost" size="lg" className="gap-2">
+                  Explore All Campaign Types
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
