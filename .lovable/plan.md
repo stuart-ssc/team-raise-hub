@@ -1,109 +1,142 @@
 
-# Creative Branded 404 Page
+
+# Enhanced 404 Page with MarketingHeader and Custom Typography
 
 ## Overview
 
-Replace the current plain 404 page with a branded, friendly page that fits Sponsorly's visual style and helps users find their way.
+Update the 404 page to include the site navigation header, remove the standalone logo, and create a more impactful "404" display with custom font styling and alternating brand colors.
 
 ---
 
-## Design Concept
+## Design Changes
 
-A clean, centered layout with:
-- Sponsorly logo at top
-- Large, friendly "404" display with a subtle gradient/primary color accent
-- Warm, encouraging message (not technical jargon)
-- Quick navigation suggestions as simple buttons
-- Consistent styling with marketing pages
+1. **Add MarketingHeader** - Full site navigation at the top
+2. **Remove SponsorlyLogo** - No longer needed since header has the logo
+3. **Larger 404** - Increase from `text-8xl` to a massive custom size
+4. **Nexa Script Bold font** - Apply custom font to the 404 numbers
+5. **Alternating colors** - Blue and green from the Sponsorly brand
 
 ---
 
 ## Layout Structure
 
 ```text
-+------------------------------------------+
-|             [Sponsorly Logo]             |
-+------------------------------------------+
-|                                          |
-|                  404                     |
-|         (large, styled number)           |
-|                                          |
-|     "This page went on a fundraiser"     |
-|       "and hasn't come back yet."        |
-|                                          |
-|     [ Go Home ]  [ View Features ]       |
-|                 [ Contact Us ]           |
-|                                          |
-+------------------------------------------+
++--------------------------------------------------+
+|  [MarketingHeader with full navigation]          |
++--------------------------------------------------+
+|                                                  |
+|                    4 0 4                         |
+|            (blue-green-blue alternating)         |
+|                                                  |
+|       "Oops! This page took a detour"            |
+|    "The page you're looking for doesn't..."      |
+|                                                  |
+|     [ Go Home ]  [ Explore Features ]            |
+|              [ Contact Us ]                      |
+|                                                  |
++--------------------------------------------------+
 ```
 
 ---
 
-## Implementation
+## Technical Implementation
 
-**File:** `src/pages/NotFound.tsx`
+### File Changes
 
-### Changes:
+**File 1:** `src/index.css`
 
-1. **Add imports:**
-   - `Link` from react-router-dom
-   - `Button` from ui/button
-   - `SponsorlyLogo` component
-   - `Home`, `Compass`, `HelpCircle` icons from lucide-react
+Add the Nexa Script Bold font face:
 
-2. **Update layout:**
-   - Full-screen centered layout with gradient background matching marketing pages
-   - Sponsorly logo at top for brand recognition
-   - Large "404" with primary color styling
-   - Friendly, on-brand message
-   - Three navigation buttons: Home, Features, Contact
+```css
+@font-face {
+  font-family: 'Nexa Script';
+  src: url('/fonts/NexaScript-Bold.woff2') format('woff2'),
+       url('/fonts/NexaScript-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+```
 
-3. **Keep error logging:**
-   - Retain the console error for debugging purposes
+Note: The font file will need to be added to `public/fonts/`. If the font isn't available yet, we can use a fallback approach with a Google Font like "Pacifico" or "Lobster" that has a similar script style.
 
-### Updated Component Structure:
+---
+
+**File 2:** `src/pages/NotFound.tsx`
+
+Update the component:
+
+1. **Import MarketingHeader** instead of SponsorlyLogo
+2. **Remove the logo** from the content area
+3. **Split "404" into individual styled spans** with alternating colors:
+   - "4" - Blue (`#1c6dbe` / primary)
+   - "0" - Green (`#2AA87E`)  
+   - "4" - Blue (`#1c6dbe` / primary)
+4. **Apply Nexa Script Bold font** via inline style or CSS class
+5. **Increase size** to approximately `text-[12rem]` or larger
+
+### Updated 404 Display:
 
 ```typescript
-// Imports
-import { Link, useLocation } from "react-router-dom";
-import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import SponsorlyLogo from "@/components/SponsorlyLogo";
-import { Home, Compass, HelpCircle } from "lucide-react";
-
-// Component with:
-// - Gradient background (from-primary/5 via-background to-secondary/5)
-// - Centered content with max-w-md
-// - Logo at top
-// - Large "404" in text-8xl with text-primary
-// - Friendly headline and subtext
-// - Three Button links with icons
+<div className="space-y-4">
+  <h1 
+    className="font-bold leading-none"
+    style={{ 
+      fontFamily: "'Nexa Script', cursive",
+      fontSize: 'clamp(8rem, 20vw, 14rem)'
+    }}
+  >
+    <span style={{ color: '#1c6dbe' }}>4</span>
+    <span style={{ color: '#2AA87E' }}>0</span>
+    <span style={{ color: '#1c6dbe' }}>4</span>
+  </h1>
+  {/* ... rest of content */}
+</div>
 ```
 
-### Suggested Navigation Links:
+### Updated Page Structure:
 
-| Button | Icon | Route | Label |
-|--------|------|-------|-------|
-| Primary | Home | `/` | Go Home |
-| Outline | Compass | `/features` | Explore Features |
-| Ghost | HelpCircle | `/contact` | Contact Us |
-
----
-
-## Visual Styling
-
-- **Background:** Gradient matching homepage hero (`bg-gradient-to-br from-primary/5 via-background to-secondary/5`)
-- **404 Number:** `text-8xl font-bold text-primary`
-- **Headline:** `text-2xl font-semibold text-foreground`
-- **Subtext:** `text-muted-foreground`
-- **Buttons:** Stacked on mobile, row on desktop with consistent sizing
+```typescript
+<div className="min-h-screen flex flex-col">
+  <MarketingHeader />
+  
+  <main className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 px-4">
+    <div className="text-center max-w-md space-y-8">
+      {/* Large 404 with alternating colors */}
+      {/* Friendly message */}
+      {/* Navigation buttons */}
+    </div>
+  </main>
+</div>
+```
 
 ---
 
-## Copy
+## Color Reference
 
-**Headline:** "Oops! This page took a detour"
+| Character | Color Name | Hex Value |
+|-----------|------------|-----------|
+| 4 | Sponsorly Blue | #1c6dbe |
+| 0 | Sponsorly Green | #2AA87E |
+| 4 | Sponsorly Blue | #1c6dbe |
 
-**Subtext:** "The page you're looking for doesn't exist or has been moved. Let's get you back on track."
+---
 
-This keeps the tone friendly and helpful without being overly cute or unprofessional.
+## Font Fallback Strategy
+
+If Nexa Script Bold font files aren't available:
+
+**Option A:** Use a similar Google Font as fallback
+```css
+font-family: 'Nexa Script', 'Pacifico', cursive;
+```
+
+**Option B:** Proceed with the implementation structure and the font can be uploaded to `public/fonts/` later
+
+---
+
+## Files to Modify
+
+1. `src/pages/NotFound.tsx` - Main component changes
+2. `src/index.css` - Add font-face declaration (if font files available)
+
