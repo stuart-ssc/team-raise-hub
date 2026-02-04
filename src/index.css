@@ -4,15 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Nexa Script Bold font - with Pacifico fallback */
-@font-face {
-  font-family: 'Nexa Script';
-  src: url('/fonts/NexaScript-Bold.woff2') format('woff2'),
-       url('/fonts/NexaScript-Bold.woff') format('woff');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
 
 /* School Sponsor Connect Design System - All colors MUST be HSL */
 

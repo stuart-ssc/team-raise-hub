@@ -24,8 +24,8 @@ const NotFound = () => {
             <h1 
               className="font-bold leading-none"
               style={{ 
-                fontFamily: "'Nexa Script', 'Pacifico', cursive",
-                fontSize: 'clamp(8rem, 20vw, 14rem)'
+                fontFamily: "'Pacifico', cursive",
+                fontSize: 'clamp(10rem, 25vw, 17.5rem)'
               }}
             >
               <span style={{ color: '#1c6dbe' }}>4</span>
