@@ -1,86 +1,102 @@
 
 
-# Fix Stripe Status Visibility and Campaign Publish Dialog
+# Recover Stuck Orders and Harden Webhook System
 
-## Issues Identified
+## Current Situation
 
-### Issue 1: Stripe payment status not showing for other booster leaders
+Two orders are stuck in `pending` status despite successful Stripe payments:
 
-**Root cause:** The Groups page does NOT fetch or display the payment status inline. The `fetchGroups` query only selects basic group fields (`id, group_name, status, group_type_id, organizations, group_type`) -- it never queries `payment_processor_config` from the groups table. The `stripe_account_id` and `stripe_account_enabled` fields in the Group interface are defined but never populated.
+| Order ID | Customer | Amount | Payment Intent |
+|----------|----------|--------|----------------|
+| `481dd3eb-...` | Stuart Borders (stuartborders@gmail.com) | $6.00 | `pi_3SywerEOAGwz3vRr0qCh0pLa` |
+| `8d5e48b0-...` | Chris Skiles (chris@absdabs.com) | $6.00 | `pi_3SywnlEOAGwz3vRr0bOoDu0R` |
 
-The only way to see the Stripe status is by clicking "Payment Setup" which opens the `GroupPaymentSetupDialog`. That dialog calls `get-stripe-account-status`, which DOES work for all booster leaders (the RLS policy allows `program_manager` permission level). So the status should show correctly when they open the dialog -- but the group list itself never shows whether payment is already set up or not.
+The `stripe-webhook` function receives some events (`account.external_account.updated`) but NOT checkout/payment events. This points to a Stripe Dashboard webhook configuration issue -- likely the checkout events are assigned to a different or misconfigured webhook endpoint.
 
-**Fix:** Update `fetchGroups` to include `payment_processor_config` in the query, then display a visual indicator (green checkmark vs warning icon) on the Payment Setup button/column so all users can see at a glance whether Stripe is configured.
+## Plan
 
----
+### 1. Recover Both Stuck Orders (Database Update)
 
-### Issue 2: Campaign publish button does nothing (no dialog, no error)
+Use the Supabase insert tool to update both orders to `succeeded` status with their payment intent IDs. This will trigger the existing `update_donor_profile_from_order` database function, which automatically:
+- Creates/updates donor profiles for both customers
+- Logs donation activity
+- Updates campaign fundraising totals
 
-**Root cause:** In `CampaignPublicationControl.tsx`, the dialog state is initialized with `triggerOpen`:
+### 2. Harden the Stripe Webhook Function
 
-```typescript
-const [showDialog, setShowDialog] = useState(triggerOpen);
-```
+Update `supabase/functions/stripe-webhook/index.ts` with:
 
-But `useState` only uses the initial value. When `CampaignQuickActions` later sets `publishDialogOpen = true`, the `CampaignPublicationControl` component never reacts to the prop change because there is no `useEffect` synchronizing `triggerOpen` to `showDialog`.
+- **Early request logging** at the very top (before signature verification) so we can distinguish "webhook never called" from "webhook called but errored"
+- **Admin alert on signature failure** via `send-admin-alert` so you get notified immediately of configuration issues
+- **Request method/headers logging** to help debug delivery problems
 
-Result: clicking "Publish" in the campaign editor does absolutely nothing -- no dialog opens, no requirements are shown, no error messages appear.
+### 3. Create Order Recovery Tool in System Admin
 
-**Fix:** Add a `useEffect` in `CampaignPublicationControl` that syncs `triggerOpen` prop changes to the internal `showDialog` state.
+New page `src/pages/SystemAdmin/OrderRecovery.tsx` that allows:
+- Searching orders by ID, email, or campaign name
+- Viewing order details (status, amount, customer, timestamps, Stripe IDs)
+- Manually marking pending orders as `succeeded` when webhooks fail
+- This prevents needing developer intervention for future stuck orders
 
----
+### 4. Add Navigation
 
-## Implementation Plan
+- Add "Order Recovery" link to `src/components/SystemAdminSidebar.tsx`
+- Add route to `src/App.tsx` under system admin routes
 
-### File 1: `src/components/CampaignPublicationControl.tsx`
+## Technical Details
 
-Add a `useEffect` after line 46 to sync the `triggerOpen` prop:
-
-```typescript
-useEffect(() => {
-  if (triggerOpen) {
-    setShowDialog(true);
-  }
-}, [triggerOpen]);
-```
-
-This ensures that when `CampaignQuickActions` sets `triggerOpen={true}`, the dialog actually opens.
-
----
-
-### File 2: `src/pages/Groups.tsx`
-
-**Step A:** Update the `fetchGroups` query to include `payment_processor_config`:
+### Database Update (both orders)
 
 ```sql
-id,
-group_name,
-status,
-group_type_id,
-payment_processor_config,
-organizations!organization_id(name, organization_type),
-group_type(name)
+UPDATE orders SET status = 'succeeded', stripe_payment_intent_id = 'pi_3SywerEOAGwz3vRr0qCh0pLa', updated_at = now()
+WHERE id = '481dd3eb-b831-461c-8bca-16a87070ef99' AND status = 'pending';
+
+UPDATE orders SET status = 'succeeded', stripe_payment_intent_id = 'pi_3SywnlEOAGwz3vRr0bOoDu0R', updated_at = now()
+WHERE id = '8d5e48b0-5c73-40a3-8556-761cf094fe70' AND status = 'pending';
 ```
 
-**Step B:** Populate `stripe_account_enabled` from the fetched config:
+### Webhook Logging Enhancement
+
+Add at the very start of the handler (before signature verification):
 
 ```typescript
-stripe_account_enabled: group.payment_processor_config?.account_enabled === true
+console.log('Stripe webhook received:', req.method, req.url, new Date().toISOString());
+console.log('Headers:', JSON.stringify(Object.fromEntries(req.headers.entries())));
 ```
 
-**Step C:** Update the Payment Setup button in both mobile and desktop views to show the current status:
+Add admin alert in signature failure catch block:
 
-- If `stripe_account_enabled === true`: Show a green checkmark icon with "Connected" text
-- If not configured: Show the current "Setup" button with a warning indicator
+```typescript
+await supabaseAdmin.functions.invoke('send-admin-alert', {
+  body: {
+    functionName: 'stripe-webhook',
+    errorMessage: `Signature verification failed: ${err.message}`,
+    severity: 'high',
+    context: { timestamp: new Date().toISOString() }
+  }
+});
+```
 
-This gives all group members immediate visibility into whether Stripe is connected, without needing to open the dialog.
+### Order Recovery Page
 
----
+Simple admin tool with:
+- Search input (by order ID, customer email, or campaign)
+- Results table showing order details and status
+- "Mark as Succeeded" button per order
+- Confirmation dialog before status change
+- Only accessible to system admins (wrapped in SystemAdminGuard)
 
-## Summary of Changes
+### Files Modified/Created
 
-| File | Change | Impact |
-|------|--------|--------|
-| `CampaignPublicationControl.tsx` | Add `useEffect` to sync `triggerOpen` prop | Fixes publish dialog not opening |
-| `Groups.tsx` | Fetch and display `payment_processor_config` | Shows Stripe status to all group members |
+| File | Change |
+|------|--------|
+| Database (insert tool) | Update 2 stuck orders to succeeded |
+| `supabase/functions/stripe-webhook/index.ts` | Add early logging + admin alerts |
+| `src/pages/SystemAdmin/OrderRecovery.tsx` | New order recovery admin tool |
+| `src/App.tsx` | Add OrderRecovery route |
+| `src/components/SystemAdminSidebar.tsx` | Add nav link |
+
+### Important Note
+
+The webhook configuration issue in Stripe Dashboard needs to be fixed separately. Please verify that the webhook endpoint `https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/stripe-webhook` is configured to receive `checkout.session.completed` and `payment_intent.succeeded` events. If you have multiple webhooks, the checkout events may be on a different endpoint.
 
