@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MoreHorizontal, ChevronDown, CreditCard, CheckCircle2, AlertCircle } from "lucide-react";
+import { MoreHorizontal, ChevronDown, CheckCircle2, AlertCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +51,7 @@ const Groups = () => {
           group_name,
           status,
           group_type_id,
+          payment_processor_config,
           organizations!organization_id(name, organization_type),
           group_type(name)
         `);
@@ -92,6 +93,7 @@ const Groups = () => {
         group_type_name: group.group_type?.name || 'Uncategorized',
         organization_type: group.organizations?.organization_type,
         status: group.status ?? true,
+        stripe_account_enabled: (group.payment_processor_config as any)?.account_enabled === true,
       }));
 
       setGroups(formattedGroups);
@@ -376,15 +378,27 @@ const Groups = () => {
                               >
                                 Manage Roster
                               </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="w-full"
-                                onClick={() => handlePaymentSetup(group)}
-                              >
-                                <CreditCard className="h-4 w-4 mr-1" />
-                                Payment Setup
-                              </Button>
+                              {group.stripe_account_enabled ? (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="w-full text-green-600 border-green-200"
+                                  onClick={() => handlePaymentSetup(group)}
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Connected
+                                </Button>
+                              ) : (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="w-full"
+                                  onClick={() => handlePaymentSetup(group)}
+                                >
+                                  <AlertCircle className="h-4 w-4 mr-1 text-amber-500" />
+                                  Payment Setup
+                                </Button>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -438,14 +452,26 @@ const Groups = () => {
                                   </Button>
                                 </TableCell>
                                 <TableCell>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => handlePaymentSetup(group)}
-                                  >
-                                    <CreditCard className="h-4 w-4 mr-1" />
-                                    Setup
-                                  </Button>
+                                  {group.stripe_account_enabled ? (
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      className="text-green-600 border-green-200"
+                                      onClick={() => handlePaymentSetup(group)}
+                                    >
+                                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                                      Connected
+                                    </Button>
+                                  ) : (
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => handlePaymentSetup(group)}
+                                    >
+                                      <AlertCircle className="h-4 w-4 mr-1 text-amber-500" />
+                                      Setup
+                                    </Button>
+                                  )}
                                 </TableCell>
                                 <TableCell>
                                   <span className={group.status ? "text-green-600" : "text-muted-foreground"}>
