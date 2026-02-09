@@ -7,9 +7,17 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
+  // Early logging - before ANY processing to confirm webhook is being called
+  console.log('Stripe webhook received:', req.method, new Date().toISOString());
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const supabaseAdmin = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
 
   try {
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -28,6 +36,19 @@ Deno.serve(async (req) => {
         event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
       } catch (err) {
         console.error('Webhook signature verification failed:', err.message);
+        // Alert admin about configuration issue
+        try {
+          await supabaseAdmin.functions.invoke('send-admin-alert', {
+            body: {
+              functionName: 'stripe-webhook',
+              errorMessage: `Signature verification failed: ${err.message}`,
+              severity: 'high',
+              context: { timestamp: new Date().toISOString() }
+            }
+          });
+        } catch (alertErr) {
+          console.error('Failed to send admin alert:', alertErr);
+        }
         return new Response(
           JSON.stringify({ error: 'Invalid signature' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -40,11 +61,6 @@ Deno.serve(async (req) => {
     }
 
     console.log('Received Stripe webhook event:', event.type);
-
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     switch (event.type) {
       case 'checkout.session.completed': {
