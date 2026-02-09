@@ -44,6 +44,12 @@ export const CampaignPublicationControl = ({
   hideButton = false,
 }: CampaignPublicationControlProps) => {
   const [showDialog, setShowDialog] = useState(triggerOpen);
+
+  useEffect(() => {
+    if (triggerOpen) {
+      setShowDialog(true);
+    }
+  }, [triggerOpen]);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
   const [requirements, setRequirements] = useState<PublicationRequirement[]>([]);
