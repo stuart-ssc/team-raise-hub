@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Building2, FileCheck, Mail, FlaskConical, Briefcase, BarChart3, MessageSquare, GraduationCap, FileText, TrendingUp, HelpCircle } from "lucide-react";
+import { Home, Building2, FileCheck, Mail, FlaskConical, Briefcase, BarChart3, MessageSquare, GraduationCap, FileText, TrendingUp, HelpCircle, ShoppingCart } from "lucide-react";
 import SponsorlyLogo from "./SponsorlyLogo";
 
 const sidebarItems = [
@@ -63,6 +63,11 @@ const sidebarItems = [
     title: "Help Submissions",
     icon: HelpCircle,
     url: "/system-admin/help-submissions",
+  },
+  {
+    title: "Order Recovery",
+    icon: ShoppingCart,
+    url: "/system-admin/order-recovery",
   },
 ];
 
