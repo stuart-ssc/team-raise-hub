@@ -1,102 +1,57 @@
 
 
-# Recover Stuck Orders and Harden Webhook System
+# School URL Matcher Tool - System Admin
 
-## Current Situation
+## What It Does
 
-Two orders are stuck in `pending` status despite successful Stripe payments:
+Upload any CSV that has a school name column. The tool matches school names against the database, then gives you back the exact same CSV with one new column added: `landing_page_url`. No data is changed, no database updates -- just a lookup and append.
 
-| Order ID | Customer | Amount | Payment Intent |
-|----------|----------|--------|----------------|
-| `481dd3eb-...` | Stuart Borders (stuartborders@gmail.com) | $6.00 | `pi_3SywerEOAGwz3vRr0qCh0pLa` |
-| `8d5e48b0-...` | Chris Skiles (chris@absdabs.com) | $6.00 | `pi_3SywnlEOAGwz3vRr0bOoDu0R` |
+## User Flow
 
-The `stripe-webhook` function receives some events (`account.external_account.updated`) but NOT checkout/payment events. This points to a Stripe Dashboard webhook configuration issue -- likely the checkout events are assigned to a different or misconfigured webhook endpoint.
+1. Click "Match Schools to URLs" on the School Import page
+2. Upload your CSV
+3. Pick which column is the school name (and optionally which column is the state)
+4. Click "Match"
+5. See a summary (e.g., "42 of 50 matched")
+6. Download the enriched CSV -- all original columns untouched, plus `landing_page_url` and `match_status` appended
 
-## Plan
+## Matching Logic
 
-### 1. Recover Both Stuck Orders (Database Update)
-
-Use the Supabase insert tool to update both orders to `succeeded` status with their payment intent IDs. This will trigger the existing `update_donor_profile_from_order` database function, which automatically:
-- Creates/updates donor profiles for both customers
-- Logs donation activity
-- Updates campaign fundraising totals
-
-### 2. Harden the Stripe Webhook Function
-
-Update `supabase/functions/stripe-webhook/index.ts` with:
-
-- **Early request logging** at the very top (before signature verification) so we can distinguish "webhook never called" from "webhook called but errored"
-- **Admin alert on signature failure** via `send-admin-alert` so you get notified immediately of configuration issues
-- **Request method/headers logging** to help debug delivery problems
-
-### 3. Create Order Recovery Tool in System Admin
-
-New page `src/pages/SystemAdmin/OrderRecovery.tsx` that allows:
-- Searching orders by ID, email, or campaign name
-- Viewing order details (status, amount, customer, timestamps, Stripe IDs)
-- Manually marking pending orders as `succeeded` when webhooks fail
-- This prevents needing developer intervention for future stuck orders
-
-### 4. Add Navigation
-
-- Add "Order Recovery" link to `src/components/SystemAdminSidebar.tsx`
-- Add route to `src/App.tsx` under system admin routes
+- Case-insensitive match of the CSV school name against `schools.school_name` in the database
+- If a state column is provided, results are filtered by state for accuracy
+- Matched rows get a URL like `https://sponsorly.io/schools/georgia/toombs-county-high-school-lyons`
+- Unmatched rows get an empty `landing_page_url` and `match_status` = "not_found"
+- All original CSV columns and values are preserved exactly as uploaded
 
 ## Technical Details
 
-### Database Update (both orders)
-
-```sql
-UPDATE orders SET status = 'succeeded', stripe_payment_intent_id = 'pi_3SywerEOAGwz3vRr0qCh0pLa', updated_at = now()
-WHERE id = '481dd3eb-b831-461c-8bca-16a87070ef99' AND status = 'pending';
-
-UPDATE orders SET status = 'succeeded', stripe_payment_intent_id = 'pi_3SywnlEOAGwz3vRr0bOoDu0R', updated_at = now()
-WHERE id = '8d5e48b0-5c73-40a3-8556-761cf094fe70' AND status = 'pending';
-```
-
-### Webhook Logging Enhancement
-
-Add at the very start of the handler (before signature verification):
-
-```typescript
-console.log('Stripe webhook received:', req.method, req.url, new Date().toISOString());
-console.log('Headers:', JSON.stringify(Object.fromEntries(req.headers.entries())));
-```
-
-Add admin alert in signature failure catch block:
-
-```typescript
-await supabaseAdmin.functions.invoke('send-admin-alert', {
-  body: {
-    functionName: 'stripe-webhook',
-    errorMessage: `Signature verification failed: ${err.message}`,
-    severity: 'high',
-    context: { timestamp: new Date().toISOString() }
-  }
-});
-```
-
-### Order Recovery Page
-
-Simple admin tool with:
-- Search input (by order ID, customer email, or campaign)
-- Results table showing order details and status
-- "Mark as Succeeded" button per order
-- Confirmation dialog before status change
-- Only accessible to system admins (wrapped in SystemAdminGuard)
-
-### Files Modified/Created
+### Files
 
 | File | Change |
 |------|--------|
-| Database (insert tool) | Update 2 stuck orders to succeeded |
-| `supabase/functions/stripe-webhook/index.ts` | Add early logging + admin alerts |
-| `src/pages/SystemAdmin/OrderRecovery.tsx` | New order recovery admin tool |
-| `src/App.tsx` | Add OrderRecovery route |
-| `src/components/SystemAdminSidebar.tsx` | Add nav link |
+| `src/components/SchoolUrlMatcherDialog.tsx` | New component -- CSV upload, column picker, matching, download |
+| `src/pages/SystemAdmin/SchoolImport.tsx` | Add card + button to open the matcher dialog |
 
-### Important Note
+### How Matching Works (all client-side)
 
-The webhook configuration issue in Stripe Dashboard needs to be fixed separately. Please verify that the webhook endpoint `https://tfrebmhionpuowpzedvz.supabase.co/functions/v1/stripe-webhook` is configured to receive `checkout.session.completed` and `payment_intent.succeeded` events. If you have multiple webhooks, the checkout events may be on a different endpoint.
+1. Parse CSV with `papaparse` (already installed)
+2. User selects which header is the school name (and optionally state)
+3. Query `schools` table from Supabase: `select('school_name, slug, state, city')`
+4. Build a lookup map: `normalized_school_name + state -> slug`
+5. For each CSV row, look up the school and construct the URL using `stateUtils` to convert abbreviation to slug
+6. Append `landing_page_url` and `match_status` columns to each row
+7. Generate CSV from the enriched data and trigger browser download
+
+### URL Format
+
+```
+https://sponsorly.io/schools/{state-slug}/{school-slug}
+```
+
+- `state-slug`: full state name, lowercase, hyphenated (e.g., "georgia") -- derived using existing `getStateName()` from `stateUtils.ts`
+- `school-slug`: from the `schools.slug` column in the database
+
+### No Database Changes
+
+The tool is read-only. It queries the `schools` table to find matches but never writes anything. The downloaded CSV contains all original data exactly as uploaded, with the URL column appended.
 
