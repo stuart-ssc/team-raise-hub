@@ -3,9 +3,10 @@ import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImportSchoolsDialog } from "@/components/ImportSchoolsDialog";
+import { SchoolUrlMatcherDialog } from "@/components/SchoolUrlMatcherDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, GraduationCap, Building2, MapPin } from "lucide-react";
+import { Upload, GraduationCap, Building2, MapPin, Link2 } from "lucide-react";
 
 interface SchoolStats {
   totalSchools: number;
@@ -16,6 +17,7 @@ interface SchoolStats {
 const SchoolImport = () => {
   const { toast } = useToast();
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [matcherDialogOpen, setMatcherDialogOpen] = useState(false);
   const [stats, setStats] = useState<SchoolStats>({
     totalSchools: 0,
     stateCount: 0,
@@ -160,6 +162,43 @@ const SchoolImport = () => {
             </div>
           </CardContent>
         </Card>
+        {/* URL Matcher Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Match Schools to Landing Pages</CardTitle>
+            <CardDescription>
+              Upload a CSV with school names to get matching landing page URLs appended. Your original data stays untouched.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border p-6 space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="rounded-full bg-primary/10 p-3">
+                  <Link2 className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <h3 className="font-semibold">How It Works</h3>
+                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>Upload any CSV that has a school name column</li>
+                    <li>Pick the school name column (and optionally state)</li>
+                    <li>Download the same CSV with <code className="bg-muted px-1 py-0.5 rounded">landing_page_url</code> appended</li>
+                    <li>No data is modified — read-only lookup</li>
+                  </ul>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => setMatcherDialogOpen(true)}
+                className="w-full"
+                size="lg"
+                variant="outline"
+              >
+                <Link2 className="mr-2 h-5 w-5" />
+                Match Schools to URLs
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
         </div>
       </div>
 
@@ -167,6 +206,10 @@ const SchoolImport = () => {
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
         onImportComplete={handleImportComplete}
+      />
+      <SchoolUrlMatcherDialog
+        open={matcherDialogOpen}
+        onOpenChange={setMatcherDialogOpen}
       />
     </SystemAdminPageLayout>
   );
