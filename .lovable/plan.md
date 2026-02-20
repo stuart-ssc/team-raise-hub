@@ -1,57 +1,89 @@
 
 
-# School URL Matcher Tool - System Admin
+# Donor Lists + Campaign Sending
 
-## What It Does
+## Overview
 
-Upload any CSV that has a school name column. The tool matches school names against the database, then gives you back the exact same CSV with one new column added: `landing_page_url`. No data is changed, no database updates -- just a lookup and append.
+Add a **Lists** concept alongside the existing filter-based Segments. A List is a manually curated collection of donors -- you pick exactly who goes on it. Then you can send email campaigns (and eventually texts) to any List, just like you can with Segments today.
 
-## User Flow
+## How It Works for You
 
-1. Click "Match Schools to URLs" on the School Import page
-2. Upload your CSV
-3. Pick which column is the school name (and optionally which column is the state)
-4. Click "Match"
-5. See a summary (e.g., "42 of 50 matched")
-6. Download the enriched CSV -- all original columns untouched, plus `landing_page_url` and `match_status` appended
+1. Go to Donor Segmentation page, click the new **"Lists"** tab
+2. Click **"Create List"** -- give it a name and description
+3. Add donors to the list in two ways:
+   - From the **List detail view**: search and add donors one by one
+   - From the **Donors page**: select donors with checkboxes, then click "Add to List" in the bulk action toolbar
+4. View/manage list members (remove individuals, see count)
+5. Click **"Send Campaign"** on any list -- same campaign dialog as segments (subject, content, personalization variables)
+6. The existing `send-segmented-campaign` edge function is extended to also accept a `listId` instead of `segmentId`, querying list members directly
 
-## Matching Logic
+## New Database Tables
 
-- Case-insensitive match of the CSV school name against `schools.school_name` in the database
-- If a state column is provided, results are filtered by state for accuracy
-- Matched rows get a URL like `https://sponsorly.io/schools/georgia/toombs-county-high-school-lyons`
-- Unmatched rows get an empty `landing_page_url` and `match_status` = "not_found"
-- All original CSV columns and values are preserved exactly as uploaded
+### `donor_lists`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid (PK) | |
+| organization_id | uuid (FK) | |
+| name | text | List name |
+| description | text | Optional description |
+| created_by | uuid (FK) | User who created it |
+| created_at | timestamptz | |
+| updated_at | timestamptz | |
 
-## Technical Details
+### `donor_list_members`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid (PK) | |
+| list_id | uuid (FK -> donor_lists) | |
+| donor_id | uuid (FK -> donor_profiles) | |
+| added_at | timestamptz | |
+| added_by | uuid (FK -> profiles) | |
+| **unique constraint** on (list_id, donor_id) | | Prevent duplicates |
 
-### Files
+## File Changes
 
 | File | Change |
 |------|--------|
-| `src/components/SchoolUrlMatcherDialog.tsx` | New component -- CSV upload, column picker, matching, download |
-| `src/pages/SystemAdmin/SchoolImport.tsx` | Add card + button to open the matcher dialog |
+| **Migration** | Create `donor_lists` and `donor_list_members` tables with RLS policies |
+| `src/pages/DonorSegmentation.tsx` | Add a third tab "Lists" showing all lists with member counts, create/delete list, and send campaign button |
+| `src/components/DonorListDetail.tsx` | **New** -- Dialog to view list members, search/add donors, remove members |
+| `src/components/BulkActionToolbar.tsx` | Add "Add to List" option in bulk actions (alongside existing Tag and Email) |
+| `src/components/AddToListDialog.tsx` | **New** -- Dialog to pick which list to add selected donors to |
+| `supabase/functions/send-segmented-campaign/index.ts` | Accept optional `listId` param; if provided, query `donor_list_members` joined to `donor_profiles` instead of filtering by segment criteria |
 
-### How Matching Works (all client-side)
+## Technical Details
 
-1. Parse CSV with `papaparse` (already installed)
-2. User selects which header is the school name (and optionally state)
-3. Query `schools` table from Supabase: `select('school_name, slug, state, city')`
-4. Build a lookup map: `normalized_school_name + state -> slug`
-5. For each CSV row, look up the school and construct the URL using `stateUtils` to convert abbreviation to slug
-6. Append `landing_page_url` and `match_status` columns to each row
-7. Generate CSV from the enriched data and trigger browser download
+### RLS Policies
+- `donor_lists`: Users can CRUD lists for organizations they belong to (via `user_belongs_to_organization`)
+- `donor_list_members`: Same org-level access through the parent list's `organization_id`
 
-### URL Format
+### Lists Tab UI (on DonorSegmentation page)
+- Grid of list cards showing name, description, member count, created date
+- Each card has "View/Edit", "Send Campaign", and "Delete" actions
+- "Create List" button opens a simple name + description dialog
+- Clicking "View/Edit" opens `DonorListDetail` dialog
 
-```
-https://sponsorly.io/schools/{state-slug}/{school-slug}
-```
+### DonorListDetail Dialog
+- Shows a table of current list members (name, email, segment)
+- Search bar to find and add donors from the organization's donor_profiles
+- Remove button on each member row
+- Member count badge in the header
 
-- `state-slug`: full state name, lowercase, hyphenated (e.g., "georgia") -- derived using existing `getStateName()` from `stateUtils.ts`
-- `school-slug`: from the `schools.slug` column in the database
+### Bulk "Add to List" from Donors Page
+- When donors are selected on the Donors page, the bulk toolbar shows an "Add to List" button
+- Opens `AddToListDialog` which shows available lists and lets the user pick one
+- Inserts selected donor IDs into `donor_list_members`
 
-### No Database Changes
+### Edge Function Update
+- `send-segmented-campaign` gains an optional `listId` field
+- If `listId` is provided, it queries donors via:
+  ```sql
+  donor_list_members JOIN donor_profiles ON donor_id
+  WHERE list_id = listId
+  ```
+- If `segmentId` is provided, existing filter logic runs as before
+- Campaign record is still created in `donor_segment_campaigns` (with a nullable `list_id` column added)
 
-The tool is read-only. It queries the `schools` table to find matches but never writes anything. The downloaded CSV contains all original data exactly as uploaded, with the URL column appended.
+### Campaign Record Enhancement
+- Add `list_id` (nullable FK to `donor_lists`) to `donor_segment_campaigns` so campaigns sent to lists are tracked alongside segment campaigns
 
