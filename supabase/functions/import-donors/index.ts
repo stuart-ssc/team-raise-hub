@@ -27,6 +27,7 @@ interface ImportResult {
   updated: number;
   skipped: number;
   errors: Array<{ row: number; email: string; error: string }>;
+  importedDonorIds: string[];
 }
 
 Deno.serve(async (req) => {
@@ -99,6 +100,7 @@ Deno.serve(async (req) => {
       updated: 0,
       skipped: 0,
       errors: [],
+      importedDonorIds: [],
     };
 
     // Process each donor
@@ -168,6 +170,7 @@ Deno.serve(async (req) => {
               result.skipped++;
             } else {
               result.updated++;
+              result.importedDonorIds.push(existingDonor.id);
             }
           } else {
             result.skipped++;
@@ -185,9 +188,11 @@ Deno.serve(async (req) => {
             preferred_communication: donor.preferred_communication || "email",
           };
 
-          const { error: insertError } = await supabase
+          const { data: insertedData, error: insertError } = await supabase
             .from("donor_profiles")
-            .insert(insertData);
+            .insert(insertData)
+            .select("id")
+            .single();
 
           if (insertError) {
             console.error(`Error inserting donor ${donor.email}:`, insertError);
@@ -199,6 +204,7 @@ Deno.serve(async (req) => {
             result.skipped++;
           } else {
             result.imported++;
+            result.importedDonorIds.push(insertedData.id);
           }
         }
       } catch (error) {

@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -13,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +29,8 @@ import {
   CheckCircle, 
   AlertCircle, 
   FileText,
-  Download
+  Download,
+  ListPlus
 } from "lucide-react";
 
 interface DonorImportWizardProps {
@@ -51,6 +54,13 @@ interface ImportResult {
   updated: number;
   skipped: number;
   errors: Array<{ row: number; email: string; error: string }>;
+  importedDonorIds?: string[];
+}
+
+interface DonorList {
+  id: string;
+  name: string;
+  description: string | null;
 }
 
 const DONOR_FIELDS = [
@@ -64,6 +74,7 @@ const DONOR_FIELDS = [
 
 const DonorImportWizard = ({ open, onOpenChange, onImportComplete }: DonorImportWizardProps) => {
   const { organizationUser } = useOrganizationUser();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [csvData, setCsvData] = useState<CSVRow[]>([]);
@@ -72,6 +83,26 @@ const DonorImportWizard = ({ open, onOpenChange, onImportComplete }: DonorImport
   const [updateExisting, setUpdateExisting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+
+  // List selection state
+  const [donorLists, setDonorLists] = useState<DonorList[]>([]);
+  const [selectedListId, setSelectedListId] = useState<string>("");
+  const [newListName, setNewListName] = useState("");
+  const [newListDescription, setNewListDescription] = useState("");
+
+  // Fetch existing lists when dialog opens
+  useEffect(() => {
+    if (open && organizationUser?.organization_id) {
+      supabase
+        .from("donor_lists")
+        .select("id, name, description")
+        .eq("organization_id", organizationUser.organization_id)
+        .order("name")
+        .then(({ data }) => {
+          if (data) setDonorLists(data);
+        });
+    }
+  }, [open, organizationUser?.organization_id]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -199,19 +230,65 @@ const DonorImportWizard = ({ open, onOpenChange, onImportComplete }: DonorImport
 
       if (error) throw error;
 
-      setImportResult(data as ImportResult);
+      const importData = data as ImportResult;
+
+      // Handle list assignment if selected
+      if (importData.importedDonorIds && importData.importedDonorIds.length > 0) {
+        let listId = selectedListId;
+
+        // Create new list if requested
+        if (selectedListId === "__new__" && newListName.trim()) {
+          const { data: newList, error: listError } = await supabase
+            .from("donor_lists")
+            .insert({
+              organization_id: organizationUser.organization_id,
+              name: newListName.trim(),
+              description: newListDescription.trim() || null,
+              created_by: user?.id,
+            })
+            .select("id")
+            .single();
+
+          if (listError) {
+            console.error("Error creating list:", listError);
+            toast({ title: "List creation failed", description: listError.message, variant: "destructive" });
+          } else {
+            listId = newList.id;
+          }
+        }
+
+        // Add donors to the list
+        if (listId && listId !== "__new__" && listId !== "none") {
+          const members = importData.importedDonorIds.map(donorId => ({
+            list_id: listId,
+            donor_id: donorId,
+            added_by: user?.id,
+          }));
+
+          const { error: memberError } = await supabase
+            .from("donor_list_members")
+            .upsert(members, { onConflict: "list_id,donor_id" });
+
+          if (memberError) {
+            console.error("Error adding donors to list:", memberError);
+            toast({ title: "List assignment failed", description: memberError.message, variant: "destructive" });
+          }
+        }
+      }
+
+      setImportResult(importData);
       setStep(4);
 
-      if (data.errors.length === 0) {
+      if (importData.errors.length === 0) {
         toast({
           title: "Import Successful",
-          description: `${data.imported} donors imported, ${data.updated} updated`,
+          description: `${importData.imported} donors imported, ${importData.updated} updated`,
         });
         onImportComplete();
       } else {
         toast({
           title: "Import Completed with Errors",
-          description: `${data.imported + data.updated} successful, ${data.errors.length} errors`,
+          description: `${importData.imported + importData.updated} successful, ${importData.errors.length} errors`,
           variant: "destructive",
         });
       }
@@ -234,6 +311,9 @@ const DonorImportWizard = ({ open, onOpenChange, onImportComplete }: DonorImport
     setFieldMappings([]);
     setUpdateExisting(false);
     setImportResult(null);
+    setSelectedListId("");
+    setNewListName("");
+    setNewListDescription("");
     onOpenChange(false);
   };
 
@@ -395,11 +475,63 @@ const DonorImportWizard = ({ open, onOpenChange, onImportComplete }: DonorImport
                 </div>
               </div>
 
+              <Separator />
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <ListPlus className="h-4 w-4" />
+                  <Label className="font-medium">Add to List (Optional)</Label>
+                </div>
+                <Select value={selectedListId} onValueChange={setSelectedListId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="No list — just import" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No list — just import</SelectItem>
+                    {donorLists.map((list) => (
+                      <SelectItem key={list.id} value={list.id}>
+                        {list.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__new__">+ Create New List</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {selectedListId === "__new__" && (
+                  <div className="space-y-2 rounded-lg border p-3">
+                    <div>
+                      <Label htmlFor="new-list-name">List Name</Label>
+                      <Input
+                        id="new-list-name"
+                        value={newListName}
+                        onChange={(e) => setNewListName(e.target.value)}
+                        placeholder="e.g. Spring Gala Invites"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="new-list-desc">Description (optional)</Label>
+                      <Textarea
+                        id="new-list-desc"
+                        value={newListDescription}
+                        onChange={(e) => setNewListDescription(e.target.value)}
+                        placeholder="Family members to invite for the spring campaign"
+                        className="mt-1"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center justify-between p-4 rounded-lg bg-muted">
                 <div>
                   <p className="font-medium">Ready to import</p>
                   <p className="text-sm text-muted-foreground">
                     {csvData.length} donors • {updateExisting ? "Will update existing" : "Skip existing"}
+                    {selectedListId && selectedListId !== "none" && (
+                      <> • Adding to {selectedListId === "__new__" ? `"${newListName}"` : donorLists.find(l => l.id === selectedListId)?.name}</>
+                    )}
                   </p>
                 </div>
               </div>
