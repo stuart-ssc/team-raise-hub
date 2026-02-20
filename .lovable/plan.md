@@ -1,31 +1,38 @@
 
 
-# Fix: Organization Registration RLS Policy
+# Fix: Verification Document Upload RLS Policy
 
 ## Problem
 
-"Ky Youth Softball" (and any new nonprofit) gets **"new row violates row-level security policy"** when trying to register. The database logs show 4 repeated failures.
+The `verification-documents` storage bucket has an INSERT policy that requires the uploading user to already be an `organization_admin` in the `organization_user` table. During registration, the user is uploading their verification document as part of the setup flow -- but because the organization creation itself was failing (the RLS issue we just fixed), the `organization_user` record never got created either. Even now with the org creation fix, the timing may still be tight.
 
-**Root cause**: The `organizations` table only has an INSERT policy for system admins (`is_system_admin(auth.uid())`). The `NonProfitSetupForm` inserts into `organizations` using the client SDK as a regular authenticated user -- which is blocked by RLS.
+More importantly, the upload policy checks `organization_admin` permission level via a join to `organization_user` and `user_type`. For the registration flow, we need to allow authenticated users to upload to their own folder.
+
+**Current policy** (INSERT):
+```
+bucket_id = 'verification-documents'
+AND auth.uid() = folder_name
+AND EXISTS (organization_user with organization_admin permission)
+```
 
 ## Fix
 
-Add a single RLS policy to the `organizations` table that allows any authenticated user to insert a new organization. This is safe because:
-- Users can only create orgs, not read/update/delete others' orgs (those policies are already scoped)
-- After creating the org, the user creates an `organization_user` record linking themselves to it
+Add a broader INSERT policy that allows any authenticated user to upload files into their own user-ID folder in the `verification-documents` bucket. The folder-based scoping (`auth.uid() = folder_name`) already prevents users from uploading to other users' folders, so this is safe.
 
 ### Database Migration
 
 ```sql
-CREATE POLICY "Authenticated users can create organizations"
-ON public.organizations
+CREATE POLICY "Authenticated users can upload verification documents to own folder"
+ON storage.objects
 FOR INSERT
 TO authenticated
-WITH CHECK (true);
+WITH CHECK (
+  bucket_id = 'verification-documents'
+  AND (auth.uid())::text = (storage.foldername(name))[1]
+);
 ```
 
-That is the only change needed. No code changes required -- the `NonProfitSetupForm` already has the correct insert logic; it was just being blocked by the missing policy.
+This policy works alongside the existing one. The existing org-admin policy can remain (it won't conflict). The new policy simply relaxes the requirement so registration uploads succeed.
 
-## Verification
+No code changes needed -- `DocumentUpload.tsx` already uploads to `{userId}/timestamp.pdf` which matches the folder-based check.
 
-After applying, a new user selecting "Non-Profit" during registration will be able to successfully create their organization, group, and organization_user records without errors.
