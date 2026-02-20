@@ -14,8 +14,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
-import { Loader2, Users, TrendingUp, Send, Filter, RefreshCw, Award, AlertCircle, Heart } from "lucide-react";
+import { Loader2, Users, TrendingUp, Send, Filter, RefreshCw, Award, AlertCircle, Heart, List, Plus, Trash2, Pencil } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import DonorListDetail from "@/components/DonorListDetail";
 
 interface DonorSegment {
   id: string;
@@ -61,6 +62,17 @@ export default function DonorSegmentation() {
   const [campaignDialogOpen, setCampaignDialogOpen] = useState(false);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string>("");
   
+  // Lists state
+  const [lists, setLists] = useState<{ id: string; name: string; description: string | null; member_count: number; created_at: string }[]>([]);
+  const [createListDialogOpen, setCreateListDialogOpen] = useState(false);
+  const [listName, setListName] = useState("");
+  const [listDescription, setListDescription] = useState("");
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
+  const [selectedListName, setSelectedListName] = useState("");
+  const [listDetailOpen, setListDetailOpen] = useState(false);
+  const [listCampaignDialogOpen, setListCampaignDialogOpen] = useState(false);
+  const [selectedListIdForCampaign, setSelectedListIdForCampaign] = useState<string>("");
+  
   // Form states
   const [segmentName, setSegmentName] = useState("");
   const [segmentDescription, setSegmentDescription] = useState("");
@@ -85,7 +97,7 @@ export default function DonorSegmentation() {
   const fetchData = async (groupId?: string | null) => {
     try {
       setLoading(true);
-      await Promise.all([fetchSegments(), fetchSegmentStats(groupId)]);
+      await Promise.all([fetchSegments(), fetchSegmentStats(groupId), fetchLists()]);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -163,6 +175,74 @@ export default function DonorSegmentation() {
     });
 
     setSegmentStats(stats.sort((a, b) => b.count - a.count));
+  };
+  const fetchLists = async () => {
+    const { data, error } = await supabase
+      .from("donor_lists")
+      .select("id, name, description, created_at")
+      .eq("organization_id", organizationUser?.organization_id)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    const listsWithCounts = [];
+    for (const list of data || []) {
+      const { count } = await supabase
+        .from("donor_list_members")
+        .select("id", { count: "exact", head: true })
+        .eq("list_id", list.id);
+      listsWithCounts.push({ ...list, member_count: count || 0 });
+    }
+    setLists(listsWithCounts);
+  };
+
+  const handleCreateList = async () => {
+    try {
+      const { error } = await supabase.from("donor_lists").insert({
+        organization_id: organizationUser?.organization_id,
+        name: listName,
+        description: listDescription || null,
+        created_by: organizationUser?.user_id,
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: "List created" });
+      setCreateListDialogOpen(false);
+      setListName("");
+      setListDescription("");
+      await fetchLists();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteList = async (listId: string) => {
+    try {
+      const { error } = await supabase.from("donor_lists").delete().eq("id", listId);
+      if (error) throw error;
+      toast({ title: "List deleted" });
+      await fetchLists();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleSendListCampaign = async () => {
+    try {
+      setSending(true);
+      const { data, error } = await supabase.functions.invoke("send-segmented-campaign", {
+        body: { listId: selectedListIdForCampaign, campaignName, subjectLine, emailContent },
+      });
+      if (error) throw error;
+      toast({ title: "Success", description: `Campaign sent to ${data.successfulDeliveries} donors` });
+      setListCampaignDialogOpen(false);
+      resetCampaignForm();
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to send campaign", variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleCalculateRFM = async () => {
@@ -432,6 +512,7 @@ export default function DonorSegmentation() {
               <TabsList>
                 <TabsTrigger value="overview">RFM Overview</TabsTrigger>
                 <TabsTrigger value="segments">Custom Segments</TabsTrigger>
+                <TabsTrigger value="lists">Lists</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-4">
@@ -502,11 +583,171 @@ export default function DonorSegmentation() {
                   </div>
                 )}
               </TabsContent>
+
+              <TabsContent value="lists" className="space-y-4">
+                <div className="flex justify-end">
+                  <Button onClick={() => setCreateListDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create List
+                  </Button>
+                </div>
+
+                {lists.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <List className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No Lists Yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Create a list to manually curate a group of donors for targeted outreach
+                    </p>
+                    <Button onClick={() => setCreateListDialogOpen(true)}>
+                      Create Your First List
+                    </Button>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {lists.map((list) => (
+                      <Card key={list.id} className="p-6">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-semibold text-foreground">{list.name}</h3>
+                          <Badge variant="secondary">
+                            <Users className="h-3 w-3 mr-1" />
+                            {list.member_count}
+                          </Badge>
+                        </div>
+                        {list.description && (
+                          <p className="text-sm text-muted-foreground mb-4">{list.description}</p>
+                        )}
+                        <div className="flex gap-2 flex-wrap">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedListId(list.id);
+                              setSelectedListName(list.name);
+                              setListDetailOpen(true);
+                            }}
+                          >
+                            <Pencil className="mr-1 h-3 w-3" />
+                            View/Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setSelectedListIdForCampaign(list.id);
+                              setListCampaignDialogOpen(true);
+                            }}
+                            disabled={list.member_count === 0}
+                          >
+                            <Send className="mr-1 h-3 w-3" />
+                            Send Campaign
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteList(list.id)}
+                          >
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
             </Tabs>
         </div>
       </DashboardPageLayout>
 
-        {/* Send Campaign Dialog */}
+      {/* Create List Dialog */}
+      <Dialog open={createListDialogOpen} onOpenChange={setCreateListDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create List</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="listName">List Name</Label>
+              <Input
+                id="listName"
+                value={listName}
+                onChange={(e) => setListName(e.target.value)}
+                placeholder="e.g., Gala Invitees 2026"
+              />
+            </div>
+            <div>
+              <Label htmlFor="listDescription">Description (optional)</Label>
+              <Textarea
+                id="listDescription"
+                value={listDescription}
+                onChange={(e) => setListDescription(e.target.value)}
+                placeholder="What is this list for?"
+              />
+            </div>
+            <Button onClick={handleCreateList} disabled={!listName.trim()} className="w-full">
+              Create List
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* List Detail Dialog */}
+      {selectedListId && (
+        <DonorListDetail
+          open={listDetailOpen}
+          onOpenChange={setListDetailOpen}
+          listId={selectedListId}
+          listName={selectedListName}
+          onMembersChanged={() => fetchLists()}
+        />
+      )}
+
+      {/* Send List Campaign Dialog */}
+      <Dialog open={listCampaignDialogOpen} onOpenChange={setListCampaignDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Send Campaign to List</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="listCampaignName">Campaign Name</Label>
+              <Input
+                id="listCampaignName"
+                value={campaignName}
+                onChange={(e) => setCampaignName(e.target.value)}
+                placeholder="e.g., Spring Appeal 2026"
+              />
+            </div>
+            <div>
+              <Label htmlFor="listSubjectLine">Subject Line</Label>
+              <Input
+                id="listSubjectLine"
+                value={subjectLine}
+                onChange={(e) => setSubjectLine(e.target.value)}
+                placeholder="e.g., You're invited to support us!"
+              />
+            </div>
+            <div>
+              <Label htmlFor="listEmailContent">Email Content (HTML)</Label>
+              <Textarea
+                id="listEmailContent"
+                value={emailContent}
+                onChange={(e) => setEmailContent(e.target.value)}
+                placeholder="Use {firstName}, {lastName}, {lifetimeValue}, {donationCount}, {segment} for personalization"
+                rows={10}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Available variables: {"{firstName}"}, {"{lastName}"}, {"{lifetimeValue}"}, {"{donationCount}"}, {"{segment}"}
+              </p>
+            </div>
+            <Button onClick={handleSendListCampaign} disabled={sending} className="w-full">
+              {sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              Send Campaign
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+        {/* Send Segment Campaign Dialog */}
         <Dialog open={campaignDialogOpen} onOpenChange={setCampaignDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>

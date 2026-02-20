@@ -1468,6 +1468,104 @@ export type Database = {
           },
         ]
       }
+      donor_list_members: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          donor_id: string
+          id: string
+          list_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          donor_id: string
+          id?: string
+          list_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          donor_id?: string
+          id?: string
+          list_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donor_list_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_list_members_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "donor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_list_members_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "donor_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donor_lists: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donor_lists_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_lists_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_lists_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       donor_profiles: {
         Row: {
           created_at: string | null
@@ -1579,6 +1677,7 @@ export type Database = {
           created_by: string | null
           email_content: string
           id: string
+          list_id: string | null
           opened_count: number | null
           segment_id: string | null
           sent_at: string | null
@@ -1592,6 +1691,7 @@ export type Database = {
           created_by?: string | null
           email_content: string
           id?: string
+          list_id?: string | null
           opened_count?: number | null
           segment_id?: string | null
           sent_at?: string | null
@@ -1605,6 +1705,7 @@ export type Database = {
           created_by?: string | null
           email_content?: string
           id?: string
+          list_id?: string | null
           opened_count?: number | null
           segment_id?: string | null
           sent_at?: string | null
@@ -1617,6 +1718,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_segment_campaigns_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "donor_lists"
             referencedColumns: ["id"]
           },
           {

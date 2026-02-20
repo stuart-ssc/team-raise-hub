@@ -10,6 +10,7 @@ import BulkActionToolbar from "@/components/BulkActionToolbar";
 import BulkTagDialog from "@/components/BulkTagDialog";
 import BulkEmailDialog from "@/components/BulkEmailDialog";
 import CsvExportDialog from "@/components/CsvExportDialog";
+import AddToListDialog from "@/components/AddToListDialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,6 +98,7 @@ const Donors = () => {
   const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
   const [bulkEmailDialogOpen, setBulkEmailDialogOpen] = useState(false);
   const [csvExportDialogOpen, setCsvExportDialogOpen] = useState(false);
+  const [addToListDialogOpen, setAddToListDialogOpen] = useState(false);
   
   // Single donor action states
   const [menuDonorId, setMenuDonorId] = useState<string | null>(null);
@@ -704,6 +706,15 @@ const Donors = () => {
           onAddTags={() => setBulkTagDialogOpen(true)}
           onSendEmail={() => setBulkEmailDialogOpen(true)}
           onExportCsv={() => setCsvExportDialogOpen(true)}
+          onAddToList={() => setAddToListDialogOpen(true)}
+        />
+
+        {/* Add to List Dialog */}
+        <AddToListDialog
+          open={addToListDialogOpen}
+          onOpenChange={setAddToListDialogOpen}
+          selectedDonorIds={selectedDonorIds}
+          onComplete={() => setSelectedDonorIds([])}
         />
 
         {/* Bulk Tag Dialog */}
