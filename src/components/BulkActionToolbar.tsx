@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tag, Mail, Download, X } from "lucide-react";
+import { Tag, Mail, Download, X, List } from "lucide-react";
 
 interface BulkActionToolbarProps {
   selectedCount: number;
@@ -8,6 +8,7 @@ interface BulkActionToolbarProps {
   onAddTags: () => void;
   onSendEmail: () => void;
   onExportCsv: () => void;
+  onAddToList?: () => void;
 }
 
 const BulkActionToolbar = ({
@@ -16,6 +17,7 @@ const BulkActionToolbar = ({
   onAddTags,
   onSendEmail,
   onExportCsv,
+  onAddToList,
 }: BulkActionToolbarProps) => {
   if (selectedCount === 0) return null;
 
@@ -43,6 +45,18 @@ const BulkActionToolbar = ({
             <Tag className="h-4 w-4" />
             Add Tags
           </Button>
+
+          {onAddToList && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onAddToList}
+              className="gap-2"
+            >
+              <List className="h-4 w-4" />
+              Add to List
+            </Button>
+          )}
 
           <Button
             variant="secondary"
