@@ -1,48 +1,31 @@
 
-# Add List Selection to Donor Import Wizard
 
-## What Changes
+# Fix: Organization Registration RLS Policy
 
-When importing donors via CSV, you'll be able to optionally select an existing list -- or create a new one on the spot -- so all imported donors are automatically added to that list in one step.
+## Problem
 
-## How It Works
+"Ky Youth Softball" (and any new nonprofit) gets **"new row violates row-level security policy"** when trying to register. The database logs show 4 repeated failures.
 
-1. Upload CSV (Step 1 -- unchanged)
-2. Map fields (Step 2 -- unchanged)
-3. Preview & Confirm (Step 3 -- **new**: a "Add to List" section appears here)
-   - A dropdown showing existing lists + a "Create New List" option
-   - If you pick "Create New List", a name/description input appears inline
-   - Selecting a list is optional -- you can still import without one
-4. After import completes, the edge function returns the imported donor IDs, and the client inserts them into `donor_list_members`
+**Root cause**: The `organizations` table only has an INSERT policy for system admins (`is_system_admin(auth.uid())`). The `NonProfitSetupForm` inserts into `organizations` using the client SDK as a regular authenticated user -- which is blocked by RLS.
 
-## Technical Details
+## Fix
 
-### Files to Modify
+Add a single RLS policy to the `organizations` table that allows any authenticated user to insert a new organization. This is safe because:
+- Users can only create orgs, not read/update/delete others' orgs (those policies are already scoped)
+- After creating the org, the user creates an `organization_user` record linking themselves to it
 
-| File | Change |
-|------|--------|
-| `src/components/DonorImportWizard.tsx` | Add list selector UI in Step 3 (preview step). After import succeeds, insert imported donor IDs into `donor_list_members`. Fetch existing lists on mount. |
-| `supabase/functions/import-donors/index.ts` | Return the IDs of newly imported and updated donors in the response so the client can add them to a list |
+### Database Migration
 
-### DonorImportWizard.tsx Changes
+```sql
+CREATE POLICY "Authenticated users can create organizations"
+ON public.organizations
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+```
 
-- Add state for `selectedListId`, `newListName`, `newListDescription`
-- Fetch existing `donor_lists` for the organization when the dialog opens
-- In Step 3, render a Select dropdown:
-  - "None" (default)
-  - Existing lists
-  - "Create New List..." option
-- When "Create New List" is selected, show inline name + description inputs
-- After `handleImport` succeeds:
-  1. If creating a new list, insert into `donor_lists` first to get the list ID
-  2. Use the returned donor IDs from the edge function to batch-insert into `donor_list_members`
+That is the only change needed. No code changes required -- the `NonProfitSetupForm` already has the correct insert logic; it was just being blocked by the missing policy.
 
-### Edge Function Changes
+## Verification
 
-- Track imported/updated donor IDs during processing (already has access to `existingDonor.id` for updates and can capture the inserted ID via `.insert().select('id')`)
-- Return `importedDonorIds` array alongside the existing `imported`, `updated`, `skipped`, `errors` fields
-- This is backward-compatible -- existing callers just ignore the new field
-
-### No Database Changes Needed
-
-The `donor_lists` and `donor_list_members` tables already exist from the previous implementation. No migration required.
+After applying, a new user selecting "Non-Profit" during registration will be able to successfully create their organization, group, and organization_user records without errors.
