@@ -1,38 +1,26 @@
 
 
-# Fix: Verification Document Upload RLS Policy
+# Fix: White Screen When Selecting "Team Player" Role
 
 ## Problem
+When selecting "Team Player" in the Add Participant form, the page crashes (white screen). This happens because a Radix UI `SelectItem` is rendered with an empty string value (`""`), which Radix does not support.
 
-The `verification-documents` storage bucket has an INSERT policy that requires the uploading user to already be an `organization_admin` in the `organization_user` table. During registration, the user is uploading their verification document as part of the setup flow -- but because the organization creation itself was failing (the RLS issue we just fixed), the `organization_user` record never got created either. Even now with the org creation fix, the timing may still be tight.
+## Root Cause
+In `src/components/AddParticipantForm.tsx` (line 295), when the selected role is NOT "Family Member", a "None" option is rendered in the "Link to Player" dropdown:
 
-More importantly, the upload policy checks `organization_admin` permission level via a join to `organization_user` and `user_type`. For the registration flow, we need to allow authenticated users to upload to their own folder.
-
-**Current policy** (INSERT):
+```tsx
+<SelectItem value="">None</SelectItem>
 ```
-bucket_id = 'verification-documents'
-AND auth.uid() = folder_name
-AND EXISTS (organization_user with organization_admin permission)
-```
+
+Radix UI requires all `SelectItem` components to have a **non-empty** `value` string. The empty string causes an internal error that crashes the component tree.
 
 ## Fix
+**File:** `src/components/AddParticipantForm.tsx`
 
-Add a broader INSERT policy that allows any authenticated user to upload files into their own user-ID folder in the `verification-documents` bucket. The folder-based scoping (`auth.uid() = folder_name`) already prevents users from uploading to other users' folders, so this is safe.
+Change the empty value to a sentinel string like `"none"`, and update the form submission logic to treat `"none"` the same as no selection:
 
-### Database Migration
+1. **Line 295** -- Change `value=""` to `value="none"`
+2. **Line 150** -- Update the Family Member validation to also treat `"none"` as empty
+3. **Line 169** -- Update the `linkedOrganizationUserId` sent to the edge function to convert `"none"` back to `null`
 
-```sql
-CREATE POLICY "Authenticated users can upload verification documents to own folder"
-ON storage.objects
-FOR INSERT
-TO authenticated
-WITH CHECK (
-  bucket_id = 'verification-documents'
-  AND (auth.uid())::text = (storage.foldername(name))[1]
-);
-```
-
-This policy works alongside the existing one. The existing org-admin policy can remain (it won't conflict). The new policy simply relaxes the requirement so registration uploads succeed.
-
-No code changes needed -- `DocumentUpload.tsx` already uploads to `{userId}/timestamp.pdf` which matches the folder-based check.
-
+This is a one-file, three-line fix.
