@@ -77,6 +77,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import StateLandingPage from "./pages/StateLandingPage";
 import SchoolLandingPage from "./pages/SchoolLandingPage";
 import DistrictLandingPage from "./pages/DistrictLandingPage";
+import FAQ from "./pages/FAQ";
 
 // Marketing Campaign Pages
 import CampaignsOverview from "./pages/CampaignsOverview";
@@ -151,6 +152,7 @@ const AppContent = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/dpa" element={<DataProcessingAgreement />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/faq" element={<FAQ />} />
         
         {/* Marketing Campaign Pages */}
         <Route path="/campaigns-overview" element={<CampaignsOverview />} />
