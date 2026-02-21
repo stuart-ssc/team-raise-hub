@@ -19,23 +19,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
-
-    // Admin client for database operations (bypasses RLS)
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) throw new Error('No authorization header');
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !user) {
       throw new Error('Unauthorized');
     }
