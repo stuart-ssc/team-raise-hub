@@ -186,12 +186,12 @@ const FAQ = () => {
 
       <main className="min-h-screen bg-background">
         {/* Hero */}
-        <section className="border-b bg-muted/30 py-16 sm:py-20">
+        <section className="bg-primary text-primary-foreground py-16 sm:py-20">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-primary-foreground">
               Frequently Asked Questions
             </h1>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="mt-4 text-lg text-primary-foreground/80 max-w-2xl mx-auto">
               Everything you need to know about using Sponsorly for your fundraising campaigns.
             </p>
           </div>
@@ -205,7 +205,7 @@ const FAQ = () => {
                 <a
                   key={cat.id}
                   href={`#${cat.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-full border bg-primary/5 border-primary/20 px-4 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 hover:border-primary/40 transition-colors"
                 >
                   {cat.icon}
                   {cat.label}
@@ -247,14 +247,14 @@ const FAQ = () => {
         </div>
 
         {/* CTA */}
-        <section className="border-t bg-muted/30 py-16">
+        <section className="bg-primary text-primary-foreground py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-2xl font-semibold text-foreground">Still have questions?</h2>
-            <p className="mt-2 text-muted-foreground">
+            <h2 className="text-2xl font-semibold text-primary-foreground">Still have questions?</h2>
+            <p className="mt-2 text-primary-foreground/80">
               Our team is here to help. Reach out and we'll get back to you as soon as possible.
             </p>
             <Link to="/contact" className="mt-6 inline-block">
-              <Button size="lg">Contact Us</Button>
+              <Button variant="outline" size="lg" className="bg-white text-primary hover:bg-white/90 border-white">Contact Us</Button>
             </Link>
           </div>
         </section>
