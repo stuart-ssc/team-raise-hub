@@ -36,8 +36,25 @@ const Dashboard = () => {
     if (loading) return;
     
     if (user && !organizationUser) {
-      // User needs to complete organization setup
-      setShowSetupModal(true);
+      // Double-check with a direct query before showing the modal
+      // This handles race conditions where the hook hasn't settled yet (e.g., invited users)
+      const verifyNoOrgUser = async () => {
+        const { data } = await supabase
+          .from('organization_user')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('active_user', true)
+          .limit(1)
+          .maybeSingle();
+
+        if (data) {
+          // Record exists but hook missed it — reload to re-fetch
+          window.location.reload();
+        } else {
+          setShowSetupModal(true);
+        }
+      };
+      verifyNoOrgUser();
     } else {
       setShowSetupModal(false);
     }

@@ -64,7 +64,8 @@ export const useOrganizationUser = () => {
           `)
           .eq('user_id', user.id)
           .eq('active_user', true)
-          .single();
+          .limit(1)
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching organization user:', error);
