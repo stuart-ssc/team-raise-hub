@@ -1,26 +1,36 @@
 
 
-# Fix: White Screen When Selecting "Team Player" Role
+# Fix: Roster Member Link Generation "Unauthorized" Error
 
 ## Problem
-When selecting "Team Player" in the Add Participant form, the page crashes (white screen). This happens because a Radix UI `SelectItem` is rendered with an empty string value (`""`), which Radix does not support.
+When enabling roster attribution on the "Tates Creek Softball Donation" campaign, the `generate-roster-member-links` edge function fails with an "Unauthorized" error. This happens because the function uses the authenticated user's client for all database queries, but RLS policies on tables like `organization_user`, `rosters`, and `profiles` block those queries.
 
 ## Root Cause
-In `src/components/AddParticipantForm.tsx` (line 295), when the selected role is NOT "Family Member", a "None" option is rendered in the "Link to Player" dropdown:
-
-```tsx
-<SelectItem value="">None</SelectItem>
-```
-
-Radix UI requires all `SelectItem` components to have a **non-empty** `value` string. The empty string causes an internal error that crashes the component tree.
+The edge function creates a single Supabase client using the user's auth token. While this correctly identifies *who* the user is, the subsequent queries to `campaigns`, `organization_user`, `rosters`, `profiles`, and `roster_member_campaign_links` are all filtered by RLS. The joins fail or return empty results, causing the function to error out.
 
 ## Fix
-**File:** `src/components/AddParticipantForm.tsx`
+**File:** `supabase/functions/generate-roster-member-links/index.ts`
 
-Change the empty value to a sentinel string like `"none"`, and update the form submission logic to treat `"none"` the same as no selection:
+1. Keep the authenticated client for verifying the user's identity (getUser call)
+2. Create a second **admin client** using `SUPABASE_SERVICE_ROLE_KEY` for all database read/write operations
+3. Use the admin client for:
+   - Fetching campaign details
+   - Verifying user permissions (organization_user check)
+   - Querying rosters and roster members
+   - Checking/inserting roster_member_campaign_links
 
-1. **Line 295** -- Change `value=""` to `value="none"`
-2. **Line 150** -- Update the Family Member validation to also treat `"none"` as empty
-3. **Line 169** -- Update the `linkedOrganizationUserId` sent to the edge function to convert `"none"` back to `null`
+This follows the same pattern already established in other edge functions (`create-stripe-checkout`, `get-roster-member-by-slug`) as documented in your project's architecture notes.
 
-This is a one-file, three-line fix.
+## Technical Details
+
+```text
+Current flow (broken):
+  User Request --> Auth Client --> getUser (OK) --> Query tables (BLOCKED by RLS)
+
+Fixed flow:
+  User Request --> Auth Client --> getUser (OK)
+                   Admin Client --> Query tables (bypasses RLS)
+```
+
+No database changes or new secrets are needed -- `SUPABASE_SERVICE_ROLE_KEY` is already available to all edge functions by default.
+
