@@ -29,6 +29,12 @@ Deno.serve(async (req) => {
       }
     );
 
+    // Admin client for database operations (bypasses RLS)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
       throw new Error('Unauthorized');
@@ -43,7 +49,7 @@ Deno.serve(async (req) => {
     console.log('Generating roster member links for campaign:', campaignId, 'roster:', rosterId);
 
     // Get campaign details
-    const { data: campaign, error: campaignError } = await supabaseClient
+    const { data: campaign, error: campaignError } = await supabaseAdmin
       .from('campaigns')
       .select('slug, group_id, groups(organization_id)')
       .eq('id', campaignId)
@@ -52,7 +58,7 @@ Deno.serve(async (req) => {
     if (campaignError) throw campaignError;
 
     // Verify user has permission to manage this campaign
-    const { data: orgUser, error: permError } = await supabaseClient
+    const { data: orgUser, error: permError } = await supabaseAdmin
       .from('organization_user')
       .select('user_type(permission_level)')
       .eq('user_id', user.id)
@@ -64,7 +70,7 @@ Deno.serve(async (req) => {
     }
 
     // Get all roster members
-    let rosterQuery = supabaseClient
+    let rosterQuery = supabaseAdmin
       .from('organization_user')
       .select(`
         id,
@@ -79,7 +85,7 @@ Deno.serve(async (req) => {
       rosterQuery = rosterQuery.eq('roster_id', rosterId);
     } else {
       // Get all rosters for this group
-      const { data: rosters } = await supabaseClient
+      const { data: rosters } = await supabaseAdmin
         .from('rosters')
         .select('id')
         .eq('group_id', campaign.group_id);
@@ -127,7 +133,7 @@ Deno.serve(async (req) => {
       slugCounts.set(baseSlug, count + 1);
 
       // Check if link already exists
-      const { data: existingLink } = await supabaseClient
+      const { data: existingLink } = await supabaseAdmin
         .from('roster_member_campaign_links')
         .select('id')
         .eq('campaign_id', campaignId)
@@ -136,7 +142,7 @@ Deno.serve(async (req) => {
 
       if (!existingLink) {
         // Insert new link
-        const { error: insertError } = await supabaseClient
+        const { error: insertError } = await supabaseAdmin
           .from('roster_member_campaign_links')
           .insert({
             campaign_id: campaignId,
