@@ -147,7 +147,7 @@ export const AddParticipantForm = ({ groupId, groupName, groupTypeName, organiza
 
     // Validate that Family Member has a linked player
     const selectedUserTypeName = userTypes.find(ut => ut.id === selectedUserType)?.name;
-    if (selectedUserTypeName === 'Family Member' && !linkedPlayerId) {
+    if (selectedUserTypeName === 'Family Member' && (!linkedPlayerId || linkedPlayerId === 'none')) {
       return;
     }
 
@@ -166,7 +166,7 @@ export const AddParticipantForm = ({ groupId, groupName, groupTypeName, organiza
           organizationId,
           groupId,
           rosterId: parseInt(selectedRoster),
-          linkedOrganizationUserId: linkedPlayerId || null,
+          linkedOrganizationUserId: (linkedPlayerId && linkedPlayerId !== 'none') ? linkedPlayerId : null,
         }
       });
 
@@ -292,7 +292,7 @@ export const AddParticipantForm = ({ groupId, groupName, groupTypeName, organiza
                     </SelectTrigger>
                     <SelectContent>
                       {!isFamilyMember && (
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                       )}
                       {rosterPlayers.map((player) => (
                         <SelectItem key={player.id} value={player.id}>
