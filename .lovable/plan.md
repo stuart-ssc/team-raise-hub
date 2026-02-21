@@ -1,82 +1,29 @@
 
+# Add Color to the FAQ Page
 
-# FAQ Page for Marketing Site
+## Changes (single file: `src/pages/FAQ.tsx`)
 
-## Overview
-Create a new `/faq` page following the existing marketing page pattern (MarketingHeader + MarketingFooter). The page will feature a hero section, a category navigation bar at the top with clickable links to anchor sections, and organized Q&A sections using the existing Accordion component.
+### 1. Hero Section -- Use primary blue background
+Replace the current `bg-muted/30` hero with a bold `bg-primary text-primary-foreground` section, matching the Contact page pattern. The subtitle will use `text-primary-foreground/90` for slight transparency.
 
-## Page Structure
+### 2. Category Navigation Chips -- Active-looking colored chips
+Give each chip a light blue tint by default (`bg-primary/5 border-primary/20 text-primary`) and a stronger hover state (`hover:bg-primary/10`). This makes them feel interactive and ties them to the brand color.
 
-```text
-+----------------------------------+
-|        MarketingHeader           |
-+----------------------------------+
-|          Hero Section            |
-|   "Frequently Asked Questions"   |
-+----------------------------------+
-|  [Account] [Campaigns] [Payments]|
-|  [Teams & Rosters] [Businesses]  |
-+----------------------------------+
-|  ## Account (anchor: #account)   |
-|  > How do I create an account?   |
-|  > How do I invite team members? |
-|  > Can I manage multiple orgs?   |
-|  > How do I reset my password?   |
-+----------------------------------+
-|  ## Campaigns (anchor: #campaigns)|
-|  > What types of campaigns...?   |
-|  > How do I create a campaign?   |
-|  > What is roster attribution?   |
-|  > Can I customize my page?      |
-|  > How do I share my campaign?   |
-+----------------------------------+
-|  ## Payments (anchor: #payments) |
-|  > How do supporters pay?        |
-|  > When do I receive funds?      |
-|  > What payment methods...?      |
-|  > Are donations tax-deductible? |
-+----------------------------------+
-|  ## Teams & Rosters              |
-|  > What are rosters?             |
-|  > How do personalized URLs work?|
-|  > Can parents track progress?   |
-|  > How do I manage guardians?    |
-+----------------------------------+
-|  ## For Businesses               |
-|  > How can businesses sponsor?   |
-|  > What is the Donor Portal?     |
-|  > Can businesses upload assets? |
-|  > How does matching work?       |
-+----------------------------------+
-|  CTA: Still have questions?      |
-|  [Contact Us]                    |
-+----------------------------------+
-|        MarketingFooter           |
-+----------------------------------+
-```
+### 3. Category Section Icons -- Larger, more colorful
+The icon badges next to each section heading already use `bg-primary/10 text-primary`, which is good. No change needed there.
 
-## Categories (5 total, 4-5 questions each)
-1. **Account** - Registration, invitations, password, multiple orgs
-2. **Campaigns** - Types, creation, roster attribution, sharing
-3. **Payments** - Stripe, payouts, methods, tax receipts
-4. **Teams & Rosters** - Roster setup, personalized URLs, family dashboard
-5. **For Businesses** - Sponsorship, donor portal, asset uploads, matching
+### 4. Bottom CTA Section -- Primary blue background
+Change the "Still have questions?" section from `bg-muted/30` to `bg-primary text-primary-foreground` with a white outline button, matching the Contact page CTA style and creating a strong visual bookend.
 
 ## Technical Details
 
-### New Files
-- `src/pages/FAQ.tsx` - The FAQ page component
+**File:** `src/pages/FAQ.tsx`
 
-### Modified Files
-- `src/App.tsx` - Add route: `<Route path="/faq" element={<FAQ />} />`
-- `src/components/MarketingFooter.tsx` - Add "FAQ" link under the Support column
-
-### Implementation Details
-- Uses existing `MarketingHeader`, `MarketingFooter`, `Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent` components
-- Category nav uses `<a href="#category-id">` links with `scroll-margin-top` on sections to offset the sticky header
-- Each category section has an `id` attribute for anchor linking
-- FAQ data is defined as a typed array within the component for easy future editing
-- Responsive: category chips wrap on mobile, accordion is full-width
-- Includes Helmet for SEO meta tags
-- Bottom CTA links to `/contact`
-
+- Hero `<section>`: Change classes from `border-b bg-muted/30 py-16 sm:py-20` to `bg-primary text-primary-foreground py-16 sm:py-20`
+- Hero subtitle `<p>`: Change from `text-muted-foreground` to `text-primary-foreground/80`
+- Hero heading `<h1>`: Change from `text-foreground` to `text-primary-foreground`
+- Category chips `<a>`: Change from neutral border/text to `bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 hover:border-primary/40`
+- Bottom CTA `<section>`: Change from `border-t bg-muted/30` to `bg-primary text-primary-foreground`
+- Bottom CTA heading: Change from `text-foreground` to `text-primary-foreground`
+- Bottom CTA paragraph: Change from `text-muted-foreground` to `text-primary-foreground/80`
+- Bottom CTA button: Add `variant="outline"` with `className="bg-white text-primary hover:bg-white/90 border-white"`
