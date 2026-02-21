@@ -101,6 +101,33 @@ export const OrganizationSetupModal = ({ open, onComplete, userId }: Organizatio
     },
   });
 
+  // Check if user already has an organization_user record (e.g., from invitation)
+  useEffect(() => {
+    if (!open || !userId) return;
+
+    const checkExistingOrgUser = async () => {
+      const { data } = await supabase
+        .from('organization_user')
+        .select(`
+          *,
+          user_type:user_type_id (id, name, permission_level),
+          organization:organization_id (id, name, organization_type, city, state),
+          groups:group_id (id, group_name)
+        `)
+        .eq('user_id', userId)
+        .eq('active_user', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        // User already has an org record (e.g., from invitation) -- skip setup
+        onComplete(data);
+      }
+    };
+
+    checkExistingOrgUser();
+  }, [open, userId]);
+
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
