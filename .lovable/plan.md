@@ -1,36 +1,33 @@
 
 
-# Fix: Roster Member Link Generation "Unauthorized" Error
+# Fix: Persistent "Unauthorized" Error in Roster Link Generation
 
 ## Problem
-When enabling roster attribution on the "Tates Creek Softball Donation" campaign, the `generate-roster-member-links` edge function fails with an "Unauthorized" error. This happens because the function uses the authenticated user's client for all database queries, but RLS policies on tables like `organization_user`, `rosters`, and `profiles` block those queries.
-
-## Root Cause
-The edge function creates a single Supabase client using the user's auth token. While this correctly identifies *who* the user is, the subsequent queries to `campaigns`, `organization_user`, `rosters`, `profiles`, and `roster_member_campaign_links` are all filtered by RLS. The joins fail or return empty results, causing the function to error out.
+The `generate-roster-member-links` function has `verify_jwt = true` in `config.toml`, which means the Supabase gateway already validates the JWT before the function runs. However, the function then calls `supabaseClient.auth.getUser()` using the anon client, which fails in the Deno edge runtime due to an async context mismatch. This is a known issue documented in your project's architecture.
 
 ## Fix
 **File:** `supabase/functions/generate-roster-member-links/index.ts`
 
-1. Keep the authenticated client for verifying the user's identity (getUser call)
-2. Create a second **admin client** using `SUPABASE_SERVICE_ROLE_KEY` for all database read/write operations
-3. Use the admin client for:
-   - Fetching campaign details
-   - Verifying user permissions (organization_user check)
-   - Querying rosters and roster members
-   - Checking/inserting roster_member_campaign_links
+Remove the anon/authenticated client entirely. Instead, extract the JWT token from the `Authorization` header and call `supabaseAdmin.auth.getUser(token)` on the admin client. This is the same pattern used in `save-campaign-pitch` and other working edge functions.
 
-This follows the same pattern already established in other edge functions (`create-stripe-checkout`, `get-roster-member-by-slug`) as documented in your project's architecture notes.
+### Changes:
+1. Remove the `supabaseClient` creation (lines 22-30)
+2. Extract the token from the Authorization header manually
+3. Call `supabaseAdmin.auth.getUser(token)` instead of `supabaseClient.auth.getUser()`
 
-## Technical Details
+### Updated auth block (replaces lines 22-41):
+```typescript
+const supabaseAdmin = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
 
-```text
-Current flow (broken):
-  User Request --> Auth Client --> getUser (OK) --> Query tables (BLOCKED by RLS)
+const authHeader = req.headers.get('Authorization');
+if (!authHeader) throw new Error('No authorization header');
 
-Fixed flow:
-  User Request --> Auth Client --> getUser (OK)
-                   Admin Client --> Query tables (bypasses RLS)
+const token = authHeader.replace('Bearer ', '');
+const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+if (authError || !user) throw new Error('Unauthorized');
 ```
 
-No database changes or new secrets are needed -- `SUPABASE_SERVICE_ROLE_KEY` is already available to all edge functions by default.
-
+No other changes needed -- all database queries already use `supabaseAdmin`.
