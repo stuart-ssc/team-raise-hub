@@ -65,11 +65,15 @@ serve(async (req: Request) => {
 
     for (const user of usersData?.users || []) {
       if (requestedIds.has(user.id)) {
+        const emailIdentity = user.identities?.find(
+          (i: any) => i.provider === "email"
+        );
         statuses[user.id] = {
           emailConfirmed: !!user.email_confirmed_at,
           lastSignIn: user.last_sign_in_at || null,
           email: user.email || null,
           createdAt: user.created_at || null,
+          identityLastSignIn: emailIdentity?.last_sign_in_at || null,
         };
       }
     }
