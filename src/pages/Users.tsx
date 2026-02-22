@@ -150,7 +150,7 @@ const Users = () => {
       }
 
       // Fetch auth statuses
-      let authStatuses: Record<string, { emailConfirmed: boolean; lastSignIn: string | null; email: string | null }> = {};
+      let authStatuses: Record<string, { emailConfirmed: boolean; lastSignIn: string | null; email: string | null; createdAt: string | null }> = {};
       if (userIds.length > 0) {
         try {
           const { data: statusData, error: statusError } = await supabase.functions.invoke("get-user-auth-status", {
@@ -170,11 +170,14 @@ const Users = () => {
         
         let accountStatus: AccountStatus = "invited";
         if (authStatus) {
-          if (authStatus.lastSignIn) {
+          const lastSignIn = authStatus.lastSignIn ? new Date(authStatus.lastSignIn).getTime() : null;
+          const createdAt = authStatus.createdAt ? new Date(authStatus.createdAt).getTime() : null;
+          const isRealLogin = lastSignIn && createdAt && (lastSignIn - createdAt) > 60000;
+          
+          if (isRealLogin) {
             accountStatus = "signed_up";
-          } else if (authStatus.emailConfirmed) {
-            accountStatus = "not_confirmed";
           }
+          // If lastSignIn exists but gap is tiny, it was the automated invite flow — keep as "invited"
         }
 
         return {
