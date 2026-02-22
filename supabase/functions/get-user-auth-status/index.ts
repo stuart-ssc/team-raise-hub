@@ -61,7 +61,7 @@ serve(async (req: Request) => {
 
     // Build a lookup of requested user IDs
     const requestedIds = new Set(userIds);
-    const statuses: Record<string, { emailConfirmed: boolean; lastSignIn: string | null; email: string | null }> = {};
+  const statuses: Record<string, { emailConfirmed: boolean; lastSignIn: string | null; email: string | null; createdAt: string | null }> = {};
 
     for (const user of usersData?.users || []) {
       if (requestedIds.has(user.id)) {
@@ -69,6 +69,7 @@ serve(async (req: Request) => {
           emailConfirmed: !!user.email_confirmed_at,
           lastSignIn: user.last_sign_in_at || null,
           email: user.email || null,
+          createdAt: user.created_at || null,
         };
       }
     }
