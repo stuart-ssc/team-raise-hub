@@ -1,29 +1,76 @@
 
-# Add Color to the FAQ Page
 
-## Changes (single file: `src/pages/FAQ.tsx`)
+# User Invitation Status and Re-Invite Feature
 
-### 1. Hero Section -- Use primary blue background
-Replace the current `bg-muted/30` hero with a bold `bg-primary text-primary-foreground` section, matching the Contact page pattern. The subtitle will use `text-primary-foreground/90` for slight transparency.
+## Problem
+The Users page currently shows all users as "Active" with no distinction between users who have completed signup vs. those who only received an invitation. Admins need to:
+1. See at a glance who has signed up vs. who is still just invited
+2. Re-send invitations to users who never completed signup
+3. Change the email address for invited users (e.g., if the original went to spam or was wrong)
 
-### 2. Category Navigation Chips -- Active-looking colored chips
-Give each chip a light blue tint by default (`bg-primary/5 border-primary/20 text-primary`) and a stronger hover state (`hover:bg-primary/10`). This makes them feel interactive and ties them to the brand color.
+## Current State (Tates Creek Softball)
+From the database, many users have never confirmed their email or signed in -- they are "invited but not set up." The current UI shows them all as "Active" which is misleading.
 
-### 3. Category Section Icons -- Larger, more colorful
-The icon badges next to each section heading already use `bg-primary/10 text-primary`, which is good. No change needed there.
+## Solution
 
-### 4. Bottom CTA Section -- Primary blue background
-Change the "Still have questions?" section from `bg-muted/30` to `bg-primary text-primary-foreground` with a white outline button, matching the Contact page CTA style and creating a strong visual bookend.
+### 1. Show Invitation Status on the Users Page
 
-## Technical Details
+Add a new "Account Status" indicator for each user with three states:
+- **Signed Up** (green badge) -- `email_confirmed_at` is set and user has signed in
+- **Invited** (yellow/amber badge) -- user exists in auth but has never confirmed or signed in
+- **Not Confirmed** (orange badge) -- user confirmed email but never signed in (edge case)
 
-**File:** `src/pages/FAQ.tsx`
+This requires fetching email confirmation and sign-in data from `auth.users`, which is not accessible from the client. A new edge function will look up this data.
 
-- Hero `<section>`: Change classes from `border-b bg-muted/30 py-16 sm:py-20` to `bg-primary text-primary-foreground py-16 sm:py-20`
-- Hero subtitle `<p>`: Change from `text-muted-foreground` to `text-primary-foreground/80`
-- Hero heading `<h1>`: Change from `text-foreground` to `text-primary-foreground`
-- Category chips `<a>`: Change from neutral border/text to `bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 hover:border-primary/40`
-- Bottom CTA `<section>`: Change from `border-t bg-muted/30` to `bg-primary text-primary-foreground`
-- Bottom CTA heading: Change from `text-foreground` to `text-primary-foreground`
-- Bottom CTA paragraph: Change from `text-muted-foreground` to `text-primary-foreground/80`
-- Bottom CTA button: Add `variant="outline"` with `className="bg-white text-primary hover:bg-white/90 border-white"`
+### 2. Re-Invite Button
+
+For users whose status is "Invited" (never signed in), show a "Re-send Invite" option in the actions dropdown. This calls the existing `invite-user` edge function which already handles existing users -- it finds them by email, skips creation, and generates a fresh recovery link + invitation email.
+
+### 3. Change Email for Invited Users
+
+For users who are still in "Invited" status, add a "Change Email & Re-invite" option that opens a dialog to enter a new email address. A new edge function will:
+- Update the user's email in `auth.users` (using admin API)
+- Re-generate the invitation link
+- Send the invitation email to the new address
+
+### Changes
+
+**New Files:**
+- `supabase/functions/get-user-auth-status/index.ts` -- Edge function that accepts an array of user IDs and returns their `email_confirmed_at` and `last_sign_in_at` from `auth.users` (admin API)
+- `supabase/functions/reinvite-user/index.ts` -- Edge function that re-generates an invitation link and re-sends the email, optionally updating the email address first
+- `src/components/ReinviteUserDialog.tsx` -- Dialog component for re-inviting with optional email change
+
+**Modified Files:**
+- `src/pages/Users.tsx` -- Add account status column, re-invite actions, and integrate the new dialog
+- `supabase/config.toml` -- Add `verify_jwt = false` entries for the two new edge functions
+
+### Technical Details
+
+**`get-user-auth-status` edge function:**
+- Accepts `{ userIds: string[] }` in the request body
+- Uses `supabase.auth.admin.listUsers()` and filters to the requested IDs
+- Returns `{ statuses: { [userId]: { emailConfirmed: boolean, lastSignIn: string | null } } }`
+
+**`reinvite-user` edge function:**
+- Accepts `{ userId, newEmail?, organizationId, firstName, lastName }`
+- If `newEmail` is provided, calls `supabase.auth.admin.updateUserById(userId, { email: newEmail })` to change the email
+- Generates a recovery link via `supabase.auth.admin.generateLink({ type: 'recovery', email })`
+- Calls the existing `send-invitation-email` function to deliver the email
+- Returns success/failure
+
+**`Users.tsx` changes:**
+- After fetching users and profiles, call `get-user-auth-status` with all user IDs
+- Add `accountStatus` field to the `User` interface: `'signed_up' | 'invited' | 'not_confirmed'`
+- Add an "Account Status" column to both the table and mobile card views
+- Replace the single "Deactivate" action with a dropdown menu (three dots) containing:
+  - "Deactivate" (always available for active users)
+  - "Re-send Invite" (only for `invited` status)
+  - "Change Email & Re-invite" (only for `invited` status)
+- Filter dropdown gains new options: "All", "Active", "Inactive", "Invited", "Signed Up"
+
+**`ReinviteUserDialog.tsx`:**
+- Shows current email (read-only) and a field for the new email
+- On submit, calls `reinvite-user` edge function
+- Shows success/error toast
+- Refreshes the user list on success
+
