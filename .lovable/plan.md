@@ -1,45 +1,47 @@
 
 
-# Fix Account Status Detection
+# Fix Account Status Using Identity-Level Sign-In
 
 ## Problem
-The `generateLink({ type: 'recovery' })` call in the invite flow causes Supabase to automatically set `email_confirmed_at` and `last_sign_in_at` on the user record. This happens within ~15-20 seconds of user creation, making every invited user appear as "Signed Up" even though they never clicked the link.
+The user-level `last_sign_in_at` gets set by `generateLink()` during the invite flow, making the timestamp heuristic unreliable. Supabase also doesn't expose a "has_password" flag via the Admin API.
 
-## Root Cause
-In `invite-user/index.ts` (line 134), when we call `supabase.auth.admin.generateLink({ type: 'recovery', email })`, Supabase confirms the email and records a "sign in" as a side effect. The current status logic in `get-user-auth-status` simply checks if `last_sign_in_at` exists, which is always true after an invite.
-
-## Evidence from Database
-- **Fake sign-ins** (invite flow): `seconds_between_create_and_signin` is 15-22 seconds
-- **Real sign-ins**: `seconds_between_create_and_signin` is 4,000+ seconds
-- **Never-touched users** (createUser succeeded but generateLink didn't run): `last_sign_in_at` is null
-
-## Fix
-
-Update the `get-user-auth-status` edge function to also return `created_at`, then update the status logic in `Users.tsx` to check whether the gap between `created_at` and `last_sign_in_at` is meaningful (more than 60 seconds). If the gap is tiny, it was the invite flow -- not a real login.
+## Solution
+Use the **identity-level** `last_sign_in_at` instead. Each user in Supabase has an `identities` array. The email identity's `last_sign_in_at` is only set when the user actually authenticates with email + password -- not by admin API calls like `generateLink()`.
 
 ### New Status Logic
-- **Signed Up** (green): `last_sign_in_at` exists AND the gap from `created_at` is greater than 60 seconds (a real human login)
-- **Invited** (amber): Either `last_sign_in_at` is null, OR the gap is less than 60 seconds (only the automated invite flow touched this record)
-- **Not Confirmed** (orange): Kept as an edge case but unlikely to occur given the generateLink behavior
 
-### Files to Change
+- **Signed Up** (green): The user's email identity has a non-null `last_sign_in_at` (they've actually logged in with a password)
+- **Invited** (amber): The email identity has no `last_sign_in_at`, meaning they were created via invite but never completed signup
+
+### Changes
 
 **`supabase/functions/get-user-auth-status/index.ts`**
-- Add `created_at` to the returned data for each user (alongside `emailConfirmed`, `lastSignIn`, `email`)
+- Read `user.identities` array from the admin API response
+- Find the identity with `provider === 'email'`
+- Return `identityLastSignIn: identity.last_sign_in_at` instead of (or alongside) the user-level `lastSignIn`
 
 **`src/pages/Users.tsx`**
-- Update the status determination logic to compare `lastSignIn` against `createdAt`
-- If the difference is less than 60 seconds, treat it as "invited" not "signed_up"
+- Simplify the status logic: if `identityLastSignIn` exists, the user is "signed_up"; otherwise "invited"
+- Remove the 60-second gap heuristic
 
 ### Technical Detail
 
-```text
-Current logic:
-  if (lastSignIn)        -> "signed_up"
-  else if (emailConfirmed) -> "not_confirmed"  
-  else                     -> "invited"
+The Supabase user object from `listUsers()` includes:
+```
+user.identities = [
+  {
+    provider: "email",
+    last_sign_in_at: "2025-01-15T..." // only set on real auth
+    ...
+  }
+]
+```
 
+```text
 New logic:
-  if (lastSignIn AND (lastSignIn - createdAt) > 60 seconds) -> "signed_up"
+  emailIdentity = user.identities.find(i => i.provider === 'email')
+  if (emailIdentity?.last_sign_in_at) -> "signed_up"
   else -> "invited"
 ```
+
+This is simpler and more reliable than any timestamp comparison.
