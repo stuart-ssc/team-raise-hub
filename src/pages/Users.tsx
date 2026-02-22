@@ -40,7 +40,7 @@ import { ReinviteUserDialog } from "@/components/ReinviteUserDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { AddUserForm } from "@/components/AddUserForm";
-type AccountStatus = "signed_up" | "invited" | "not_confirmed";
+type AccountStatus = "active" | "invited" | "deactivated";
 
 interface User {
   id: string;
@@ -168,8 +168,10 @@ const Users = () => {
         const profile = profilesData.find((p: any) => p.id === user.user_id);
         const authStatus = authStatuses[user.user_id];
         
-        // Simple: read directly from profile
-        const accountStatus: AccountStatus = profile?.signup_completed ? "signed_up" : "invited";
+        // Combined status: invited if not signed up, then active/deactivated based on active_user
+        const signupCompleted = profile?.signup_completed ?? false;
+        const isActive = user.active_user ?? true;
+        const accountStatus: AccountStatus = !signupCompleted ? "invited" : (isActive ? "active" : "deactivated");
 
         return {
           id: user.user_id,
@@ -268,12 +270,12 @@ const Users = () => {
 
   const getAccountStatusBadge = (status?: AccountStatus) => {
     switch (status) {
-      case "signed_up":
-        return <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-100">Signed Up</Badge>;
+      case "active":
+        return <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-100">Active</Badge>;
       case "invited":
         return <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">Invited</Badge>;
-      case "not_confirmed":
-        return <Badge className="bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100">Not Confirmed</Badge>;
+      case "deactivated":
+        return <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-100">Deactivated</Badge>;
       default:
         return <Badge variant="secondary">Unknown</Badge>;
     }
@@ -281,10 +283,9 @@ const Users = () => {
 
   // Apply filtering
   const filteredUsers = users.filter((user) => {
-    if (filterBy === "active" && user.status !== true) return false;
-    if (filterBy === "inactive" && user.status !== false) return false;
+    if (filterBy === "active" && user.accountStatus !== "active") return false;
+    if (filterBy === "deactivated" && user.accountStatus !== "deactivated") return false;
     if (filterBy === "invited" && user.accountStatus !== "invited") return false;
-    if (filterBy === "signed_up" && user.accountStatus !== "signed_up") return false;
     
     if (selectedGroup && user.group_name !== selectedGroup.group_name) return false;
     
@@ -319,8 +320,8 @@ const Users = () => {
         bValue = b.group_name || "";
         break;
       case "status":
-        aValue = a.status ? "Active" : "Inactive";
-        bValue = b.status ? "Active" : "Inactive";
+        aValue = a.accountStatus || "";
+        bValue = b.accountStatus || "";
         break;
       default:
         aValue = a.last_name;
@@ -335,9 +336,8 @@ const Users = () => {
     switch (filterBy) {
       case "all": return "All";
       case "active": return "Active";
-      case "inactive": return "Inactive";
+      case "deactivated": return "Deactivated";
       case "invited": return "Invited";
-      case "signed_up": return "Signed Up";
       default: return "Filter";
     }
   };
@@ -428,15 +428,11 @@ const Users = () => {
                       <DropdownMenuItem onClick={() => setFilterBy("active")}>
                         Active
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setFilterBy("inactive")}>
-                        Inactive
+                      <DropdownMenuItem onClick={() => setFilterBy("deactivated")}>
+                        Deactivated
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setFilterBy("invited")}>
-                        Invited Only
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setFilterBy("signed_up")}>
-                        Signed Up Only
+                        Invited
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -472,9 +468,6 @@ const Users = () => {
                               <p className="text-sm text-muted-foreground mt-1">{user.role}</p>
                             </div>
                             <div className="flex flex-col items-end gap-1">
-                              <Badge variant={user.status ? "default" : "secondary"}>
-                                {user.status ? "Active" : "Inactive"}
-                              </Badge>
                               {getAccountStatusBadge(user.accountStatus)}
                             </div>
                           </div>
@@ -554,20 +547,19 @@ const Users = () => {
                         <TableHead>Group</TableHead>
                         <TableHead>Roster Year</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Account</TableHead>
                         <TableHead className="w-12"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {loading ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-4">
+                          <TableCell colSpan={6} className="text-center py-4">
                             Loading...
                           </TableCell>
                         </TableRow>
                       ) : users.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                          <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
                             No users found
                           </TableCell>
                         </TableRow>
@@ -580,11 +572,6 @@ const Users = () => {
                             <TableCell>{user.role}</TableCell>
                             <TableCell>{user.group_name || "-"}</TableCell>
                             <TableCell>{user.roster_year || "-"}</TableCell>
-                            <TableCell>
-                              <span className={user.status ? "text-green-600" : "text-muted-foreground"}>
-                                {user.status ? "Active" : "Inactive"}
-                              </span>
-                            </TableCell>
                             <TableCell>
                               {getAccountStatusBadge(user.accountStatus)}
                             </TableCell>
