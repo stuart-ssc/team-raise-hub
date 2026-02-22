@@ -309,7 +309,7 @@ export function MembershipRequestsTab({ organizationId, onRequestProcessed }: Me
           <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="font-semibold text-lg mb-2">No Pending Requests</h3>
           <p className="text-muted-foreground">
-            There are no pending membership requests at this time.
+            There are no pending membership requests to join your team at this time.
           </p>
         </CardContent>
       </Card>
