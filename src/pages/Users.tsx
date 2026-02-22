@@ -139,7 +139,7 @@ const Users = () => {
       if (userIds.length > 0) {
         const { data: profiles, error: profilesError } = await supabase
           .from("profiles")
-          .select("id, first_name, last_name")
+          .select("id, first_name, last_name, signup_completed")
           .in("id", userIds);
 
         if (profilesError) {
@@ -149,8 +149,8 @@ const Users = () => {
         profilesData = profiles || [];
       }
 
-      // Fetch auth statuses
-      let authStatuses: Record<string, { emailConfirmed: boolean; lastSignIn: string | null; email: string | null; createdAt: string | null; identityLastSignIn: string | null }> = {};
+      // Fetch auth statuses (only for email addresses now, not for status determination)
+      let authStatuses: Record<string, { email: string | null }> = {};
       if (userIds.length > 0) {
         try {
           const { data: statusData, error: statusError } = await supabase.functions.invoke("get-user-auth-status", {
@@ -168,10 +168,8 @@ const Users = () => {
         const profile = profilesData.find((p: any) => p.id === user.user_id);
         const authStatus = authStatuses[user.user_id];
         
-        let accountStatus: AccountStatus = "invited";
-        if (authStatus?.identityLastSignIn) {
-          accountStatus = "signed_up";
-        }
+        // Simple: read directly from profile
+        const accountStatus: AccountStatus = profile?.signup_completed ? "signed_up" : "invited";
 
         return {
           id: user.user_id,

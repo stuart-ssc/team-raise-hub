@@ -3656,6 +3656,7 @@ export type Database = {
           notify_messages: boolean | null
           push_notify_messages: boolean | null
           school_id: string | null
+          signup_completed: boolean
           system_admin: boolean | null
           updated_at: string
         }
@@ -3673,6 +3674,7 @@ export type Database = {
           notify_messages?: boolean | null
           push_notify_messages?: boolean | null
           school_id?: string | null
+          signup_completed?: boolean
           system_admin?: boolean | null
           updated_at?: string
         }
@@ -3690,6 +3692,7 @@ export type Database = {
           notify_messages?: boolean | null
           push_notify_messages?: boolean | null
           school_id?: string | null
+          signup_completed?: boolean
           system_admin?: boolean | null
           updated_at?: string
         }
