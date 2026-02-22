@@ -61,19 +61,23 @@ serve(async (req: Request) => {
 
     // Build a lookup of requested user IDs
     const requestedIds = new Set(userIds);
-  const statuses: Record<string, { emailConfirmed: boolean; lastSignIn: string | null; email: string | null; createdAt: string | null }> = {};
+  const statuses: Record<string, { emailConfirmed: boolean; lastSignIn: string | null; email: string | null; createdAt: string | null; identityLastSignIn: string | null }> = {};
 
     for (const user of usersData?.users || []) {
       if (requestedIds.has(user.id)) {
-        const emailIdentity = user.identities?.find(
-          (i: any) => i.provider === "email"
-        );
+        const allIdentities = user.identities || [];
+        const latestIdentitySignIn = allIdentities
+          .map((i: any) => i.last_sign_in_at)
+          .filter(Boolean)
+          .sort()
+          .pop() || null;
+
         statuses[user.id] = {
           emailConfirmed: !!user.email_confirmed_at,
           lastSignIn: user.last_sign_in_at || null,
           email: user.email || null,
           createdAt: user.created_at || null,
-          identityLastSignIn: emailIdentity?.last_sign_in_at || null,
+          identityLastSignIn: latestIdentitySignIn,
         };
       }
     }
