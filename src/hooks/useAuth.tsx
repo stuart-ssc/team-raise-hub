@@ -30,6 +30,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Mark signup as completed on any real sign-in event
+        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          // Use setTimeout to avoid blocking the auth state change
+          setTimeout(() => {
+            supabase
+              .from('profiles')
+              .update({ signup_completed: true })
+              .eq('id', session.user.id)
+              .eq('signup_completed', false)
+              .then(({ error }) => {
+                if (error) console.error('Error marking signup completed:', error);
+              });
+          }, 0);
+        }
       }
     );
 
