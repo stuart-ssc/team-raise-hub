@@ -37,9 +37,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setTimeout(() => {
             supabase
               .from('profiles')
-              .update({ signup_completed: true })
+              .update({ signup_completed: true } as any)
               .eq('id', session.user.id)
-              .eq('signup_completed', false)
               .then(({ error }) => {
                 if (error) console.error('Error marking signup completed:', error);
               });
