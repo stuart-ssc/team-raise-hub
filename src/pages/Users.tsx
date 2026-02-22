@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { MoreHorizontal, ChevronDown, Search } from "lucide-react";
+import { MoreHorizontal, ChevronDown, Search, RefreshCw, Mail } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -30,15 +31,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { MembershipRequestsTab } from "@/components/MembershipRequestsTab";
 import { MembershipRequestHistory } from "@/components/MembershipRequestHistory";
+import { ReinviteUserDialog } from "@/components/ReinviteUserDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { AddUserForm } from "@/components/AddUserForm";
+type AccountStatus = "signed_up" | "invited" | "not_confirmed";
 
 interface User {
   id: string;
@@ -49,6 +51,8 @@ interface User {
   roster_year: number | null;
   status: boolean;
   school_user_id: string;
+  accountStatus?: AccountStatus;
+  email?: string | null;
 }
 
 const Users = () => {
@@ -62,6 +66,8 @@ const Users = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddUserForm, setShowAddUserForm] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [deactivateUser, setDeactivateUser] = useState<User | null>(null);
+  const [reinviteUser, setReinviteUser] = useState<{ user: User; mode: "resend" | "change-email" } | null>(null);
   const { organizationUser } = useOrganizationUser();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -91,7 +97,6 @@ const Users = () => {
     try {
       setLoading(true);
       
-      // Build the base query with proper joins
       let query = supabase
         .from("organization_user")
         .select(`
@@ -103,24 +108,19 @@ const Users = () => {
           rosters(roster_year)
         `);
 
-      // Apply role-based filtering
       const permissionLevel = organizationUser.user_type.permission_level;
       
       if (permissionLevel === 'organization_admin') {
-        // Organization admins see all users in their organization
         query = query.eq("organization_id", organizationUser.organization_id);
       } else if (permissionLevel === 'program_manager') {
-        // Program managers see only users in groups they are connected to
         if (organizationUser.group_id) {
           query = query.eq("group_id", organizationUser.group_id);
         } else {
-          // If no group assigned, show empty results
           setUsers([]);
           setLoading(false);
           return;
         }
       } else {
-        // Other roles don't manage users
         setUsers([]);
         setLoading(false);
         return;
@@ -133,10 +133,9 @@ const Users = () => {
         return;
       }
 
-      // Now fetch profile data for each user
       const userIds = (data || []).map((user: any) => user.user_id);
       
-      let profilesData = [];
+      let profilesData: any[] = [];
       if (userIds.length > 0) {
         const { data: profiles, error: profilesError } = await supabase
           .from("profiles")
@@ -147,14 +146,37 @@ const Users = () => {
           console.error("Error fetching profiles:", profilesError);
           return;
         }
-        
         profilesData = profiles || [];
       }
 
-      // Merge the data
+      // Fetch auth statuses
+      let authStatuses: Record<string, { emailConfirmed: boolean; lastSignIn: string | null; email: string | null }> = {};
+      if (userIds.length > 0) {
+        try {
+          const { data: statusData, error: statusError } = await supabase.functions.invoke("get-user-auth-status", {
+            body: { userIds },
+          });
+          if (!statusError && statusData?.statuses) {
+            authStatuses = statusData.statuses;
+          }
+        } catch (err) {
+          console.error("Error fetching auth statuses:", err);
+        }
+      }
+
       const formattedUsers: User[] = (data || []).map((user: any) => {
         const profile = profilesData.find((p: any) => p.id === user.user_id);
+        const authStatus = authStatuses[user.user_id];
         
+        let accountStatus: AccountStatus = "invited";
+        if (authStatus) {
+          if (authStatus.lastSignIn) {
+            accountStatus = "signed_up";
+          } else if (authStatus.emailConfirmed) {
+            accountStatus = "not_confirmed";
+          }
+        }
+
         return {
           id: user.user_id,
           school_user_id: user.id,
@@ -164,6 +186,8 @@ const Users = () => {
           group_name: user.groups?.group_name || null,
           roster_year: user.rosters?.roster_year || null,
           status: user.active_user ?? true,
+          accountStatus,
+          email: authStatus?.email || null,
         };
       });
 
@@ -175,7 +199,6 @@ const Users = () => {
     }
   };
 
-  // Fetch pending requests count
   const fetchPendingRequestsCount = async () => {
     if (!organizationUser?.organization_id) return;
     
@@ -201,7 +224,6 @@ const Users = () => {
 
   const handleGroupClick = async (groupId: string | null) => {
     if (groupId) {
-      // Fetch the group details to get the name
       const { data: groupData } = await supabase
         .from("groups")
         .select("id, group_name")
@@ -227,35 +249,51 @@ const Users = () => {
         console.error("Error updating user status:", error);
         return;
       }
-
-      // Refresh the users list
       fetchUsers();
     } catch (error) {
       console.error("Error updating user status:", error);
     }
   };
 
+  const handleResendInvite = (user: User) => {
+    setReinviteUser({ user, mode: "resend" });
+  };
+
+  const handleChangeEmailInvite = (user: User) => {
+    setReinviteUser({ user, mode: "change-email" });
+  };
+
   const handleSort = (newSortBy: string) => {
     if (sortBy === newSortBy) {
-      // Toggle direction if same sort field
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      // New sort field, default to ascending for names
       setSortBy(newSortBy);
       setSortDirection(newSortBy === "last_name" || newSortBy === "first_name" ? "asc" : "desc");
     }
   };
 
-  // Apply filtering first
+  const getAccountStatusBadge = (status?: AccountStatus) => {
+    switch (status) {
+      case "signed_up":
+        return <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-100">Signed Up</Badge>;
+      case "invited":
+        return <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">Invited</Badge>;
+      case "not_confirmed":
+        return <Badge className="bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100">Not Confirmed</Badge>;
+      default:
+        return <Badge variant="secondary">Unknown</Badge>;
+    }
+  };
+
+  // Apply filtering
   const filteredUsers = users.filter((user) => {
-    // Apply status filter
     if (filterBy === "active" && user.status !== true) return false;
     if (filterBy === "inactive" && user.status !== false) return false;
+    if (filterBy === "invited" && user.accountStatus !== "invited") return false;
+    if (filterBy === "signed_up" && user.accountStatus !== "signed_up") return false;
     
-    // Apply group filter if a specific group is selected
     if (selectedGroup && user.group_name !== selectedGroup.group_name) return false;
     
-    // Apply search filter if search term is 3+ characters
     if (searchTerm.length >= 3) {
       const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
       const searchLower = searchTerm.toLowerCase();
@@ -298,6 +336,17 @@ const Users = () => {
     const comparison = aValue.localeCompare(bValue);
     return sortDirection === "asc" ? comparison : -comparison;
   });
+
+  const getFilterLabel = () => {
+    switch (filterBy) {
+      case "all": return "All";
+      case "active": return "Active";
+      case "inactive": return "Inactive";
+      case "invited": return "Invited";
+      case "signed_up": return "Signed Up";
+      default: return "Filter";
+    }
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -373,8 +422,8 @@ const Users = () => {
                   {/* Filter Dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full sm:w-24">
-                        {filterBy === "all" ? "All" : filterBy === "active" ? "Active" : "Inactive"}
+                      <Button variant="outline" className="w-full sm:w-28">
+                        {getFilterLabel()}
                         <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -387,6 +436,13 @@ const Users = () => {
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setFilterBy("inactive")}>
                         Inactive
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setFilterBy("invited")}>
+                        Invited Only
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setFilterBy("signed_up")}>
+                        Signed Up Only
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -421,9 +477,12 @@ const Users = () => {
                               <CardTitle className="text-base truncate">{user.last_name}, {user.first_name}</CardTitle>
                               <p className="text-sm text-muted-foreground mt-1">{user.role}</p>
                             </div>
-                            <Badge variant={user.status ? "default" : "secondary"}>
-                              {user.status ? "Active" : "Inactive"}
-                            </Badge>
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge variant={user.status ? "default" : "secondary"}>
+                                {user.status ? "Active" : "Inactive"}
+                              </Badge>
+                              {getAccountStatusBadge(user.accountStatus)}
+                            </div>
                           </div>
                         </CardHeader>
                         <CardContent>
@@ -436,41 +495,53 @@ const Users = () => {
                               <span className="text-muted-foreground">Roster Year:</span>
                               <span className="font-medium">{user.roster_year || "-"}</span>
                             </div>
-                            {user.status ? (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="outline" size="sm" className="w-full mt-2">
-                                    Deactivate
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Confirm Deactivation of {user.first_name} {user.last_name}</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to deactivate {user.first_name} {user.last_name}? 
-                                      They will no longer be able to participate in that groups campaigns.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction 
-                                      onClick={() => handleUpdateUserStatus(user.school_user_id, false)}
-                                    >
-                                      Deactivate
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            ) : (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                className="w-full mt-2"
-                                onClick={() => handleUpdateUserStatus(user.school_user_id, true)}
-                              >
-                                Activate
-                              </Button>
+                            {user.email && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Email:</span>
+                                <span className="font-medium text-xs truncate max-w-[180px]">{user.email}</span>
+                              </div>
                             )}
+                            
+                            <div className="flex gap-2 mt-2">
+                              {user.status ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => setDeactivateUser(user)}
+                                >
+                                  Deactivate
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => handleUpdateUserStatus(user.school_user_id, true)}
+                                >
+                                  Activate
+                                </Button>
+                              )}
+                              {user.accountStatus === "invited" && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleResendInvite(user)}>
+                                      <RefreshCw className="mr-2 h-4 w-4" />
+                                      Re-send Invite
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleChangeEmailInvite(user)}>
+                                      <Mail className="mr-2 h-4 w-4" />
+                                      Change Email & Re-invite
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -489,19 +560,20 @@ const Users = () => {
                         <TableHead>Group</TableHead>
                         <TableHead>Roster Year</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Account</TableHead>
                         <TableHead className="w-12"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {loading ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-4">
+                          <TableCell colSpan={7} className="text-center py-4">
                             Loading...
                           </TableCell>
                         </TableRow>
                       ) : users.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                          <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
                             No users found
                           </TableCell>
                         </TableRow>
@@ -520,39 +592,40 @@ const Users = () => {
                               </span>
                             </TableCell>
                             <TableCell>
-                              {user.status ? (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <button className="text-primary hover:text-primary/80 text-sm underline">
+                              {getAccountStatusBadge(user.accountStatus)}
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {user.status ? (
+                                    <DropdownMenuItem onClick={() => setDeactivateUser(user)}>
                                       Deactivate
-                                    </button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Confirm Deactivation of {user.first_name} {user.last_name}</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Are you sure you want to deactivate {user.first_name} {user.last_name}? 
-                                        They will no longer be able to participate in that groups campaigns.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction 
-                                        onClick={() => handleUpdateUserStatus(user.school_user_id, false)}
-                                      >
-                                        Deactivate
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              ) : (
-                                <button
-                                  onClick={() => handleUpdateUserStatus(user.school_user_id, true)}
-                                  className="text-primary hover:text-primary/80 text-sm underline"
-                                >
-                                  Activate
-                                </button>
-                              )}
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem onClick={() => handleUpdateUserStatus(user.school_user_id, true)}>
+                                      Activate
+                                    </DropdownMenuItem>
+                                  )}
+                                  {user.accountStatus === "invited" && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem onClick={() => handleResendInvite(user)}>
+                                        <RefreshCw className="mr-2 h-4 w-4" />
+                                        Re-send Invite
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleChangeEmailInvite(user)}>
+                                        <Mail className="mr-2 h-4 w-4" />
+                                        Change Email & Re-invite
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))
@@ -594,6 +667,47 @@ const Users = () => {
         onOpenChange={setShowAddUserForm}
         organizationId={organizationUser?.organization_id || ""}
         onSuccess={fetchUsers}
+      />
+
+      {/* Deactivate Confirmation Dialog */}
+      <AlertDialog open={!!deactivateUser} onOpenChange={(open) => !open && setDeactivateUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deactivation of {deactivateUser?.first_name} {deactivateUser?.last_name}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to deactivate {deactivateUser?.first_name} {deactivateUser?.last_name}? 
+              They will no longer be able to participate in that groups campaigns.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (deactivateUser) {
+                  handleUpdateUserStatus(deactivateUser.school_user_id, false);
+                  setDeactivateUser(null);
+                }
+              }}
+            >
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reinvite Dialog */}
+      <ReinviteUserDialog
+        open={!!reinviteUser}
+        onOpenChange={(open) => !open && setReinviteUser(null)}
+        user={reinviteUser ? {
+          id: reinviteUser.user.id,
+          first_name: reinviteUser.user.first_name,
+          last_name: reinviteUser.user.last_name,
+          email: reinviteUser.user.email || null,
+        } : null}
+        organizationId={organizationUser?.organization_id || ""}
+        onSuccess={fetchUsers}
+        mode={reinviteUser?.mode || "resend"}
       />
     </div>
   );

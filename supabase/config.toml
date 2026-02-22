@@ -224,3 +224,9 @@ verify_jwt = false
 
 [functions.send-admin-alert]
 verify_jwt = false
+
+[functions.get-user-auth-status]
+verify_jwt = false
+
+[functions.reinvite-user]
+verify_jwt = false
