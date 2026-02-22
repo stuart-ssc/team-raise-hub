@@ -1,46 +1,80 @@
 
 
-# Fix Account Status -- Two Bugs Found
+# Stop Guessing -- Track Signup Status Directly
 
-## Bug 1: Edge Function Not Deployed
-The `identityLastSignIn` field was added to the code but the response still doesn't include it. The TypeScript type annotation on line 64 of the edge function was never updated to include the new field, which may cause it to be stripped. The type must be fixed and the function redeployed.
+## The Real Problem
 
-## Bug 2: Google/OAuth Users Always Show "Invited"
-You signed in with **Google OAuth**. The current code searches for an identity with `provider === 'email'`, but your identity has `provider === 'google'`. This means `identityLastSignIn` would always be `null` for you -- even after the fix is deployed.
+Every attempt so far has tried to infer "invited vs signed up" from Supabase Auth internals (`last_sign_in_at`, `identities`, timestamp gaps). These keep failing because:
 
-The same applies to anyone who signs in with Google, Facebook, or Microsoft.
+- `generateLink()` silently sets `last_sign_in_at`
+- Identity-level `last_sign_in_at` behaves differently for OAuth vs email
+- The Supabase Admin API doesn't expose password existence
+- We have no control over what Supabase sets internally
+
+**We need to stop relying on Supabase's internal auth state and track this ourselves.**
 
 ## Solution
-Instead of only checking the email identity, check **all** identities and use the most recent `last_sign_in_at` across any provider. If any identity has been used to sign in, the user has completed signup.
+
+Add a `signup_completed` column to the `profiles` table. It starts as `false` when a user is created via invite, and gets set to `true` only when the user actually logs in for the first time.
+
+### How It Works
+
+1. **Invited users**: The `invite-user` edge function creates the auth user and triggers `handle_new_user`, which creates a profile with `signup_completed = false` (the default)
+2. **User completes signup**: When a user logs in for the first time (email/password, Google, Facebook, anything), the app sets `signup_completed = true` on their profile
+3. **Self-registered users**: Users who sign up directly through the signup page will have `signup_completed = true` set immediately after account creation
+4. **Status display**: The Users page simply reads `signup_completed` from the profile -- no edge function needed, no guessing
 
 ### Changes
 
-**`supabase/functions/get-user-auth-status/index.ts`**
-- Fix the TypeScript type on line 64 to include `identityLastSignIn`
-- Instead of finding only the email identity, find the **most recent** `last_sign_in_at` across all identities (email, google, facebook, azure)
-- Return that as `identityLastSignIn`
+**Database Migration**
+- Add `signup_completed` boolean column to `profiles` table, default `false`
+- Set it to `true` for all existing users who have genuinely logged in (we can use the identity-level data one final time to backfill, or just set everyone who created their own account to `true`)
 
-```text
-// Current (broken for OAuth users):
-const emailIdentity = user.identities?.find(i => i.provider === "email");
-identityLastSignIn = emailIdentity?.last_sign_in_at || null;
+**`src/hooks/useAuth.ts` (or wherever auth state is managed)**
+- After successful login (any method), update `profiles.signup_completed = true` for the current user
+- This runs once per user and is a simple upsert
 
-// Fixed (works for all auth methods):
-const allIdentities = user.identities || [];
-const latestSignIn = allIdentities
-  .map(i => i.last_sign_in_at)
-  .filter(Boolean)
-  .sort()
-  .pop() || null;
-identityLastSignIn = latestSignIn;
-```
+**`src/pages/Signup.tsx`**
+- After successful self-registration, set `signup_completed = true`
 
 **`src/pages/Users.tsx`**
-- No changes needed -- the existing `if (authStatus?.identityLastSignIn)` check is correct once the API returns the right data
+- Remove the edge function call to `get-user-auth-status` for determining account status
+- Read `signup_completed` directly from the profiles query that already exists
+- If `signup_completed = true`: show "Active" (green)
+- If `signup_completed = false`: show "Invited" (amber)
 
-### Why This Works
-- Invited users (created via `createUser` + `generateLink`): The `generateLink()` call sets the **user-level** `last_sign_in_at` but does NOT set the **identity-level** `last_sign_in_at`. So all identities will have `null` for this field.
-- Users who actually logged in (email/password, Google, etc.): Their identity's `last_sign_in_at` gets set on real authentication.
+**`supabase/functions/get-user-auth-status/index.ts`**
+- Keep this function for fetching email addresses (still needed for the Users table), but stop using it for status determination
 
-### Deployment
-The edge function must be redeployed after the code change for it to take effect.
+### Technical Details
+
+```text
+Database:
+  ALTER TABLE profiles ADD COLUMN signup_completed boolean NOT NULL DEFAULT false;
+
+  -- Backfill: mark existing users who signed up themselves as completed
+  -- (users whose profile created_at matches their auth created_at closely
+  --  AND who have actually used the app)
+  UPDATE profiles SET signup_completed = true WHERE id IN (
+    SELECT id FROM profiles WHERE updated_at != created_at
+  );
+
+Auth hook (runs on every login):
+  supabase.from('profiles')
+    .update({ signup_completed: true })
+    .eq('id', user.id)
+    .eq('signup_completed', false);  // only updates once
+
+Users page:
+  // Old: call edge function, parse auth metadata, guess
+  // New: 
+  accountStatus = profile.signup_completed ? "signed_up" : "invited"
+```
+
+### Why This Actually Works
+
+- It doesn't depend on any Supabase Auth internal behavior
+- It works identically for email, Google, Facebook, Microsoft, or any future auth provider
+- It's a simple boolean -- no timestamp math, no identity inspection, no heuristics
+- Once set to `true`, it stays `true` forever
+- The status is stored in our own database, under our control
