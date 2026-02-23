@@ -19,7 +19,9 @@ const DashboardRedirect = () => {
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [checkingOrders, setCheckingOrders] = useState(true);
   const [checkingParent, setCheckingParent] = useState(true);
-  const [acceptingInvite, setAcceptingInvite] = useState(false);
+  const [acceptingInvite, setAcceptingInvite] = useState(
+    () => !!new URLSearchParams(window.location.search).get("accept-invite")
+  );
 
   // Check if user is system admin
   useEffect(() => {
