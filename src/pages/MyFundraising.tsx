@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trophy, TrendingUp, Users, Copy, Share2, ExternalLink, MessageSquare, Edit, ChevronUp } from "lucide-react";
+import { Trophy, TrendingUp, Users, Copy, Share2, ExternalLink, MessageSquare, Edit, ChevronUp, QrCode } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
@@ -681,15 +681,30 @@ export default function MyFundraising() {
                         </p>
                       </div>
                     ) : (
-                      <div className="flex justify-center">
-                        <Button
-                          variant="outline"
-                          onClick={() => window.open(`/campaign/${stat.campaignSlug}`, '_blank')}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          View Campaign Page
-                        </Button>
-                      </div>
+                      <>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          <Button variant="outline" size="sm" onClick={() => window.open(`/c/${stat.campaignSlug}`, '_blank')}>
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => copyLink(`${window.location.origin}/c/${stat.campaignSlug}`)}>
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => shareLink(`${window.location.origin}/c/${stat.campaignSlug}`, stat.campaignName)}>
+                            <Share2 className="h-4 w-4 mr-1" />
+                            Share
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setShowQRCode(showQRCode === stat.campaignSlug ? null : stat.campaignSlug)}>
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {showQRCode === stat.campaignSlug && (
+                          <div className="flex justify-center p-4 bg-white rounded-md">
+                            <QRCode value={`${window.location.origin}/c/${stat.campaignSlug}`} size={200} />
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {/* Inline Pitch Editor - only for players */}

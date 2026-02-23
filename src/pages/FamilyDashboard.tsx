@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Users, DollarSign, Trophy, Target, Copy, Share2, QrCode, Medal, Heart, Loader2, Zap, MessageCircle, ArrowDown } from "lucide-react";
+import { Users, DollarSign, Trophy, Target, Copy, Share2, QrCode, Medal, Heart, Loader2, Zap, MessageCircle, ArrowDown, ExternalLink } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import QRCode from "react-qr-code";
 import { toast } from "sonner";
@@ -768,13 +768,46 @@ const FamilyDashboard = () => {
                                     )}
                                   </>
                                 ) : (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => window.open(`/campaign/${stat.campaignSlug}`, '_blank')}
-                                  >
-                                    View Campaign
-                                  </Button>
+                                  <>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => window.open(`/c/${stat.campaignSlug}`, '_blank')}
+                                      >
+                                        <ExternalLink className="h-4 w-4 mr-1" />
+                                        View
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => copyToClipboard(`${window.location.origin}/c/${stat.campaignSlug}`)}
+                                      >
+                                        <Copy className="h-4 w-4 mr-1" />
+                                        Copy
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => shareLink(`${window.location.origin}/c/${stat.campaignSlug}`, stat.childName)}
+                                      >
+                                        <Share2 className="h-4 w-4 mr-1" />
+                                        Share
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowQRCode(showQRCode === stat.campaignSlug ? null : stat.campaignSlug)}
+                                      >
+                                        <QrCode className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                    {showQRCode === stat.campaignSlug && (
+                                      <div className="bg-white p-3 rounded-lg">
+                                        <QRCode value={`${window.location.origin}/c/${stat.campaignSlug}`} size={100} />
+                                      </div>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </div>
