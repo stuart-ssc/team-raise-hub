@@ -135,7 +135,7 @@ serve(async (req: Request) => {
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.lovableproject.com') || 'http://localhost:5173'}/login`
+        redirectTo: `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.lovableproject.com') || 'http://localhost:5173'}/set-password`
       }
     });
 

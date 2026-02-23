@@ -17,6 +17,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DataProcessingAgreement from "./pages/DataProcessingAgreement";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import SetPassword from "./pages/SetPassword";
 import DashboardRedirect from "./components/DashboardRedirect";
 import Groups from "./pages/Groups";
 import Users from "./pages/Users";
@@ -165,6 +166,7 @@ const AppContent = () => {
         <Route path="/native-features" element={<ProtectedRoute><NativeFeatures /></ProtectedRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+        <Route path="/set-password" element={<SetPassword />} />
         <Route path="/c/:slug" element={<CampaignLanding />} />
         <Route path="/c/:slug/:rosterMemberSlug" element={<CampaignLanding />} />
         <Route path="/schools/:state/:slug" element={<SchoolLandingPage />} />
