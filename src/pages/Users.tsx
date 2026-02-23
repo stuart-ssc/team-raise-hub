@@ -171,7 +171,7 @@ const Users = () => {
         // Combined status: invited if not signed up, then active/deactivated based on active_user
         const signupCompleted = profile?.signup_completed ?? false;
         const isActive = user.active_user ?? true;
-        const accountStatus: AccountStatus = !signupCompleted ? "invited" : (isActive ? "active" : "deactivated");
+        const accountStatus: AccountStatus = !isActive ? "deactivated" : (!signupCompleted ? "invited" : "active");
 
         return {
           id: user.user_id,
