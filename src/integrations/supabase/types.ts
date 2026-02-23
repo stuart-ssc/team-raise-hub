@@ -4685,6 +4685,22 @@ export type Database = {
           old_total: number
         }[]
       }
+      register_nonprofit: {
+        Args: {
+          p_city: string
+          p_ein?: string
+          p_email?: string
+          p_mission_statement?: string
+          p_name: string
+          p_phone?: string
+          p_state: string
+          p_tax_deductible?: boolean
+          p_user_role?: string
+          p_verification_doc_url?: string
+          p_zip: string
+        }
+        Returns: string
+      }
       restore_email_layout_version: {
         Args: { p_layout_id: string; p_version_number: number }
         Returns: undefined

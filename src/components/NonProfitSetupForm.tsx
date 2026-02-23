@@ -101,80 +101,21 @@ export const NonProfitSetupForm = ({ userId, onComplete, onBack }: NonProfitSetu
   const onSubmit = async (data: NonProfitFormData) => {
     setIsSubmitting(true);
     try {
-      // Create organization
-      const { data: org, error: orgError } = await supabase
-        .from('organizations')
-        .insert({
-          organization_type: 'nonprofit',
-          name: data.name,
-          city: data.city,
-          state: data.state,
-          zip: data.zip,
-          phone: data.phone || null,
-          email: data.email,
-          requires_verification: data.tax_deductible,
-          verification_status: data.tax_deductible ? 'pending' : 'approved',
-          verification_documents: data.tax_deductible && verificationDocUrl 
-            ? [{ url: verificationDocUrl, uploaded_at: new Date().toISOString() }] 
-            : null,
-          verification_submitted_at: data.tax_deductible && verificationDocUrl 
-            ? new Date().toISOString() 
-            : null,
-        })
-        .select()
-        .single();
+      const { error } = await supabase.rpc('register_nonprofit' as any, {
+        p_name: data.name,
+        p_city: data.city,
+        p_state: data.state,
+        p_zip: data.zip,
+        p_phone: data.phone || null,
+        p_email: data.email,
+        p_ein: data.ein || null,
+        p_mission_statement: data.mission_statement || null,
+        p_tax_deductible: data.tax_deductible,
+        p_user_role: data.user_role,
+        p_verification_doc_url: verificationDocUrl || null,
+      });
 
-      if (orgError) throw orgError;
-
-      // Create nonprofit details
-      if (data.ein || data.mission_statement) {
-        const { error: nonprofitError } = await supabase
-          .from('nonprofits')
-          .insert({
-            organization_id: org.id,
-            ein: data.ein || null,
-            mission_statement: data.mission_statement || null,
-          });
-
-        if (nonprofitError) throw nonprofitError;
-      }
-
-      // Create default "General Fund" group
-      const { data: group, error: groupError } = await supabase
-        .from('groups')
-        .insert({
-          group_name: 'General Fund',
-          organization_id: org.id,
-          school_id: null,
-          use_org_payment_account: true,
-          status: true,
-        })
-        .select()
-        .single();
-
-      if (groupError) throw groupError;
-
-      // Get user type ID for selected role
-      const { data: userType, error: userTypeError } = await supabase
-        .from('user_type')
-        .select('id')
-        .eq('name', data.user_role)
-        .single();
-
-      if (userTypeError) throw userTypeError;
-
-      // Create organization_user record
-      const { error: orgUserError } = await supabase
-        .from('organization_user')
-        .insert({
-          user_id: userId,
-          organization_id: org.id,
-          group_id: group.id,
-          user_type_id: userType.id,
-          active_user: true,
-        });
-
-      if (orgUserError) throw orgUserError;
+      if (error) throw error;
 
       toast({
         title: "Success!",
