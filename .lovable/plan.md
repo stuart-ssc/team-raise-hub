@@ -1,43 +1,103 @@
 
-# Fix: Setup Modal Incorrectly Appearing on Login
+# Fix: Campaign URL Path + Add Copy/Share/QR to All Campaigns
 
-## What's Happening
+## Problem
+1. "View Campaign" links use `/campaign/` instead of the correct `/c/` path
+2. Non-roster-enabled campaigns only show a plain "View Campaign" button, missing the Copy, Share, and QR code actions that roster-enabled campaigns get
 
-Your roles ARE stored separately (in `organization_user` table) and the RoleSwitcher IS in the sidebar -- the architecture is already correct. The problem is a timing bug that makes the app briefly think you have no roles, which triggers the "Are you a supporter, school, or nonprofit?" setup modal.
+## Changes
 
-## Root Cause
+### 1. `src/pages/FamilyDashboard.tsx` (lines 770-778)
 
-When you log in, two things happen in parallel:
-1. `useAuth` resolves your identity
-2. `useOrganizationUser` fetches your roles
-
-The bug: when `useAuth` initially returns no user, the roles hook sets `loading = false` (with empty roles). When `useAuth` then resolves with your real identity, the roles hook starts fetching -- but `loading` is still `false` from the previous run. The Dashboard sees "loading is done, user exists, but no roles found" and shows the setup modal.
-
-## Fix
-
-**File: `src/hooks/useOrganizationUser.tsx`** (lines 54-58)
-
-Add `setLoading(true)` at the start of `fetchRoles` when there IS a user, so Dashboard knows to wait:
+Replace the simple "View Campaign" button for non-roster campaigns with the same Copy, Share, and QR actions -- just using the main campaign URL (`/c/{slug}`) instead of a personal link:
 
 ```typescript
-const fetchRoles = useCallback(async () => {
-  if (!user?.id) {
-    setLoading(false);
-    return;
-  }
-
-  setLoading(true);  // <-- ADD THIS LINE
-
-  try {
-    // ... rest of fetch logic unchanged
+) : (
+  <>
+    <div className="flex flex-wrap gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => window.open(`/c/${stat.campaignSlug}`, '_blank')}
+      >
+        <ExternalLink className="h-4 w-4 mr-1" />
+        View
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => copyToClipboard(`${window.location.origin}/c/${stat.campaignSlug}`)}
+      >
+        <Copy className="h-4 w-4 mr-1" />
+        Copy
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => shareLink(`${window.location.origin}/c/${stat.campaignSlug}`, stat.childName)}
+      >
+        <Share2 className="h-4 w-4 mr-1" />
+        Share
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setShowQRCode(showQRCode === stat.campaignSlug ? null : stat.campaignSlug)}
+      >
+        <QrCode className="h-4 w-4" />
+      </Button>
+    </div>
+    {showQRCode === stat.campaignSlug && (
+      <div className="bg-white p-3 rounded-lg">
+        <QRCode value={`${window.location.origin}/c/${stat.campaignSlug}`} size={100} />
+      </div>
+    )}
+  </>
+)}
 ```
 
-This single line ensures `loading` is `true` whenever the hook is actively fetching roles, preventing the Dashboard from prematurely showing the setup modal.
+### 2. `src/pages/MyFundraising.tsx` (lines 683-692)
 
-## Technical Details
+Same treatment -- replace the plain "View Campaign Page" button with Copy, Share, QR, and View actions using the main campaign URL:
 
-| File | Change |
-|------|--------|
-| `src/hooks/useOrganizationUser.tsx` | Add `setLoading(true)` at line 60 (before the try block) so loading resets to true on each fetch |
+```typescript
+) : (
+  <>
+    <div className="flex flex-wrap gap-2 justify-center">
+      <Button variant="outline" size="sm" onClick={() => window.open(`/c/${stat.campaignSlug}`, '_blank')}>
+        <ExternalLink className="h-4 w-4 mr-1" />
+        View
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => copyToClipboard(`${window.location.origin}/c/${stat.campaignSlug}`)}>
+        <Copy className="h-4 w-4 mr-1" />
+        Copy
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => shareLink(`${window.location.origin}/c/${stat.campaignSlug}`, stat.campaignName)}>
+        <Share2 className="h-4 w-4 mr-1" />
+        Share
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => setShowQRCode(showQRCode === stat.campaignSlug ? null : stat.campaignSlug)}>
+        <QrCode className="h-4 w-4" />
+      </Button>
+    </div>
+    {showQRCode === stat.campaignSlug && (
+      <div className="flex justify-center p-4 bg-white rounded-md">
+        <QRCode value={`${window.location.origin}/c/${stat.campaignSlug}`} size={200} />
+      </div>
+    )}
+  </>
+)}
+```
 
-No other files need changes. The RoleSwitcher and multi-role architecture are already working correctly.
+### 3. Fix existing roster-enabled URLs
+
+Also fix the roster-enabled campaign URLs in both files that already use `/campaign/` to use `/c/` instead (if any exist in the personal URL generation).
+
+## Summary
+
+| File | What Changes |
+|------|-------------|
+| `src/pages/FamilyDashboard.tsx` | Fix `/campaign/` to `/c/`, add Copy/Share/QR to non-roster campaigns |
+| `src/pages/MyFundraising.tsx` | Fix `/campaign/` to `/c/`, add Copy/Share/QR to non-roster campaigns |
+
+No new dependencies needed -- `Copy`, `Share2`, `QrCode`, `ExternalLink` icons and `copyToClipboard`/`shareLink` helpers are already imported and used in both files.
