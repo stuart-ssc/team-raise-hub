@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { toast as shadToast } from "@/hooks/use-toast";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -66,8 +65,7 @@ interface RecentDonation {
 const FamilyDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { refreshRoles } = useOrganizationUser();
+  
   const [loading, setLoading] = useState(true);
   const [linkedChildren, setLinkedChildren] = useState<LinkedChild[]>([]);
   const [campaignStats, setCampaignStats] = useState<ChildCampaignStats[]>([]);
@@ -80,38 +78,6 @@ const FamilyDashboard = () => {
   const [loadingLeaders, setLoadingLeaders] = useState(false);
   const recentDonationsRef = useRef<HTMLDivElement>(null);
 
-  // Handle accept-invite query param
-  useEffect(() => {
-    const inviteToken = searchParams.get("accept-invite");
-    if (!inviteToken || !user?.id) return;
-
-    const acceptInvite = async () => {
-      try {
-        const { error } = await supabase.functions.invoke("accept-parent-invitation", {
-          body: { token: inviteToken },
-        });
-        if (error) throw error;
-
-        shadToast({
-          title: "Invitation Accepted!",
-          description: "You've been linked as a parent/guardian.",
-        });
-        await refreshRoles();
-        searchParams.delete("accept-invite");
-        setSearchParams(searchParams, { replace: true });
-        // Refresh family data
-        fetchFamilyData();
-      } catch (err: any) {
-        console.error("Error accepting invitation:", err);
-        shadToast({
-          title: "Invitation Error",
-          description: err.message || "Failed to accept invitation",
-          variant: "destructive",
-        });
-      }
-    };
-    acceptInvite();
-  }, [user?.id, searchParams]);
 
   useEffect(() => {
     if (user?.id) {

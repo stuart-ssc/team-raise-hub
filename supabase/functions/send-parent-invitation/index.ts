@@ -141,9 +141,9 @@ serve(async (req) => {
 
     // Send the invitation email
     if (resendApiKey) {
-      const baseUrl = req.headers.get("origin") || "https://sponsorly.app";
+      const baseUrl = req.headers.get("origin") || "https://team-raise-hub.lovable.app";
       const signupUrl = isExistingUser
-        ? `${baseUrl}/dashboard/family?accept-invite=${invitation.token}`
+        ? `${baseUrl}/dashboard?accept-invite=${invitation.token}`
         : `${baseUrl}/signup?invite=${invitation.token}`;
 
       const ctaText = isExistingUser
