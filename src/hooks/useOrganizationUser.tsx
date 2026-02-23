@@ -57,6 +57,8 @@ export const useOrganizationUser = () => {
       return;
     }
 
+    setLoading(true);
+
     try {
       const { data, error } = await supabase
         .from('organization_user')
