@@ -1,54 +1,34 @@
 
-# Fix: Preserve `accept-invite` Token Through Login Redirect
+
+# Fix: Accept-Invite Race Condition in DashboardRedirect
 
 ## Problem
 
-When Stuart clicks the invitation link (`/dashboard?accept-invite=TOKEN`), the `ProtectedRoute` sees he's not logged in and redirects to `/login` -- but drops the query parameters. After login, he's sent to `/dashboard` without the token, so the invitation is never accepted.
+The `acceptingInvite` state starts as `false` and only gets set to `true` inside a `useEffect` (which runs *after* render). Meanwhile, the other check useEffects complete faster, the loading guard passes, and the component proceeds to render `<Dashboard />` -- skipping the invitation acceptance entirely. The edge function is never called.
 
 ## Fix
 
-Two changes are needed:
+**File: `src/components/DashboardRedirect.tsx`**
 
-### 1. ProtectedRoute: preserve the full URL when redirecting to login
+Change the initial state of `acceptingInvite` to be `true` when a token is present in the URL. This ensures the loading guard blocks all redirects until the invitation is processed.
 
-In `src/App.tsx`, update `ProtectedRoute` to pass the current location (including query params) as state to the login page:
+```typescript
+// Before (line 22)
+const [acceptingInvite, setAcceptingInvite] = useState(false);
 
-```
-// Before
-return <Navigate to="/login" replace />;
-
-// After  
-return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
-```
-
-This stores the original URL (`/dashboard?accept-invite=TOKEN`) in the navigation state so the login page can redirect back to it after authentication.
-
-### 2. Login page: redirect to the saved URL after login
-
-In `src/pages/Login.tsx`, update both the `useEffect` (already-logged-in redirect) and the `handleLogin` success path to use the saved `from` location instead of hardcoded `/dashboard`:
-
-```
-// Use the saved redirect target
-const location = useLocation();
-const redirectTo = location.state?.from || '/dashboard';
-
-// Then in useEffect and handleLogin:
-navigate(redirectTo);
+// After
+const [acceptingInvite, setAcceptingInvite] = useState(
+  () => !!new URLSearchParams(window.location.search).get("accept-invite")
+);
 ```
 
-## Files to Modify
+This way, on the very first render, if `accept-invite=TOKEN` is in the URL, the loading spinner shows and no redirect fires until the edge function completes and roles are refreshed.
+
+No other files need to change.
+
+## Technical Detail
 
 | File | Change |
 |------|--------|
-| `src/App.tsx` | Pass `location.pathname + location.search` as state when redirecting to login |
-| `src/pages/Login.tsx` | Read `location.state?.from` and redirect there after login instead of hardcoded `/dashboard` |
+| `src/components/DashboardRedirect.tsx` | Initialize `acceptingInvite` to `true` when `accept-invite` query param exists |
 
-## Result
-
-After this fix:
-1. Stuart clicks `/dashboard?accept-invite=TOKEN`
-2. `ProtectedRoute` redirects to `/login` with state `{ from: "/dashboard?accept-invite=TOKEN" }`
-3. Stuart logs in
-4. Login page redirects to `/dashboard?accept-invite=TOKEN`
-5. `DashboardRedirect` detects the token, calls `accept-parent-invitation`, links the account
-6. Role switcher appears with the new Family Member role
