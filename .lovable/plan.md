@@ -1,56 +1,54 @@
 
+# Fix: Preserve `accept-invite` Token Through Login Redirect
 
-# Fix: Parent Invitation Accept Flow for Existing Users
+## Problem
 
-## Root Cause
+When Stuart clicks the invitation link (`/dashboard?accept-invite=TOKEN`), the `ProtectedRoute` sees he's not logged in and redirects to `/login` -- but drops the query parameters. After login, he's sent to `/dashboard` without the token, so the invitation is never accepted.
 
-Three issues are preventing the invitation from being accepted:
+## Fix
 
-1. **Race condition on Family Dashboard**: The email link sends Stuart to `/dashboard/family?accept-invite=TOKEN`. The page loads and shows "no connected students" because the `accept-parent-invitation` function hasn't completed yet. The accept logic runs in a `useEffect`, but the family data fetch also runs simultaneously, showing empty state before the invite is processed.
+Two changes are needed:
 
-2. **DashboardRedirect also has accept-invite logic but it conflicts**: `DashboardRedirect.tsx` (at `/dashboard`) handles `accept-invite` too, but Stuart lands on `/dashboard/family` directly from the email link, bypassing it. Meanwhile on the family dashboard, the accept logic fires but may fail silently or the page doesn't re-render properly after acceptance.
+### 1. ProtectedRoute: preserve the full URL when redirecting to login
 
-3. **Possible origin mismatch**: The `baseUrl` fallback in the edge function is `https://sponsorly.app` instead of `https://sponsorly.io` (or the published URL). If the request `origin` header is missing, the email link could point to the wrong domain entirely, causing Stuart to hit a login page on the wrong site.
+In `src/App.tsx`, update `ProtectedRoute` to pass the current location (including query params) as state to the login page:
 
-## Fixes
+```
+// Before
+return <Navigate to="/login" replace />;
 
-### Fix 1: Update `baseUrl` fallback in edge function
-In `supabase/functions/send-parent-invitation/index.ts`, change the fallback URL from `https://sponsorly.app` to the correct published URL (`https://team-raise-hub.lovable.app` or `https://sponsorly.io`).
+// After  
+return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+```
 
-### Fix 2: Move invite acceptance to DashboardRedirect only
-Remove the duplicate `accept-invite` handling from `FamilyDashboard.tsx`. Instead, handle it exclusively in `DashboardRedirect.tsx` (which runs at `/dashboard`). Change the email link from `/dashboard/family?accept-invite=TOKEN` to `/dashboard?accept-invite=TOKEN`.
+This stores the original URL (`/dashboard?accept-invite=TOKEN`) in the navigation state so the login page can redirect back to it after authentication.
 
-This way:
-- Stuart clicks the link, lands on `/dashboard?accept-invite=TOKEN`
-- `DashboardRedirect` detects the token, calls `accept-parent-invitation`
-- After success, refreshes roles and the role switcher appears
-- Stuart can then switch to the family dashboard via the switcher
+### 2. Login page: redirect to the saved URL after login
 
-### Fix 3: Ensure accept-invite runs before redirect logic
-In `DashboardRedirect.tsx`, make the invite acceptance run and complete **before** the redirect logic evaluates. Currently, the redirect checks (isParentOnly, isDonorOnly, etc.) can fire before the invite is processed, causing premature navigation.
+In `src/pages/Login.tsx`, update both the `useEffect` (already-logged-in redirect) and the `handleLogin` success path to use the saved `from` location instead of hardcoded `/dashboard`:
 
-### Fix 4: Remove duplicate accept-invite from FamilyDashboard
-Clean up the duplicate code in `FamilyDashboard.tsx` since it will all be handled in `DashboardRedirect.tsx`.
+```
+// Use the saved redirect target
+const location = useLocation();
+const redirectTo = location.state?.from || '/dashboard';
+
+// Then in useEffect and handleLogin:
+navigate(redirectTo);
+```
 
 ## Files to Modify
 
 | File | Change |
 |------|--------|
-| `supabase/functions/send-parent-invitation/index.ts` | Change email link to `/dashboard?accept-invite=TOKEN` and fix fallback baseUrl |
-| `src/components/DashboardRedirect.tsx` | Ensure accept-invite completes before redirect evaluation; show loading during acceptance |
-| `src/pages/FamilyDashboard.tsx` | Remove duplicate accept-invite handling |
+| `src/App.tsx` | Pass `location.pathname + location.search` as state when redirecting to login |
+| `src/pages/Login.tsx` | Read `location.state?.from` and redirect there after login instead of hardcoded `/dashboard` |
 
-## Technical Details
+## Result
 
-### Edge function change (send-parent-invitation)
-- Line 144: Change fallback from `"https://sponsorly.app"` to `"https://team-raise-hub.lovable.app"`
-- Line 146: Change path from `/dashboard/family?accept-invite=` to `/dashboard?accept-invite=`
-
-### DashboardRedirect change
-- The existing `accept-invite` useEffect already calls `accept-parent-invitation` and refreshes roles
-- Add a guard so redirect logic waits while `acceptingInvite` is true (it already has the `acceptingInvite` state, just need to add it to the loading check)
-- After successful acceptance, the `isParentOnly` check will re-evaluate and redirect to `/dashboard/family` if the user is now parent-only, or the role switcher will be available if they have other roles too
-
-### FamilyDashboard change
-- Remove lines 83-114 (the accept-invite useEffect block)
-- Remove the `useSearchParams` import and `searchParams`/`setSearchParams` usage if no longer needed
+After this fix:
+1. Stuart clicks `/dashboard?accept-invite=TOKEN`
+2. `ProtectedRoute` redirects to `/login` with state `{ from: "/dashboard?accept-invite=TOKEN" }`
+3. Stuart logs in
+4. Login page redirects to `/dashboard?accept-invite=TOKEN`
+5. `DashboardRedirect` detects the token, calls `accept-parent-invitation`, links the account
+6. Role switcher appears with the new Family Member role
