@@ -176,7 +176,7 @@ const DashboardRedirect = () => {
   }, [user?.id, searchParams]);
 
   // Show loading state while determining user type
-  if (donorLoading || checkingAdmin || checkingOrders || checkingParent) {
+  if (donorLoading || checkingAdmin || checkingOrders || checkingParent || acceptingInvite) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
