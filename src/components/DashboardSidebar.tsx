@@ -7,6 +7,7 @@ import { useDonorPortal } from "@/hooks/useDonorPortal";
 import { getLabel } from "@/lib/terminology";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import RoleSwitcher from "@/components/RoleSwitcher";
 
 // Base items - Home URL will be dynamic based on user type
 const getSidebarItems = (isParent: boolean) => [
@@ -25,10 +26,9 @@ const getSidebarItems = (isParent: boolean) => [
 
 const DashboardSidebar = () => {
   const location = useLocation();
-  const { organizationUser } = useOrganizationUser();
+  const { organizationUser, allRoles } = useOrganizationUser();
   const { donorProfiles } = useDonorPortal();
   const [pendingCount, setPendingCount] = useState(0);
-  const [isParent, setIsParent] = useState(false);
   
   const hasDonorAccess = donorProfiles.length > 0;
 
@@ -36,23 +36,8 @@ const DashboardSidebar = () => {
   const permissionLevel = organizationUser?.user_type?.permission_level;
   const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
 
-  // Check if user is a parent (has linked children)
-  useEffect(() => {
-    const checkIfParent = async () => {
-      if (!organizationUser?.user_id) return;
-      
-      const { data } = await supabase
-        .from('organization_user')
-        .select('id')
-        .eq('user_id', organizationUser.user_id)
-        .eq('active_user', true)
-        .not('linked_organization_user_id', 'is', null)
-        .limit(1);
-      
-      setIsParent(data && data.length > 0);
-    };
-    checkIfParent();
-  }, [organizationUser?.user_id]);
+  // Check if current role is a parent role (linked to a child)
+  const isParent = organizationUser?.linked_organization_user_id !== null && organizationUser?.linked_organization_user_id !== undefined;
 
   // Fetch pending membership requests count
   const fetchPendingCount = () => {
@@ -117,6 +102,11 @@ const DashboardSidebar = () => {
       <div className="p-4 flex items-center justify-between">
         <SponsorlyLogo variant="mark" theme="dark" className="lg:hidden" />
         <SponsorlyLogo variant="full" theme="dark" className="hidden lg:block text-sidebar-foreground" />
+      </div>
+
+      {/* Role Switcher */}
+      <div className="px-2 lg:px-4">
+        <RoleSwitcher compact={false} />
       </div>
 
       {/* Navigation */}

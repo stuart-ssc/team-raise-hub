@@ -1,20 +1,25 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useDonorPortal } from "@/hooks/useDonorPortal";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import Dashboard from "@/pages/Dashboard";
 
 const DashboardRedirect = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isDonorOnly, isLoading: donorLoading, hasOrgAccess } = useDonorPortal();
+  const { refreshRoles } = useOrganizationUser();
   const [isSystemAdmin, setIsSystemAdmin] = useState<boolean | null>(null);
   const [hasExistingOrders, setHasExistingOrders] = useState<boolean | null>(null);
   const [isParentOnly, setIsParentOnly] = useState<boolean | null>(null);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [checkingOrders, setCheckingOrders] = useState(true);
   const [checkingParent, setCheckingParent] = useState(true);
+  const [acceptingInvite, setAcceptingInvite] = useState(false);
 
   // Check if user is system admin
   useEffect(() => {
@@ -129,6 +134,46 @@ const DashboardRedirect = () => {
     
     checkExistingOrders();
   }, [user?.id, user?.email]);
+
+  // Handle accept-invite query param
+  useEffect(() => {
+    const inviteToken = searchParams.get("accept-invite");
+    if (!inviteToken || !user?.id || acceptingInvite) return;
+
+    setAcceptingInvite(true);
+    const acceptInvite = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("accept-parent-invitation", {
+          body: { token: inviteToken },
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Invitation Accepted!",
+          description: "You've been linked as a parent/guardian. Use the role switcher to view their dashboard.",
+        });
+
+        // Refresh roles so the new Family Member role appears
+        await refreshRoles();
+
+        // Clear the query param
+        searchParams.delete("accept-invite");
+        setSearchParams(searchParams, { replace: true });
+      } catch (err: any) {
+        console.error("Error accepting invitation:", err);
+        toast({
+          title: "Invitation Error",
+          description: err.message || "Failed to accept invitation",
+          variant: "destructive",
+        });
+      } finally {
+        setAcceptingInvite(false);
+      }
+    };
+
+    acceptInvite();
+  }, [user?.id, searchParams]);
 
   // Show loading state while determining user type
   if (donorLoading || checkingAdmin || checkingOrders || checkingParent) {

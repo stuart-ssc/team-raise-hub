@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import { supabase } from "@/integrations/supabase/client";
+import RoleSwitcher from "@/components/RoleSwitcher";
 
 // Base items - Home URL will be dynamic based on user type
 const getSidebarItems = (isParent: boolean) => [
@@ -48,10 +49,9 @@ const DashboardSidebarSheet = ({
   onProfileClick
 }: DashboardSidebarSheetProps) => {
   const location = useLocation();
-  const { organizationUser } = useOrganizationUser();
+  const { organizationUser, allRoles } = useOrganizationUser();
   const { donorProfiles } = useDonorPortal();
   const [pendingCount, setPendingCount] = useState(0);
-  const [isParent, setIsParent] = useState(false);
   
   const hasDonorAccess = donorProfiles.length > 0;
 
@@ -59,23 +59,8 @@ const DashboardSidebarSheet = ({
   const permissionLevel = organizationUser?.user_type?.permission_level;
   const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
 
-  // Check if user is a parent (has linked children)
-  useEffect(() => {
-    const checkIfParent = async () => {
-      if (!organizationUser?.user_id) return;
-      
-      const { data } = await supabase
-        .from('organization_user')
-        .select('id')
-        .eq('user_id', organizationUser.user_id)
-        .eq('active_user', true)
-        .not('linked_organization_user_id', 'is', null)
-        .limit(1);
-      
-      setIsParent(data && data.length > 0);
-    };
-    checkIfParent();
-  }, [organizationUser?.user_id]);
+  // Check if current role is a parent role
+  const isParent = organizationUser?.linked_organization_user_id !== null && organizationUser?.linked_organization_user_id !== undefined;
 
   // Fetch pending membership requests count
   const fetchPendingCount = () => {
@@ -141,6 +126,11 @@ const DashboardSidebarSheet = ({
           {/* Header */}
           <div className="p-4">
             <SponsorlyLogo variant="full" theme="dark" className="text-sidebar-foreground" />
+          </div>
+
+          {/* Role Switcher */}
+          <div className="px-4">
+            <RoleSwitcher compact={false} onSelect={() => onOpenChange(false)} />
           </div>
 
           {/* Navigation */}
