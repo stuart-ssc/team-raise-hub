@@ -90,21 +90,22 @@ serve(async (req) => {
       throw new Error("Configuration error: Family Member type not found");
     }
 
-    // Check if user already has an organization_user record for this org+group (matches unique constraint)
+    // Check if user already has a Family Member record for this org+group+type
     const targetGroupId = invitation.group_id || invitation.inviter.group_id;
-    const { data: existingOrgUser } = await supabase
+    const { data: existingFamilyMember } = await supabase
       .from("organization_user")
       .select("id, linked_organization_user_id")
       .eq("user_id", user.id)
       .eq("organization_id", invitation.organization_id)
       .eq("group_id", targetGroupId)
+      .eq("user_type_id", familyMemberType.id)
       .single();
 
     let finalOrgUserId: string;
 
-    if (existingOrgUser) {
-      if (existingOrgUser.linked_organization_user_id === invitation.inviter_organization_user_id) {
-        // Already linked to this exact student — just mark invitation accepted
+    if (existingFamilyMember) {
+      if (existingFamilyMember.linked_organization_user_id === invitation.inviter_organization_user_id) {
+        // Already linked to this exact student
         await supabase
           .from("parent_invitations")
           .update({
@@ -118,7 +119,7 @@ serve(async (req) => {
           JSON.stringify({
             success: true,
             message: "You are already connected to this student",
-            organizationUserId: existingOrgUser.id,
+            organizationUserId: existingFamilyMember.id,
           }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -127,23 +128,23 @@ serve(async (req) => {
         );
       }
 
-      // Existing record with different/no link (e.g. Booster Leader) — update it to add the parent link
+      // Existing Family Member record with different link — update it
       const { error: updateError } = await supabase
         .from("organization_user")
         .update({
           linked_organization_user_id: invitation.inviter_organization_user_id,
         })
-        .eq("id", existingOrgUser.id);
+        .eq("id", existingFamilyMember.id);
 
       if (updateError) {
-        console.error("Error updating existing organization_user:", updateError);
+        console.error("Error updating existing Family Member record:", updateError);
         throw new Error("Failed to link your account");
       }
 
-      finalOrgUserId = existingOrgUser.id;
-      console.log(`Updated existing organization_user ${existingOrgUser.id} with parent link for user ${user.id}`);
+      finalOrgUserId = existingFamilyMember.id;
+      console.log(`Updated existing Family Member record ${existingFamilyMember.id} for user ${user.id}`);
     } else {
-      // No existing record — insert new one
+      // Always create a NEW Family Member record (even if user has other roles in this group)
       const { data: newOrgUser, error: createError } = await supabase
         .from("organization_user")
         .insert({
@@ -159,12 +160,12 @@ serve(async (req) => {
         .single();
 
       if (createError) {
-        console.error("Error creating organization_user:", createError);
+        console.error("Error creating Family Member record:", createError);
         throw new Error("Failed to link your account");
       }
 
       finalOrgUserId = newOrgUser.id;
-      console.log(`Created organization_user ${newOrgUser.id} for parent ${user.id}`);
+      console.log(`Created Family Member record ${newOrgUser.id} for parent ${user.id}`);
     }
 
     // Update the invitation status
