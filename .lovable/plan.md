@@ -1,60 +1,58 @@
 
 
-# Unify Campaign Card Layout for All Campaign Types
+# Fix: Nonprofit Registration Failing Due to Missing RLS Policies
 
-## Problem
-The Season Pass campaign card looks different because the code has two completely separate layout paths:
-- **Roster campaigns**: Progress bar and stats are in the upper info section, action buttons are in the lower section
-- **Non-roster campaigns**: The info section is empty (`null`), and progress + stats + buttons are all stacked together in the lower section
+## Root Cause
 
-This creates a visually different layout even though the content is the same. There's also a "Team Campaign" badge that only appears on non-roster campaigns.
+When "Ky youth softball" tries to register, the `NonProfitSetupForm` performs 4 sequential database inserts. Two of them are blocked by Row Level Security:
 
-## Changes
+| Step | Table | RLS Policy | Result |
+|------|-------|-----------|--------|
+| 1. Create organization | `organizations` | INSERT allowed for authenticated users | OK |
+| 2. Create nonprofit details | `nonprofits` | **No INSERT policy exists** | **BLOCKED** |
+| 3. Create default group | `groups` | INSERT requires `school_user` role | **BLOCKED** |
+| 4. Create organization_user | `organization_user` | INSERT allowed when `user_id = auth.uid()` | OK |
 
-### 1. `src/pages/FamilyDashboard.tsx`
+Steps 2 and 3 fail because:
+- The `nonprofits` table has RLS enabled but zero INSERT policies -- no one can insert.
+- The `groups` table INSERT policy only checks the `school_user` table, which nonprofit registrants don't have records in.
 
-**Remove the "Team Campaign" badge** (lines 697-699) -- since the user wants identical layout regardless of roster status.
+The organization gets created (step 1), but then step 2 or 3 throws an RLS violation error, which is caught and shown as "Failed to create organization. Please try again." The user may also have orphaned organization records from previous attempts.
 
-**Show progress in the info section for ALL campaigns** (lines 702-728): Instead of only showing progress when `hasPersonalLink`, show it for all campaigns. The only difference is roster campaigns may also show rank. Change the condition so that non-roster campaigns also get progress, donations, and supporters displayed in the same location.
+## Fix
 
-**Unify the action buttons section** (lines 731-822): Instead of two completely different branches (one for personal link, one without), use a single layout. The only variable is the URL used: personal URL for roster campaigns, main campaign URL for non-roster campaigns.
+### 1. Add INSERT policy on `nonprofits` table
 
-The result: every campaign card has the same structure:
-- Campaign name + optional rank badge
-- Progress bar with raised/goal amounts
-- Donation and supporter counts
-- Copy, Share, QR buttons (using either personal URL or campaign URL)
+Allow authenticated users to insert nonprofit details for organizations they just created. Since the `organization_user` record doesn't exist yet at this point in the flow, we need a permissive policy that allows the insert for authenticated users (the organization INSERT policy already gates who can create orgs).
 
-### 2. `src/pages/MyFundraising.tsx`
-
-Apply the same unification so non-roster campaigns match the layout of roster-enabled campaigns, with only the URL differing.
-
-## Technical Details
-
-The key change is replacing the branching structure:
-
-```text
-Before:
-  INFO SECTION:
-    if hasPersonalLink -> show progress
-    else if rosterEnabled -> show "not set up"
-    else -> null
-  ACTIONS SECTION:
-    if hasPersonalLink -> show buttons
-    else -> show progress + buttons (duplicated)
-
-After:
-  INFO SECTION:
-    Always show progress (if data available)
-    if rosterEnabled && !hasPersonalLink -> show "not set up" message
-    if hasPersonalLink -> also show rank
-  ACTIONS SECTION:
-    url = hasPersonalLink ? personalUrl : campaignUrl
-    Always show Copy/Share/QR buttons using url
+```sql
+CREATE POLICY "Authenticated users can create nonprofit details"
+  ON public.nonprofits FOR INSERT
+  WITH CHECK (auth.uid() IS NOT NULL);
 ```
 
-| File | Change |
-|------|--------|
-| `src/pages/FamilyDashboard.tsx` | Remove "Team Campaign" badge, unify progress + button layout for all campaign types |
-| `src/pages/MyFundraising.tsx` | Same unification of layout structure |
+### 2. Add INSERT policy on `groups` table for nonprofit registration
 
+The existing groups INSERT policy only checks `school_user`. Add a second policy that allows authenticated users to create groups for organizations (needed during nonprofit setup to create the "General Fund" group).
+
+```sql
+CREATE POLICY "Authenticated users can create groups during org setup"
+  ON public.groups FOR INSERT
+  WITH CHECK (auth.uid() IS NOT NULL);
+```
+
+### 3. Clean up orphaned organization records
+
+Check for and remove any partial organization records from the user's failed registration attempts so they can register fresh.
+
+### 4. Improve error handling in `NonProfitSetupForm.tsx`
+
+Update the catch block to log the actual Supabase error message (not just a generic message) so future issues are easier to diagnose. Also consider rolling back the organization record if subsequent steps fail.
+
+## Files to Change
+
+| File/Resource | Change |
+|---------------|--------|
+| SQL Migration | Add INSERT RLS policies for `nonprofits` and `groups` tables |
+| Database cleanup | Remove orphaned org records from failed attempts |
+| `src/components/NonProfitSetupForm.tsx` | Improve error logging to include the actual error details in the toast |
