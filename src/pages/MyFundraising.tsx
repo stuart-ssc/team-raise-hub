@@ -532,9 +532,6 @@ export default function MyFundraising() {
                           {isParentView && stat.childName && (
                             <Badge variant="secondary">{stat.childName}</Badge>
                           )}
-                          {!stat.enableRosterAttribution && (
-                            <Badge variant="outline">Team Campaign</Badge>
-                          )}
                         </div>
                         {stat.hasPersonalLink ? (
                           <CardDescription className="mt-1">
@@ -546,11 +543,9 @@ export default function MyFundraising() {
                           </CardDescription>
                         ) : null}
                       </div>
-                      {stat.hasPersonalLink && (
-                        <Badge variant="outline" className="ml-2">
-                          {stat.donationCount} donation{stat.donationCount !== 1 ? 's' : ''}
-                        </Badge>
-                      )}
+                      <Badge variant="outline" className="ml-2">
+                        {stat.donationCount} donation{stat.donationCount !== 1 ? 's' : ''}
+                      </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -565,69 +560,84 @@ export default function MyFundraising() {
                       </Alert>
                     )}
 
-                    {stat.hasPersonalLink ? (
-                      <>
-                        {/* Progress */}
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">
-                              {isParentView ? "Goal Progress" : "Personal Goal Progress"}
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                              ${stat.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${stat.personalGoal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                          <Progress value={stat.percentToGoal} className="h-2" />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {stat.percentToGoal.toFixed(1)}% of goal reached
-                          </p>
-                        </div>
+                    {/* Progress - shown for all campaigns */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">
+                          {stat.hasPersonalLink ? (isParentView ? "Goal Progress" : "Personal Goal Progress") : "Campaign Progress"}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          ${stat.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${stat.personalGoal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <Progress value={stat.percentToGoal} className="h-2" />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {stat.percentToGoal.toFixed(1)}% of goal reached
+                      </p>
+                    </div>
 
-                        {/* Stats Row */}
-                        <div className="grid grid-cols-3 gap-4 py-3 border-y">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Raised</p>
-                            <p className="text-lg font-semibold">${stat.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Supporters</p>
-                            <p className="text-lg font-semibold">{stat.uniqueSupporters}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Avg. Gift</p>
-                            <p className="text-lg font-semibold">
-                              ${stat.donationCount > 0 ? (stat.totalRaised / stat.donationCount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                            </p>
-                          </div>
-                        </div>
+                    {/* Stats Row */}
+                    <div className="grid grid-cols-3 gap-4 py-3 border-y">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Raised</p>
+                        <p className="text-lg font-semibold">${stat.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Supporters</p>
+                        <p className="text-lg font-semibold">{stat.uniqueSupporters}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Avg. Gift</p>
+                        <p className="text-lg font-semibold">
+                          ${stat.donationCount > 0 ? (stat.totalRaised / stat.donationCount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                        </p>
+                      </div>
+                    </div>
 
-                        {/* Share Link */}
+                    {/* Roster not set up message */}
+                    {stat.enableRosterAttribution && !stat.hasPersonalLink && (
+                      <div className="bg-muted/50 rounded-lg p-4 text-center">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Personal fundraising link not set up yet. Contact your campaign manager to get started.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Share Link */}
+                    {(() => {
+                      const shareUrl = stat.hasPersonalLink && stat.personalUrl
+                        ? stat.personalUrl
+                        : `${window.location.origin}/c/${stat.campaignSlug}`;
+                      const qrKey = stat.hasPersonalLink ? stat.personalUrl : stat.campaignSlug;
+                      return (
                         <div className="space-y-2">
                           <label className="text-sm font-medium">
-                            {isParentView && stat.childName ? `${stat.childName}'s Link` : "Your Personal Link"}
+                            {stat.hasPersonalLink
+                              ? (isParentView && stat.childName ? `${stat.childName}'s Link` : "Your Personal Link")
+                              : "Campaign Link"}
                           </label>
                           <div className="flex gap-2">
                             <div className="flex-1 p-2 bg-muted rounded-md text-sm font-mono truncate">
-                              {stat.personalUrl}
+                              {shareUrl}
                             </div>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => copyLink(stat.personalUrl!)}
+                              onClick={() => copyLink(shareUrl)}
                             >
                               <Copy className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => shareLink(stat.personalUrl!, stat.campaignName, stat.childName)}
+                              onClick={() => shareLink(shareUrl, stat.campaignName, stat.childName)}
                             >
                               <Share2 className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => window.open(stat.personalUrl!, '_blank')}
+                              onClick={() => window.open(shareUrl, '_blank')}
                             >
                               <ExternalLink className="h-4 w-4" />
                             </Button>
@@ -636,13 +646,13 @@ export default function MyFundraising() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setShowQRCode(showQRCode === stat.personalUrl ? null : stat.personalUrl)}
+                              onClick={() => setShowQRCode(showQRCode === qrKey ? null : qrKey)}
                               className="flex-1"
                             >
-                              {showQRCode === stat.personalUrl ? 'Hide' : 'Show'} QR Code
+                              {showQRCode === qrKey ? 'Hide' : 'Show'} QR Code
                             </Button>
-                            {/* Only show pitch editor for players, not parents */}
-                            {!isParentView && (
+                            {/* Only show pitch editor for players with personal links, not parents */}
+                            {!isParentView && stat.hasPersonalLink && (
                               <Button
                                 variant="secondary"
                                 size="sm"
@@ -663,75 +673,14 @@ export default function MyFundraising() {
                               </Button>
                             )}
                           </div>
-                          {showQRCode === stat.personalUrl && (
+                          {showQRCode === qrKey && (
                             <div className="flex justify-center p-4 bg-white rounded-md">
-                              <QRCode value={stat.personalUrl!} size={200} />
+                              <QRCode value={shareUrl} size={200} />
                             </div>
                           )}
                         </div>
-                      </>
-                    ) : stat.enableRosterAttribution ? (
-                      <div className="bg-muted/50 rounded-lg p-4 text-center">
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Personal fundraising link not set up yet. Contact your campaign manager to get started.
-                        </p>
-                      </div>
-                    ) : (
-                      <>
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">Campaign Progress</span>
-                            <span className="text-sm text-muted-foreground">
-                              ${stat.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${stat.personalGoal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                          <Progress value={stat.percentToGoal} className="h-2" />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {stat.percentToGoal.toFixed(1)}% of goal reached
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4 py-3 border-y text-center">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Raised</p>
-                            <p className="text-lg font-semibold">${stat.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Supporters</p>
-                            <p className="text-lg font-semibold">{stat.uniqueSupporters}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Avg. Gift</p>
-                            <p className="text-lg font-semibold">
-                              ${stat.donationCount > 0 ? (stat.totalRaised / stat.donationCount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 justify-center">
-                          <Button variant="outline" size="sm" onClick={() => window.open(`/c/${stat.campaignSlug}`, '_blank')}>
-                            <ExternalLink className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => copyLink(`${window.location.origin}/c/${stat.campaignSlug}`)}>
-                            <Copy className="h-4 w-4 mr-1" />
-                            Copy
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => shareLink(`${window.location.origin}/c/${stat.campaignSlug}`, stat.campaignName)}>
-                            <Share2 className="h-4 w-4 mr-1" />
-                            Share
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => setShowQRCode(showQRCode === stat.campaignSlug ? null : stat.campaignSlug)}>
-                            <QrCode className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {showQRCode === stat.campaignSlug && (
-                          <div className="flex justify-center p-4 bg-white rounded-md">
-                            <QRCode value={`${window.location.origin}/c/${stat.campaignSlug}`} size={200} />
-                          </div>
-                        )}
-                      </>
-                    )}
+                      );
+                    })()}
 
                     {/* Inline Pitch Editor - only for players */}
                     {!isParentView && editingPitchId === stat.campaignId && (

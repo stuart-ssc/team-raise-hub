@@ -694,132 +694,76 @@ const FamilyDashboard = () => {
                                 <div className="flex items-center gap-2 mb-2">
                                   <h4 className="font-semibold">{stat.campaignName}</h4>
                                   {stat.hasPersonalLink && stat.rank > 0 && getRankBadge(stat.rank)}
-                                  {!stat.enableRosterAttribution && (
-                                    <Badge variant="secondary">Team Campaign</Badge>
-                                  )}
                                 </div>
                                 
-                                {stat.hasPersonalLink ? (
-                                  <>
-                                    <div className="space-y-2">
-                                      <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Progress</span>
-                                        <span className="font-medium">
-                                          ${stat.totalRaised.toFixed(2)} / ${stat.personalGoal.toFixed(2)}
-                                        </span>
-                                      </div>
-                                      <Progress value={stat.percentToGoal} className="h-2" />
-                                    </div>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Progress</span>
+                                    <span className="font-medium">
+                                      ${stat.totalRaised.toFixed(2)} / ${stat.personalGoal.toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <Progress value={stat.percentToGoal} className="h-2" />
+                                </div>
 
-                                    <div className="flex gap-4 mt-3 text-sm text-muted-foreground">
-                                      <span>{stat.donationCount} donations</span>
-                                      <span>{stat.uniqueSupporters} supporters</span>
-                                      {stat.totalParticipants > 0 && (
-                                        <span>Rank {stat.rank} of {stat.totalParticipants}</span>
-                                      )}
-                                    </div>
-                                  </>
-                                ) : stat.enableRosterAttribution ? (
+                                <div className="flex gap-4 mt-3 text-sm text-muted-foreground">
+                                  <span>{stat.donationCount} donations</span>
+                                  <span>{stat.uniqueSupporters} supporters</span>
+                                  {stat.hasPersonalLink && stat.totalParticipants > 0 && (
+                                    <span>Rank {stat.rank} of {stat.totalParticipants}</span>
+                                  )}
+                                </div>
+
+                                {stat.enableRosterAttribution && !stat.hasPersonalLink && (
                                   <div className="bg-muted/50 rounded-lg p-4 mt-2">
                                     <p className="text-sm text-muted-foreground">
                                       Personal fundraising link not set up yet. Contact the campaign manager to get started.
                                     </p>
                                   </div>
-                                ) : null}
+                                )}
                               </div>
 
                               <div className="flex flex-col gap-2">
-                                {stat.hasPersonalLink && stat.personalUrl ? (
-                                  <>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => copyToClipboard(stat.personalUrl!)}
-                                      >
-                                        <Copy className="h-4 w-4 mr-1" />
-                                        Copy
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => shareLink(stat.personalUrl!, stat.childName)}
-                                      >
-                                        <Share2 className="h-4 w-4 mr-1" />
-                                        Share
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setShowQRCode(showQRCode === stat.personalUrl ? null : stat.personalUrl!)}
-                                      >
-                                        <QrCode className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-
-                                    {showQRCode === stat.personalUrl && (
-                                      <div className="bg-white p-3 rounded-lg">
-                                        <QRCode value={stat.personalUrl} size={100} />
+                                {(() => {
+                                  const shareUrl = stat.hasPersonalLink && stat.personalUrl
+                                    ? stat.personalUrl
+                                    : `${window.location.origin}/c/${stat.campaignSlug}`;
+                                  const qrKey = stat.hasPersonalLink ? stat.personalUrl : stat.campaignSlug;
+                                  return (
+                                    <>
+                                      <div className="flex gap-2">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => copyToClipboard(shareUrl)}
+                                        >
+                                          <Copy className="h-4 w-4 mr-1" />
+                                          Copy
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => shareLink(shareUrl, stat.childName)}
+                                        >
+                                          <Share2 className="h-4 w-4 mr-1" />
+                                          Share
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => setShowQRCode(showQRCode === qrKey ? null : qrKey!)}
+                                        >
+                                          <QrCode className="h-4 w-4" />
+                                        </Button>
                                       </div>
-                                    )}
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="space-y-2">
-                                      <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Campaign Progress</span>
-                                        <span className="font-medium">
-                                          ${stat.totalRaised.toFixed(2)} / ${stat.personalGoal.toFixed(2)}
-                                        </span>
-                                      </div>
-                                      <Progress value={stat.percentToGoal} className="h-2" />
-                                    </div>
-
-                                    <div className="flex gap-4 mt-1 text-sm text-muted-foreground">
-                                      <span>{stat.donationCount} donations</span>
-                                      <span>{stat.uniqueSupporters} supporters</span>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => window.open(`/c/${stat.campaignSlug}`, '_blank')}
-                                      >
-                                        <ExternalLink className="h-4 w-4 mr-1" />
-                                        View
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => copyToClipboard(`${window.location.origin}/c/${stat.campaignSlug}`)}
-                                      >
-                                        <Copy className="h-4 w-4 mr-1" />
-                                        Copy
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => shareLink(`${window.location.origin}/c/${stat.campaignSlug}`, stat.childName)}
-                                      >
-                                        <Share2 className="h-4 w-4 mr-1" />
-                                        Share
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setShowQRCode(showQRCode === stat.campaignSlug ? null : stat.campaignSlug)}
-                                      >
-                                        <QrCode className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                    {showQRCode === stat.campaignSlug && (
-                                      <div className="bg-white p-3 rounded-lg">
-                                        <QRCode value={`${window.location.origin}/c/${stat.campaignSlug}`} size={100} />
-                                      </div>
-                                    )}
-                                  </>
-                                )}
+                                      {showQRCode === qrKey && (
+                                        <div className="bg-white p-3 rounded-lg">
+                                          <QRCode value={shareUrl} size={100} />
+                                        </div>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </CardContent>
