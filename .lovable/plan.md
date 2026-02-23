@@ -1,58 +1,141 @@
 
 
-# Fix: Nonprofit Registration Failing Due to Missing RLS Policies
+# Fix: Nonprofit Registration - Use a Single Database Function
 
 ## Root Cause
 
-When "Ky youth softball" tries to register, the `NonProfitSetupForm` performs 4 sequential database inserts. Two of them are blocked by Row Level Security:
+The registration fails because of a chicken-and-egg problem with RLS:
 
-| Step | Table | RLS Policy | Result |
-|------|-------|-----------|--------|
-| 1. Create organization | `organizations` | INSERT allowed for authenticated users | OK |
-| 2. Create nonprofit details | `nonprofits` | **No INSERT policy exists** | **BLOCKED** |
-| 3. Create default group | `groups` | INSERT requires `school_user` role | **BLOCKED** |
-| 4. Create organization_user | `organization_user` | INSERT allowed when `user_id = auth.uid()` | OK |
+1. INSERT into `organizations` succeeds, but `.select().single()` triggers a SELECT
+2. The SELECT policy on `organizations` requires the user to already exist in `organization_user`
+3. But `organization_user` is created in step 4 -- after the SELECT is needed
 
-Steps 2 and 3 fail because:
-- The `nonprofits` table has RLS enabled but zero INSERT policies -- no one can insert.
-- The `groups` table INSERT policy only checks the `school_user` table, which nonprofit registrants don't have records in.
+The same problem exists for `groups` (step 3 also uses `.select().single()`).
 
-The organization gets created (step 1), but then step 2 or 3 throws an RLS violation error, which is caught and shown as "Failed to create organization. Please try again." The user may also have orphaned organization records from previous attempts.
+No amount of INSERT policy tweaking will fix this because the problem is with **SELECT** policies, not INSERT policies.
 
-## Fix
+## Solution: Single `register_nonprofit` Database Function
 
-### 1. Add INSERT policy on `nonprofits` table
+Create a `SECURITY DEFINER` database function that performs the entire registration in one atomic transaction. This:
 
-Allow authenticated users to insert nonprofit details for organizations they just created. Since the `organization_user` record doesn't exist yet at this point in the flow, we need a permissive policy that allows the insert for authenticated users (the organization INSERT policy already gates who can create orgs).
+- Bypasses RLS entirely (runs as the function owner, not the user)
+- Ensures all-or-nothing: if any step fails, everything rolls back automatically
+- Eliminates orphaned records from partial failures
+- Makes registration simple and reliable
 
-```sql
-CREATE POLICY "Authenticated users can create nonprofit details"
-  ON public.nonprofits FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL);
-```
-
-### 2. Add INSERT policy on `groups` table for nonprofit registration
-
-The existing groups INSERT policy only checks `school_user`. Add a second policy that allows authenticated users to create groups for organizations (needed during nonprofit setup to create the "General Fund" group).
+### 1. SQL Migration -- Create `register_nonprofit` function
 
 ```sql
-CREATE POLICY "Authenticated users can create groups during org setup"
-  ON public.groups FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL);
+CREATE OR REPLACE FUNCTION public.register_nonprofit(
+  p_name TEXT,
+  p_city TEXT,
+  p_state TEXT,
+  p_zip TEXT,
+  p_phone TEXT DEFAULT NULL,
+  p_email TEXT DEFAULT NULL,
+  p_ein TEXT DEFAULT NULL,
+  p_mission_statement TEXT DEFAULT NULL,
+  p_tax_deductible BOOLEAN DEFAULT FALSE,
+  p_user_role TEXT DEFAULT 'Executive Director',
+  p_verification_doc_url TEXT DEFAULT NULL
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_org_id UUID;
+  v_group_id UUID;
+  v_user_type_id UUID;
+  v_user_id UUID;
+BEGIN
+  -- Get the authenticated user
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  -- Step 1: Create organization
+  INSERT INTO organizations (
+    organization_type, name, city, state, zip, phone, email,
+    requires_verification, verification_status,
+    verification_documents, verification_submitted_at
+  ) VALUES (
+    'nonprofit', p_name, p_city, p_state, p_zip, p_phone, p_email,
+    p_tax_deductible,
+    CASE WHEN p_tax_deductible THEN 'pending' ELSE 'approved' END,
+    CASE WHEN p_tax_deductible AND p_verification_doc_url IS NOT NULL
+      THEN jsonb_build_array(jsonb_build_object(
+        'url', p_verification_doc_url,
+        'uploaded_at', now()
+      ))
+      ELSE NULL
+    END,
+    CASE WHEN p_tax_deductible AND p_verification_doc_url IS NOT NULL
+      THEN now() ELSE NULL
+    END
+  )
+  RETURNING id INTO v_org_id;
+
+  -- Step 2: Create nonprofit details (if EIN or mission provided)
+  IF p_ein IS NOT NULL OR p_mission_statement IS NOT NULL THEN
+    INSERT INTO nonprofits (organization_id, ein, mission_statement)
+    VALUES (v_org_id, p_ein, p_mission_statement);
+  END IF;
+
+  -- Step 3: Create default group
+  INSERT INTO groups (group_name, organization_id, school_id, use_org_payment_account, status)
+  VALUES ('General Fund', v_org_id, NULL, TRUE, TRUE)
+  RETURNING id INTO v_group_id;
+
+  -- Step 4: Look up user type
+  SELECT id INTO v_user_type_id
+  FROM user_type WHERE name = p_user_role;
+
+  IF v_user_type_id IS NULL THEN
+    RAISE EXCEPTION 'Invalid role: %', p_user_role;
+  END IF;
+
+  -- Step 5: Create organization_user link
+  INSERT INTO organization_user (user_id, organization_id, group_id, user_type_id, active_user)
+  VALUES (v_user_id, v_org_id, v_group_id, v_user_type_id, TRUE);
+
+  RETURN v_org_id;
+END;
+$$;
 ```
 
-### 3. Clean up orphaned organization records
+### 2. Update `NonProfitSetupForm.tsx`
 
-Check for and remove any partial organization records from the user's failed registration attempts so they can register fresh.
+Replace the 4 separate Supabase calls with a single RPC call:
 
-### 4. Improve error handling in `NonProfitSetupForm.tsx`
+```typescript
+const { data: orgId, error } = await supabase.rpc('register_nonprofit', {
+  p_name: data.name,
+  p_city: data.city,
+  p_state: data.state,
+  p_zip: data.zip,
+  p_phone: data.phone || null,
+  p_email: data.email,
+  p_ein: data.ein || null,
+  p_mission_statement: data.mission_statement || null,
+  p_tax_deductible: data.tax_deductible,
+  p_user_role: data.user_role,
+  p_verification_doc_url: verificationDocUrl || null,
+});
 
-Update the catch block to log the actual Supabase error message (not just a generic message) so future issues are easier to diagnose. Also consider rolling back the organization record if subsequent steps fail.
+if (error) throw error;
+```
+
+### 3. Clean up orphaned records
+
+Delete any partial organization records from previous failed attempts by this user.
 
 ## Files to Change
 
 | File/Resource | Change |
 |---------------|--------|
-| SQL Migration | Add INSERT RLS policies for `nonprofits` and `groups` tables |
-| Database cleanup | Remove orphaned org records from failed attempts |
-| `src/components/NonProfitSetupForm.tsx` | Improve error logging to include the actual error details in the toast |
+| SQL Migration | Create `register_nonprofit` function; clean up orphaned records |
+| `src/components/NonProfitSetupForm.tsx` | Replace 4 separate inserts with single `supabase.rpc('register_nonprofit', ...)` call |
+
