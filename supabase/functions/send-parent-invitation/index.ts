@@ -128,9 +128,27 @@ serve(async (req) => {
 
     console.log(`Created invitation ${invitation.id} with token ${invitation.token}`);
 
+    // Check if the invitee already has an account
+    let isExistingUser = false;
+    try {
+      const { data: { users } } = await supabase.auth.admin.listUsers();
+      isExistingUser = users.some(
+        (u: any) => u.email?.toLowerCase() === email.toLowerCase()
+      );
+    } catch (err) {
+      console.error("Error checking existing user:", err);
+    }
+
     // Send the invitation email
     if (resendApiKey) {
-      const signupUrl = `${req.headers.get("origin") || "https://sponsorly.app"}/signup?invite=${invitation.token}`;
+      const baseUrl = req.headers.get("origin") || "https://sponsorly.app";
+      const signupUrl = isExistingUser
+        ? `${baseUrl}/dashboard/family?accept-invite=${invitation.token}`
+        : `${baseUrl}/signup?invite=${invitation.token}`;
+
+      const ctaText = isExistingUser
+        ? "Accept Invitation"
+        : "Accept Invitation & Sign Up";
       
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -145,7 +163,7 @@ serve(async (req) => {
           </ul>
           <p style="margin: 30px 0;">
             <a href="${signupUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-              Accept Invitation & Sign Up
+              ${ctaText}
             </a>
           </p>
           <p style="color: #666; font-size: 14px;">This invitation expires in 7 days.</p>
