@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -30,6 +30,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Redirect to set-password page on PASSWORD_RECOVERY event
+        if (event === 'PASSWORD_RECOVERY') {
+          window.location.href = '/set-password';
+          return;
+        }
 
         // Mark signup as completed on any real sign-in event
         if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
@@ -113,7 +119,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/login`;
+    const redirectUrl = `${window.location.origin}/set-password`;
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,
