@@ -544,11 +544,7 @@ export default function MyFundraising() {
                           <CardDescription className="mt-1 text-amber-600">
                             Personal link not set up yet
                           </CardDescription>
-                        ) : (
-                          <CardDescription className="mt-1">
-                            Team campaign without individual tracking
-                          </CardDescription>
-                        )}
+                        ) : null}
                       </div>
                       {stat.hasPersonalLink && (
                         <Badge variant="outline" className="ml-2">

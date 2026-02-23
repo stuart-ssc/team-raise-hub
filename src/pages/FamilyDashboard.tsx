@@ -725,11 +725,7 @@ const FamilyDashboard = () => {
                                       Personal fundraising link not set up yet. Contact the campaign manager to get started.
                                     </p>
                                   </div>
-                                ) : (
-                                  <p className="text-sm text-muted-foreground mt-2">
-                                    This is a team campaign without individual tracking.
-                                  </p>
-                                )}
+                                ) : null}
                               </div>
 
                               <div className="flex flex-col gap-2">
