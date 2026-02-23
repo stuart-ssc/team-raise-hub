@@ -1,103 +1,81 @@
 
-# Fix: Campaign URL Path + Add Copy/Share/QR to All Campaigns
+
+# Show Campaign Progress for All Campaign Types
 
 ## Problem
-1. "View Campaign" links use `/campaign/` instead of the correct `/c/` path
-2. Non-roster-enabled campaigns only show a plain "View Campaign" button, missing the Copy, Share, and QR code actions that roster-enabled campaigns get
+Non-roster-enabled campaigns already have `totalRaised`, `personalGoal`, and `percentToGoal` data loaded, but the UI only shows the progress bar when the campaign has a personal link (roster-enabled). Non-roster campaigns skip straight to the action buttons with no progress info.
 
 ## Changes
 
-### 1. `src/pages/FamilyDashboard.tsx` (lines 770-778)
+### 1. `src/pages/FamilyDashboard.tsx` (around lines 770-810)
 
-Replace the simple "View Campaign" button for non-roster campaigns with the same Copy, Share, and QR actions -- just using the main campaign URL (`/c/{slug}`) instead of a personal link:
+Add a progress section above the action buttons in the non-roster branch:
 
-```typescript
+```
 ) : (
   <>
+    <div className="space-y-2">
+      <div className="flex justify-between text-sm">
+        <span className="text-muted-foreground">Campaign Progress</span>
+        <span className="font-medium">
+          ${stat.totalRaised.toFixed(2)} / ${stat.personalGoal.toFixed(2)}
+        </span>
+      </div>
+      <Progress value={stat.percentToGoal} className="h-2" />
+    </div>
+
+    <div className="flex gap-4 mt-3 text-sm text-muted-foreground">
+      <span>{stat.donationCount} donations</span>
+      <span>{stat.uniqueSupporters} supporters</span>
+    </div>
+
     <div className="flex flex-wrap gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => window.open(`/c/${stat.campaignSlug}`, '_blank')}
-      >
-        <ExternalLink className="h-4 w-4 mr-1" />
-        View
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => copyToClipboard(`${window.location.origin}/c/${stat.campaignSlug}`)}
-      >
-        <Copy className="h-4 w-4 mr-1" />
-        Copy
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => shareLink(`${window.location.origin}/c/${stat.campaignSlug}`, stat.childName)}
-      >
-        <Share2 className="h-4 w-4 mr-1" />
-        Share
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setShowQRCode(showQRCode === stat.campaignSlug ? null : stat.campaignSlug)}
-      >
-        <QrCode className="h-4 w-4" />
-      </Button>
+      <!-- existing View/Copy/Share/QR buttons stay as-is -->
     </div>
-    {showQRCode === stat.campaignSlug && (
-      <div className="bg-white p-3 rounded-lg">
-        <QRCode value={`${window.location.origin}/c/${stat.campaignSlug}`} size={100} />
-      </div>
-    )}
+    ...QR code section...
   </>
-)}
+)
 ```
 
-### 2. `src/pages/MyFundraising.tsx` (lines 683-692)
+### 2. `src/pages/MyFundraising.tsx` (around lines 683-707)
 
-Same treatment -- replace the plain "View Campaign Page" button with Copy, Share, QR, and View actions using the main campaign URL:
+Same treatment -- add progress bar, stats row, then the action buttons:
 
-```typescript
+```
 ) : (
   <>
-    <div className="flex flex-wrap gap-2 justify-center">
-      <Button variant="outline" size="sm" onClick={() => window.open(`/c/${stat.campaignSlug}`, '_blank')}>
-        <ExternalLink className="h-4 w-4 mr-1" />
-        View
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => copyToClipboard(`${window.location.origin}/c/${stat.campaignSlug}`)}>
-        <Copy className="h-4 w-4 mr-1" />
-        Copy
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => shareLink(`${window.location.origin}/c/${stat.campaignSlug}`, stat.campaignName)}>
-        <Share2 className="h-4 w-4 mr-1" />
-        Share
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => setShowQRCode(showQRCode === stat.campaignSlug ? null : stat.campaignSlug)}>
-        <QrCode className="h-4 w-4" />
-      </Button>
-    </div>
-    {showQRCode === stat.campaignSlug && (
-      <div className="flex justify-center p-4 bg-white rounded-md">
-        <QRCode value={`${window.location.origin}/c/${stat.campaignSlug}`} size={200} />
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium">Campaign Progress</span>
+        <span className="text-sm text-muted-foreground">
+          ${totalRaised} / ${personalGoal}
+        </span>
       </div>
-    )}
+      <Progress value={stat.percentToGoal} className="h-2" />
+      <p className="text-xs text-muted-foreground mt-1">
+        {stat.percentToGoal.toFixed(1)}% of goal reached
+      </p>
+    </div>
+
+    <div className="grid grid-cols-3 gap-4 py-3 border-y">
+      <div>Raised: ${stat.totalRaised}</div>
+      <div>Supporters: {stat.uniqueSupporters}</div>
+      <div>Avg. Gift: ${avg}</div>
+    </div>
+
+    <div className="flex flex-wrap gap-2 justify-center">
+      <!-- existing View/Copy/Share/QR buttons stay as-is -->
+    </div>
+    ...QR code section...
   </>
-)}
+)
 ```
-
-### 3. Fix existing roster-enabled URLs
-
-Also fix the roster-enabled campaign URLs in both files that already use `/campaign/` to use `/c/` instead (if any exist in the personal URL generation).
 
 ## Summary
 
-| File | What Changes |
-|------|-------------|
-| `src/pages/FamilyDashboard.tsx` | Fix `/campaign/` to `/c/`, add Copy/Share/QR to non-roster campaigns |
-| `src/pages/MyFundraising.tsx` | Fix `/campaign/` to `/c/`, add Copy/Share/QR to non-roster campaigns |
+| File | Change |
+|------|--------|
+| `src/pages/FamilyDashboard.tsx` | Add progress bar + donation/supporter counts above action buttons for non-roster campaigns |
+| `src/pages/MyFundraising.tsx` | Add progress bar + stats row above action buttons for non-roster campaigns |
 
-No new dependencies needed -- `Copy`, `Share2`, `QrCode`, `ExternalLink` icons and `copyToClipboard`/`shareLink` helpers are already imported and used in both files.
+No data fetching changes needed -- `totalRaised`, `personalGoal`, and `percentToGoal` are already populated for all campaign types.
