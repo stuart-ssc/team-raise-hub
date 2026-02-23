@@ -140,7 +140,9 @@ const DashboardRedirect = () => {
   // Handle accept-invite query param
   useEffect(() => {
     const inviteToken = searchParams.get("accept-invite");
-    if (!inviteToken || !user?.id || acceptingInvite) return;
+    if (!inviteToken || !user?.id) return;
+
+    let cancelled = false;
 
     setAcceptingInvite(true);
     const acceptInvite = async () => {
@@ -149,6 +151,7 @@ const DashboardRedirect = () => {
           body: { token: inviteToken },
         });
 
+        if (cancelled) return;
         if (error) throw error;
 
         toast({
@@ -163,6 +166,7 @@ const DashboardRedirect = () => {
         searchParams.delete("accept-invite");
         setSearchParams(searchParams, { replace: true });
       } catch (err: any) {
+        if (cancelled) return;
         console.error("Error accepting invitation:", err);
         toast({
           title: "Invitation Error",
@@ -170,12 +174,16 @@ const DashboardRedirect = () => {
           variant: "destructive",
         });
       } finally {
-        setAcceptingInvite(false);
+        if (!cancelled) {
+          setAcceptingInvite(false);
+        }
       }
     };
 
     acceptInvite();
-  }, [user?.id, searchParams]);
+
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // Show loading state while determining user type
   if (donorLoading || checkingAdmin || checkingOrders || checkingParent || acceptingInvite) {
