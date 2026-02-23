@@ -769,6 +769,21 @@ const FamilyDashboard = () => {
                                   </>
                                 ) : (
                                   <>
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Campaign Progress</span>
+                                        <span className="font-medium">
+                                          ${stat.totalRaised.toFixed(2)} / ${stat.personalGoal.toFixed(2)}
+                                        </span>
+                                      </div>
+                                      <Progress value={stat.percentToGoal} className="h-2" />
+                                    </div>
+
+                                    <div className="flex gap-4 mt-1 text-sm text-muted-foreground">
+                                      <span>{stat.donationCount} donations</span>
+                                      <span>{stat.uniqueSupporters} supporters</span>
+                                    </div>
+
                                     <div className="flex flex-wrap gap-2">
                                       <Button
                                         variant="outline"

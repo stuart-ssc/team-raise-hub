@@ -682,6 +682,36 @@ export default function MyFundraising() {
                       </div>
                     ) : (
                       <>
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium">Campaign Progress</span>
+                            <span className="text-sm text-muted-foreground">
+                              ${stat.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${stat.personalGoal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <Progress value={stat.percentToGoal} className="h-2" />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {stat.percentToGoal.toFixed(1)}% of goal reached
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4 py-3 border-y text-center">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Raised</p>
+                            <p className="text-lg font-semibold">${stat.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Supporters</p>
+                            <p className="text-lg font-semibold">{stat.uniqueSupporters}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Avg. Gift</p>
+                            <p className="text-lg font-semibold">
+                              ${stat.donationCount > 0 ? (stat.totalRaised / stat.donationCount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                            </p>
+                          </div>
+                        </div>
+
                         <div className="flex flex-wrap gap-2 justify-center">
                           <Button variant="outline" size="sm" onClick={() => window.open(`/c/${stat.campaignSlug}`, '_blank')}>
                             <ExternalLink className="h-4 w-4 mr-1" />
