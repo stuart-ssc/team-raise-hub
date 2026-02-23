@@ -1,18 +1,42 @@
 
 
-# Update Pending Requests Empty State Text
+# Fix Status Priority Logic for Deactivated Users
 
-## Change
+## Problem
 
-Update the empty state message in `MembershipRequestsTab.tsx` (line 232) from:
+The current logic on line 174 of `src/pages/Users.tsx` is:
 
-> "There are no pending membership requests at this time."
+```text
+!signupCompleted -> "invited"
+signupCompleted && active -> "active"
+signupCompleted && !active -> "deactivated"
+```
 
-to:
+This means a user who was deactivated (`active_user = false`) but whose `signup_completed` is `false` or `null` will incorrectly show as "Invited" instead of "Deactivated".
 
-> "There are no pending membership requests to join your team at this time."
+## Fix
 
-## File
+Update the priority order to check deactivation first:
 
-- `src/components/MembershipRequestsTab.tsx` (line 232)
+```text
+!active_user -> "deactivated"
+active_user && !signupCompleted -> "invited"
+active_user && signupCompleted -> "active"
+```
+
+## Technical Change
+
+**`src/pages/Users.tsx`** (line 174)
+
+Replace:
+```typescript
+const accountStatus: AccountStatus = !signupCompleted ? "invited" : (isActive ? "active" : "deactivated");
+```
+
+With:
+```typescript
+const accountStatus: AccountStatus = !isActive ? "deactivated" : (!signupCompleted ? "invited" : "active");
+```
+
+This ensures that if an admin has explicitly deactivated a user, they always show as "Deactivated" regardless of their signup state.
 
