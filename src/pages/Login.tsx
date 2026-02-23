@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,13 +18,15 @@ const Login = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = (location.state as any)?.from || '/dashboard';
   const { signIn, signInWithGoogle, signInWithFacebook, signInWithMicrosoft, resetPassword, user } = useAuth();
   const { toast } = useToast();
 
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate(redirectTo);
     }
   }, [user, navigate]);
 
@@ -46,7 +48,7 @@ const Login = () => {
           title: "Success",
           description: "You have been logged in successfully!",
         });
-        navigate('/dashboard');
+        navigate(redirectTo);
       }
     } catch (error) {
       toast({
