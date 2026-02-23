@@ -1,141 +1,47 @@
 
 
-# Fix: Nonprofit Registration - Use a Single Database Function
+# Fix: Nonprofit Registration Still Failing
 
-## Root Cause
+## Investigation Results
 
-The registration fails because of a chicken-and-egg problem with RLS:
+After thorough investigation, here is what I found:
 
-1. INSERT into `organizations` succeeds, but `.select().single()` triggers a SELECT
-2. The SELECT policy on `organizations` requires the user to already exist in `organization_user`
-3. But `organization_user` is created in step 4 -- after the SELECT is needed
+### The database function IS correctly deployed
+The `register_nonprofit` SECURITY DEFINER function exists, is owned by `postgres` (which has `bypassrls = true`), and the SQL is correct. All 4 user type roles exist in the database.
 
-The same problem exists for `groups` (step 3 also uses `.select().single()`).
+### The frontend code IS correct
+`NonProfitSetupForm.tsx` calls `supabase.rpc('register_nonprofit', ...)` -- no direct table inserts remain anywhere in the codebase.
 
-No amount of INSERT policy tweaking will fix this because the problem is with **SELECT** policies, not INSERT policies.
+### The errors are from BEFORE the fix fully deployed
+The 3 "row-level security policy" errors in the database logs all occurred at ~21:05 UTC -- just minutes after the migration was created (20:53 UTC) but likely before the frontend code finished redeploying. There are **zero database errors after that point**.
 
-## Solution: Single `register_nonprofit` Database Function
+### The user has NOT successfully re-tried since the fix deployed
+The user (jackie.watson@thecribsoftball.com) has no organization record, meaning no successful registration. But there are also no new errors, meaning they likely:
+- Tried during the brief window when the DB function existed but the old frontend code was still running
+- OR are testing on the **published production site** which may not have been republished with the latest code
 
-Create a `SECURITY DEFINER` database function that performs the entire registration in one atomic transaction. This:
+## Recommended Actions
 
-- Bypasses RLS entirely (runs as the function owner, not the user)
-- Ensures all-or-nothing: if any step fails, everything rolls back automatically
-- Eliminates orphaned records from partial failures
-- Makes registration simple and reliable
+### 1. Republish the production site
+If the user is testing on sponsorly.io or team-raise-hub.lovable.app, the published site needs to be updated with the latest code that uses the RPC call.
 
-### 1. SQL Migration -- Create `register_nonprofit` function
+### 2. Ask the user to try again on the preview URL
+The preview URL has the latest code. Have Jackie try registering there to confirm the fix works.
+
+### 3. Add a safety net -- grant EXECUTE permission explicitly
+As a precaution, ensure the `register_nonprofit` function is callable by the `authenticated` role (it should already be, but let's be explicit).
 
 ```sql
-CREATE OR REPLACE FUNCTION public.register_nonprofit(
-  p_name TEXT,
-  p_city TEXT,
-  p_state TEXT,
-  p_zip TEXT,
-  p_phone TEXT DEFAULT NULL,
-  p_email TEXT DEFAULT NULL,
-  p_ein TEXT DEFAULT NULL,
-  p_mission_statement TEXT DEFAULT NULL,
-  p_tax_deductible BOOLEAN DEFAULT FALSE,
-  p_user_role TEXT DEFAULT 'Executive Director',
-  p_verification_doc_url TEXT DEFAULT NULL
-)
-RETURNS UUID
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_org_id UUID;
-  v_group_id UUID;
-  v_user_type_id UUID;
-  v_user_id UUID;
-BEGIN
-  -- Get the authenticated user
-  v_user_id := auth.uid();
-  IF v_user_id IS NULL THEN
-    RAISE EXCEPTION 'Not authenticated';
-  END IF;
-
-  -- Step 1: Create organization
-  INSERT INTO organizations (
-    organization_type, name, city, state, zip, phone, email,
-    requires_verification, verification_status,
-    verification_documents, verification_submitted_at
-  ) VALUES (
-    'nonprofit', p_name, p_city, p_state, p_zip, p_phone, p_email,
-    p_tax_deductible,
-    CASE WHEN p_tax_deductible THEN 'pending' ELSE 'approved' END,
-    CASE WHEN p_tax_deductible AND p_verification_doc_url IS NOT NULL
-      THEN jsonb_build_array(jsonb_build_object(
-        'url', p_verification_doc_url,
-        'uploaded_at', now()
-      ))
-      ELSE NULL
-    END,
-    CASE WHEN p_tax_deductible AND p_verification_doc_url IS NOT NULL
-      THEN now() ELSE NULL
-    END
-  )
-  RETURNING id INTO v_org_id;
-
-  -- Step 2: Create nonprofit details (if EIN or mission provided)
-  IF p_ein IS NOT NULL OR p_mission_statement IS NOT NULL THEN
-    INSERT INTO nonprofits (organization_id, ein, mission_statement)
-    VALUES (v_org_id, p_ein, p_mission_statement);
-  END IF;
-
-  -- Step 3: Create default group
-  INSERT INTO groups (group_name, organization_id, school_id, use_org_payment_account, status)
-  VALUES ('General Fund', v_org_id, NULL, TRUE, TRUE)
-  RETURNING id INTO v_group_id;
-
-  -- Step 4: Look up user type
-  SELECT id INTO v_user_type_id
-  FROM user_type WHERE name = p_user_role;
-
-  IF v_user_type_id IS NULL THEN
-    RAISE EXCEPTION 'Invalid role: %', p_user_role;
-  END IF;
-
-  -- Step 5: Create organization_user link
-  INSERT INTO organization_user (user_id, organization_id, group_id, user_type_id, active_user)
-  VALUES (v_user_id, v_org_id, v_group_id, v_user_type_id, TRUE);
-
-  RETURN v_org_id;
-END;
-$$;
+GRANT EXECUTE ON FUNCTION public.register_nonprofit TO authenticated;
 ```
 
-### 2. Update `NonProfitSetupForm.tsx`
-
-Replace the 4 separate Supabase calls with a single RPC call:
-
-```typescript
-const { data: orgId, error } = await supabase.rpc('register_nonprofit', {
-  p_name: data.name,
-  p_city: data.city,
-  p_state: data.state,
-  p_zip: data.zip,
-  p_phone: data.phone || null,
-  p_email: data.email,
-  p_ein: data.ein || null,
-  p_mission_statement: data.mission_statement || null,
-  p_tax_deductible: data.tax_deductible,
-  p_user_role: data.user_role,
-  p_verification_doc_url: verificationDocUrl || null,
-});
-
-if (error) throw error;
-```
-
-### 3. Clean up orphaned records
-
-Delete any partial organization records from previous failed attempts by this user.
+### 4. Clean up any orphaned data
+Verify and remove any partial records from failed attempts so Jackie gets a clean start.
 
 ## Files to Change
 
 | File/Resource | Change |
 |---------------|--------|
-| SQL Migration | Create `register_nonprofit` function; clean up orphaned records |
-| `src/components/NonProfitSetupForm.tsx` | Replace 4 separate inserts with single `supabase.rpc('register_nonprofit', ...)` call |
+| SQL Migration | `GRANT EXECUTE` on `register_nonprofit` to `authenticated` role; clean up any orphaned data |
+| No frontend changes needed | The code is already correct |
 
