@@ -1,34 +1,57 @@
 
 
-# Fix: Accept-Invite Race Condition in DashboardRedirect
+# Fix: Accept-Invite Deadlock in DashboardRedirect
 
 ## Problem
 
-The `acceptingInvite` state starts as `false` and only gets set to `true` inside a `useEffect` (which runs *after* render). Meanwhile, the other check useEffects complete faster, the loading guard passes, and the component proceeds to render `<Dashboard />` -- skipping the invitation acceptance entirely. The edge function is never called.
+The `acceptingInvite` guard on line 143 checks `if (!inviteToken || !user?.id || acceptingInvite) return;`. Since `acceptingInvite` is initialized to `true` when the token is present, the useEffect immediately exits and never calls the edge function. Deadlock.
 
 ## Fix
 
-**File: `src/components/DashboardRedirect.tsx`**
+**File: `src/components/DashboardRedirect.tsx` (lines 140-178)**
 
-Change the initial state of `acceptingInvite` to be `true` when a token is present in the URL. This ensures the loading guard blocks all redirects until the invitation is processed.
+Remove `acceptingInvite` from the guard condition and `searchParams` from the dependency array. Add a cleanup flag for React strict mode safety.
 
-```typescript
-// Before (line 22)
-const [acceptingInvite, setAcceptingInvite] = useState(false);
+```
+// Before
+useEffect(() => {
+  const inviteToken = searchParams.get("accept-invite");
+  if (!inviteToken || !user?.id || acceptingInvite) return;  // <-- deadlock
+  ...
+}, [user?.id, searchParams]);
 
 // After
-const [acceptingInvite, setAcceptingInvite] = useState(
-  () => !!new URLSearchParams(window.location.search).get("accept-invite")
-);
+useEffect(() => {
+  const inviteToken = searchParams.get("accept-invite");
+  if (!inviteToken || !user?.id) return;  // removed acceptingInvite check
+
+  let cancelled = false;
+  setAcceptingInvite(true);
+
+  const acceptInvite = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("accept-parent-invitation", {
+        body: { token: inviteToken },
+      });
+      if (cancelled) return;
+      if (error) throw error;
+
+      toast({ title: "Invitation Accepted!", description: "..." });
+      await refreshRoles();
+      searchParams.delete("accept-invite");
+      setSearchParams(searchParams, { replace: true });
+    } catch (err) {
+      if (cancelled) return;
+      // show error toast
+    } finally {
+      if (!cancelled) setAcceptingInvite(false);
+    }
+  };
+
+  acceptInvite();
+  return () => { cancelled = true; };
+}, [user?.id]);  // removed searchParams dependency
 ```
 
-This way, on the very first render, if `accept-invite=TOKEN` is in the URL, the loading spinner shows and no redirect fires until the edge function completes and roles are refreshed.
-
-No other files need to change.
-
-## Technical Detail
-
-| File | Change |
-|------|--------|
-| `src/components/DashboardRedirect.tsx` | Initialize `acceptingInvite` to `true` when `accept-invite` query param exists |
+Only one file changes. The initialization fix from the previous edit stays as-is.
 
