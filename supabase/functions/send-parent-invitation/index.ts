@@ -178,7 +178,7 @@ serve(async (req) => {
           Authorization: `Bearer ${resendApiKey}`,
         },
         body: JSON.stringify({
-          from: "Sponsorly <noreply@sponsorly.app>",
+          from: "Sponsorly <noreply@sponsorly.io>",
           to: [email],
           subject: `${playerName} invited you to join ${orgName} on Sponsorly`,
           html: emailHtml,
