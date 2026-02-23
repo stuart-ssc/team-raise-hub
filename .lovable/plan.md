@@ -1,57 +1,49 @@
 
 
-# Fix: Accept-Invite Deadlock in DashboardRedirect
+# Fix: Duplicate Key Error in accept-parent-invitation Edge Function
 
 ## Problem
 
-The `acceptingInvite` guard on line 143 checks `if (!inviteToken || !user?.id || acceptingInvite) return;`. Since `acceptingInvite` is initialized to `true` when the token is present, the useEffect immediately exits and never calls the edge function. Deadlock.
+The edge function checks for an existing record using `linked_organization_user_id`, but the database unique constraint is on `(user_id, organization_id, group_id)`. When the user already has a record for that org+group (e.g., as a Booster Leader), the check misses it and the INSERT fails with error 23505.
 
 ## Fix
 
-**File: `src/components/DashboardRedirect.tsx` (lines 140-178)**
+**File: `supabase/functions/accept-parent-invitation/index.ts`**
 
-Remove `acceptingInvite` from the guard condition and `searchParams` from the dependency array. Add a cleanup flag for React strict mode safety.
+Update the duplicate-detection query (lines 93-100) to match the actual unique constraint, and handle the case where the user already exists in the org+group by updating the existing record instead of inserting a new one.
 
-```
-// Before
-useEffect(() => {
-  const inviteToken = searchParams.get("accept-invite");
-  if (!inviteToken || !user?.id || acceptingInvite) return;  // <-- deadlock
-  ...
-}, [user?.id, searchParams]);
+```typescript
+// Before (line 94-100): checks linked_organization_user_id — doesn't match unique constraint
+const { data: existingOrgUser } = await supabase
+  .from("organization_user")
+  .select("id")
+  .eq("user_id", user.id)
+  .eq("organization_id", invitation.organization_id)
+  .eq("linked_organization_user_id", invitation.inviter_organization_user_id)
+  .single();
 
-// After
-useEffect(() => {
-  const inviteToken = searchParams.get("accept-invite");
-  if (!inviteToken || !user?.id) return;  // removed acceptingInvite check
-
-  let cancelled = false;
-  setAcceptingInvite(true);
-
-  const acceptInvite = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("accept-parent-invitation", {
-        body: { token: inviteToken },
-      });
-      if (cancelled) return;
-      if (error) throw error;
-
-      toast({ title: "Invitation Accepted!", description: "..." });
-      await refreshRoles();
-      searchParams.delete("accept-invite");
-      setSearchParams(searchParams, { replace: true });
-    } catch (err) {
-      if (cancelled) return;
-      // show error toast
-    } finally {
-      if (!cancelled) setAcceptingInvite(false);
-    }
-  };
-
-  acceptInvite();
-  return () => { cancelled = true; };
-}, [user?.id]);  // removed searchParams dependency
+// After: check by the actual unique constraint columns
+const { data: existingOrgUser } = await supabase
+  .from("organization_user")
+  .select("id, linked_organization_user_id")
+  .eq("user_id", user.id)
+  .eq("organization_id", invitation.organization_id)
+  .eq("group_id", invitation.group_id || invitation.inviter.group_id)
+  .single();
 ```
 
-Only one file changes. The initialization fix from the previous edit stays as-is.
+Then update the handling logic (lines 102-130):
+- If record exists AND already has the correct `linked_organization_user_id` -- return "already connected"
+- If record exists but has no/different link -- update it to add the parent link, then return success
+- If no record exists -- insert as before
+
+This covers two scenarios:
+1. User is already a Family Member linked to this student (already connected)
+2. User has another role in the same group (e.g., Booster Leader) and needs the link added to their existing record
+
+## Technical Details
+
+| File | Change |
+|------|--------|
+| `supabase/functions/accept-parent-invitation/index.ts` | Fix duplicate check to use unique constraint columns; handle existing records by updating instead of inserting |
 
