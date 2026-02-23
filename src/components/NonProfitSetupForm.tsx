@@ -184,11 +184,12 @@ export const NonProfitSetupForm = ({ userId, onComplete, onBack }: NonProfitSetu
       });
 
       onComplete();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating non-profit:', error);
+      const errorMessage = error?.message || error?.details || "An unexpected error occurred";
       toast({
         title: "Error",
-        description: "Failed to create organization. Please try again.",
+        description: `Failed to create organization: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
