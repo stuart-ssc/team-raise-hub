@@ -134,7 +134,7 @@ const OrderRecovery = () => {
                       </TableCell>
                       <TableCell>{(order.campaigns as any)?.name || "—"}</TableCell>
                       <TableCell>${(order.total_amount / 100).toFixed(2)}</TableCell>
-                      <TableCell><Badge variant={statusColor(order.status)}>{order.status}</Badge></TableCell>
+                      <TableCell><Badge variant={statusColor(order.status)}>{order.status.charAt(0).toUpperCase() + order.status.slice(1)}</Badge></TableCell>
                       <TableCell className="text-xs">{new Date(order.created_at).toLocaleDateString()}</TableCell>
                       <TableCell className="font-mono text-xs">{order.stripe_payment_intent_id?.slice(0, 12) || "—"}</TableCell>
                       <TableCell>

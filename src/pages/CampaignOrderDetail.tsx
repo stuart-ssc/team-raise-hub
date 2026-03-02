@@ -591,10 +591,11 @@ const CampaignOrderDetail = () => {
             <div className="flex flex-wrap items-center gap-6">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Payment:</span>
-                <Badge variant={order.status === 'succeeded' ? 'default' : 'secondary'}>
-                  {order.status === 'succeeded' ? (
-                    <><CheckCircle className="h-3 w-3 mr-1" /> Succeeded</>
-                  ) : order.status}
+                <Badge variant={order.status === 'succeeded' || order.status === 'completed' ? 'default' : 'secondary'}>
+                  {(order.status === 'succeeded' || order.status === 'completed') && (
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                  )}
+                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                 </Badge>
               </div>
               

@@ -427,8 +427,8 @@ export default function DonorPortalPurchaseDetails() {
                 <DollarSign className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Payment</p>
-                  <Badge variant={order.status === 'succeeded' ? 'default' : 'secondary'}>
-                    {order.status}
+                  <Badge variant={order.status === 'succeeded' || order.status === 'completed' ? 'default' : 'secondary'}>
+                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                   </Badge>
                 </div>
               </div>
