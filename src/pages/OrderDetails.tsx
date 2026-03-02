@@ -275,7 +275,7 @@ const OrderDetails = () => {
                 </p>
               </div>
               <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
-                {order.status}
+                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
               </Badge>
             </div>
           </CardHeader>
