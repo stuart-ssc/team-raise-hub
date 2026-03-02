@@ -34,7 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
         id,
         total_amount,
         customer_name,
-        roster_member_id,
+        attributed_roster_member_id,
         created_at,
         campaigns (
           id,
@@ -54,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // If no roster member attribution, skip parent notification
-    if (!order.roster_member_id) {
+    if (!order.attributed_roster_member_id) {
       console.log("Order has no roster member attribution, skipping parent notification");
       return new Response(
         JSON.stringify({ message: "No roster member attributed" }),
@@ -66,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: rosterMemberLink, error: linkError } = await supabase
       .from("roster_member_campaign_links")
       .select("organization_user_id")
-      .eq("id", order.roster_member_id)
+      .eq("id", order.attributed_roster_member_id)
       .single();
 
     if (linkError || !rosterMemberLink) {
@@ -161,7 +161,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`Sending donation notification to parent: ${parent.email}`);
       
       return resend.emails.send({
-        from: "Sponsorly <onboarding@resend.dev>",
+        from: "Sponsorly <noreply@sponsorly.io>",
         to: [parent.email],
         subject: `🎉 ${childName} just received a donation!`,
         html: `
