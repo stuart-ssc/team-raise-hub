@@ -80,6 +80,17 @@ Deno.serve(async (req) => {
 
         console.log('Customer details from Stripe:', { customerEmail, customerName, isSubscription });
 
+        // Try to find user by email for linking
+        let orderUserId: string | null = null;
+        if (customerEmail) {
+          const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+          const matchedUser = authUsers?.users?.find(u => u.email?.toLowerCase() === customerEmail.toLowerCase());
+          if (matchedUser) {
+            orderUserId = matchedUser.id;
+            console.log('Matched user by email for order:', orderUserId);
+          }
+        }
+
         // Update order status and customer info
         const { error: orderError } = await supabaseAdmin
           .from('orders')
@@ -88,6 +99,7 @@ Deno.serve(async (req) => {
             customer_email: customerEmail,
             customer_name: customerName,
             stripe_payment_intent_id: session.payment_intent as string,
+            user_id: orderUserId,
             updated_at: new Date().toISOString(),
           })
           .eq('id', orderId);
