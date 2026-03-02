@@ -38,11 +38,16 @@ serve(async (req) => {
       throw new Error('Campaign not found');
     }
 
+    // Handle groups as array (Supabase may return array for joins)
+    const groupData = Array.isArray(campaign.groups) 
+      ? campaign.groups[0] 
+      : campaign.groups;
+
     // Get organization admins to notify
     const { data: orgUsers, error: orgUsersError } = await supabaseClient
       .from('organization_user')
       .select('user_id, user_type:user_type_id(permission_level)')
-      .eq('organization_id', campaign.groups.organization_id)
+      .eq('organization_id', groupData?.organization_id)
       .eq('active_user', true);
 
     if (orgUsersError) throw orgUsersError;

@@ -132,7 +132,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Sending donation confirmation to:", order.customer_email, "Manual entry:", order.manual_entry);
 
     const emailResponse = await resend.emails.send({
-      from: "Sponsorly <onboarding@resend.dev>",
+      from: "Sponsorly <noreply@sponsorly.io>",
       to: [order.customer_email],
       subject: order.manual_entry && !order.payment_received 
         ? `Your order with ${displayName} - Payment Pending`

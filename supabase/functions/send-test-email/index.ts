@@ -58,7 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send test email using Resend
     const emailResponse = await resend.emails.send({
-      from: "Sponsorly <onboarding@resend.dev>",
+      from: "Sponsorly <noreply@sponsorly.io>",
       to: [recipientEmail],
       subject: `[TEST] ${subject}`,
       html: htmlContent,

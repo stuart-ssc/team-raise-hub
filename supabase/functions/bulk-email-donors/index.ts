@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
         `;
 
         const { data: emailData, error: emailError } = await resend.emails.send({
-          from: "Sponsorly <onboarding@resend.dev>",
+          from: "Sponsorly <noreply@sponsorly.io>",
           to: [donor.email],
           subject: subject,
           html: htmlMessage,
