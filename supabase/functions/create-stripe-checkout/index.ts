@@ -26,6 +26,18 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Try to get the authenticated user (if logged in)
+    const authHeader = req.headers.get('Authorization');
+    let userId: string | null = null;
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: userData } = await supabaseAdmin.auth.getUser(token);
+      userId = userData?.user?.id || null;
+      if (userId) {
+        console.log('Authenticated user detected:', userId);
+      }
+    }
+
     const { campaignSlug, items, customerInfo, attributedRosterMemberId, origin } = await req.json();
 
     console.log('Creating checkout session for campaign:', campaignSlug);
@@ -211,6 +223,7 @@ Deno.serve(async (req) => {
         attributed_roster_member_id: attributedRosterMemberId || null,
         business_purchase: false,
         items: orderItems,
+        user_id: userId,
       })
       .select()
       .single();

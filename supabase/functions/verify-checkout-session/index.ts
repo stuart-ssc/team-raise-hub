@@ -16,6 +16,15 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
+  // Try to get the authenticated user (if logged in)
+  const authHeader = req.headers.get('Authorization');
+  let userId: string | null = null;
+  if (authHeader) {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData } = await supabaseAdmin.auth.getUser(token);
+    userId = userData?.user?.id || null;
+  }
+
   try {
     const { sessionId } = await req.json();
 
@@ -74,6 +83,16 @@ Deno.serve(async (req) => {
 
     console.log('Fulfilling order:', order.id, { customerEmail, customerName });
 
+    // If we don't have a user from auth, try to find one by email
+    if (!userId && customerEmail) {
+      const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+      const matchedUser = authUsers?.users?.find(u => u.email?.toLowerCase() === customerEmail.toLowerCase());
+      if (matchedUser) {
+        userId = matchedUser.id;
+        console.log('Matched user by email:', userId);
+      }
+    }
+
     // Update order status
     const { error: updateError } = await supabaseAdmin
       .from('orders')
@@ -82,6 +101,7 @@ Deno.serve(async (req) => {
         customer_email: customerEmail,
         customer_name: customerName,
         stripe_payment_intent_id: session.payment_intent as string,
+        user_id: userId,
         updated_at: new Date().toISOString(),
       })
       .eq('id', order.id);
