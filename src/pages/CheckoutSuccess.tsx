@@ -73,130 +73,158 @@ const CheckoutSuccess = () => {
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [showUploadLaterDialog, setShowUploadLaterDialog] = useState(false);
   const [filesCompleted, setFilesCompleted] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+
+  // Fetch order details
+  const fetchOrderDetails = async () => {
+    if (!sessionId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          created_at,
+          customer_name,
+          customer_email,
+          total_amount,
+          files_complete,
+          items,
+          status,
+          campaign:campaigns (
+            id,
+            name,
+            slug,
+            requires_business_info,
+            file_upload_deadline_days,
+            thank_you_message,
+            group:groups (
+              group_name,
+              organization_id
+            )
+          )
+        `)
+        .eq('processor_session_id', sessionId)
+        .single();
+
+      if (orderError) throw orderError;
+
+      if (orderData) {
+        const campaignData = Array.isArray(orderData.campaign) 
+          ? orderData.campaign[0] 
+          : orderData.campaign;
+        
+        const groupData = Array.isArray(campaignData?.group) 
+          ? campaignData.group[0] 
+          : campaignData?.group;
+        
+        const groupName = groupData?.group_name || '';
+        
+        let organizationName = '';
+        if (groupData?.organization_id) {
+          const { data: orgData } = await supabase
+            .from('organizations')
+            .select('name')
+            .eq('id', groupData.organization_id)
+            .single();
+          organizationName = orgData?.name || '';
+        }
+
+        const { data: fieldsData, error: fieldsError } = await supabase
+          .from('campaign_custom_fields')
+          .select('id, field_name, field_type, is_required, help_text')
+          .eq('campaign_id', campaignData.id)
+          .eq('field_type', 'file')
+          .order('display_order');
+
+        if (fieldsError) throw fieldsError;
+
+        const storedItems = Array.isArray(orderData.items) 
+          ? (orderData.items as unknown as StoredOrderItem[])
+          : [];
+
+        let enrichedItems: OrderItem[] = [];
+        if (storedItems.length > 0) {
+          const itemIds = storedItems.map(item => item.campaign_item_id).filter(Boolean);
+          
+          if (itemIds.length > 0) {
+            const { data: campaignItemsData } = await supabase
+              .from('campaign_items')
+              .select('id, name')
+              .in('id', itemIds);
+
+            enrichedItems = storedItems.map(item => {
+              const itemDetails = campaignItemsData?.find(i => i.id === item.campaign_item_id);
+              return {
+                name: itemDetails?.name || 'Item',
+                quantity: item.quantity || 1,
+                unitPrice: item.price_at_purchase || 0,
+                totalPrice: (item.price_at_purchase || 0) * (item.quantity || 1)
+              };
+            });
+          }
+        }
+
+        setOrder({
+          ...orderData,
+          campaign: campaignData,
+          items: enrichedItems,
+          organizationName,
+          groupName,
+          fileFields: fieldsData || []
+        } as OrderDetails);
+        setFilesCompleted(orderData.files_complete || false);
+        
+        return (orderData as any).status;
+      }
+    } catch (error) {
+      console.error('Error fetching order details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load order details",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+    return null;
+  };
 
   useEffect(() => {
-    const fetchOrderDetails = async () => {
-      if (!sessionId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // Fetch order with campaign and file field requirements
-        const { data: orderData, error: orderError } = await supabase
-          .from('orders')
-          .select(`
-            id,
-            created_at,
-            customer_name,
-            customer_email,
-            total_amount,
-            files_complete,
-            items,
-            campaign:campaigns (
-              id,
-              name,
-              slug,
-              requires_business_info,
-              file_upload_deadline_days,
-              thank_you_message,
-              group:groups (
-                group_name,
-                organization_id
-              )
-            )
-          `)
-          .eq('processor_session_id', sessionId)
-          .single();
-
-        if (orderError) throw orderError;
-
-        if (orderData) {
-          // Handle campaign as array (isOneToOne: false can return array)
-          const campaignData = Array.isArray(orderData.campaign) 
-            ? orderData.campaign[0] 
-            : orderData.campaign;
+    const loadAndVerify = async () => {
+      const orderStatus = await fetchOrderDetails();
+      
+      // If order is still pending, trigger verification fallback
+      if (orderStatus === 'pending' && sessionId) {
+        setVerifying(true);
+        try {
+          const { data, error } = await supabase.functions.invoke('verify-checkout-session', {
+            body: { sessionId }
+          });
           
-          // Handle group as array (no FK constraint returns array)
-          const groupData = Array.isArray(campaignData?.group) 
-            ? campaignData.group[0] 
-            : campaignData?.group;
+          console.log('Verification result:', data);
           
-          const groupName = groupData?.group_name || '';
-          
-          // Fetch organization name separately (no FK constraint)
-          let organizationName = '';
-          if (groupData?.organization_id) {
-            const { data: orgData } = await supabase
-              .from('organizations')
-              .select('name')
-              .eq('id', groupData.organization_id)
-              .single();
-            organizationName = orgData?.name || '';
+          if (data?.status === 'verified_and_fulfilled') {
+            // Re-fetch order details to show updated info
+            await fetchOrderDetails();
+            toast({
+              title: "Payment verified!",
+              description: "Your payment has been confirmed and your order is being processed.",
+            });
           }
-
-          // Fetch file type custom fields for this campaign
-          const { data: fieldsData, error: fieldsError } = await supabase
-            .from('campaign_custom_fields')
-            .select('id, field_name, field_type, is_required, help_text')
-            .eq('campaign_id', campaignData.id)
-            .eq('field_type', 'file')
-            .order('display_order');
-
-          if (fieldsError) throw fieldsError;
-
-          // Parse items from JSON (stored format)
-          const storedItems = Array.isArray(orderData.items) 
-            ? (orderData.items as unknown as StoredOrderItem[])
-            : [];
-
-          // Fetch item names from campaign_items table
-          let enrichedItems: OrderItem[] = [];
-          if (storedItems.length > 0) {
-            const itemIds = storedItems.map(item => item.campaign_item_id).filter(Boolean);
-            
-            if (itemIds.length > 0) {
-              const { data: campaignItemsData } = await supabase
-                .from('campaign_items')
-                .select('id, name')
-                .in('id', itemIds);
-
-              enrichedItems = storedItems.map(item => {
-                const itemDetails = campaignItemsData?.find(i => i.id === item.campaign_item_id);
-                return {
-                  name: itemDetails?.name || 'Item',
-                  quantity: item.quantity || 1,
-                  unitPrice: item.price_at_purchase || 0,
-                  totalPrice: (item.price_at_purchase || 0) * (item.quantity || 1)
-                };
-              });
-            }
-          }
-
-          setOrder({
-            ...orderData,
-            campaign: campaignData,
-            items: enrichedItems,
-            organizationName,
-            groupName,
-            fileFields: fieldsData || []
-          } as OrderDetails);
-          setFilesCompleted(orderData.files_complete || false);
+        } catch (verifyError) {
+          console.error('Verification fallback error:', verifyError);
+        } finally {
+          setVerifying(false);
         }
-      } catch (error) {
-        console.error('Error fetching order details:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load order details",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
       }
     };
 
-    fetchOrderDetails();
-  }, [sessionId, toast]);
+    loadAndVerify();
+  }, [sessionId]);
 
   const handleFilesComplete = () => {
     setFilesCompleted(true);
@@ -243,6 +271,16 @@ const CheckoutSuccess = () => {
         <div className="flex justify-center">
           <SponsorlyLogo theme="light" className="h-16" />
         </div>
+
+        {/* Verifying Payment Indicator */}
+        {verifying && (
+          <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950">
+            <Clock className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800 dark:text-blue-200">
+              Verifying your payment with Stripe... This may take a moment.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Success Header */}
         <Card>
