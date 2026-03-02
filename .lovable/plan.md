@@ -1,46 +1,27 @@
 
-# Auto-Complete Orders for Non-Sponsorship Campaigns
+
+# Capitalize Order Status Display Across All Pages
 
 ## Problem
-Currently, all orders are set to `succeeded` status after payment. Only sponsorship campaigns (where `requires_business_info = true`) actually need the purchaser to upload assets before the order can be marked `completed`. Non-sponsorship campaigns should go straight to `completed`.
-
-## Approach
-Check if the campaign has required assets (via `campaign_required_assets` table) or `requires_business_info = true`. If neither, set the order status to `completed` instead of `succeeded`.
+The status badge on the Order Details page and several other pages displays the raw database status (e.g., "succeeded") without capitalizing the first letter.
 
 ## Changes
 
-### 1. `supabase/functions/stripe-webhook/index.ts`
-- After getting the order's campaign info (line ~113), also fetch `requires_business_info` from the campaign
-- Check if `campaign_required_assets` has any rows for that campaign
-- If no assets required and `requires_business_info` is false, set status to `completed` instead of `succeeded`
+### 1. `src/pages/OrderDetails.tsx` (line 278)
+- **Current:** `{order.status}`
+- **New:** `{order.status.charAt(0).toUpperCase() + order.status.slice(1)}`
 
-### 2. `supabase/functions/verify-checkout-session/index.ts`
-- Same logic: after confirming payment, check if the campaign requires assets
-- If not, set status to `completed` instead of `succeeded`
+### 2. `src/pages/CampaignOrderDetail.tsx` (lines 594-597)
+- **Current:** Hardcoded "Succeeded" for that status, raw `order.status` for others
+- **New:** Use `{order.status.charAt(0).toUpperCase() + order.status.slice(1)}` for all statuses, keep the CheckCircle icon for succeeded/completed
 
-### 3. `supabase/functions/create-manual-order/index.ts`
-- Same logic for manual orders: check if campaign requires assets, set status accordingly
+### 3. `src/pages/DonorPortal/PurchaseDetails.tsx` (line 431)
+- **Current:** `{order.status}`
+- **New:** `{order.status.charAt(0).toUpperCase() + order.status.slice(1)}`
 
-### Technical Detail
+### 4. `src/pages/SystemAdmin/OrderRecovery.tsx` (line 137)
+- **Current:** `{order.status}`
+- **New:** `{order.status.charAt(0).toUpperCase() + order.status.slice(1)}`
 
-In each function, after determining the `campaign_id`, run:
-```typescript
-// Check if campaign requires asset uploads
-const { data: campaign } = await supabaseAdmin
-  .from('campaigns')
-  .select('requires_business_info')
-  .eq('id', campaignId)
-  .single();
+`MyOrders.tsx` already has the fix from the previous change, and `DonorPortal/Home.tsx` doesn't display the status text (only the amount), so no change needed there.
 
-const { count: assetCount } = await supabaseAdmin
-  .from('campaign_required_assets')
-  .select('id', { count: 'exact', head: true })
-  .eq('campaign_id', campaignId);
-
-const requiresAssets = campaign?.requires_business_info || (assetCount ?? 0) > 0;
-const orderStatus = requiresAssets ? 'succeeded' : 'completed';
-```
-
-Then use `orderStatus` instead of the hardcoded `'succeeded'` string when updating/inserting the order.
-
-This is a minimal change -- 3 edge functions updated with the same pattern. No database schema changes needed.
