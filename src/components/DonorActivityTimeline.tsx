@@ -152,7 +152,7 @@ const DonorActivityTimeline = ({ donorId }: DonorActivityTimelineProps) => {
                 </div>
                 
                 <Badge variant="outline" className="h-fit shrink-0">
-                  {activity.activity_type.replace(/_/g, " ")}
+                  {activity.activity_type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
                 </Badge>
               </div>
             ))}
