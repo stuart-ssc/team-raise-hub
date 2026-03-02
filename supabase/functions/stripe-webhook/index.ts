@@ -91,11 +91,36 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Check if campaign requires asset uploads to determine order status
+        const { data: orderForCampaign } = await supabaseAdmin
+          .from('orders')
+          .select('campaign_id')
+          .eq('id', orderId)
+          .single();
+
+        let orderStatus = 'succeeded';
+        if (orderForCampaign?.campaign_id) {
+          const { data: campaignInfo } = await supabaseAdmin
+            .from('campaigns')
+            .select('requires_business_info')
+            .eq('id', orderForCampaign.campaign_id)
+            .single();
+
+          const { count: assetCount } = await supabaseAdmin
+            .from('campaign_required_assets')
+            .select('id', { count: 'exact', head: true })
+            .eq('campaign_id', orderForCampaign.campaign_id);
+
+          const requiresAssets = campaignInfo?.requires_business_info || (assetCount ?? 0) > 0;
+          orderStatus = requiresAssets ? 'succeeded' : 'completed';
+          console.log('Order status determined:', orderStatus, { requiresAssets, requiresBusinessInfo: campaignInfo?.requires_business_info, assetCount });
+        }
+
         // Update order status and customer info
         const { error: orderError } = await supabaseAdmin
           .from('orders')
           .update({
-            status: 'succeeded',
+            status: orderStatus,
             customer_email: customerEmail,
             customer_name: customerName,
             stripe_payment_intent_id: session.payment_intent as string,
