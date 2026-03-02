@@ -81,6 +81,22 @@ Deno.serve(async (req) => {
     const customerName = session.customer_details?.name || null;
     const isSubscription = session.metadata?.is_subscription === 'true';
 
+    // Determine order status based on whether campaign requires assets
+    const { data: campaignInfo } = await supabaseAdmin
+      .from('campaigns')
+      .select('requires_business_info')
+      .eq('id', order.campaign_id)
+      .single();
+
+    const { count: assetCount } = await supabaseAdmin
+      .from('campaign_required_assets')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', order.campaign_id);
+
+    const requiresAssets = campaignInfo?.requires_business_info || (assetCount ?? 0) > 0;
+    const orderStatus = requiresAssets ? 'succeeded' : 'completed';
+    console.log('Order status determined:', orderStatus, { requiresAssets });
+
     console.log('Fulfilling order:', order.id, { customerEmail, customerName });
 
     // If we don't have a user from auth, try to find one by email
@@ -97,7 +113,7 @@ Deno.serve(async (req) => {
     const { error: updateError } = await supabaseAdmin
       .from('orders')
       .update({
-        status: 'succeeded',
+        status: orderStatus,
         customer_email: customerEmail,
         customer_name: customerName,
         stripe_payment_intent_id: session.payment_intent as string,
