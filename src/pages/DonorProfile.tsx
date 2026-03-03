@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { useParticipantConnections } from "@/hooks/useParticipantConnections";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import DonorActivityTimeline from "@/components/DonorActivityTimeline";
 import DonorCommunicationHistory from "@/components/DonorCommunicationHistory";
@@ -79,6 +80,7 @@ const DonorProfile = () => {
   const { donorId } = useParams<{ donorId: string }>();
   const navigate = useNavigate();
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
+  const { connectedDonorEmails, loading: connectionsLoading, isParticipantView } = useParticipantConnections();
   const { toast } = useToast();
   const [donor, setDonor] = useState<DonorProfile | null>(null);
   const [donations, setDonations] = useState<DonationHistory[]>([]);
@@ -90,10 +92,10 @@ const DonorProfile = () => {
   const [unlinkingAffiliation, setUnlinkingAffiliation] = useState<BusinessAffiliation | null>(null);
 
   useEffect(() => {
-    if (organizationUser?.organization_id && donorId) {
+    if (organizationUser?.organization_id && donorId && !connectionsLoading) {
       fetchDonorData();
     }
-  }, [organizationUser?.organization_id, donorId]);
+  }, [organizationUser?.organization_id, donorId, connectionsLoading]);
 
   const fetchDonorData = async () => {
     if (!donorId) return;
@@ -108,6 +110,18 @@ const DonorProfile = () => {
         .single();
 
       if (donorError) throw donorError;
+
+      // Access check for participants - verify donor is connected to them
+      if (isParticipantView && !connectedDonorEmails.includes(donorData.email)) {
+        toast({
+          title: "Access Denied",
+          description: "You can only view donors connected to your fundraising",
+          variant: "destructive",
+        });
+        navigate("/dashboard/donors");
+        return;
+      }
+
       setDonor(donorData);
       setNotes(donorData.notes || "");
 
@@ -587,32 +601,34 @@ const DonorProfile = () => {
                   </Card>
                 )}
 
-                {/* Notes */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      Notes
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Textarea
-                      placeholder="Add notes about this donor..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={6}
-                      className="resize-none"
-                    />
-                    <Button
-                      onClick={handleSaveNotes}
-                      disabled={isSavingNotes || notes === (donor.notes || "")}
-                      className="w-full"
-                    >
-                      <Edit className="mr-2 h-4 w-4" />
-                      {isSavingNotes ? "Saving..." : "Save Notes"}
-                    </Button>
-                  </CardContent>
-                </Card>
+                {/* Notes - Admin/Manager only */}
+                {!isParticipantView && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4" />
+                        Notes
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Textarea
+                        placeholder="Add notes about this donor..."
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows={6}
+                        className="resize-none"
+                      />
+                      <Button
+                        onClick={handleSaveNotes}
+                        disabled={isSavingNotes || notes === (donor.notes || "")}
+                        className="w-full"
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        {isSavingNotes ? "Saving..." : "Save Notes"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
             </div>
         </div>
       </div>

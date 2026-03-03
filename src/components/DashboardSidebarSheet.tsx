@@ -141,7 +141,7 @@ const DashboardSidebarSheet = ({
                 const active = isActive(item.url, item.end);
                 
                 // Hide admin/manager items from participants
-                if ((item.title === "Users" || item.title === "Campaigns" || item.title === "Donors" || item.title === "Businesses" || item.title === "Groups" || item.title === "Reports") && !canSeeUsers) {
+                if ((item.title === "Users" || item.title === "Campaigns" || item.title === "Groups" || item.title === "Reports") && !canSeeUsers) {
                   return null;
                 }
                 

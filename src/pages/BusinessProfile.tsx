@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useAuth } from "@/hooks/useAuth";
+import { useParticipantConnections } from "@/hooks/useParticipantConnections";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -113,6 +114,7 @@ const BusinessProfile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { organizationUser } = useOrganizationUser();
+  const { connectedBusinessIds, loading: connectionsLoading, isParticipantView } = useParticipantConnections();
   const [business, setBusiness] = useState<BusinessDetails | null>(null);
   const [linkedDonors, setLinkedDonors] = useState<LinkedDonor[]>([]);
   const [donations, setDonations] = useState<DonationHistory[]>([]);
@@ -142,11 +144,17 @@ const BusinessProfile = () => {
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
 
   useEffect(() => {
-    if (businessId && organizationUser?.organization_id) {
+    if (businessId && organizationUser?.organization_id && !connectionsLoading) {
+      // Access check for participants
+      if (isParticipantView && !connectedBusinessIds.includes(businessId)) {
+        toast.error("You can only view businesses connected to your fundraising");
+        navigate("/dashboard/businesses");
+        return;
+      }
       fetchBusinessDetails();
       fetchEnrollments();
     }
-  }, [businessId, organizationUser?.organization_id]);
+  }, [businessId, organizationUser?.organization_id, connectionsLoading]);
 
   const fetchBusinessDetails = async () => {
     try {
