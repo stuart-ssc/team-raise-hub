@@ -79,8 +79,8 @@ interface BusinessAffiliation {
 const DonorProfile = () => {
   const { donorId } = useParams<{ donorId: string }>();
   const navigate = useNavigate();
-  const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
-  const { connectedDonorEmails, loading: connectionsLoading, isParticipantView } = useParticipantConnections();
+  const { organizationUser, allRoles, loading: organizationUserLoading } = useOrganizationUser();
+  const { connectedDonorEmails, loading: connectionsLoading, isParticipantView } = useParticipantConnections(organizationUser, allRoles);
   const { toast } = useToast();
   const [donor, setDonor] = useState<DonorProfile | null>(null);
   const [donations, setDonations] = useState<DonationHistory[]>([]);
