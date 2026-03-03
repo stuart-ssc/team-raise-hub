@@ -79,8 +79,8 @@ interface BusinessProfile {
 
 const Businesses = () => {
   const navigate = useNavigate();
-  const { organizationUser, loading: orgLoading } = useOrganizationUser();
-  const { connectedBusinessIds, loading: connectionsLoading, isParticipantView } = useParticipantConnections();
+  const { organizationUser, allRoles, loading: orgLoading } = useOrganizationUser();
+  const { connectedBusinessIds, loading: connectionsLoading, isParticipantView } = useParticipantConnections(organizationUser, allRoles);
   const isMobile = useIsMobile();
   const [businesses, setBusinesses] = useState<BusinessProfile[]>([]);
   const [loading, setLoading] = useState(true);

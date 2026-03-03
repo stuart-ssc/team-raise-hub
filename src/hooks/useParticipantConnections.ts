@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { OrganizationUser } from "@/hooks/useOrganizationUser";
 
 interface ParticipantConnections {
   connectedDonorEmails: string[];
@@ -12,9 +12,14 @@ interface ParticipantConnections {
 /**
  * Hook to fetch donors and businesses connected to a participant/supporter
  * through roster-attributed orders. Returns empty arrays for admins/managers.
+ * 
+ * Accepts organizationUser and allRoles as parameters to avoid race conditions
+ * from multiple useOrganizationUser instances.
  */
-export const useParticipantConnections = (): ParticipantConnections => {
-  const { organizationUser, allRoles } = useOrganizationUser();
+export const useParticipantConnections = (
+  organizationUser: OrganizationUser | null,
+  allRoles: OrganizationUser[]
+): ParticipantConnections => {
   const [connectedDonorEmails, setConnectedDonorEmails] = useState<string[]>([]);
   const [connectedBusinessIds, setConnectedBusinessIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,7 +69,7 @@ export const useParticipantConnections = (): ParticipantConnections => {
           .from('orders')
           .select('customer_email, business_id')
           .in('attributed_roster_member_id', orgUserIds)
-          .in('status', ['succeeded', 'completed']);
+          .in('status', ['succeeded', 'completed', 'paid']);
 
         if (error) {
           console.error('Error fetching attributed orders:', error);

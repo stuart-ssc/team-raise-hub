@@ -85,10 +85,10 @@ interface DonorProfile {
 const Donors = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
+  const { organizationUser, allRoles, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup } = useActiveGroup();
   const { toast } = useToast();
-  const { connectedDonorEmails, loading: connectionsLoading, isParticipantView } = useParticipantConnections();
+  const { connectedDonorEmails, loading: connectionsLoading, isParticipantView } = useParticipantConnections(organizationUser, allRoles);
   const [donors, setDonors] = useState<DonorProfile[]>([]);
   const [filteredDonors, setFilteredDonors] = useState<DonorProfile[]>([]);
   const [loading, setLoading] = useState(true);

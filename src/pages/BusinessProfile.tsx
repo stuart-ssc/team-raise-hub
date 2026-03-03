@@ -113,8 +113,8 @@ const BusinessProfile = () => {
   const { businessId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { organizationUser } = useOrganizationUser();
-  const { connectedBusinessIds, loading: connectionsLoading, isParticipantView } = useParticipantConnections();
+  const { organizationUser, allRoles } = useOrganizationUser();
+  const { connectedBusinessIds, loading: connectionsLoading, isParticipantView } = useParticipantConnections(organizationUser, allRoles);
   const [business, setBusiness] = useState<BusinessDetails | null>(null);
   const [linkedDonors, setLinkedDonors] = useState<LinkedDonor[]>([]);
   const [donations, setDonations] = useState<DonationHistory[]>([]);
