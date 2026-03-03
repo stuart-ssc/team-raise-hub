@@ -1,67 +1,68 @@
 
-# Fix: Donors and Businesses Not Showing for Participants
+# Fix: Participant Filtering for Donors and Businesses
 
-## Root Cause
-The sidebar and page code changes are correct, but the **orders table RLS (Row-Level Security)** blocks participants from querying orders attributed to them. The `useParticipantConnections` hook queries orders by `attributed_roster_member_id`, but the existing RLS policies only let users see orders they placed themselves (`user_id = auth.uid()`). Since donors placed the orders, participants get zero results, so the Donors/Businesses pages show empty states.
+## Problems Found
+
+### 1. Race Condition -- Dual useOrganizationUser Instances
+The `useParticipantConnections` hook creates its own `useOrganizationUser()` instance internally. The Donors and Businesses pages ALSO call `useOrganizationUser()` separately. These are independent React state instances that load at different times, creating a window where:
+- The page's `organizationUser` is loaded (triggering a data fetch)
+- The hook's `organizationUser` is NOT yet loaded, so `isParticipantView = false`
+- Result: the page fetches ALL donors/businesses without filtering
+
+### 2. Test Data Order Status Mismatch
+Taylor Player's 3 attributed orders have status `test_archived`. The hook only looks for `succeeded` or `completed` orders, so it finds zero connections -- meaning even when filtering works, the player sees an empty page.
 
 ## Fix
 
-### 1. Add RLS Policy on `orders` Table
-Add a new SELECT policy allowing participants to view orders where `attributed_roster_member_id` matches their `organization_user.id`:
+### 1. Refactor useParticipantConnections to accept organizationUser as a parameter
+Instead of calling `useOrganizationUser()` internally, the hook should receive the organizationUser and allRoles from the page component. This eliminates the dual-instance race condition and ensures a single source of truth.
 
-```sql
-CREATE POLICY "Participants can view their attributed orders"
-ON public.orders
-FOR SELECT
-TO authenticated
-USING (
-  EXISTS (
-    SELECT 1
-    FROM organization_user ou
-    WHERE ou.user_id = auth.uid()
-      AND ou.id = orders.attributed_roster_member_id
-      AND ou.active_user = true
-  )
-);
+**File:** `src/hooks/useParticipantConnections.ts`
+- Change the hook signature to accept `organizationUser` and `allRoles` as parameters
+- Remove the internal `useOrganizationUser()` call
+- Derive `isParticipantView` from the passed-in data
+
+### 2. Update Donors page to pass organizationUser to the hook
+**File:** `src/pages/Donors.tsx`
+- Pass `organizationUser` and `allRoles` from the page's existing hook call to `useParticipantConnections`
+
+### 3. Update Businesses page to pass organizationUser to the hook
+**File:** `src/pages/Businesses.tsx`
+- Same change as Donors page
+
+### 4. Update DonorProfile and BusinessProfile pages
+**Files:** `src/pages/DonorProfile.tsx`, `src/pages/BusinessProfile.tsx`
+- Pass organizationUser/allRoles to the hook in these files as well
+
+### 5. Include `test_archived` status or update test data
+**File:** `src/hooks/useParticipantConnections.ts`
+- Add `paid` to the status filter (since orders may go through `paid` status before `succeeded`)
+- Alternatively, the test data orders should be updated to `succeeded` status for proper testing
+
+## Technical Details
+
+Updated hook signature:
+```typescript
+export const useParticipantConnections = (
+  organizationUser: OrganizationUser | null,
+  allRoles: OrganizationUser[]
+): ParticipantConnections => {
+  // Remove internal useOrganizationUser() call
+  // Use passed-in organizationUser directly
+  ...
+};
 ```
 
-This also covers parents viewing their child's attributed orders if the hook includes the child's `organization_user.id` -- although for that to work through RLS, we may need to extend the policy to include linked users:
-
-```sql
-CREATE POLICY "Participants can view their attributed orders"
-ON public.orders
-FOR SELECT
-TO authenticated
-USING (
-  EXISTS (
-    SELECT 1
-    FROM organization_user ou
-    WHERE ou.user_id = auth.uid()
-      AND ou.active_user = true
-      AND (
-        ou.id = orders.attributed_roster_member_id
-        OR ou.linked_organization_user_id = orders.attributed_roster_member_id
-      )
-  )
-);
+Updated page usage:
+```typescript
+const { organizationUser, allRoles } = useOrganizationUser();
+const { connectedDonorEmails, isParticipantView, loading: connectionsLoading } = 
+  useParticipantConnections(organizationUser, allRoles);
 ```
-
-This single policy handles both:
-- A player viewing orders attributed to themselves
-- A parent viewing orders attributed to their linked child
-
-### 2. No Other Changes Needed
-- The sidebar already shows Donors and Businesses for all roles (verified in current code)
-- The `useParticipantConnections` hook logic is correct
-- The `donor_profiles` RLS already allows organization members to view donors
-- The Donors and Businesses pages already have participant filtering logic
 
 ## Files to Modify
-1. **Database migration** -- Add the new RLS policy on the `orders` table
-
-## What This Enables
-Once the RLS policy is in place, "Taylor Player" will:
-- See Donors and Businesses in the sidebar
-- See only donors who contributed to their fundraising on the Donors page
-- See only businesses linked to their attributed orders on the Businesses page
-- View individual donor/business profiles for connected records only
+1. `src/hooks/useParticipantConnections.ts` -- accept params instead of internal hook call; widen status filter
+2. `src/pages/Donors.tsx` -- pass organizationUser/allRoles to hook
+3. `src/pages/Businesses.tsx` -- pass organizationUser/allRoles to hook
+4. `src/pages/DonorProfile.tsx` -- pass organizationUser/allRoles to hook
+5. `src/pages/BusinessProfile.tsx` -- pass organizationUser/allRoles to hook
