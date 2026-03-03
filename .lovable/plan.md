@@ -1,30 +1,39 @@
 
-# Fix: Prevent Duplicate Donor Counting in update_donor_profile_from_order Trigger
+# Fix: Clean Up Duplicate Donation Activity Log Entries
 
 ## Problem
-The `update_donor_profile_from_order` trigger fires on both `INSERT` and `UPDATE` of the `orders` table. It checks if `NEW.status IN ('succeeded', 'completed')` but does NOT check whether the status actually *changed* to that value. So any subsequent update to an already-succeeded order (e.g., updating `stripe_transfer_id`, `updated_at`, etc.) re-increments `donation_count`, `total_donations`, and `lifetime_value`.
+The old `update_donor_profile_from_order` trigger (before the guard clause fix) created duplicate `donation` entries in the `donor_activity_log` table every time an already-succeeded order was updated. The donor profile stats were corrected by `recalculate_donor_stats`, but the activity log entries were never cleaned up -- so the Giving History / Activity Timeline on the donor detail page still shows phantom donation events.
+
+## Affected Data
+- **stuartborders@gmail.com**: 2 orders, but 6 donation log entries (3 per order instead of 1)
+- **six@donor.com**: 1 order with 3 log entries
+- **donor@sparky.co**: 1 order with 3 log entries  
+- **chris@absdabs.com**: 1 order with 2 log entries
 
 ## Fix
-Add a guard at the top of the trigger function:
-- On `INSERT`: proceed if status is succeeded/completed (current behavior, correct)
-- On `UPDATE`: only proceed if the status is *transitioning* to succeeded/completed (i.e., `OLD.status` was NOT in those values but `NEW.status` is)
+Run a single database migration that deletes duplicate `donation` activity log entries, keeping only the earliest entry per order_id per donor. This is a one-time data cleanup.
 
-This is a single SQL migration that replaces the trigger function.
-
-## Key Change (pseudocode)
-```text
--- Skip if this is an UPDATE and the order was already succeeded/completed
-IF TG_OP = 'UPDATE' AND OLD.status IN ('succeeded', 'completed') THEN
-  RETURN NEW;
-END IF;
+### SQL Logic
+```sql
+DELETE FROM donor_activity_log
+WHERE id IN (
+  SELECT id FROM (
+    SELECT id,
+      ROW_NUMBER() OVER (
+        PARTITION BY donor_id, activity_data->>'order_id'
+        ORDER BY created_at ASC
+      ) as rn
+    FROM donor_activity_log
+    WHERE activity_type = 'donation'
+      AND activity_data->>'order_id' IS NOT NULL
+  ) ranked
+  WHERE rn > 1
+);
 ```
 
-## Technical Details
+This keeps the first (earliest) activity log entry per order and removes all subsequent duplicates.
 
-### Migration SQL
-Replace the `update_donor_profile_from_order` function, adding the guard clause after the existing email/status check. The rest of the function body (upsert donor profile, calculate engagement, log activity) remains identical.
-
-### Files
-1. New database migration -- single `CREATE OR REPLACE FUNCTION` statement
+## Files
+1. New database migration -- single DELETE statement to clean duplicates
 
 No application code changes needed.
