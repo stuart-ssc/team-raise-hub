@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useParticipantConnections } from "@/hooks/useParticipantConnections";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import DonorImportWizard from "@/components/DonorImportWizard";
 import BulkActionToolbar from "@/components/BulkActionToolbar";
@@ -87,6 +88,7 @@ const Donors = () => {
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup } = useActiveGroup();
   const { toast } = useToast();
+  const { connectedDonorEmails, loading: connectionsLoading, isParticipantView } = useParticipantConnections();
   const [donors, setDonors] = useState<DonorProfile[]>([]);
   const [filteredDonors, setFilteredDonors] = useState<DonorProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,7 +112,7 @@ const Donors = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
-    if (organizationUser) {
+    if (organizationUser && !connectionsLoading) {
       fetchDonors(activeGroup?.id);
       setupRealtimeSubscription();
     }
@@ -118,7 +120,7 @@ const Donors = () => {
     return () => {
       supabase.channel('donors-updates').unsubscribe();
     };
-  }, [organizationUser, activeGroup?.id]);
+  }, [organizationUser, activeGroup?.id, connectionsLoading, isParticipantView, connectedDonorEmails]);
 
   useEffect(() => {
     filterAndSortDonors();
@@ -154,6 +156,13 @@ const Donors = () => {
   const fetchDonors = async (groupId?: string | null) => {
     if (!organizationUser?.organization_id) return;
 
+    // For participants, if no connected donors, show empty state
+    if (isParticipantView && connectedDonorEmails.length === 0) {
+      setDonors([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       let query = supabase
@@ -161,9 +170,13 @@ const Donors = () => {
         .select("*")
         .eq("organization_id", organizationUser.organization_id);
 
-      // If a specific group is selected, filter donors by group
-      if (groupId) {
-        // Subquery to get donor emails who have donated to campaigns in this group
+      // For participants, filter to only connected donors
+      if (isParticipantView) {
+        query = query.in("email", connectedDonorEmails);
+      }
+
+      // If a specific group is selected (admin view), filter donors by group
+      if (groupId && !isParticipantView) {
         const { data: donorEmails, error: emailError } = await supabase
           .from("orders")
           .select("customer_email, campaigns!inner(group_id)")
@@ -346,73 +359,80 @@ const Donors = () => {
                 <div>
                   <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
                     <Users className="h-8 w-8 text-primary" />
-                    Donor Management
+                    {isParticipantView ? "My Supporters" : "Donor Management"}
                   </h1>
                   <p className="text-muted-foreground mt-1">
-                    Track and engage with your supporters
+                    {isParticipantView
+                      ? "People who have supported your fundraising"
+                      : "Track and engage with your supporters"}
                   </p>
                 </div>
               </div>
               
-              {/* Mobile: Dropdown */}
-              {isMobile && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full">
-                      <MoreHorizontal className="mr-2 h-4 w-4" />
-                      Quick Actions
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    <DropdownMenuItem onClick={() => setImportWizardOpen(true)}>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Import CSV
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/dashboard/donors/segmentation")}>
-                      <TrendingUp className="mr-2 h-4 w-4" />
-                      Segments
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/dashboard/donors/nurture")}>
-                      <Zap className="mr-2 h-4 w-4" />
-                      Nurture
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/dashboard/donors/templates")}>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Templates
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-              
-              {/* Desktop: Individual Buttons */}
-              {!isMobile && (
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline"
-                    onClick={() => setImportWizardOpen(true)}
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Import CSV
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => navigate("/dashboard/donors/segmentation")}
-                  >
-                    <TrendingUp className="mr-2 h-4 w-4" />
-                    Segments
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => navigate("/dashboard/donors/nurture")}
-                  >
-                    <Zap className="mr-2 h-4 w-4" />
-                    Nurture
-                  </Button>
-                  <Button onClick={() => navigate("/dashboard/donors/templates")}>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Templates
-                  </Button>
-                </div>
+              {/* Admin-only quick actions */}
+              {!isParticipantView && (
+                <>
+                  {/* Mobile: Dropdown */}
+                  {isMobile && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full">
+                          <MoreHorizontal className="mr-2 h-4 w-4" />
+                          Quick Actions
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-56">
+                        <DropdownMenuItem onClick={() => setImportWizardOpen(true)}>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Import CSV
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/dashboard/donors/segmentation")}>
+                          <TrendingUp className="mr-2 h-4 w-4" />
+                          Segments
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/dashboard/donors/nurture")}>
+                          <Zap className="mr-2 h-4 w-4" />
+                          Nurture
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/dashboard/donors/templates")}>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Templates
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                  
+                  {/* Desktop: Individual Buttons */}
+                  {!isMobile && (
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline"
+                        onClick={() => setImportWizardOpen(true)}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Import CSV
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => navigate("/dashboard/donors/segmentation")}
+                      >
+                        <TrendingUp className="mr-2 h-4 w-4" />
+                        Segments
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => navigate("/dashboard/donors/nurture")}
+                      >
+                        <Zap className="mr-2 h-4 w-4" />
+                        Nurture
+                      </Button>
+                      <Button onClick={() => navigate("/dashboard/donors/templates")}>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Templates
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -574,19 +594,21 @@ const Donors = () => {
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedDonorIds(prev =>
-                                        isSelected
-                                          ? prev.filter(id => id !== donor.id)
-                                          : [...prev, donor.id]
-                                      );
-                                    }}
-                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                                  />
+                                  {!isParticipantView && (
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedDonorIds(prev =>
+                                          isSelected
+                                            ? prev.filter(id => id !== donor.id)
+                                            : [...prev, donor.id]
+                                        );
+                                      }}
+                                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                                    />
+                                  )}
                                   <Badge className={getEngagementColor(donor.engagement_score)}>
                                     {getEngagementLabel(donor.engagement_score)}
                                   </Badge>

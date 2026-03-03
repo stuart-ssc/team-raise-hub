@@ -8,6 +8,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { useParticipantConnections } from "@/hooks/useParticipantConnections";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -79,6 +80,7 @@ interface BusinessProfile {
 const Businesses = () => {
   const navigate = useNavigate();
   const { organizationUser, loading: orgLoading } = useOrganizationUser();
+  const { connectedBusinessIds, loading: connectionsLoading, isParticipantView } = useParticipantConnections();
   const isMobile = useIsMobile();
   const [businesses, setBusinesses] = useState<BusinessProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,11 +118,13 @@ const Businesses = () => {
     organizationUser?.user_type?.permission_level === 'program_manager';
 
   useEffect(() => {
-    if (organizationUser?.organization_id) {
+    if (organizationUser?.organization_id && !connectionsLoading) {
       fetchBusinesses();
-      fetchHighPriorityCount();
+      if (!isParticipantView) {
+        fetchHighPriorityCount();
+      }
     }
-  }, [organizationUser?.organization_id]);
+  }, [organizationUser?.organization_id, connectionsLoading, isParticipantView, connectedBusinessIds]);
 
   const fetchHighPriorityCount = async () => {
     if (!organizationUser?.organization_id) return;
@@ -139,8 +143,33 @@ const Businesses = () => {
   const fetchBusinesses = async () => {
     try {
       setLoading(true);
+
+      // For participants, filter to only connected businesses
+      if (isParticipantView) {
+        if (connectedBusinessIds.length === 0) {
+          setBusinesses([]);
+          return;
+        }
+
+        const { data: businessData, error: businessError } = await supabase
+          .from("businesses")
+          .select("*")
+          .in("id", connectedBusinessIds);
+
+        if (businessError) throw businessError;
+
+        const simplifiedBusinesses = (businessData || []).map(b => ({
+          ...b,
+          linked_donors_count: 0,
+          total_donations: 0,
+          last_donation_date: null,
+        }));
+
+        setBusinesses(simplifiedBusinesses);
+        return;
+      }
       
-      // Fetch businesses linked to organization
+      // Admin/manager view - existing logic
       const { data: orgBusinesses, error: orgError } = await supabase
         .from("organization_businesses")
         .select("business_id")
@@ -544,12 +573,18 @@ const Businesses = () => {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Business Partnerships</h1>
-              <p className="text-muted-foreground">Manage corporate relationships and donations</p>
+              <h1 className="text-3xl font-bold text-foreground">
+                {isParticipantView ? "My Business Supporters" : "Business Partnerships"}
+              </h1>
+              <p className="text-muted-foreground">
+                {isParticipantView
+                  ? "Businesses that have supported your fundraising"
+                  : "Manage corporate relationships and donations"}
+              </p>
             </div>
             
-            {/* Desktop: Individual Buttons */}
-            {!isMobile && (
+            {/* Desktop: Individual Buttons - Admin only */}
+            {!isMobile && !isParticipantView && (
               <div className="flex gap-2">
                 {canManageBusinesses && (
                   <Button onClick={() => setShowAddDialog(true)}>
@@ -616,8 +651,8 @@ const Businesses = () => {
             )}
           </div>
 
-          {/* Mobile: Consolidated Dropdown */}
-          {isMobile && (
+          {/* Mobile: Consolidated Dropdown - Admin only */}
+          {isMobile && !isParticipantView && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-full">
@@ -856,7 +891,7 @@ const Businesses = () => {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1">
-                      {canManageBusinesses && (
+                      {canManageBusinesses && !isParticipantView && (
                         <Checkbox
                           checked={selectedBusinessIds.includes(business.id)}
                           onCheckedChange={(checked) => handleSelectBusiness(business.id, checked as boolean)}
@@ -951,7 +986,7 @@ const Businesses = () => {
                     </div>
                   )}
                 </CardContent>
-                {canManageBusinesses && (
+                {canManageBusinesses && !isParticipantView && (
                   <CardFooter className="pt-0 pb-4 px-6">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
