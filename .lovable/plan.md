@@ -1,68 +1,30 @@
 
-# Fix: Participant Filtering for Donors and Businesses
+# Fix: Prevent Duplicate Donor Counting in update_donor_profile_from_order Trigger
 
-## Problems Found
-
-### 1. Race Condition -- Dual useOrganizationUser Instances
-The `useParticipantConnections` hook creates its own `useOrganizationUser()` instance internally. The Donors and Businesses pages ALSO call `useOrganizationUser()` separately. These are independent React state instances that load at different times, creating a window where:
-- The page's `organizationUser` is loaded (triggering a data fetch)
-- The hook's `organizationUser` is NOT yet loaded, so `isParticipantView = false`
-- Result: the page fetches ALL donors/businesses without filtering
-
-### 2. Test Data Order Status Mismatch
-Taylor Player's 3 attributed orders have status `test_archived`. The hook only looks for `succeeded` or `completed` orders, so it finds zero connections -- meaning even when filtering works, the player sees an empty page.
+## Problem
+The `update_donor_profile_from_order` trigger fires on both `INSERT` and `UPDATE` of the `orders` table. It checks if `NEW.status IN ('succeeded', 'completed')` but does NOT check whether the status actually *changed* to that value. So any subsequent update to an already-succeeded order (e.g., updating `stripe_transfer_id`, `updated_at`, etc.) re-increments `donation_count`, `total_donations`, and `lifetime_value`.
 
 ## Fix
+Add a guard at the top of the trigger function:
+- On `INSERT`: proceed if status is succeeded/completed (current behavior, correct)
+- On `UPDATE`: only proceed if the status is *transitioning* to succeeded/completed (i.e., `OLD.status` was NOT in those values but `NEW.status` is)
 
-### 1. Refactor useParticipantConnections to accept organizationUser as a parameter
-Instead of calling `useOrganizationUser()` internally, the hook should receive the organizationUser and allRoles from the page component. This eliminates the dual-instance race condition and ensures a single source of truth.
+This is a single SQL migration that replaces the trigger function.
 
-**File:** `src/hooks/useParticipantConnections.ts`
-- Change the hook signature to accept `organizationUser` and `allRoles` as parameters
-- Remove the internal `useOrganizationUser()` call
-- Derive `isParticipantView` from the passed-in data
-
-### 2. Update Donors page to pass organizationUser to the hook
-**File:** `src/pages/Donors.tsx`
-- Pass `organizationUser` and `allRoles` from the page's existing hook call to `useParticipantConnections`
-
-### 3. Update Businesses page to pass organizationUser to the hook
-**File:** `src/pages/Businesses.tsx`
-- Same change as Donors page
-
-### 4. Update DonorProfile and BusinessProfile pages
-**Files:** `src/pages/DonorProfile.tsx`, `src/pages/BusinessProfile.tsx`
-- Pass organizationUser/allRoles to the hook in these files as well
-
-### 5. Include `test_archived` status or update test data
-**File:** `src/hooks/useParticipantConnections.ts`
-- Add `paid` to the status filter (since orders may go through `paid` status before `succeeded`)
-- Alternatively, the test data orders should be updated to `succeeded` status for proper testing
+## Key Change (pseudocode)
+```text
+-- Skip if this is an UPDATE and the order was already succeeded/completed
+IF TG_OP = 'UPDATE' AND OLD.status IN ('succeeded', 'completed') THEN
+  RETURN NEW;
+END IF;
+```
 
 ## Technical Details
 
-Updated hook signature:
-```typescript
-export const useParticipantConnections = (
-  organizationUser: OrganizationUser | null,
-  allRoles: OrganizationUser[]
-): ParticipantConnections => {
-  // Remove internal useOrganizationUser() call
-  // Use passed-in organizationUser directly
-  ...
-};
-```
+### Migration SQL
+Replace the `update_donor_profile_from_order` function, adding the guard clause after the existing email/status check. The rest of the function body (upsert donor profile, calculate engagement, log activity) remains identical.
 
-Updated page usage:
-```typescript
-const { organizationUser, allRoles } = useOrganizationUser();
-const { connectedDonorEmails, isParticipantView, loading: connectionsLoading } = 
-  useParticipantConnections(organizationUser, allRoles);
-```
+### Files
+1. New database migration -- single `CREATE OR REPLACE FUNCTION` statement
 
-## Files to Modify
-1. `src/hooks/useParticipantConnections.ts` -- accept params instead of internal hook call; widen status filter
-2. `src/pages/Donors.tsx` -- pass organizationUser/allRoles to hook
-3. `src/pages/Businesses.tsx` -- pass organizationUser/allRoles to hook
-4. `src/pages/DonorProfile.tsx` -- pass organizationUser/allRoles to hook
-5. `src/pages/BusinessProfile.tsx` -- pass organizationUser/allRoles to hook
+No application code changes needed.
