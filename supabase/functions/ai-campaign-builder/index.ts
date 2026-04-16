@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const { messages, collectedFields, campaignTypes, groups } = await req.json();
+    const { messages, collectedFields, campaignTypes, groups, activeGroupId } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(

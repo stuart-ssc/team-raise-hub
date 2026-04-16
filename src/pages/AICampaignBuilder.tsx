@@ -12,16 +12,14 @@ export default function AICampaignBuilder() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { organizationUser } = useOrganizationUser();
-  const { groups: activeGroups } = useActiveGroup();
+  const { activeGroup, groups: activeGroups } = useActiveGroup();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content:
-        "Hi! I'm here to help you set up a new campaign. Tell me about what you're planning — what kind of fundraiser is it, and which group or team is it for?",
-    },
-  ]);
+  // Determine the known group (from header selection or single group)
+  const knownGroup = activeGroup || (activeGroups.length === 1 ? activeGroups[0] : null);
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [collectedFields, setCollectedFields] = useState<Record<string, any>>({});
+  const [initialMessageSet, setInitialMessageSet] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [readyToCreate, setReadyToCreate] = useState(false);
