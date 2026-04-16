@@ -84,7 +84,8 @@ ${autoFillNote}
 7. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
 8. If all required fields are collected, continue asking about any remaining optional fields (description, requires_business_info) one at a time. The user can answer or say "skip". Once ALL fields have been addressed, confirm the campaign is ready to create.
 9. Keep responses short and focused — no more than 2-3 sentences.
-10. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.`;
+10. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
+11. When you match a campaign type from the user's description, CONFIRM it explicitly in your response (e.g. "Great, I'll set this up as a **Merchandise Sale**.") before moving to the next field. Never silently set the campaign type.`;
 }
 
 Deno.serve(async (req) => {
@@ -111,9 +112,12 @@ Deno.serve(async (req) => {
     const grps: { id: string; group_name: string }[] = groups || [];
     let updatedFields: Record<string, any> = { ...(collectedFields || {}) };
 
-    // Auto-fill group if only one exists
+    // Auto-fill group if activeGroupId provided, or if only one exists
     let autoFilledGroupName: string | null = null;
-    if (!updatedFields.group_id && grps.length === 1) {
+    if (!updatedFields.group_id && activeGroupId && grps.find((g: any) => g.id === activeGroupId)) {
+      updatedFields.group_id = activeGroupId;
+      autoFilledGroupName = grps.find((g: any) => g.id === activeGroupId)!.group_name;
+    } else if (!updatedFields.group_id && grps.length === 1) {
       updatedFields.group_id = grps[0].id;
       autoFilledGroupName = grps[0].group_name;
     }
