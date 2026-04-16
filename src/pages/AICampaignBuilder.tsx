@@ -24,6 +24,10 @@ export default function AICampaignBuilder() {
   const [isCreating, setIsCreating] = useState(false);
   const [readyToCreate, setReadyToCreate] = useState(false);
 
+  // Load reference data
+  const [campaignTypes, setCampaignTypes] = useState<{ id: string; name: string }[]>([]);
+  const [groups, setGroups] = useState<{ id: string; group_name: string }[]>([]);
+
   // Set initial message and pre-fill group once campaign types are loaded
   useEffect(() => {
     if (initialMessageSet) return;
@@ -53,10 +57,6 @@ export default function AICampaignBuilder() {
     ]);
     setInitialMessageSet(true);
   }, [campaignTypes, knownGroup, initialMessageSet]);
-
-  // Load reference data
-  const [campaignTypes, setCampaignTypes] = useState<{ id: string; name: string }[]>([]);
-  const [groups, setGroups] = useState<{ id: string; group_name: string }[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
