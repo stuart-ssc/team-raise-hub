@@ -1,40 +1,31 @@
 
 
-## Goal
-Make the AI assistant offer selectable chips/buttons for choices (campaign type, group), and auto-confirm when only one option exists.
+# Make Goal Amount, Start/End Date Required + Walk Through All Fields
 
-## Approach
+## Problem
+1. `goal_amount`, `start_date`, and `end_date` are currently optional — they should be required.
+2. Once the 3 original required fields are collected, the AI tells the user to "create draft" instead of continuing to ask about remaining fields (description, requires_business_info).
 
-### 1. Edge function returns structured suggestions
-Add an optional `suggestions` block to the response from `ai-campaign-builder/index.ts`. The server (not the LLM) decides when to attach them, based on what's still missing:
+## Changes
 
-- If `campaign_type_id` missing → attach `{ field: "campaign_type_id", options: [{label, value}...] }`
-- If `group_id` missing → attach `{ field: "group_id", options: [...] }`
-- If only one group exists and `group_id` missing → server pre-fills it into `updatedFields` and the AI is told via system prompt that the group is already chosen ("Confirm this campaign is for [Group Name]")
+### 1. Edge function (`supabase/functions/ai-campaign-builder/index.ts`)
+- Add `goal_amount`, `start_date`, `end_date` to `REQUIRED_KEYS` array (line 7)
+- Mark those 3 fields as `required: true` in `FIELD_DEFS` (lines 22-24)
+- Update system prompt rule #8: instead of "let the user know they can create the draft", change to "continue asking about optional fields one at a time. Once ALL fields have been addressed (collected or skipped), confirm the campaign is ready to create."
 
-System prompt updated to instruct the AI: "When asking about campaign type or group, keep your message brief — the UI will show selectable buttons. Don't list options in text."
+### 2. Client schema (`src/lib/ai/campaignSchema.ts`)
+- Set `required: true` on `goal_amount`, `start_date`, `end_date` fields to match
 
-### 2. Auto-confirm single group
-In the edge function, if `groups.length === 1` and `group_id` not yet collected, set `collectedFields.group_id` to that group's id before calling the LLM. The AI then naturally moves on to the next field. The preview panel reflects the auto-fill immediately.
+### 3. Preview component (`src/components/ai-campaign/AICampaignPreview.tsx`)
+- No structural changes needed — it already reads `required` from the schema and shows "Needed" badges for missing required fields. The progress bar and "Create Draft" button gate on `readyToCreate` which is computed server-side.
 
-### 3. Frontend: render suggestion chips in chat
-In `AIChatPanel.tsx`:
-- Extend `ChatMessage` type with optional `suggestions?: { field: string; options: {label, value}[] }`.
-- Below the assistant bubble, render option buttons in a wrapped row (shadcn `Button` variant="outline", size="sm").
-- Clicking a chip calls `onSuggestionClick(field, value, label)` which:
-  - Sends the label as the user message ("Sponsorship") for natural conversation flow
-  - The edge function still extracts via tool calling (label maps cleanly)
-- Once a suggestion is clicked or message sent, suggestions on prior messages are hidden (they only apply to the latest assistant turn).
+### 4. Page component (`src/pages/AICampaignBuilder.tsx`)
+- No changes needed — `readyToCreate` comes from the edge function response.
 
-### 4. AICampaignBuilder.tsx wiring
-- Receive `suggestions` from edge function response, attach to the new assistant message.
-- New `handleSuggestionClick(label)` calls `handleSend(label)`.
+## Files Modified
+- `supabase/functions/ai-campaign-builder/index.ts` — REQUIRED_KEYS, FIELD_DEFS, system prompt rule #8
+- `src/lib/ai/campaignSchema.ts` — mark 3 fields required
 
-## Files
-- `supabase/functions/ai-campaign-builder/index.ts` — auto-fill single group, return `suggestions`, update system prompt
-- `src/components/ai-campaign/AIChatPanel.tsx` — render suggestion chips, expose click handler
-- `src/pages/AICampaignBuilder.tsx` — pass suggestions through, wire click handler
-
-## Out of scope
-Suggestions for free-text fields (name, description, dates). Only categorical/select fields get chips.
+## Redeploy
+Edge function auto-deploys on save.
 
