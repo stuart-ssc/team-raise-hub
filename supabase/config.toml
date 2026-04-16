@@ -233,3 +233,6 @@ verify_jwt = false
 
 [functions.verify-checkout-session]
 verify_jwt = false
+
+[functions.ai-campaign-builder]
+verify_jwt = false
