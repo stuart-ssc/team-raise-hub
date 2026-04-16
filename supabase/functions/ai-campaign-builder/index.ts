@@ -4,7 +4,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const REQUIRED_KEYS = ["name", "campaign_type_id", "group_id"];
+const REQUIRED_KEYS = ["name", "campaign_type_id", "group_id", "goal_amount", "start_date", "end_date"];
 
 interface FieldDef {
   key: string;
