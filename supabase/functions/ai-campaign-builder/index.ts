@@ -28,7 +28,8 @@ const FIELD_DEFS: FieldDef[] = [
 function buildSystemPrompt(
   campaignTypes: { id: string; name: string }[],
   groups: { id: string; group_name: string }[],
-  collectedFields: Record<string, any>
+  collectedFields: Record<string, any>,
+  autoFilledGroupName: string | null
 ): string {
   const typesList = campaignTypes.map((t) => `  - "${t.name}" → id: ${t.id}`).join("\n");
   const groupsList = groups.map((g) => `  - "${g.group_name}" → id: ${g.id}`).join("\n");
@@ -50,6 +51,10 @@ function buildSystemPrompt(
     ? missingRequired.map((k) => `  - ${k}`).join("\n")
     : "  (all required fields collected!)";
 
+  const autoFillNote = autoFilledGroupName
+    ? `\n## Auto-Selected Group\nThe organization only has one group, so it has been auto-selected: "${autoFilledGroupName}". Briefly confirm this in your next message (e.g. "Got it — this is for ${autoFilledGroupName}.") and move on to the next missing field.\n`
+    : "";
+
   return `You are a campaign creation assistant for Sponsorly, a fundraising platform for schools and nonprofits.
 
 Your job is to help the user set up a new fundraising campaign by collecting the required information through natural conversation.
@@ -68,7 +73,7 @@ ${alreadyCollected}
 
 ## Still Missing (Required)
 ${missingList}
-
+${autoFillNote}
 ## Rules
 1. Ask about ONE missing required field at a time. Be conversational and brief (1-2 sentences).
 2. When the user provides information, call the "update_campaign_fields" tool with the extracted values.
@@ -78,7 +83,8 @@ ${missingList}
 6. Do NOT make up values. Only extract what the user explicitly says.
 7. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
 8. If all required fields are collected, let the user know they can create the draft or continue adding optional details.
-9. Keep responses short and focused — no more than 2-3 sentences.`;
+9. Keep responses short and focused — no more than 2-3 sentences.
+10. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.`;
 }
 
 Deno.serve(async (req) => {
@@ -101,11 +107,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    const systemPrompt = buildSystemPrompt(
-      campaignTypes || [],
-      groups || [],
-      collectedFields || {}
-    );
+    const types: { id: string; name: string }[] = campaignTypes || [];
+    const grps: { id: string; group_name: string }[] = groups || [];
+    let updatedFields: Record<string, any> = { ...(collectedFields || {}) };
+
+    // Auto-fill group if only one exists
+    let autoFilledGroupName: string | null = null;
+    if (!updatedFields.group_id && grps.length === 1) {
+      updatedFields.group_id = grps[0].id;
+      autoFilledGroupName = grps[0].group_name;
+    }
+
+    const systemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName);
 
     const tools = [
       {
@@ -175,7 +188,6 @@ Deno.serve(async (req) => {
     }
 
     let assistantMessage = choice.message?.content || "";
-    let updatedFields: Record<string, any> = { ...collectedFields };
 
     // Process tool calls if any
     if (choice.message?.tool_calls && choice.message.tool_calls.length > 0) {
@@ -183,7 +195,6 @@ Deno.serve(async (req) => {
         if (toolCall.function?.name === "update_campaign_fields") {
           try {
             const args = JSON.parse(toolCall.function.arguments);
-            // Merge only non-null, non-undefined values
             for (const [key, value] of Object.entries(args)) {
               if (value !== undefined && value !== null && value !== "") {
                 updatedFields[key] = value;
@@ -196,7 +207,6 @@ Deno.serve(async (req) => {
       }
 
       // If there was a tool call but no text content, make a follow-up call
-      // to get the assistant's conversational response
       if (!assistantMessage) {
         const followUpMessages = [
           { role: "system", content: systemPrompt },
@@ -236,12 +246,30 @@ Deno.serve(async (req) => {
     );
     const readyToCreate = missingRequired.length === 0;
 
+    // Build suggestions for the next missing select field
+    let suggestions: { field: string; label: string; options: { label: string; value: string }[] } | null = null;
+    const nextMissing = missingRequired[0];
+    if (nextMissing === "campaign_type_id" && types.length > 0) {
+      suggestions = {
+        field: "campaign_type_id",
+        label: "Campaign type",
+        options: types.map((t) => ({ label: t.name, value: t.id })),
+      };
+    } else if (nextMissing === "group_id" && grps.length > 1) {
+      suggestions = {
+        field: "group_id",
+        label: "Group",
+        options: grps.map((g) => ({ label: g.group_name, value: g.id })),
+      };
+    }
+
     return new Response(
       JSON.stringify({
         assistantMessage,
         updatedFields,
         missingRequired,
         readyToCreate,
+        suggestions,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
