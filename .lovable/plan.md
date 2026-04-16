@@ -1,39 +1,77 @@
 
-# Fix: Clean Up Duplicate Donation Activity Log Entries
 
-## Problem
-The old `update_donor_profile_from_order` trigger (before the guard clause fix) created duplicate `donation` entries in the `donor_activity_log` table every time an already-succeeded order was updated. The donor profile stats were corrected by `recalculate_donor_stats`, but the activity log entries were never cleaned up -- so the Giving History / Activity Timeline on the donor detail page still shows phantom donation events.
+# AI-Guided Campaign Creation Tool
 
-## Affected Data
-- **stuartborders@gmail.com**: 2 orders, but 6 donation log entries (3 per order instead of 1)
-- **six@donor.com**: 1 order with 3 log entries
-- **donor@sparky.co**: 1 order with 3 log entries  
-- **chris@absdabs.com**: 1 order with 2 log entries
+## Overview
 
-## Fix
-Run a single database migration that deletes duplicate `donation` activity log entries, keeping only the earliest entry per order_id per donor. This is a one-time data cleanup.
+A conversational AI assistant at `/dashboard/campaigns/ai-builder` that helps org users create fundraising campaigns through a chat interface. The AI extracts campaign fields from natural language, shows a live preview of the campaign being built, and creates a draft campaign that opens in the existing CampaignEditor.
 
-### SQL Logic
-```sql
-DELETE FROM donor_activity_log
-WHERE id IN (
-  SELECT id FROM (
-    SELECT id,
-      ROW_NUMBER() OVER (
-        PARTITION BY donor_id, activity_data->>'order_id'
-        ORDER BY created_at ASC
-      ) as rn
-    FROM donor_activity_log
-    WHERE activity_type = 'donation'
-      AND activity_data->>'order_id' IS NOT NULL
-  ) ranked
-  WHERE rn > 1
-);
+## Architecture
+
+```text
+/dashboard/campaigns
+    │
+    │  [+ Add Campaign ▼]  ← dropdown replaces single button
+    │       ├─ Create manually   →  /dashboard/campaigns/new
+    │       └─ Create with AI    →  /dashboard/campaigns/ai-builder
+    ▼
+/dashboard/campaigns/ai-builder
+┌─────────────────────────────────────────────────┐
+│  LEFT (3/5): Live preview    │ RIGHT (2/5): Chat │
+│  - Campaign name/type/group  │ - Message bubbles  │
+│  - Progress bar              │ - Input + send     │
+│  - Field details grid        │ - Typing indicator │
+│  - "Create draft" button     │                    │
+└─────────────────────────────────────────────────┘
+    │  Create draft → INSERT into campaigns → redirect to editor
 ```
 
-This keeps the first (earliest) activity log entry per order and removes all subsequent duplicates.
+## Implementation Phases
 
-## Files
-1. New database migration -- single DELETE statement to clean duplicates
+### Phase 1: Campaign Schema Definition
+Create `src/lib/ai/campaignSchema.ts` with field definitions (type, label, required, validation, AI descriptions) for shared and type-specific fields. This is the single source of truth for what the AI collects.
 
-No application code changes needed.
+### Phase 2: Edge Function (`ai-campaign-builder`)
+Create `supabase/functions/ai-campaign-builder/index.ts`:
+- Receives conversation history, collected fields, campaign types, user groups
+- Builds a system prompt instructing the AI to extract fields only (no copywriting)
+- Uses Lovable AI Gateway (`google/gemini-2.5-flash`) with structured tool calling
+- Server-side readiness computation (never trusts LLM for state)
+- Returns: assistant message, updated collected fields, missing keys, readyToCreate flag
+- Handles 429/402 errors gracefully
+
+### Phase 3: Frontend Components
+**3a. `src/pages/AICampaignBuilder.tsx`** -- Main page with two-column layout (preview left, chat right; stacked on mobile). Manages state: messages, collected fields, resolvedTypeName. Loads campaign_type and groups on mount. Handles draft creation (INSERT into campaigns, redirect to editor).
+
+**3b. `src/components/ai-campaign/AIChatPanel.tsx`** -- Chat UI with message bubbles (user right, assistant left), textarea input (Enter sends, Shift+Enter newlines), typing indicator, auto-scroll.
+
+**3c. `src/components/ai-campaign/AICampaignPreview.tsx`** -- Live preview panel showing campaign name, type/group badges, slug, progress bar, and a details grid with each field's status (value, "Needed" in amber, or "---" for optional). Subtle animations on value changes.
+
+### Phase 4: Route and Button Wiring
+- Add route `/dashboard/campaigns/ai-builder` in `src/App.tsx` (line ~184)
+- Convert "Add Campaign" button in `src/pages/Campaigns.tsx` (line 306) to a DropdownMenu with "Create manually" and "Create with AI" options
+
+### Phase 5: Deploy and Test
+Deploy edge function, test the full flow end-to-end.
+
+## Files Created
+- `src/lib/ai/campaignSchema.ts`
+- `src/pages/AICampaignBuilder.tsx`
+- `src/components/ai-campaign/AIChatPanel.tsx`
+- `src/components/ai-campaign/AICampaignPreview.tsx`
+- `supabase/functions/ai-campaign-builder/index.ts`
+
+## Files Modified
+- `src/App.tsx` -- add one route
+- `src/pages/Campaigns.tsx` -- button to dropdown menu
+
+## Key Design Decisions
+- **No streaming** for v1 -- responses are short (1-2 sentences), non-streaming invoke is simpler
+- **No persistence** -- conversation state lives in React; refreshing loses progress (acceptable for v1)
+- **Campaign items excluded** -- user adds tiers/products in CampaignEditor after draft creation
+- **Slug collision handling** -- graceful error toast + suggest retry with suffix
+- **LOVABLE_API_KEY** already available as a secret (verified)
+
+## Out of Scope (v1)
+Campaign items/tiers, pitch content, custom fields, required assets, roster attribution, conversation persistence, voice/file input, AI-generated copy
+
