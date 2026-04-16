@@ -1,28 +1,29 @@
 
 
-# Use Active Group Context in AI Campaign Builder
+# Fix: Active Group Not Reflected in AI Builder Initial Message
 
 ## Problem
-1. The page ignores the active group selected in the header (e.g. "Varsity Basketball"). When only one group exists or one is already selected, the AI still asks "which team?" unnecessarily.
-2. After the user says what they want (e.g. "sell banners for our gym"), the AI doesn't confirm the campaign type it matched — it just silently sets it and moves on.
+Race condition: the initial message `useEffect` fires when `campaignTypes` load, but `activeGroup` from context hasn't resolved yet (it depends on an async fetch). Once `initialMessageSet = true`, the effect never re-runs.
 
-## Changes
+For org admins, `activeGroup` is only set if `?group=xxx` is in the URL. The header group selector sets this param, but the context fetches groups asynchronously — so it's often `null` when the initial message fires.
 
-### 1. `src/pages/AICampaignBuilder.tsx`
-- Read `activeGroup` from `useActiveGroup()` (already imported but only using `groups`).
-- Pass `activeGroupId` to the edge function in the request body.
-- If `activeGroup` exists (or only 1 group), pre-fill `collectedFields.group_id` on initial state so the preview shows it immediately.
-- Make the initial greeting dynamic: if a group is known, say "Hi! I'm here to help you set up a new campaign for **Varsity Basketball**. What kind of fundraiser are you planning?" instead of the generic message. Show campaign type suggestion chips on the initial message.
+## Fix
 
-### 2. `supabase/functions/ai-campaign-builder/index.ts`
-- Accept `activeGroupId` from the request body. If provided and matches a group, auto-fill `group_id` (in addition to the existing single-group auto-fill logic).
-- Update the system prompt to include a new rule: "When you match a campaign type from the user's description, CONFIRM it explicitly (e.g. 'Great, I'll set this up as a Merchandise Sale.') before moving to the next field."
-- Pass the auto-filled group name context so the AI knows not to ask about the group.
+In `src/pages/AICampaignBuilder.tsx`:
 
-### 3. Initial message with suggestions
-- In `AICampaignBuilder.tsx`, when groups are loaded and a group is known, attach campaign type suggestions to the initial assistant message so the user sees clickable chips right away.
+1. **Wait for the ActiveGroupContext to finish loading before setting the initial message.** Add a guard: don't fire the initial message effect until `activeGroups.length > 0` (context groups loaded) OR `activeGroup` is set. For org admins with multiple groups and none selected, also wait for the context's groups to load, then fall back to the locally-fetched `groups` list to check for single-group auto-select.
 
-## Files
-- `src/pages/AICampaignBuilder.tsx` — use activeGroup, dynamic initial message, pre-fill group
-- `supabase/functions/ai-campaign-builder/index.ts` — accept activeGroupId, confirm campaign type rule
+2. **Simplify the guard logic:** Wait for both `campaignTypes` AND the context's `groups` array to be populated (or `activeGroup` to be set) before composing the initial message. This ensures we know the user's group situation before greeting them.
+
+3. **Updated effect condition:**
+   ```
+   if (initialMessageSet) return;
+   if (campaignTypes.length === 0) return;
+   if (activeGroups.length === 0 && !activeGroup) return; // wait for context
+   ```
+
+This ensures the greeting always reflects the active group when one is selected in the header.
+
+## File
+- `src/pages/AICampaignBuilder.tsx` — add guard for `activeGroups` loading before setting initial message
 
