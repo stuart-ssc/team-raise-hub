@@ -132,7 +132,7 @@ export default function AICampaignBuilder() {
 
       const { data, error } = await supabase
         .from("campaigns")
-        .insert(campaignData)
+        .insert(campaignData as any)
         .select("id")
         .single();
 
