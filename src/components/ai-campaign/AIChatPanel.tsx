@@ -24,6 +24,13 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  // Refocus textarea once the AI finishes responding
+  useEffect(() => {
+    if (!isLoading) {
+      textareaRef.current?.focus();
+    }
+  }, [isLoading]);
+
   const handleSend = () => {
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
@@ -32,6 +39,7 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
     // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
+      textareaRef.current.focus();
     }
   };
 
