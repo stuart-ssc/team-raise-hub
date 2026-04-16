@@ -4,9 +4,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, Sparkles, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
+export interface ChatSuggestions {
+  field: string;
+  label?: string;
+  options: { label: string; value: string }[];
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  suggestions?: ChatSuggestions | null;
 }
 
 interface AIChatPanelProps {
@@ -24,23 +31,23 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  // Refocus textarea once the AI finishes responding
   useEffect(() => {
     if (!isLoading) {
       textareaRef.current?.focus();
     }
   }, [isLoading]);
 
-  const handleSend = () => {
-    const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
-    onSend(trimmed);
-    setInput("");
-    // Reset textarea height
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.focus();
+  const handleSend = (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
+    if (!text || isLoading) return;
+    onSend(text);
+    if (overrideText === undefined) {
+      setInput("");
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
     }
+    textareaRef.current?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -50,15 +57,22 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
     }
   };
 
+  // Find index of latest assistant message — only its suggestions should render
+  let latestAssistantIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === "assistant") {
+      latestAssistantIdx = i;
+      break;
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="flex items-center gap-2 p-4 border-b bg-muted/30">
         <Sparkles className="h-5 w-5 text-primary" />
         <h3 className="font-semibold text-sm">AI Campaign Assistant</h3>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-center text-muted-foreground text-sm py-8">
@@ -67,28 +81,54 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
+        {messages.map((msg, i) => {
+          const showSuggestions =
+            msg.role === "assistant" &&
+            i === latestAssistantIdx &&
+            !isLoading &&
+            msg.suggestions &&
+            msg.suggestions.options.length > 0;
+
+          return (
             <div
-              className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted"
-              }`}
+              key={i}
+              className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
             >
-              {msg.role === "assistant" ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+              <div
+                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                }`}
+              >
+                {msg.role === "assistant" ? (
+                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                )}
+              </div>
+
+              {showSuggestions && (
+                <div className="mt-2 flex flex-wrap gap-2 max-w-[85%]">
+                  {msg.suggestions!.options.map((opt) => (
+                    <Button
+                      key={opt.value}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSend(opt.label)}
+                      disabled={isLoading}
+                      className="h-auto py-1.5 px-3 text-xs"
+                    >
+                      {opt.label}
+                    </Button>
+                  ))}
                 </div>
-              ) : (
-                <p className="whitespace-pre-wrap">{msg.content}</p>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {isLoading && (
           <div className="flex justify-start">
@@ -104,7 +144,6 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <div className="border-t p-3">
         <div className="flex gap-2 items-end">
           <Textarea
@@ -119,7 +158,7 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
           />
           <Button
             size="icon"
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!input.trim() || isLoading}
             className="shrink-0"
           >

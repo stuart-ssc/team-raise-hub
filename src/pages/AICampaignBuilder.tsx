@@ -91,7 +91,11 @@ export default function AICampaignBuilder() {
 
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.assistantMessage },
+        {
+          role: "assistant",
+          content: data.assistantMessage,
+          suggestions: data.suggestions ?? null,
+        },
       ]);
       setCollectedFields(data.updatedFields || collectedFields);
       setReadyToCreate(data.readyToCreate || false);
