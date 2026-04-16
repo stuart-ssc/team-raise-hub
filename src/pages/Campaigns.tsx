@@ -13,7 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, ChevronUp, Plus, Search, ExternalLink, Globe, Eye, AlertCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Search, ExternalLink, Globe, Eye, AlertCircle, Sparkles, PenLine } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Campaign {
   id: string;
@@ -303,10 +304,25 @@ export default function Campaigns() {
                   </SelectContent>
                 </Select>
 
-                <Button onClick={() => navigate("/dashboard/campaigns/new")} className="flex items-center gap-2 col-span-2 sm:col-span-1 lg:col-start-4 w-full sm:w-auto sm:justify-self-end">
-                  <Plus className="h-4 w-4" />
-                  Add Campaign
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="flex items-center gap-2 col-span-2 sm:col-span-1 lg:col-start-4 w-full sm:w-auto sm:justify-self-end">
+                      <Plus className="h-4 w-4" />
+                      Add Campaign
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate("/dashboard/campaigns/new")}>
+                      <PenLine className="h-4 w-4 mr-2" />
+                      Create manually
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/dashboard/campaigns/ai-builder")}>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Create with AI
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 

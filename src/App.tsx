@@ -62,6 +62,7 @@ import BusinessOutreachQueue from "./pages/BusinessOutreachQueue";
 import BusinessNurtureCampaigns from "./pages/BusinessNurtureCampaigns";
 import BusinessCampaignAnalytics from "./pages/BusinessCampaignAnalytics";
 import MyFundraising from "./pages/MyFundraising";
+import AICampaignBuilder from "./pages/AICampaignBuilder";
 import FamilyDashboard from "./pages/FamilyDashboard";
 import OrganizationSettings from "./pages/OrganizationSettings";
 import Contact from "./pages/Contact";
@@ -181,6 +182,7 @@ const AppContent = () => {
         <Route path="/dashboard/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
         <Route path="/dashboard/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
         <Route path="/dashboard/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+        <Route path="/dashboard/campaigns/ai-builder" element={<ProtectedRoute><AICampaignBuilder /></ProtectedRoute>} />
         <Route path="/dashboard/campaigns/new" element={<ProtectedRoute><CampaignEditor /></ProtectedRoute>} />
         <Route path="/dashboard/campaigns/:id/edit" element={<ProtectedRoute><CampaignEditor /></ProtectedRoute>} />
         <Route path="/dashboard/campaigns/:campaignId/orders/:orderId" element={<ProtectedRoute><CampaignOrderDetail /></ProtectedRoute>} />
