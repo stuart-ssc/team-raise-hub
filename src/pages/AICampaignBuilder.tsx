@@ -24,6 +24,36 @@ export default function AICampaignBuilder() {
   const [isCreating, setIsCreating] = useState(false);
   const [readyToCreate, setReadyToCreate] = useState(false);
 
+  // Set initial message and pre-fill group once campaign types are loaded
+  useEffect(() => {
+    if (initialMessageSet) return;
+    if (campaignTypes.length === 0) return; // wait for types to load
+
+    const prefill: Record<string, any> = {};
+    let greeting: string;
+
+    if (knownGroup) {
+      prefill.group_id = knownGroup.id;
+      greeting = `Hi! I'm here to help you set up a new campaign for **${knownGroup.group_name}**. What kind of fundraiser are you planning?`;
+    } else {
+      greeting = "Hi! I'm here to help you set up a new campaign. Tell me about what you're planning — what kind of fundraiser is it, and which group or team is it for?";
+    }
+
+    setCollectedFields(prefill);
+    setMessages([
+      {
+        role: "assistant",
+        content: greeting,
+        suggestions: campaignTypes.length > 0 ? {
+          field: "campaign_type_id",
+          label: "Campaign type",
+          options: campaignTypes.map((t) => ({ label: t.name, value: t.id })),
+        } : null,
+      },
+    ]);
+    setInitialMessageSet(true);
+  }, [campaignTypes, knownGroup, initialMessageSet]);
+
   // Load reference data
   const [campaignTypes, setCampaignTypes] = useState<{ id: string; name: string }[]>([]);
   const [groups, setGroups] = useState<{ id: string; group_name: string }[]>([]);
@@ -70,6 +100,7 @@ export default function AICampaignBuilder() {
           collectedFields,
           campaignTypes,
           groups,
+          activeGroupId: knownGroup?.id || null,
         }),
       });
 
