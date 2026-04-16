@@ -19,9 +19,9 @@ const FIELD_DEFS: FieldDef[] = [
   { key: "campaign_type_id", label: "Campaign Type", type: "select", required: true, aiDescription: "The campaign type ID from the provided list." },
   { key: "group_id", label: "Group", type: "select", required: true, aiDescription: "The group ID from the provided list." },
   { key: "description", label: "Description", type: "string", required: false, aiDescription: "Brief description of the campaign." },
-  { key: "goal_amount", label: "Goal Amount (cents)", type: "number", required: false, aiDescription: "Fundraising goal in cents (e.g. 50000 = $500)." },
-  { key: "start_date", label: "Start Date", type: "date", required: false, aiDescription: "Start date in YYYY-MM-DD format." },
-  { key: "end_date", label: "End Date", type: "date", required: false, aiDescription: "End date in YYYY-MM-DD format." },
+  { key: "goal_amount", label: "Goal Amount (cents)", type: "number", required: true, aiDescription: "Fundraising goal in cents (e.g. 50000 = $500)." },
+  { key: "start_date", label: "Start Date", type: "date", required: true, aiDescription: "Start date in YYYY-MM-DD format." },
+  { key: "end_date", label: "End Date", type: "date", required: true, aiDescription: "End date in YYYY-MM-DD format." },
   { key: "requires_business_info", label: "Requires Business Info", type: "boolean", required: false, aiDescription: "Whether to collect business info at checkout." },
 ];
 
@@ -82,7 +82,7 @@ ${autoFillNote}
 5. For goal_amount: convert dollar amounts to cents (e.g. $500 → 50000).
 6. Do NOT make up values. Only extract what the user explicitly says.
 7. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
-8. If all required fields are collected, let the user know they can create the draft or continue adding optional details.
+8. If all required fields are collected, continue asking about any remaining optional fields (description, requires_business_info) one at a time. The user can answer or say "skip". Once ALL fields have been addressed, confirm the campaign is ready to create.
 9. Keep responses short and focused — no more than 2-3 sentences.
 10. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.`;
 }

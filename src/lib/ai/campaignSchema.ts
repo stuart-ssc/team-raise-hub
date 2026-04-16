@@ -44,7 +44,7 @@ export const sharedFields: CampaignFieldDef[] = [
     key: "goal_amount",
     label: "Goal Amount",
     type: "number",
-    required: false,
+    required: true,
     aiDescription:
       "The fundraising goal in cents (e.g. 50000 = $500.00). Must be a positive integer.",
     validation: (v) =>
@@ -56,7 +56,7 @@ export const sharedFields: CampaignFieldDef[] = [
     key: "start_date",
     label: "Start Date",
     type: "date",
-    required: false,
+    required: true,
     aiDescription:
       "The campaign start date in ISO 8601 format (YYYY-MM-DD). Should be today or in the future.",
   },
@@ -64,7 +64,7 @@ export const sharedFields: CampaignFieldDef[] = [
     key: "end_date",
     label: "End Date",
     type: "date",
-    required: false,
+    required: true,
     aiDescription:
       "The campaign end date in ISO 8601 format (YYYY-MM-DD). Must be after the start date.",
   },
