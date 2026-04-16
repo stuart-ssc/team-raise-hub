@@ -67,12 +67,12 @@ export default function AICampaignBuilder() {
       }));
 
       const { data, error } = await supabase.functions.invoke("ai-campaign-builder", {
-        body: {
+        body: JSON.stringify({
           messages: apiMessages,
           collectedFields,
           campaignTypes,
           groups,
-        },
+        }),
       });
 
       if (error) {
@@ -170,7 +170,7 @@ export default function AICampaignBuilder() {
   };
 
   return (
-    <DashboardPageLayout title="AI Campaign Builder">
+    <DashboardPageLayout segments={[{ label: "Campaigns", path: "/dashboard/campaigns" }, { label: "AI Builder" }]}>
       <div className="flex flex-col lg:flex-row h-[calc(100vh-10rem)] gap-0 border rounded-lg overflow-hidden bg-background">
         {/* Preview Panel (Left on desktop, top on mobile) */}
         <div className="lg:w-3/5 w-full lg:border-r border-b lg:border-b-0 overflow-hidden flex flex-col min-h-[300px] lg:min-h-0">
