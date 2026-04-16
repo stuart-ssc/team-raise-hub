@@ -32,6 +32,7 @@ export default function AICampaignBuilder() {
   useEffect(() => {
     if (initialMessageSet) return;
     if (campaignTypes.length === 0) return; // wait for types to load
+    if (activeGroups.length === 0 && !activeGroup) return; // wait for group context
 
     const prefill: Record<string, any> = {};
     let greeting: string;
