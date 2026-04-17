@@ -8,6 +8,10 @@ const corsHeaders = {
 
 const REQUIRED_KEYS = ["name", "campaign_type_id", "group_id", "goal_amount", "start_date", "end_date"];
 
+function slugify(text: string): string {
+  return text.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+}
+
 const MONTHS: Record<string, number> = {
   jan: 1, january: 1,
   feb: 2, february: 2,
@@ -238,10 +242,11 @@ ${autoFillNote}
 6. For start_date and end_date: accept ANY natural format the user provides — "May 1", "5/1", "5/1/2026", "next Friday", "May 1st", "in 2 weeks", etc. ALWAYS interpret M/D or M/D/YYYY as US-style **month/day/year**. If the user omits the year, assume the current year (${todayIso.slice(0, 4)}) — but if that date has already passed, roll forward to next year. ALWAYS pass the date to the tool in **YYYY-MM-DD** format. After setting a date, briefly confirm it back in friendly format (e.g. "Got it — starting **May 1, 2026**.").
 7. Do NOT make up values. Only extract what the user explicitly says.
 8. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
-9. If all required fields are collected, continue asking about any remaining optional fields (description, requires_business_info) one at a time. The user can answer or say "skip". Once ALL fields have been addressed, confirm the campaign is ready to create.
-10. Keep responses short and focused — no more than 2-3 sentences.
-11. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
-12. When you match a campaign type from the user's description, CONFIRM it explicitly in your response (e.g. "Great, I'll set this up as a **Merchandise Sale**.") before moving to the next field. Never silently set the campaign type.`;
+9. If all required fields are collected, continue asking about any remaining optional fields (description, requires_business_info) one at a time. The user can answer or say "skip". Once ALL fields have been addressed, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons.
+10. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft. After the tool runs, the conversation continues into post-draft setup automatically.
+11. Keep responses short and focused — no more than 2-3 sentences.
+12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
+13. When you match a campaign type from the user's description, CONFIRM it explicitly in your response (e.g. "Great, I'll set this up as a **Merchandise Sale**.") before moving to the next field. Never silently set the campaign type.`;
 }
 
 Deno.serve(async (req) => {
@@ -324,6 +329,15 @@ Deno.serve(async (req) => {
           },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "create_campaign_draft",
+          description:
+            "Create the campaign draft in the database. Call this ONLY after all required fields are collected AND the user has explicitly confirmed they want to save the draft (e.g. said yes/ok/save/create). Do not call before user confirmation.",
+          parameters: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
     ];
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -367,6 +381,9 @@ Deno.serve(async (req) => {
 
     let assistantMessage = choice.message?.content || "";
     const persistFields: Record<string, any> = {};
+    let createdCampaignId: string | null = null;
+    let createDraftError: string | null = null;
+    const toolResults: { id: string; content: string }[] = [];
 
     if (choice.message?.tool_calls && choice.message.tool_calls.length > 0) {
       for (const toolCall of choice.message.tool_calls) {
@@ -389,9 +406,54 @@ Deno.serve(async (req) => {
                 persistFields[key] = value;
               }
             }
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, updatedFields }) });
           } catch (e) {
             console.error("Failed to parse tool call arguments:", e);
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "parse_error" }) });
           }
+        } else if (toolCall.function?.name === "create_campaign_draft" && !campaignId) {
+          // Validate required fields are present before attempting insert
+          const missingNow = REQUIRED_KEYS.filter((k) => !updatedFields[k] || updatedFields[k] === "");
+          if (missingNow.length > 0) {
+            createDraftError = `Missing required fields: ${missingNow.join(", ")}`;
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: createDraftError }) });
+          } else {
+            const insertData: Record<string, any> = {
+              name: updatedFields.name,
+              campaign_type_id: updatedFields.campaign_type_id,
+              group_id: updatedFields.group_id,
+              goal_amount: updatedFields.goal_amount,
+              start_date: updatedFields.start_date,
+              end_date: updatedFields.end_date,
+              status: false,
+              publication_status: "draft",
+            };
+            if (updatedFields.description) insertData.description = updatedFields.description;
+            if (updatedFields.requires_business_info !== undefined) {
+              insertData.requires_business_info = updatedFields.requires_business_info;
+            }
+
+            const { data: newCampaign, error: insertErr } = await adminSb
+              .from("campaigns")
+              .insert(insertData)
+              .select("id")
+              .single();
+
+            if (insertErr) {
+              console.error("create_campaign_draft insert error:", insertErr);
+              if (insertErr.message?.includes("slug") || insertErr.code === "23505") {
+                createDraftError = "A campaign with a similar name already exists. Try a slightly different name.";
+              } else {
+                createDraftError = insertErr.message || "Failed to create draft.";
+              }
+              toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: createDraftError }) });
+            } else {
+              createdCampaignId = newCampaign.id;
+              toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, campaignId: createdCampaignId }) });
+            }
+          }
+        } else {
+          toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "unknown_tool" }) });
         }
       }
 
@@ -426,15 +488,31 @@ Deno.serve(async (req) => {
         }
       }
 
-      if (!assistantMessage) {
+      // Force a follow-up when draft was just created (so AI starts post-draft convo)
+      // OR when there's no assistant text yet
+      const needsFollowUp = !assistantMessage || createdCampaignId !== null || createDraftError !== null;
+
+      if (needsFollowUp) {
+        // If we just created the draft, fetch rosters and rebuild the prompt in post-draft mode
+        let followUpSystemPrompt = systemPrompt;
+        if (createdCampaignId) {
+          const { data: rData } = await adminSb
+            .from("rosters")
+            .select("id, roster_year, current_roster")
+            .eq("group_id", updatedFields.group_id)
+            .order("roster_year", { ascending: false });
+          rosters = rData || [];
+          followUpSystemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso, createdCampaignId, rosters);
+        }
+
         const followUpMessages = [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: followUpSystemPrompt },
           ...messages,
           choice.message,
-          ...choice.message.tool_calls.map((tc: any) => ({
+          ...toolResults.map((tr) => ({
             role: "tool",
-            tool_call_id: tc.id,
-            content: JSON.stringify({ success: true, updatedFields }),
+            tool_call_id: tr.id,
+            content: tr.content,
           })),
         ];
 
@@ -452,12 +530,23 @@ Deno.serve(async (req) => {
 
         if (followUp.ok) {
           const followUpData = await followUp.json();
-          assistantMessage = followUpData.choices?.[0]?.message?.content || "Got it!";
-        } else {
-          assistantMessage = "Got it!";
+          const followUpText = followUpData.choices?.[0]?.message?.content;
+          if (followUpText) assistantMessage = followUpText;
+        }
+        if (!assistantMessage) {
+          if (createDraftError) {
+            assistantMessage = createDraftError;
+          } else if (createdCampaignId) {
+            assistantMessage = "Draft saved! 🎉 Would you like to upload a campaign image?";
+          } else {
+            assistantMessage = "Got it!";
+          }
         }
       }
     }
+
+    // If a draft was just created in this turn, treat it as the active campaign for phase/suggestions
+    const effectiveCampaignId = campaignId || createdCampaignId;
 
     // Compute readiness + phase
     const missingRequired = REQUIRED_KEYS.filter(
@@ -466,7 +555,7 @@ Deno.serve(async (req) => {
     const readyToCreate = missingRequired.length === 0;
 
     let phase: "collecting" | "ready_to_create" | "post_draft" | "complete" = "collecting";
-    if (campaignId) {
+    if (effectiveCampaignId) {
       const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
       const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
         (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
@@ -481,7 +570,7 @@ Deno.serve(async (req) => {
       | { type?: string; field: string; label: string; options: { label: string; value: string }[] }
       | null = null;
 
-    if (campaignId) {
+    if (effectiveCampaignId) {
       const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
       const rosterAttrAddressed = updatedFields.enable_roster_attribution !== undefined;
       const rosterPicked = !updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0;
@@ -522,6 +611,16 @@ Deno.serve(async (req) => {
           options: [{ label: "Skip — no directions", value: "skip" }],
         };
       }
+    } else if (phase === "ready_to_create") {
+      suggestions = {
+        type: "choice",
+        field: "confirm_create_draft",
+        label: "Save as draft?",
+        options: [
+          { label: "Yes, save as draft", value: "yes" },
+          { label: "Not yet, let me change something", value: "no" },
+        ],
+      };
     } else {
       const nextMissing = missingRequired[0];
       if (nextMissing === "campaign_type_id" && types.length > 0) {
@@ -549,6 +648,8 @@ Deno.serve(async (req) => {
         readyToCreate,
         phase,
         suggestions,
+        createdCampaignId,
+        createDraftError,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
