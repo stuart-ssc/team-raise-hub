@@ -1,41 +1,28 @@
 
 
-The user clarified the hallucinated group_id appeared right after selecting a campaign type with a number — meaning the previous safety net (which maps a user's typed text to a type/group) misfired and assigned the campaign type label to the wrong field, OR the AI itself fabricated the group_id when prompted.
+The user clarified the design intent: every field defined in the schema should be prompted by the AI. `required: false` only means the user can skip without blocking save — it does NOT mean the AI should silently omit it.
 
-Looking at the recent fix: when user types "4" → `AIChatPanel.maybeMapNumericInput` converts it to "Sponsorship" → sent as user message → server-side deterministic mapping in the edge function checks if the lowercased message matches a `campaign_type` name OR a `group_name`. Both checks run independently. So "sponsorship" sets `campaign_type_id` correctly. But the AI then, on the same turn, may have called `update_campaign_fields` and hallucinated a `group_id` because the system prompt instructs it to "fill in what you can."
-
-The display showing `33333333-3333-3333-3333-...` is a hallucinated UUID written by the AI via `update_campaign_fields`.
+Currently, the system prompt only tells the AI what's "still missing" via `getMissingRequiredFields`, so optional fields (description, requires_business_info) get treated as fully skippable and the AI breezes past them.
 
 ## Fix (one file: `supabase/functions/ai-campaign-builder/index.ts`)
 
-### A. Validate IDs against the loaded lists every turn
-After merging `updatedFields` from any tool calls, drop any `group_id` or `campaign_type_id` that doesn't exist in the fetched `grps` / `types` lists. This prevents hallucinated UUIDs from ever reaching the insert or the UI:
+### A. Add a "fields to ask about" list separate from required
+Build a second list — every field in `allFields` that isn't yet collected AND hasn't been explicitly skipped (tracked via a `<field>_skipped` flag in `collectedFields`). Inject this into the system prompt as `## Still To Ask About` alongside the existing `## Still Missing` (required-only) list.
 
-```ts
-if (updatedFields.group_id && !grps.find((g) => g.id === updatedFields.group_id)) {
-  console.warn("Dropping invalid group_id:", updatedFields.group_id);
-  delete updatedFields.group_id;
-}
-if (updatedFields.campaign_type_id && !types.find((t) => t.id === updatedFields.campaign_type_id)) {
-  console.warn("Dropping invalid campaign_type_id:", updatedFields.campaign_type_id);
-  delete updatedFields.campaign_type_id;
-}
-```
+### B. Update Rule 9 to enforce sequential prompting
+Rewrite to: "Walk through every field in `## Still To Ask About` one at a time, in order. For optional fields, the user may answer or say 'skip'. For required fields, they must answer. Do not finalize/save until every field has either a value or a skip flag."
 
-### B. Pre-insert validation in `create_campaign_draft` tool branch
-Before the campaigns insert, double-check both IDs exist. If not, return a structured error so the AI re-asks rather than hitting the DB constraint:
+### C. Deterministic skip detection
+When the latest user message is "skip" / "no" / "no thanks" / "none" AND the last assistant turn asked about a specific optional field, set `collectedFields.<field>_skipped = true` server-side so the AI won't loop.
 
-```ts
-if (!grps.find((g) => g.id === insertData.group_id)) {
-  // return error: "Invalid group selected. Please pick from the list."
-}
-```
+### D. Gate the "Ready to save?" prompt
+Only allow the AI to ask "Ready to save as a draft?" when `## Still To Ask About` is empty (every field answered or skipped).
 
-### C. Strengthen system prompt Rule 13
-Add: "NEVER invent or guess UUIDs. ONLY use IDs that appear verbatim in the `## Available Groups` and `## Available Campaign Types` lists. If the user hasn't picked a group yet, leave `group_id` empty and ask them — do not fabricate a value to fill the slot."
+### E. Suggestion chips for each field
+Extend the suggestions block so when the next un-asked field is `description` it emits a free-text prompt (no chips), and when it's a boolean like `requires_business_info` it emits Yes/No/Skip chips. Existing chip emission for `campaign_type_id` and `group_id` stays.
 
-### Out of scope
-- No frontend changes
+## Out of scope
+- No frontend changes (chat already handles free-text and skip naturally)
+- Schema definitions in `campaignSchema.ts` stay as-is — `required` still controls save-blocking only
 - Post-draft flow unchanged
-- The numeric-input mapping and the existing name-match safety net stay as-is
 
