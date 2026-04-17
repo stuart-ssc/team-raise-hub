@@ -381,6 +381,9 @@ Deno.serve(async (req) => {
 
     let assistantMessage = choice.message?.content || "";
     const persistFields: Record<string, any> = {};
+    let createdCampaignId: string | null = null;
+    let createDraftError: string | null = null;
+    const toolResults: { id: string; content: string }[] = [];
 
     if (choice.message?.tool_calls && choice.message.tool_calls.length > 0) {
       for (const toolCall of choice.message.tool_calls) {
@@ -403,9 +406,54 @@ Deno.serve(async (req) => {
                 persistFields[key] = value;
               }
             }
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, updatedFields }) });
           } catch (e) {
             console.error("Failed to parse tool call arguments:", e);
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "parse_error" }) });
           }
+        } else if (toolCall.function?.name === "create_campaign_draft" && !campaignId) {
+          // Validate required fields are present before attempting insert
+          const missingNow = REQUIRED_KEYS.filter((k) => !updatedFields[k] || updatedFields[k] === "");
+          if (missingNow.length > 0) {
+            createDraftError = `Missing required fields: ${missingNow.join(", ")}`;
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: createDraftError }) });
+          } else {
+            const insertData: Record<string, any> = {
+              name: updatedFields.name,
+              campaign_type_id: updatedFields.campaign_type_id,
+              group_id: updatedFields.group_id,
+              goal_amount: updatedFields.goal_amount,
+              start_date: updatedFields.start_date,
+              end_date: updatedFields.end_date,
+              status: false,
+              publication_status: "draft",
+            };
+            if (updatedFields.description) insertData.description = updatedFields.description;
+            if (updatedFields.requires_business_info !== undefined) {
+              insertData.requires_business_info = updatedFields.requires_business_info;
+            }
+
+            const { data: newCampaign, error: insertErr } = await adminSb
+              .from("campaigns")
+              .insert(insertData)
+              .select("id")
+              .single();
+
+            if (insertErr) {
+              console.error("create_campaign_draft insert error:", insertErr);
+              if (insertErr.message?.includes("slug") || insertErr.code === "23505") {
+                createDraftError = "A campaign with a similar name already exists. Try a slightly different name.";
+              } else {
+                createDraftError = insertErr.message || "Failed to create draft.";
+              }
+              toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: createDraftError }) });
+            } else {
+              createdCampaignId = newCampaign.id;
+              toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, campaignId: createdCampaignId }) });
+            }
+          }
+        } else {
+          toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "unknown_tool" }) });
         }
       }
 
