@@ -646,6 +646,27 @@ Deno.serve(async (req) => {
           if (yn !== null) {
             updatedFields.requires_business_info = yn;
           }
+        } else if (
+          (askedField === "start_date" || askedField === "end_date") &&
+          !isFieldAnswered(askedField, updatedFields)
+        ) {
+          const trimmed = lastUserMsgRaw.trim();
+          const isMeta = /^(i\s|already|what\?|why\?|huh\?)/i.test(trimmed) && trimmed.length < 60;
+          if (!isMeta && trimmed.length > 0) {
+            const iso = normalizeDate(trimmed, today);
+            if (iso) {
+              updatedFields[askedField] = iso;
+              // Sanity guard: drop end_date if it's before start_date
+              if (
+                updatedFields.start_date &&
+                updatedFields.end_date &&
+                updatedFields.end_date < updatedFields.start_date
+              ) {
+                console.warn("Captured end_date before start_date; dropping end_date");
+                delete updatedFields.end_date;
+              }
+            }
+          }
         }
       }
     }
