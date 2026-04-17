@@ -1211,7 +1211,7 @@ Deno.serve(async (req) => {
         suggestions = {
           type: "choice",
           field: "description",
-          label: "Add a short description?",
+          label: "Description (optional)",
           options: [{ label: "Skip — no description", value: "skip" }],
         };
       } else if (nextField === "requires_business_info") {
