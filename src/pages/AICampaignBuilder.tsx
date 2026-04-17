@@ -137,7 +137,9 @@ export default function AICampaignBuilder() {
       const fieldsToSend = overrideFields ?? collectedFields;
       const itemDraftToSend = overrideItemDraft ?? currentItemDraft;
 
-      const { data, error } = await supabase.functions.invoke("ai-campaign-builder", {
+      // 30s timeout — the edge function should always respond within this window.
+      // If it doesn't, surface an error instead of leaving the UI stuck on "Thinking..."
+      const invokePromise = supabase.functions.invoke("ai-campaign-builder", {
         body: JSON.stringify({
           messages: apiMessages,
           collectedFields: fieldsToSend,
@@ -152,10 +154,26 @@ export default function AICampaignBuilder() {
         }),
       });
 
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("AI request timed out after 30s")), 30000),
+      );
+
+      const { data, error } = (await Promise.race([invokePromise, timeoutPromise])) as Awaited<typeof invokePromise>;
+
       if (error) throw new Error(error.message || "Failed to get AI response");
+      if (!data) throw new Error("Empty response from AI");
 
       if (data.error) {
         toast({ title: "AI Error", description: data.error, variant: "destructive" });
+        // Append a recovery message so the user has a clear next action.
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Hmm, I lost my train of thought — could you repeat your last answer?",
+            suggestions: { type: "choice", field: "__retry__", label: "Recover", options: [{ label: "Retry", value: "__retry__" }] },
+          },
+        ]);
         return;
       }
 
@@ -223,16 +241,38 @@ export default function AICampaignBuilder() {
     } catch (err: any) {
       console.error("AI campaign builder error:", err);
       toast({
-        title: "Error",
+        title: "Connection issue",
         description: err.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
+      // Append a visible recovery message with a Retry chip so the user can resend.
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Hmm, I lost my train of thought — could you repeat your last answer? (Or click Retry below.)",
+          suggestions: { type: "choice", field: "__retry__", label: "Recover", options: [{ label: "Retry", value: "__retry__" }] },
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSend = async (userMessage: string) => {
+    // Retry chip: re-send the last user message instead of treating "__retry__" as text.
+    if (userMessage === "__retry__" || userMessage === "Retry") {
+      const lastUserIdx = [...messages].reverse().findIndex((m) => m.role === "user");
+      if (lastUserIdx !== -1) {
+        const idx = messages.length - 1 - lastUserIdx;
+        const lastUser = messages[idx];
+        // Trim any trailing recovery assistant messages, then re-send.
+        const trimmed = messages.slice(0, idx + 1);
+        setMessages(trimmed);
+        await callAi(trimmed);
+        return;
+      }
+    }
     const userMsg: ChatMessage = { role: "user", content: userMessage };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
