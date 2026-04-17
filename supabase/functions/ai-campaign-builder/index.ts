@@ -260,7 +260,7 @@ ${autoFillNote}
 10. Only AFTER requires_business_info has been explicitly answered (true or false), in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft. After the tool runs, the conversation continues into post-draft setup automatically.
 11. Keep responses short and focused — no more than 2-3 sentences.
 12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
-13. When you match a campaign type from the user's description, CONFIRM it explicitly in your response (e.g. "Great, I'll set this up as a **Merchandise Sale**.") before moving to the next field. Never silently set the campaign type.`;
+13. When the user picks or describes a campaign type, you MUST call **update_campaign_fields** with the matching campaign_type_id in the SAME response where you confirm the choice (e.g. "Great, I'll set this up as a **Merchandise Sale**."). The same applies to group selection — call update_campaign_fields with group_id in the same turn. Do NOT just acknowledge in text — the tool call is REQUIRED to record the selection. If you skip the tool call, the field will not be saved and the user will be re-asked.`;
 }
 
 Deno.serve(async (req) => {
@@ -296,6 +296,25 @@ Deno.serve(async (req) => {
     } else if (!updatedFields.group_id && grps.length === 1) {
       updatedFields.group_id = grps[0].id;
       autoFilledGroupName = grps[0].group_name;
+    }
+
+    // Server-side deterministic mapping: if the user's last message exactly matches
+    // a campaign type name or group name, record it directly. This is a safety net
+    // for when the model acknowledges the choice in text but forgets the tool call.
+    const lastUserMsg = [...messages]
+      .reverse()
+      .find((m: any) => m.role === "user")
+      ?.content?.trim()
+      .toLowerCase();
+    if (lastUserMsg) {
+      if (!updatedFields.campaign_type_id) {
+        const matchedType = types.find((t) => t.name.toLowerCase() === lastUserMsg);
+        if (matchedType) updatedFields.campaign_type_id = matchedType.id;
+      }
+      if (!updatedFields.group_id) {
+        const matchedGroup = grps.find((g) => g.group_name.toLowerCase() === lastUserMsg);
+        if (matchedGroup) updatedFields.group_id = matchedGroup.id;
+      }
     }
 
     // If post-draft mode, fetch rosters for the campaign's group
