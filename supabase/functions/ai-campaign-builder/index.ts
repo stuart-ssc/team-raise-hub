@@ -622,6 +622,7 @@ Deno.serve(async (req) => {
         currentItemDraft,
         awaitingAddAnother,
         todayIso,
+        itemExamples,
       );
     } else {
       systemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso, campaignId || null, rosters);
