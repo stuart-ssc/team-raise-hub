@@ -460,6 +460,16 @@ export default function CampaignEditor() {
                 }}
               />
             )}
+            {isEditing && id && (campaignData.publicationStatus === "draft" || campaignData.publicationStatus === "pending_verification") && (
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(true)}
+                className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            )}
             <Button onClick={handleSave} disabled={saving} className="gap-2">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {saving ? "Saving..." : "Save Campaign"}
