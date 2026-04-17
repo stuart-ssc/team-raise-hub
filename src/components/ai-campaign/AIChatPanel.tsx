@@ -25,6 +25,7 @@ interface AIChatPanelProps {
 
 export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanelProps) {
   const [input, setInput] = useState("");
+  const [dismissedAt, setDismissedAt] = useState<number>(-1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
