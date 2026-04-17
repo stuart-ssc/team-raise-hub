@@ -1,4 +1,4 @@
-import { ChevronDown, Menu, HelpCircle } from "lucide-react";
+import { ChevronDown, Menu, HelpCircle, MessageCircle, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
