@@ -245,6 +245,8 @@ export default function Campaigns() {
 
   const isDeletable = (c: Campaign) =>
     c.publication_status === "draft" || c.publication_status === "pending_verification";
+
+  const handleSort = (field: keyof Campaign) => {
     if (sortBy === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
