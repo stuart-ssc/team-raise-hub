@@ -1293,6 +1293,30 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Detect post_draft → collecting_items transition in THIS turn.
+    // When setup just finished but the client thinks we're still in post_draft,
+    // replace the assistant message with a single canned message that BOTH
+    // announces items collection AND asks for the first item's name. This
+    // avoids (a) the dead-end statement that required the user to type "ok"
+    // and (b) a double prompt being emitted across consecutive turns.
+    {
+      const imageDoneNow = !!updatedFields.image_url || !!updatedFields.image_skipped;
+      const rosterDoneNow = updatedFields.enable_roster_attribution !== undefined &&
+        (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
+      const directionsDoneNow = updatedFields.group_directions_addressed === true;
+      const setupJustFinished = imageDoneNow && rosterDoneNow && directionsDoneNow;
+      const justEnteringItemsPhase =
+        !!campaignId &&
+        !inItemsPhase &&
+        !exitItemsCollection &&
+        setupJustFinished &&
+        Object.keys(currentItemDraft).filter((k) => !k.endsWith("_skipped")).length === 0;
+
+      if (justEnteringItemsPhase) {
+        assistantMessage = `Awesome — setup is done! 🎉\n\nNow let's add your first ${itemNoun}. **What's the name?** (${itemExamples})`;
+      }
+    }
+
     // If a draft was just created in this turn, treat it as the active campaign for phase/suggestions
     const effectiveCampaignId = campaignId || createdCampaignId;
 
