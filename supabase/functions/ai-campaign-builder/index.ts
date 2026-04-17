@@ -240,6 +240,7 @@ function buildItemsSystemPrompt(
   currentItemDraft: Record<string, any>,
   awaitingAddAnother: boolean,
   todayIso: string,
+  itemExamples: string = "e.g. Item Name",
 ): string {
   const draftSummary = Object.entries(currentItemDraft)
     .filter(([k, v]) => !k.endsWith("_skipped") && v !== undefined && v !== null && v !== "")
@@ -248,6 +249,7 @@ function buildItemsSystemPrompt(
 
   const nextField = getNextItemField(currentItemDraft);
   const ready = isItemReadyToSave(currentItemDraft);
+  const ordinal = itemsAdded === 0 ? "first" : "next";
 
   let nextStep: string;
   if (awaitingAddAnother) {
@@ -255,7 +257,10 @@ function buildItemsSystemPrompt(
   } else if (ready && nextField === null) {
     nextStep = `**All required fields collected.** IMMEDIATELY call the **save_campaign_item** tool with the values from "Current ${itemNoun} draft" below. Do NOT ask any more questions for this ${itemNoun}.`;
   } else if (nextField) {
-    const promptText = nextField.prompt.replace(/\{itemNoun\}/g, itemNoun);
+    const promptText = nextField.prompt
+      .replace(/\{itemNoun\}/g, itemNoun)
+      .replace(/\{ordinal\}/g, ordinal)
+      .replace(/\{examples\}/g, itemExamples);
     const skipNote = nextField.required ? "" : " The user may say **skip**.";
     nextStep = `**Next field: ${nextField.key}** (${nextField.required ? "REQUIRED" : "optional"}). Ask: "${promptText}"${skipNote}\n\nWhen the user answers, IMMEDIATELY call the **update_item_field** tool with the value (use the exact key \`${nextField.key}\`).`;
   } else {
@@ -265,6 +270,9 @@ function buildItemsSystemPrompt(
   return `You are a campaign creation assistant. The user just created the campaign **"${campaignName}"** and is now adding ${itemNoun}s to it.
 
 Today is **${todayIso}**.
+
+## About ${itemNoun}s
+A "${itemNoun}" can be either a **sponsorship tier** (e.g. Platinum Sponsor, Gold tier) OR a **specific thing being sponsored** (e.g. Large Banner, Scoreboard Ad, Event Sponsor). Don't assume tiers — let the user define what works for their campaign. Examples to share when asking for the name: ${itemExamples}.
 
 ## Items added so far: ${itemsAdded}
 
