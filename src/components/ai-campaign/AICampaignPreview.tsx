@@ -59,6 +59,9 @@ export default function AICampaignPreview({
     if (detailsCollapsedDefault) setDetailsOpen(false);
   }, [detailsCollapsedDefault]);
 
+  const [extendedOpen, setExtendedOpen] = useState(true);
+  const [extendedAutoCollapsed, setExtendedAutoCollapsed] = useState(false);
+
   const postDraftItems = [
     {
       key: "image_url",
