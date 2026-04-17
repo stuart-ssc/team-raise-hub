@@ -1,58 +1,59 @@
 
 
-## Goal
-In the AI Campaign Assistant, when collecting campaign items, give the user a chance to upload an image for each item (with a Skip option), similar to how the campaign-level image upload works.
+## Issue Analysis
 
-## Investigation
-- `src/components/ai-campaign/AIChatPanel.tsx` already supports a `suggestions.type === "image_upload"` prompt that renders `ImageUploadPrompt`. Currently used only for the campaign hero image (uploads to a campaign).
-- `src/components/ai-campaign/ImageUploadPrompt.tsx` (need to confirm signature) — accepts `campaignId`, calls `onUploaded(url)` and `onSkip()`. Likely uploads into a campaign-image bucket using `campaignId` as the path prefix.
-- `src/pages/AICampaignBuilder.tsx` wires `handleImageUploaded` / `handleImageSkipped` into the AI flow by sending a synthetic user message ("Image uploaded: <url>" / "Skip image for now") and merging fields into `collectedFields` (`image_url`, `image_skipped`).
-- Items collection state on the page: `currentItemDraft`, `itemsAdded`, `awaitingAddAnother`, `itemNoun`, `phase: "collecting_items"`. The edge function `supabase/functions/ai-campaign-builder/index.ts` returns `savedItemId` when an item is persisted and drives `currentItemDraft`.
+Looking at the screenshot, three distinct problems happened in sequence:
 
-## Investigation needed before coding
-1. Read `ImageUploadPrompt.tsx` to confirm props, bucket, and path layout (does it require a campaignId, and where does it write?).
-2. Read `ai-campaign-builder/index.ts` to find:
-   - Where item fields are collected and validated
-   - Whether `image_url` is already a recognized item field on the item schema/tool call
-   - The exact tool/function used to save an item (`save_campaign_item`?) and whether it accepts an `image_url`
-   - Where it emits the `image_upload` suggestion type so we can replicate for items
-3. Confirm the `campaign_items` table (or wherever items are saved) has an `image_url` column. If not, a migration will be needed.
+1. **Dead-end statement**: After extended details, AI said "Now that we've covered the basics, let's add some items!" with no question/CTA. User had to type "ok" to advance.
+2. **Double response**: AI sent two messages back-to-back asking for the item name ("Alright, let's add the first sponsorship item..." AND "Great! What's the name of your first sponsorship item...").
+3. **Wrong UI affordance**: The image upload prompt appeared *before* the item name was collected, and the input placeholder still says "Describe your campaign…" instead of something contextual like "Type the item name…".
+
+## Root Causes (to confirm by reading edge function)
+
+I need to read `supabase/functions/ai-campaign-builder/index.ts` to confirm, but based on prior context:
+
+- **Cause 1 (dead-end)**: After the post-draft phase completes, the function emits a transition message announcing items collection but doesn't immediately ask for the first field (`name`). The very next turn re-enters and prompts properly — but only after the user sends something.
+- **Cause 2 (double-ask)**: When my last change added `image` to `ITEM_FIELDS`, I likely also kept a separate hand-written intro message *and* let the model generate its own prompt → two assistant messages in `assistantMessages[]`.
+- **Cause 3 (image first)**: I placed `image` too early in `ITEM_FIELDS` (before `name`), or the suggestion builder is emitting `image_upload` even though the next required field is `name`. The image step must come *after* the required `name` (and ideally `price`) are captured.
+- **Cause 4 (placeholder)**: `AIChatPanel` uses a static placeholder. It should adapt to the current phase / current item field.
 
 ## Plan
 
-### 1. Frontend — `AICampaignBuilder.tsx`
-- Add new state for the in-flight item image: track an `itemImageUrl` (and `itemImageSkipped`) on `currentItemDraft` via merged fields.
-- Add two handlers mirroring the campaign image ones, but scoped to items:
-  - `handleItemImageUploaded(url)` → merge `{ image_url: url }` into `currentItemDraft` locally, push synthetic user message `"Item image uploaded: <url>"`, call AI with updated draft.
-  - `handleItemImageSkipped()` → merge `{ image_skipped: true }` into `currentItemDraft`, push `"Skip item image"`, call AI.
-- Pass the draft state through `callAi` (already happens via `currentItemDraft`).
-- Distinguish prompt context: extend the `suggestions` payload from the edge function with an optional `field` of `"item_image_url"` so the page can route the upload to the right handler.
+### 1. Reorder `ITEM_FIELDS` in the edge function
+Move `image` to come **after** the required fields (`name`, `price`, anything else required). Order should be roughly: `name` → `price` → `description` → `image` → other optional fields. Image is always optional/skippable.
 
-### 2. Frontend — `AIChatPanel.tsx`
-- The component already renders `ImageUploadPrompt` when `suggestions.type === "image_upload"`. Add a callback distinction: pass through `suggestions.field` so the parent decides whether to call `onImageUploaded` (campaign) or `onItemImageUploaded` (item).
-- Add new optional props: `onItemImageUploaded`, `onItemImageSkipped`. When the suggestion's `field === "item_image_url"`, route `ImageUploadPrompt` events to those instead.
+### 2. Fix the double prompt at the start of items phase
+When transitioning into `collecting_items`:
+- Emit **one** assistant message that both announces the phase AND asks for the first field's value (e.g. "Now let's add your first sponsorship item — what's its name? e.g. Large Banner, Event Sponsor, Platinum Sponsor.").
+- Do not let the model generate a follow-up prompt in the same turn. Either: (a) skip the model call on the transition turn and return only the canned message, or (b) include the field question inside the canned message and clear `assistantMessages` from the model call.
 
-### 3. Frontend — `ImageUploadPrompt.tsx`
-- Confirm it accepts a generic upload context. If it currently hardcodes a campaign-image path, add an optional `pathPrefix` or `kind: "campaign" | "item"` prop so item images are stored under a distinct prefix (e.g. `campaign-item-images/{campaignId}/items/{uuid}.{ext}`).
-- Keep Skip behavior identical.
+### 3. Fix the dead-end "ok" requirement
+The transition into items collection must be triggered by the *previous* user turn (the one that completed extended details), not require a fresh user message. Concretely: when the post-draft phase finishes in a given turn, immediately roll into producing the first items prompt in that same response.
 
-### 4. Edge function — `supabase/functions/ai-campaign-builder/index.ts`
-- In the items-collection phase, after the AI has captured the item's name and price (or whichever fields are required first), emit an `image_upload` suggestion with `field: "item_image_url"` and a label like "Item image" before saving the item.
-- When the next user turn arrives with `currentItemDraft.image_url` set OR `currentItemDraft.image_skipped === true`, proceed to save the item via the existing tool call, including `image_url` in the payload when present.
-- Reset `image_url` / `image_skipped` from the draft after the item is saved so the next item starts clean.
+### 4. Suppress `image_upload` suggestion until item is named
+In the suggestions builder, only emit `type: "image_upload"` with `field: "item_image_url"` when:
+- `phase === "collecting_items"` AND
+- `currentItemDraft.name` is set AND
+- `currentItemDraft.price` is set (or whatever required fields precede image)
 
-### 5. Database (only if needed)
-- If `campaign_items` (or equivalent table the function writes to) lacks an `image_url` column, add a migration: `ALTER TABLE campaign_items ADD COLUMN image_url text;`. Will confirm during implementation.
+Otherwise emit a text prompt suggestion (or none).
 
-### 6. Out of scope
-- Editing item images after they're saved (handled in the regular Campaign Editor item editor).
-- Bulk item image uploads.
-- Image cropping / resizing UI.
+### 5. Contextual chat input placeholder
+In `AIChatPanel.tsx`:
+- Accept a new `placeholder?: string` prop (or derive from `phase` / latest suggestion).
+- In `AICampaignBuilder.tsx`, pass a placeholder based on `phase`:
+  - `collecting` → "Describe your campaign…"
+  - `post_draft` → "Answer the question above…"
+  - `collecting_items` → "Type your answer…" (or use the current field's label, e.g. "Type the item name…")
+  - `complete` → "Anything else?"
 
-### Files likely to change
-- `src/pages/AICampaignBuilder.tsx`
-- `src/components/ai-campaign/AIChatPanel.tsx`
-- `src/components/ai-campaign/ImageUploadPrompt.tsx` (small prop addition)
-- `supabase/functions/ai-campaign-builder/index.ts`
-- Possibly a new migration if `campaign_items.image_url` doesn't exist.
+### 6. Files to change
+- `supabase/functions/ai-campaign-builder/index.ts` — reorder `ITEM_FIELDS`, fix transition turn (no double prompt), gate `image_upload` suggestion behind `name`/`price` presence.
+- `src/components/ai-campaign/AIChatPanel.tsx` — accept dynamic `placeholder` prop.
+- `src/pages/AICampaignBuilder.tsx` — compute and pass `placeholder` based on `phase` and `currentItemDraft`.
+
+### 7. Out of scope
+- Redesigning the items collection flow.
+- Letting the user upload multiple images per item.
+- Editing items already saved (handled in regular editor).
 
