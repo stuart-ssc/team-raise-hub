@@ -359,6 +359,8 @@ export default function AICampaignBuilder() {
             campaignId={campaignId}
             onImageUploaded={handleImageUploaded}
             onImageSkipped={handleImageSkipped}
+            onItemImageUploaded={handleItemImageUploaded}
+            onItemImageSkipped={handleItemImageSkipped}
           />
         </div>
       </div>
