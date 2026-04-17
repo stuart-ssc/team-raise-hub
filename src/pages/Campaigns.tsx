@@ -261,6 +261,7 @@ export default function Campaigns() {
                          campaign.campaign_type_name?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = filterBy === "all" || 
+                         filterBy === "deleted" ||
                          (filterBy === "active" && campaign.status) ||
                          (filterBy === "inactive" && !campaign.status && campaign.publication_status !== 'draft') ||
                          (filterBy === "draft" && campaign.publication_status === 'draft');
