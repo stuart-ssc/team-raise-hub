@@ -9,7 +9,7 @@ import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import { useToast } from "@/hooks/use-toast";
 
-type Phase = "collecting" | "ready_to_create" | "post_draft" | "complete";
+type Phase = "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete";
 
 export default function AICampaignBuilder() {
   const navigate = useNavigate();

@@ -10,6 +10,61 @@ const REQUIRED_FACTUAL_KEYS = ["name", "campaign_type_id", "group_id", "goal_amo
 // requires_business_info is a boolean, so we gate on its *presence* (answered) rather than truthiness.
 const REQUIRED_KEYS = REQUIRED_FACTUAL_KEYS;
 
+// =====================================================================
+// Campaign Item field definitions (mirrors src/lib/ai/campaignSchema.ts)
+// =====================================================================
+interface ItemFieldDef {
+  key: string;
+  label: string;
+  prompt: string;
+  type: "string" | "longtext" | "number" | "boolean" | "choice";
+  required: boolean;
+  options?: { label: string; value: string }[];
+  dependsOn?: { key: string; equals: any };
+}
+
+const ITEM_FIELDS: ItemFieldDef[] = [
+  { key: "name", label: "Name", prompt: "What's the name of this {itemNoun}?", type: "string", required: true },
+  { key: "description", label: "Description", prompt: "Add a short description, or say skip.", type: "longtext", required: false },
+  { key: "cost", label: "Price (dollars)", prompt: "How much does it cost? (in dollars, e.g. 25)", type: "number", required: true },
+  { key: "quantity_offered", label: "Quantity offered", prompt: "How many are you offering in total?", type: "number", required: true },
+  { key: "max_items_purchased", label: "Limit per buyer", prompt: "Limit per buyer? (a number, or skip for no limit)", type: "number", required: false },
+  { key: "size", label: "Size / tier label", prompt: "Any size or tier label? (e.g. 'Large', 'Gold tier' — skip if none)", type: "string", required: false },
+  { key: "is_recurring", label: "Recurring", prompt: "Should this be a recurring charge?", type: "boolean", required: false },
+  { key: "recurring_interval", label: "Recurring interval", prompt: "How often should it recur?", type: "choice", required: false, options: [{ label: "Monthly", value: "month" }, { label: "Yearly", value: "year" }], dependsOn: { key: "is_recurring", equals: true } },
+];
+
+function itemNounForType(typeName?: string | null): string {
+  const t = (typeName || "").toLowerCase();
+  if (t.includes("sponsor")) return "sponsorship level";
+  if (t.includes("merch")) return "item";
+  if (t.includes("event")) return "ticket";
+  if (t.includes("donation")) return "donation tier";
+  return "item";
+}
+
+function isItemFieldAnswered(key: string, draft: Record<string, any>): boolean {
+  if (draft[`${key}_skipped`] === true) return true;
+  const v = draft[key];
+  if (key === "is_recurring") return v !== undefined && v !== null;
+  return v !== undefined && v !== null && v !== "";
+}
+
+function getNextItemField(draft: Record<string, any>): ItemFieldDef | null {
+  for (const f of ITEM_FIELDS) {
+    if (f.dependsOn) {
+      const depVal = draft[f.dependsOn.key];
+      if (depVal !== f.dependsOn.equals) continue;
+    }
+    if (!isItemFieldAnswered(f.key, draft)) return f;
+  }
+  return null;
+}
+
+function isItemReadyToSave(draft: Record<string, any>): boolean {
+  return ITEM_FIELDS.filter((f) => f.required).every((f) => isItemFieldAnswered(f.key, draft));
+}
+
 // Every field the AI should walk through, in the order to ask. `required: false`
 // means the user can skip without blocking save — NOT that the AI may silently omit it.
 const ASK_ORDER = [
@@ -168,6 +223,63 @@ const FIELD_DEFS: FieldDef[] = [
   { key: "end_date", label: "End Date", type: "date", required: true, aiDescription: "End date in YYYY-MM-DD format." },
   { key: "requires_business_info", label: "Sponsors Provide Info/Assets", type: "boolean", required: true, aiDescription: "Whether sponsors must provide information or assets to participate (e.g. a logo for a banner/shirt, a website link for social media recognition)." },
 ];
+
+function buildItemsSystemPrompt(
+  campaignName: string,
+  itemNoun: string,
+  itemsAdded: number,
+  currentItemDraft: Record<string, any>,
+  awaitingAddAnother: boolean,
+  todayIso: string,
+): string {
+  const draftSummary = Object.entries(currentItemDraft)
+    .filter(([k, v]) => !k.endsWith("_skipped") && v !== undefined && v !== null && v !== "")
+    .map(([k, v]) => `  - ${k}: ${JSON.stringify(v)}`)
+    .join("\n") || "  (nothing yet)";
+
+  const nextField = getNextItemField(currentItemDraft);
+  const ready = isItemReadyToSave(currentItemDraft);
+
+  let nextStep: string;
+  if (awaitingAddAnother) {
+    nextStep = `**Awaiting choice: add another or finish.** Your message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1: confirm the last ${itemNoun} was saved (e.g. "Saved.").\n  Paragraph 2: ask "Want to add another ${itemNoun}, or are you done?" — the UI shows two buttons (Add another / I'm done). Do NOT call any tool.`;
+  } else if (ready && nextField === null) {
+    nextStep = `**All required fields collected.** IMMEDIATELY call the **save_campaign_item** tool with the values from "Current ${itemNoun} draft" below. Do NOT ask any more questions for this ${itemNoun}.`;
+  } else if (nextField) {
+    const promptText = nextField.prompt.replace(/\{itemNoun\}/g, itemNoun);
+    const skipNote = nextField.required ? "" : " The user may say **skip**.";
+    nextStep = `**Next field: ${nextField.key}** (${nextField.required ? "REQUIRED" : "optional"}). Ask: "${promptText}"${skipNote}\n\nWhen the user answers, IMMEDIATELY call the **update_item_field** tool with the value (use the exact key \`${nextField.key}\`).`;
+  } else {
+    nextStep = `Wait for user input.`;
+  }
+
+  return `You are a campaign creation assistant. The user just created the campaign **"${campaignName}"** and is now adding ${itemNoun}s to it.
+
+Today is **${todayIso}**.
+
+## Items added so far: ${itemsAdded}
+
+## Current ${itemNoun} draft
+${draftSummary}
+
+## Tools
+- **update_item_field**: record a single value the user just provided. Pass exactly one key from the item schema (\`name\`, \`description\`, \`cost\`, \`quantity_offered\`, \`max_items_purchased\`, \`size\`, \`is_recurring\`, \`recurring_interval\`) plus its value. Also accepts \`<key>_skipped: true\` to mark an optional field as skipped.
+- **save_campaign_item**: insert the current draft into the database. Call ONLY when all required fields are filled.
+
+## Current Step
+${nextStep}
+
+## Rules
+- Ask ONE field at a time. Keep messages to 1 short sentence per question.
+- For \`cost\`: the user types dollars (e.g. "25" or "$25"). Pass the dollar number (decimals OK) — the server converts to cents.
+- For \`is_recurring\`: the UI shows Yes/No buttons. Pass true/false.
+- Never make up values; only record what the user explicitly says.
+- **Response format — every turn after user input MUST be TWO paragraphs separated by a blank line:**
+  1. Acknowledgment paragraph (e.g. "Got it — $25.").
+  2. Next question paragraph.
+
+  Never combine acknowledgment and the next question into one sentence.`;
+}
 
 function buildSystemPrompt(
   campaignTypes: { id: string; name: string }[],
@@ -358,7 +470,18 @@ Deno.serve(async (req) => {
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminSb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    const { messages, collectedFields, campaignTypes, groups, activeGroupId, campaignId } = await req.json();
+    const {
+      messages,
+      collectedFields,
+      campaignTypes,
+      groups,
+      activeGroupId,
+      campaignId,
+      currentItemDraft: rawItemDraft,
+      itemsAdded: rawItemsAdded,
+      phase: clientPhase,
+      awaitingAddAnother: rawAwaitingAddAnother,
+    } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -431,9 +554,62 @@ Deno.serve(async (req) => {
 
     const today = new Date();
     const todayIso = `${today.getUTCFullYear()}-${pad(today.getUTCMonth() + 1)}-${pad(today.getUTCDate())}`;
-    const systemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso, campaignId || null, rosters);
 
-    const tools = [
+    // ---- Items collection state ----
+    let currentItemDraft: Record<string, any> = { ...(rawItemDraft || {}) };
+    let itemsAdded: number = Number(rawItemsAdded) || 0;
+    let awaitingAddAnother: boolean = !!rawAwaitingAddAnother;
+    let savedItemId: string | null = null;
+    let exitItemsCollection = false;
+    const inItemsPhase = clientPhase === "collecting_items" && !!campaignId;
+
+    // Resolve campaign type name (for item-noun in prompts)
+    const resolvedTypeName =
+      types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null;
+    const itemNoun = itemNounForType(resolvedTypeName);
+
+    // Fetch campaign name when needed for items prompt
+    let campaignNameForItems: string = updatedFields.name || "";
+    if (inItemsPhase && !campaignNameForItems && campaignId) {
+      const { data: c } = await adminSb.from("campaigns").select("name").eq("id", campaignId).single();
+      campaignNameForItems = c?.name || "your campaign";
+    }
+
+    // Deterministic add-another / done detection while awaiting that choice
+    if (inItemsPhase && awaitingAddAnother && lastUserMsg) {
+      const t = lastUserMsg.replace(/[.!?]+$/, "").trim();
+      if (/^(add another|another|yes|yep|sure|1)$/.test(t) || /\badd another\b/.test(t)) {
+        awaitingAddAnother = false;
+        currentItemDraft = {};
+      } else if (/^(i'?m done|done|no|nope|finish|finished|that'?s it|2)$/.test(t) || /\bdone\b/.test(t)) {
+        awaitingAddAnother = false;
+        exitItemsCollection = true;
+      }
+    }
+
+    // Deterministic skip on optional item field while collecting
+    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && lastUserMsg && isSkipMessage(lastUserMsg)) {
+      const next = getNextItemField(currentItemDraft);
+      if (next && !next.required) {
+        currentItemDraft[`${next.key}_skipped`] = true;
+      }
+    }
+
+    let systemPrompt: string;
+    if (inItemsPhase && !exitItemsCollection) {
+      systemPrompt = buildItemsSystemPrompt(
+        campaignNameForItems,
+        itemNoun,
+        itemsAdded,
+        currentItemDraft,
+        awaitingAddAnother,
+        todayIso,
+      );
+    } else {
+      systemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso, campaignId || null, rosters);
+    }
+
+    const baseTools = [
       {
         type: "function",
         function: {
@@ -473,6 +649,46 @@ Deno.serve(async (req) => {
         },
       },
     ];
+
+    const itemsTools = [
+      {
+        type: "function",
+        function: {
+          name: "update_item_field",
+          description:
+            "Record a single value for the campaign item being built. Pass exactly one item field key plus its value, OR a `<key>_skipped: true` marker to skip an optional field.",
+          parameters: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              description: { type: "string" },
+              cost: { type: "number", description: "Price in dollars (server converts to cents)" },
+              quantity_offered: { type: "number" },
+              max_items_purchased: { type: "number" },
+              size: { type: "string" },
+              is_recurring: { type: "boolean" },
+              recurring_interval: { type: "string", enum: ["month", "year"] },
+              description_skipped: { type: "boolean" },
+              max_items_purchased_skipped: { type: "boolean" },
+              size_skipped: { type: "boolean" },
+              is_recurring_skipped: { type: "boolean" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "save_campaign_item",
+          description:
+            "Insert the current item draft into the database. Call ONLY after all required item fields are filled.",
+          parameters: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
+    ];
+
+    const tools = inItemsPhase && !exitItemsCollection ? itemsTools : baseTools;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -608,6 +824,63 @@ Deno.serve(async (req) => {
             }
           }
           }
+        } else if (toolCall.function?.name === "update_item_field" && inItemsPhase) {
+          try {
+            const args = JSON.parse(toolCall.function.arguments);
+            for (const [key, value] of Object.entries(args)) {
+              if (value === undefined || value === null || value === "") continue;
+              currentItemDraft[key] = value;
+            }
+            // If is_recurring set to false, mark recurring_interval as skipped (not asked)
+            if (currentItemDraft.is_recurring === false) {
+              currentItemDraft.recurring_interval_skipped = true;
+            }
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, currentItemDraft }) });
+          } catch (e) {
+            console.error("Failed to parse update_item_field args:", e);
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "parse_error" }) });
+          }
+        } else if (toolCall.function?.name === "save_campaign_item" && inItemsPhase && campaignId) {
+          if (!isItemReadyToSave(currentItemDraft)) {
+            const missing = ITEM_FIELDS.filter((f) => f.required && !isItemFieldAnswered(f.key, currentItemDraft)).map((f) => f.key);
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: `Missing required fields: ${missing.join(", ")}` }) });
+          } else {
+            const dollarsToCents = (n: any) => Math.round(Number(n) * 100);
+            const insertItem: Record<string, any> = {
+              campaign_id: campaignId,
+              name: currentItemDraft.name,
+              cost: dollarsToCents(currentItemDraft.cost),
+              quantity_offered: Number(currentItemDraft.quantity_offered),
+              quantity_available: Number(currentItemDraft.quantity_offered),
+            };
+            if (currentItemDraft.description && !currentItemDraft.description_skipped) insertItem.description = currentItemDraft.description;
+            if (currentItemDraft.max_items_purchased !== undefined && !currentItemDraft.max_items_purchased_skipped) {
+              insertItem.max_items_purchased = Number(currentItemDraft.max_items_purchased);
+            }
+            if (currentItemDraft.size && !currentItemDraft.size_skipped) insertItem.size = currentItemDraft.size;
+            if (currentItemDraft.is_recurring === true) {
+              insertItem.is_recurring = true;
+              if (currentItemDraft.recurring_interval) insertItem.recurring_interval = currentItemDraft.recurring_interval;
+            }
+
+            const { data: newItem, error: itemErr } = await adminSb
+              .from("campaign_items")
+              .insert(insertItem)
+              .select("id, name")
+              .single();
+
+            if (itemErr) {
+              console.error("save_campaign_item insert error:", itemErr);
+              toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: itemErr.message }) });
+            } else {
+              savedItemId = newItem.id;
+              itemsAdded += 1;
+              awaitingAddAnother = true;
+              const savedName = newItem.name;
+              currentItemDraft = {};
+              toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, itemId: savedItemId, itemsAdded, savedName }) });
+            }
+          }
         } else {
           toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "unknown_tool" }) });
         }
@@ -644,21 +917,27 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Force a follow-up when draft was just created (so AI starts post-draft convo)
+      // Force a follow-up when draft was just created (so AI starts items convo)
+      // OR when an item was just saved (so AI asks add-another)
       // OR when there's no assistant text yet
-      const needsFollowUp = !assistantMessage || createdCampaignId !== null || createDraftError !== null;
+      const needsFollowUp = !assistantMessage || createdCampaignId !== null || savedItemId !== null || createDraftError !== null;
 
       if (needsFollowUp) {
-        // If we just created the draft, fetch rosters and rebuild the prompt in post-draft mode
         let followUpSystemPrompt = systemPrompt;
         if (createdCampaignId) {
-          const { data: rData } = await adminSb
-            .from("rosters")
-            .select("id, roster_year, current_roster")
-            .eq("group_id", updatedFields.group_id)
-            .order("roster_year", { ascending: false });
-          rosters = rData || [];
-          followUpSystemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso, createdCampaignId, rosters);
+          // Transition into items-collection phase right after the draft is saved
+          const cName = updatedFields.name || "your campaign";
+          followUpSystemPrompt = buildItemsSystemPrompt(cName, itemNoun, 0, {}, false, todayIso);
+        } else if (savedItemId && inItemsPhase) {
+          // Just saved an item — rebuild prompt so AI asks add-another
+          followUpSystemPrompt = buildItemsSystemPrompt(
+            campaignNameForItems,
+            itemNoun,
+            itemsAdded,
+            {},
+            true,
+            todayIso,
+          );
         }
 
         const followUpMessages = [
@@ -693,7 +972,9 @@ Deno.serve(async (req) => {
           if (createDraftError) {
             assistantMessage = createDraftError;
           } else if (createdCampaignId) {
-            assistantMessage = "Draft saved! 🎉 Would you like to upload a campaign image?";
+            assistantMessage = `Your campaign is created. 🎉\n\nNow let's add your first ${itemNoun}. What's the name?`;
+          } else if (savedItemId) {
+            assistantMessage = `Saved.\n\nWant to add another ${itemNoun}, or are you done?`;
           } else {
             assistantMessage = "Got it!";
           }
@@ -714,13 +995,21 @@ Deno.serve(async (req) => {
     const readyToCreate =
       missingRequired.length === 0 && businessInfoAnswered && stillToAskNow.length === 0;
 
-    let phase: "collecting" | "ready_to_create" | "post_draft" | "complete" = "collecting";
+    let phase: "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete" = "collecting";
     if (effectiveCampaignId) {
-      const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
-      const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
-        (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
-      const directionsDone = updatedFields.group_directions_addressed === true;
-      phase = imageDone && rosterDone && directionsDone ? "complete" : "post_draft";
+      const stayInItems =
+        (createdCampaignId !== null) ||
+        (inItemsPhase && !exitItemsCollection);
+
+      if (stayInItems) {
+        phase = "collecting_items";
+      } else {
+        const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
+        const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
+          (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
+        const directionsDone = updatedFields.group_directions_addressed === true;
+        phase = imageDone && rosterDone && directionsDone ? "complete" : "post_draft";
+      }
     } else if (readyToCreate) {
       phase = "ready_to_create";
     }
@@ -730,7 +1019,46 @@ Deno.serve(async (req) => {
       | { type?: string; field: string; label: string; options: { label: string; value: string }[] }
       | null = null;
 
-    if (effectiveCampaignId) {
+    if (effectiveCampaignId && phase === "collecting_items") {
+      if (awaitingAddAnother) {
+        suggestions = {
+          type: "choice",
+          field: "add_another_item",
+          label: `Want to add another ${itemNoun}?`,
+          options: [
+            { label: "Add another", value: "add another" },
+            { label: "I'm done", value: "I'm done" },
+          ],
+        };
+      } else {
+        const next = getNextItemField(currentItemDraft);
+        if (next?.type === "boolean") {
+          suggestions = {
+            type: "choice",
+            field: next.key,
+            label: next.label,
+            options: [
+              { label: "Yes", value: "yes" },
+              { label: "No", value: "no" },
+            ],
+          };
+        } else if (next?.type === "choice" && next.options) {
+          suggestions = {
+            type: "choice",
+            field: next.key,
+            label: next.label,
+            options: next.options,
+          };
+        } else if (next && !next.required) {
+          suggestions = {
+            type: "choice",
+            field: next.key,
+            label: next.label,
+            options: [{ label: `Skip — no ${next.label.toLowerCase()}`, value: "skip" }],
+          };
+        }
+      }
+    } else if (effectiveCampaignId) {
       const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
       const rosterAttrAddressed = updatedFields.enable_roster_attribution !== undefined;
       const rosterPicked = !updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0;
@@ -852,6 +1180,11 @@ Deno.serve(async (req) => {
         createdCampaignId,
         createDraftError,
         finalAction,
+        currentItemDraft,
+        itemsAdded,
+        awaitingAddAnother,
+        savedItemId,
+        itemNoun,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
