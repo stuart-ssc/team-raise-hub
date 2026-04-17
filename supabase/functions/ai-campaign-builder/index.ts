@@ -824,6 +824,63 @@ Deno.serve(async (req) => {
             }
           }
           }
+        } else if (toolCall.function?.name === "update_item_field" && inItemsPhase) {
+          try {
+            const args = JSON.parse(toolCall.function.arguments);
+            for (const [key, value] of Object.entries(args)) {
+              if (value === undefined || value === null || value === "") continue;
+              currentItemDraft[key] = value;
+            }
+            // If is_recurring set to false, mark recurring_interval as skipped (not asked)
+            if (currentItemDraft.is_recurring === false) {
+              currentItemDraft.recurring_interval_skipped = true;
+            }
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, currentItemDraft }) });
+          } catch (e) {
+            console.error("Failed to parse update_item_field args:", e);
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "parse_error" }) });
+          }
+        } else if (toolCall.function?.name === "save_campaign_item" && inItemsPhase && campaignId) {
+          if (!isItemReadyToSave(currentItemDraft)) {
+            const missing = ITEM_FIELDS.filter((f) => f.required && !isItemFieldAnswered(f.key, currentItemDraft)).map((f) => f.key);
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: `Missing required fields: ${missing.join(", ")}` }) });
+          } else {
+            const dollarsToCents = (n: any) => Math.round(Number(n) * 100);
+            const insertItem: Record<string, any> = {
+              campaign_id: campaignId,
+              name: currentItemDraft.name,
+              cost: dollarsToCents(currentItemDraft.cost),
+              quantity_offered: Number(currentItemDraft.quantity_offered),
+              quantity_available: Number(currentItemDraft.quantity_offered),
+            };
+            if (currentItemDraft.description && !currentItemDraft.description_skipped) insertItem.description = currentItemDraft.description;
+            if (currentItemDraft.max_items_purchased !== undefined && !currentItemDraft.max_items_purchased_skipped) {
+              insertItem.max_items_purchased = Number(currentItemDraft.max_items_purchased);
+            }
+            if (currentItemDraft.size && !currentItemDraft.size_skipped) insertItem.size = currentItemDraft.size;
+            if (currentItemDraft.is_recurring === true) {
+              insertItem.is_recurring = true;
+              if (currentItemDraft.recurring_interval) insertItem.recurring_interval = currentItemDraft.recurring_interval;
+            }
+
+            const { data: newItem, error: itemErr } = await adminSb
+              .from("campaign_items")
+              .insert(insertItem)
+              .select("id, name")
+              .single();
+
+            if (itemErr) {
+              console.error("save_campaign_item insert error:", itemErr);
+              toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: itemErr.message }) });
+            } else {
+              savedItemId = newItem.id;
+              itemsAdded += 1;
+              awaitingAddAnother = true;
+              const savedName = newItem.name;
+              currentItemDraft = {};
+              toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, itemId: savedItemId, itemsAdded, savedName }) });
+            }
+          }
         } else {
           toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "unknown_tool" }) });
         }
