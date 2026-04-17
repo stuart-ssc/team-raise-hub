@@ -30,6 +30,7 @@ export default function AICampaignPreview({
   phase = "collecting",
   campaignId,
   onOpenEditor,
+  onPublishClick,
 }: AICampaignPreviewProps) {
   const missingRequired = getMissingRequiredFields(collectedFields);
   const filledCount = allFields.filter(
