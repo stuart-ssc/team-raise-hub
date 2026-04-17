@@ -220,7 +220,7 @@ export default function AIChatPanel({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe your campaign..."
+            placeholder={placeholder}
             className="min-h-[40px] max-h-[120px] resize-none text-sm"
             rows={1}
             disabled={isLoading}
