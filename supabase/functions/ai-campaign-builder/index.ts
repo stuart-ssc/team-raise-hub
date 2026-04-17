@@ -857,6 +857,7 @@ Deno.serve(async (req) => {
             type: "object",
             properties: {
               name: { type: "string" },
+              image: { type: "string", description: "URL of uploaded item image" },
               description: { type: "string" },
               cost: { type: "number", description: "Price in dollars (server converts to cents)" },
               quantity_offered: { type: "number" },
@@ -864,6 +865,7 @@ Deno.serve(async (req) => {
               size: { type: "string" },
               is_recurring: { type: "boolean" },
               recurring_interval: { type: "string", enum: ["month", "year"] },
+              image_skipped: { type: "boolean" },
               description_skipped: { type: "boolean" },
               max_items_purchased_skipped: { type: "boolean" },
               size_skipped: { type: "boolean" },
