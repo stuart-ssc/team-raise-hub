@@ -2,10 +2,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Check, Minus, AlertCircle, Rocket, Loader2, ExternalLink, ImageIcon, Users, FileText } from "lucide-react";
+import { Check, Minus, AlertCircle, Rocket, Loader2, ExternalLink, ImageIcon, Users, FileText, Package } from "lucide-react";
 import { allFields, formatFieldValue, getMissingRequiredFields } from "@/lib/ai/campaignSchema";
 
-type Phase = "collecting" | "ready_to_create" | "post_draft" | "complete";
+type Phase = "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete";
 
 interface AICampaignPreviewProps {
   collectedFields: Record<string, any>;
