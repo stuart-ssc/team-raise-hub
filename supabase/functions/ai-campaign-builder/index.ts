@@ -688,8 +688,7 @@ Deno.serve(async (req) => {
       rosters = rData || [];
     }
 
-    const today = new Date();
-    const todayIso = `${today.getUTCFullYear()}-${pad(today.getUTCMonth() + 1)}-${pad(today.getUTCDate())}`;
+    // (today/todayIso declared earlier)
 
     // ---- Items collection state ----
     let currentItemDraft: Record<string, any> = { ...(rawItemDraft || {}) };
