@@ -18,6 +18,8 @@ interface AICampaignPreviewProps {
   campaignId?: string | null;
   onOpenEditor?: () => void;
   onPublishClick?: () => void;
+  itemsAdded?: number;
+  itemNoun?: string;
 }
 
 export default function AICampaignPreview({
