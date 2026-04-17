@@ -283,7 +283,7 @@ const FIELD_DEFS: FieldDef[] = [
   { key: "campaign_type_id", label: "Campaign Type", type: "select", required: true, aiDescription: "The campaign type ID from the provided list." },
   { key: "group_id", label: "Group", type: "select", required: true, aiDescription: "The group ID from the provided list." },
   { key: "description", label: "Description", type: "string", required: false, aiDescription: "Brief description of the campaign." },
-  { key: "goal_amount", label: "Goal Amount (cents)", type: "number", required: true, aiDescription: "Fundraising goal in cents (e.g. 50000 = $500)." },
+  { key: "goal_amount", label: "Goal Amount (dollars)", type: "number", required: true, aiDescription: "Fundraising goal in WHOLE DOLLARS (e.g. 10000 = $10,000.00). Do NOT convert to cents." },
   { key: "start_date", label: "Start Date", type: "date", required: true, aiDescription: "Start date in YYYY-MM-DD format." },
   { key: "end_date", label: "End Date", type: "date", required: true, aiDescription: "End date in YYYY-MM-DD format." },
   { key: "requires_business_info", label: "Sponsors Provide Info/Assets", type: "boolean", required: true, aiDescription: "Whether sponsors must provide information or assets to participate (e.g. a logo for a banner/shirt, a website link for social media recognition)." },
@@ -504,7 +504,7 @@ ${autoFillNote}
 2. When the user provides information, **immediately** call the "update_campaign_fields" tool with the extracted values in the SAME turn. Never just acknowledge in text — the tool call is mandatory or the field will not be saved and the user will be re-asked.
 3. For campaign_type_id: match the user's description to the closest campaign type and use its ID.
 4. For group_id: match the user's description to the closest group and use its ID.
-5. For goal_amount: convert dollar amounts to cents (e.g. $500 → 50000).
+5. For goal_amount: pass the value in **WHOLE DOLLARS** exactly as the user typed it. If the user types `10000`, pass `10000` (which means $10,000.00). If the user types `$500` or `500`, pass `500` (which means $500.00). DO NOT multiply by 100. DO NOT convert to cents. When confirming back, format as USD currency (e.g. "Got it — goal of **$10,000.00**.").
 6. For start_date and end_date: accept ANY natural format the user provides — "May 1", "5/1", "5/1/2026", "next Friday", "May 1st", "in 2 weeks", "end of May", "Monday", etc. ALWAYS interpret M/D or M/D/YYYY as US-style **month/day/year**. If the user omits the year, assume the current year (${todayIso.slice(0, 4)}) — but if that date has already passed, roll forward to next year. ALWAYS pass the date to the tool in **YYYY-MM-DD** format. **CRITICAL: When the user gives a date, your text reply MUST be accompanied by an \`update_campaign_fields\` tool call with the normalized YYYY-MM-DD value in the SAME turn. Acknowledging the date only in text ("Got it — starting May 1, 2026") without the tool call is a bug — the date will be lost.** After the tool call, briefly confirm it back in friendly format (e.g. "Got it — starting **May 1, 2026**.").
 7. Do NOT make up values. Only extract what the user explicitly says.
 8. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
@@ -821,7 +821,7 @@ Deno.serve(async (req) => {
               campaign_type_id: { type: "string" },
               group_id: { type: "string" },
               description: { type: "string" },
-              goal_amount: { type: "number" },
+              goal_amount: { type: "number", description: "Fundraising goal in WHOLE DOLLARS (e.g. 10000 = $10,000.00). Do NOT convert to cents." },
               start_date: { type: "string" },
               end_date: { type: "string" },
               requires_business_info: { type: "boolean" },
@@ -951,6 +951,19 @@ Deno.serve(async (req) => {
                 }
                 updatedFields[key] = normalized;
                 persistFields[key] = normalized;
+              } else if (key === "goal_amount") {
+                // Sanitize: strip $/commas/spaces, parse as plain dollars (no cents conversion)
+                let raw: any = value;
+                if (typeof raw === "string") {
+                  raw = raw.replace(/[$,\s]/g, "");
+                }
+                const num = Number(raw);
+                if (!isFinite(num) || num <= 0) {
+                  console.warn("Invalid goal_amount, skipping:", value);
+                  continue;
+                }
+                updatedFields[key] = num;
+                persistFields[key] = num;
               } else {
                 updatedFields[key] = value;
                 persistFields[key] = value;
