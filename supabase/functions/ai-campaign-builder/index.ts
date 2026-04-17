@@ -25,6 +25,7 @@ interface ItemFieldDef {
 
 const ITEM_FIELDS: ItemFieldDef[] = [
   { key: "name", label: "Name", prompt: "What's the name of your {ordinal} {itemNoun}? ({examples})", type: "string", required: true },
+  { key: "image", label: "Image", prompt: "Want to upload an image for this {itemNoun}? You can also skip.", type: "string", required: false },
   { key: "description", label: "Description", prompt: "Add a short description, or say skip.", type: "longtext", required: false },
   { key: "cost", label: "Price (dollars)", prompt: "How much does it cost? (in dollars, e.g. 25)", type: "number", required: true },
   { key: "quantity_offered", label: "Quantity offered", prompt: "How many are you offering in total?", type: "number", required: true },
@@ -311,6 +312,8 @@ function buildItemsSystemPrompt(
     nextStep = `**Awaiting choice: add another or finish.** Your message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1: confirm the last ${itemNoun} was saved (e.g. "Saved.").\n  Paragraph 2: ask "Want to add another ${itemNoun}, or are you done?" — the UI shows two buttons (Add another / I'm done). Do NOT call any tool.`;
   } else if (ready && nextField === null) {
     nextStep = `**All required fields collected.** IMMEDIATELY call the **save_campaign_item** tool with the values from "Current ${itemNoun} draft" below. Do NOT ask any more questions for this ${itemNoun}.`;
+  } else if (nextField && nextField.key === "image") {
+    nextStep = `**Next field: image** (optional). Briefly ask in one short sentence if they'd like to upload an image for this ${itemNoun} — the UI shows an upload widget below your message with a Skip button. Do NOT call any tool for this step; the upload widget will report back when done or skipped.`;
   } else if (nextField) {
     const promptText = nextField.prompt
       .replace(/\{itemNoun\}/g, itemNoun)
@@ -856,6 +859,7 @@ Deno.serve(async (req) => {
             type: "object",
             properties: {
               name: { type: "string" },
+              image: { type: "string", description: "URL of uploaded item image" },
               description: { type: "string" },
               cost: { type: "number", description: "Price in dollars (server converts to cents)" },
               quantity_offered: { type: "number" },
@@ -863,6 +867,7 @@ Deno.serve(async (req) => {
               size: { type: "string" },
               is_recurring: { type: "boolean" },
               recurring_interval: { type: "string", enum: ["month", "year"] },
+              image_skipped: { type: "boolean" },
               description_skipped: { type: "boolean" },
               max_items_purchased_skipped: { type: "boolean" },
               size_skipped: { type: "boolean" },
@@ -1048,6 +1053,7 @@ Deno.serve(async (req) => {
               quantity_offered: Number(currentItemDraft.quantity_offered),
               quantity_available: Number(currentItemDraft.quantity_offered),
             };
+            if (currentItemDraft.image && !currentItemDraft.image_skipped) insertItem.image = currentItemDraft.image;
             if (currentItemDraft.description && !currentItemDraft.description_skipped) insertItem.description = currentItemDraft.description;
             if (currentItemDraft.max_items_purchased !== undefined && !currentItemDraft.max_items_purchased_skipped) {
               insertItem.max_items_purchased = Number(currentItemDraft.max_items_purchased);
@@ -1254,6 +1260,7 @@ Deno.serve(async (req) => {
                     quantity_offered: Number(currentItemDraft.quantity_offered),
                     quantity_available: Number(currentItemDraft.quantity_offered),
                   };
+                  if (currentItemDraft.image && !currentItemDraft.image_skipped) insertItem.image = currentItemDraft.image;
                   if (currentItemDraft.description && !currentItemDraft.description_skipped) insertItem.description = currentItemDraft.description;
                   if (currentItemDraft.max_items_purchased !== undefined && !currentItemDraft.max_items_purchased_skipped) {
                     insertItem.max_items_purchased = Number(currentItemDraft.max_items_purchased);
@@ -1341,7 +1348,14 @@ Deno.serve(async (req) => {
         };
       } else {
         const next = getNextItemField(currentItemDraft);
-        if (next?.type === "boolean") {
+        if (next?.key === "image") {
+          suggestions = {
+            type: "image_upload",
+            field: "item_image",
+            label: "Item image",
+            options: [],
+          };
+        } else if (next?.type === "boolean") {
           suggestions = {
             type: "choice",
             field: next.key,

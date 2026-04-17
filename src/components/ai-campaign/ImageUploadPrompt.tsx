@@ -11,6 +11,8 @@ interface ImageUploadPromptProps {
   onUploaded: (url: string) => void;
   onSkip: () => void;
   onDismiss: () => void;
+  pathPrefix?: string;
+  label?: string;
 }
 
 export default function ImageUploadPrompt({
@@ -19,6 +21,8 @@ export default function ImageUploadPrompt({
   onUploaded,
   onSkip,
   onDismiss,
+  pathPrefix,
+  label = "Upload campaign image",
 }: ImageUploadPromptProps) {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -39,7 +43,8 @@ export default function ImageUploadPrompt({
     setUploading(true);
     try {
       const ext = file.name.split(".").pop() || "jpg";
-      const path = `${campaignId}/cover-${Date.now()}.${ext}`;
+      const prefix = pathPrefix || "cover";
+      const path = `${campaignId}/${prefix}-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("campaign-item-images")
         .upload(path, file, { contentType: file.type, upsert: true });
@@ -100,7 +105,7 @@ export default function ImageUploadPrompt({
       <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/40">
         <div className="flex items-center gap-2">
           <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-xs font-medium text-muted-foreground">Upload campaign image</span>
+          <span className="text-xs font-medium text-muted-foreground">{label}</span>
         </div>
         <Button
           variant="ghost"

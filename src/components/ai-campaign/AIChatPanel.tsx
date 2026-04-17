@@ -26,6 +26,8 @@ interface AIChatPanelProps {
   campaignId?: string | null;
   onImageUploaded?: (url: string) => void;
   onImageSkipped?: () => void;
+  onItemImageUploaded?: (url: string) => void;
+  onItemImageSkipped?: () => void;
 }
 
 export default function AIChatPanel({
@@ -35,6 +37,8 @@ export default function AIChatPanel({
   campaignId,
   onImageUploaded,
   onImageSkipped,
+  onItemImageUploaded,
+  onItemImageSkipped,
 }: AIChatPanelProps) {
   const [input, setInput] = useState("");
   const [dismissedTurnStart, setDismissedTurnStart] = useState<number>(-1);
@@ -156,13 +160,25 @@ export default function AIChatPanel({
 
               {showTurnPrompt && isLastOfTurn && promptType === "image_upload" && campaignId && (
                 <div className="mt-3 w-full">
-                  <ImageUploadPrompt
-                    campaignId={campaignId}
-                    disabled={isLoading}
-                    onUploaded={(url) => onImageUploaded?.(url)}
-                    onSkip={() => onImageSkipped?.()}
-                    onDismiss={() => setDismissedTurnStart(latestTurnStart)}
-                  />
+                  {turnSuggestions?.field === "item_image" ? (
+                    <ImageUploadPrompt
+                      campaignId={campaignId}
+                      disabled={isLoading}
+                      pathPrefix="item"
+                      label="Upload item image"
+                      onUploaded={(url) => onItemImageUploaded?.(url)}
+                      onSkip={() => onItemImageSkipped?.()}
+                      onDismiss={() => setDismissedTurnStart(latestTurnStart)}
+                    />
+                  ) : (
+                    <ImageUploadPrompt
+                      campaignId={campaignId}
+                      disabled={isLoading}
+                      onUploaded={(url) => onImageUploaded?.(url)}
+                      onSkip={() => onImageSkipped?.()}
+                      onDismiss={() => setDismissedTurnStart(latestTurnStart)}
+                    />
+                  )}
                 </div>
               )}
 

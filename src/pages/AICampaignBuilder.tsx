@@ -91,11 +91,16 @@ export default function AICampaignBuilder() {
     loadData();
   }, [organizationUser?.organization_id]);
 
-  const callAi = async (newMessages: ChatMessage[], overrideFields?: Record<string, any>) => {
+  const callAi = async (
+    newMessages: ChatMessage[],
+    overrideFields?: Record<string, any>,
+    overrideItemDraft?: Record<string, any>,
+  ) => {
     setIsLoading(true);
     try {
       const apiMessages = newMessages.map((m) => ({ role: m.role, content: m.content }));
       const fieldsToSend = overrideFields ?? collectedFields;
+      const itemDraftToSend = overrideItemDraft ?? currentItemDraft;
 
       const { data, error } = await supabase.functions.invoke("ai-campaign-builder", {
         body: JSON.stringify({
@@ -105,7 +110,7 @@ export default function AICampaignBuilder() {
           groups,
           activeGroupId: knownGroup?.id || null,
           campaignId,
-          currentItemDraft,
+          currentItemDraft: itemDraftToSend,
           itemsAdded,
           awaitingAddAnother,
           phase,
@@ -222,6 +227,28 @@ export default function AICampaignBuilder() {
     await callAi(newMessages, merged);
   };
 
+  const handleItemImageUploaded = async (url: string) => {
+    const mergedDraft = { ...currentItemDraft, image: url };
+    setCurrentItemDraft(mergedDraft);
+    const newMessages: ChatMessage[] = [
+      ...messages,
+      { role: "user", content: `Item image uploaded: ${url}` },
+    ];
+    setMessages(newMessages);
+    await callAi(newMessages, undefined, mergedDraft);
+  };
+
+  const handleItemImageSkipped = async () => {
+    const mergedDraft = { ...currentItemDraft, image_skipped: true };
+    setCurrentItemDraft(mergedDraft);
+    const newMessages: ChatMessage[] = [
+      ...messages,
+      { role: "user", content: "Skip item image" },
+    ];
+    setMessages(newMessages);
+    await callAi(newMessages, undefined, mergedDraft);
+  };
+
   const handleCreateDraft = async () => {
     if (!readyToCreate || isCreating || campaignId) return;
     setIsCreating(true);
@@ -332,6 +359,8 @@ export default function AICampaignBuilder() {
             campaignId={campaignId}
             onImageUploaded={handleImageUploaded}
             onImageSkipped={handleImageSkipped}
+            onItemImageUploaded={handleItemImageUploaded}
+            onItemImageSkipped={handleItemImageSkipped}
           />
         </div>
       </div>
