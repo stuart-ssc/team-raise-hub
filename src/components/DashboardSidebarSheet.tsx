@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Home, Users, Heart, Target, BarChart3, Package, Building2, Settings, LogOut, User, Trophy, MessageCircle, UserCircle, HelpCircle } from "lucide-react";
+import { Home, Users, Heart, Target, BarChart3, Building2, Settings, LogOut, Trophy, UserCircle, HelpCircle } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
@@ -17,9 +17,7 @@ import RoleSwitcher from "@/components/RoleSwitcher";
 // Base items - Home URL will be dynamic based on user type
 const getSidebarItems = (isParent: boolean) => [
   { title: "Home", icon: Home, url: isParent ? "/dashboard/family" : "/dashboard", end: true },
-  { title: "My Orders", icon: Package, url: "/dashboard/orders" },
   { title: "My Fundraising", icon: Trophy, url: "/dashboard/my-fundraising", participantOnly: true },
-  { title: "Messages", icon: MessageCircle, url: "/dashboard/messages" },
   { title: "Groups", icon: Users, url: "/dashboard/groups" },
   { title: "Campaigns", icon: Target, url: "/dashboard/campaigns" },
   { title: "Donors", icon: Heart, url: "/dashboard/donors" },
