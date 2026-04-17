@@ -460,12 +460,34 @@ function buildSystemPrompt(
       !!singleRoster;
     const directionsAddressed = collectedFields.group_directions_addressed === true;
 
+    // Sponsor-assets sub-flow state. Only relevant when requires_business_info === true.
+    const sponsorAssetsRequired = collectedFields.requires_business_info === true;
+    const sponsorAssetsPhase: string | null = collectedFields.sponsor_assets_phase || null;
+    const sponsorDeadlineSet = !!collectedFields.asset_upload_deadline;
+    const pendingAssets: any[] = Array.isArray(collectedFields.pending_required_assets)
+      ? collectedFields.pending_required_assets
+      : [];
+    const sponsorAssetsComplete = collectedFields.sponsor_assets_complete === true ||
+      sponsorAssetsPhase === "complete" ||
+      !sponsorAssetsRequired;
+
     const rostersList = rosters.length > 0
       ? rosters.map((r) => `  - "${r.roster_year}${r.current_roster ? " (Current)" : ""}" → id: ${r.id}`).join("\n")
       : "  (no rosters available for this group)";
 
     let nextStep: string;
-    if (!hasImage && !collectedFields.image_skipped) {
+    if (sponsorAssetsRequired && !sponsorAssetsComplete && !sponsorDeadlineSet) {
+      nextStep = `**Next step: sponsor asset upload deadline.** Sponsors will need to upload their assets — ask in one short sentence: "When do sponsors need to upload their assets by?" The UI will show quick-pick options (1 week before campaign end, 2 weeks before, or pick a date). When the user replies, you MUST call **update_campaign_fields** with \`asset_upload_deadline\` set to the date in YYYY-MM-DD format in the SAME turn.`;
+    } else if (sponsorAssetsRequired && !sponsorAssetsComplete) {
+      const collected = pendingAssets.length > 0
+        ? pendingAssets.map((a: any, i: number) => `  ${i + 1}. ${a.asset_name}`).join("\n")
+        : "  (none yet — at least one asset is required)";
+      const isFirst = pendingAssets.length === 0;
+      const ack = isFirst
+        ? `Ask in one short sentence: "What assets do sponsors need to provide?"`
+        : `Acknowledge the asset just added (e.g. "Saved — ${pendingAssets[pendingAssets.length - 1]?.asset_name}.") and then ask "Anything else?"`;
+      nextStep = `**Next step: required sponsor assets.** ${ack} The UI will show quick-pick buttons (Company Logo, Banner Ad, Full Page Ad, Website URL, Done). When the user picks one, you MUST call **update_campaign_fields** with \`add_required_asset\` set to one of: "logo", "banner", "fullpage", "website", OR a free-text custom name. When the user is finished, call **update_campaign_fields** with \`sponsor_assets_complete: true\`.\n\n## Assets added so far\n${collected}`;
+    } else if (!hasImage && !collectedFields.image_skipped) {
       nextStep = `**Next step: campaign image.** Briefly ask if the user wants to upload a campaign image (a hero photo for the campaign page). Keep it to one short sentence — the UI shows an upload widget below your message. Do NOT call any tool for this step yet; the upload widget will report back when done or skipped.`;
     } else if (!rosterAttrAddressed) {
       if (rosters.length === 0) {
@@ -495,6 +517,9 @@ ${rostersList}
 
 ## Post-Draft Tool
 Use the "update_campaign_fields" tool to record:
+- asset_upload_deadline (string, YYYY-MM-DD): the deadline for sponsors to upload their assets (only when requires_business_info is true)
+- add_required_asset (string): "logo" | "banner" | "fullpage" | "website" OR a custom free-text name — appends one required asset
+- sponsor_assets_complete (boolean): true once the user is done adding required sponsor assets
 - image_url (string): set when user uploads an image (the UI handles the upload and sends a synthetic message — you parse the URL from it)
 - image_skipped (boolean): set to true if user skips image
 - enable_roster_attribution (boolean): true/false based on user's answer
