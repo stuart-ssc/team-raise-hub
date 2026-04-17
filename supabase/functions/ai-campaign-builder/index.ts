@@ -1700,11 +1700,13 @@ Deno.serve(async (req) => {
     // avoids (a) the dead-end statement that required the user to type "ok"
     // and (b) a double prompt being emitted across consecutive turns.
     {
+      const sponsorRequiredX = updatedFields.requires_business_info === true;
+      const sponsorAssetsDoneX = !sponsorRequiredX || updatedFields.sponsor_assets_complete === true;
       const imageDoneNow = !!updatedFields.image_url || !!updatedFields.image_skipped;
       const rosterDoneNow = updatedFields.enable_roster_attribution !== undefined &&
         (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
       const directionsDoneNow = updatedFields.group_directions_addressed === true;
-      const setupJustFinished = imageDoneNow && rosterDoneNow && directionsDoneNow;
+      const setupJustFinished = sponsorAssetsDoneX && imageDoneNow && rosterDoneNow && directionsDoneNow;
       const justEnteringItemsPhase =
         !!campaignId &&
         !inItemsPhase &&
@@ -1733,19 +1735,19 @@ Deno.serve(async (req) => {
     let phase: "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete" = "collecting";
     if (effectiveCampaignId) {
       const stayInItems = inItemsPhase && !exitItemsCollection;
+      const sponsorRequired = updatedFields.requires_business_info === true;
+      const sponsorAssetsDone = !sponsorRequired || updatedFields.sponsor_assets_complete === true;
       const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
       const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
         (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
       const directionsDone = updatedFields.group_directions_addressed === true;
-      const setupDone = imageDone && rosterDone && directionsDone;
+      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone;
 
       if (exitItemsCollection) {
-        // User said "I'm done" adding items — move to final publish/edit choice.
         phase = "complete";
       } else if (stayInItems) {
         phase = "collecting_items";
       } else if (setupDone) {
-        // Post-draft setup finished — start items collection.
         phase = "collecting_items";
       } else {
         phase = "post_draft";
