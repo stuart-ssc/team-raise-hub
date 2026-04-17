@@ -162,7 +162,13 @@ function buildSystemPrompt(
   if (campaignId) {
     const hasImage = !!collectedFields.image_url;
     const rosterAttrAddressed = collectedFields.enable_roster_attribution !== undefined;
-    const rosterPicked = !collectedFields.enable_roster_attribution || !!collectedFields.roster_id || rosters.length === 0;
+    const singleRoster = rosters.length === 1 ? rosters[0] : null;
+    // If there's only one roster, auto-pick it as soon as attribution is enabled (no need to ask).
+    const rosterPicked =
+      !collectedFields.enable_roster_attribution ||
+      !!collectedFields.roster_id ||
+      rosters.length === 0 ||
+      !!singleRoster;
     const directionsAddressed = collectedFields.group_directions_addressed === true;
 
     const rostersList = rosters.length > 0
@@ -173,7 +179,13 @@ function buildSystemPrompt(
     if (!hasImage && !collectedFields.image_skipped) {
       nextStep = `**Next step: campaign image.** Briefly ask if the user wants to upload a campaign image (a hero photo for the campaign page). Keep it to one short sentence — the UI shows an upload widget below your message. Do NOT call any tool for this step yet; the upload widget will report back when done or skipped.`;
     } else if (!rosterAttrAddressed) {
-      nextStep = `**Next step: roster attribution.** Ask whether they want to enable peer-to-peer fundraising — each roster member gets their own personal link, and donations are credited to them. One short sentence. The UI will show Yes/No buttons.`;
+      if (rosters.length === 0) {
+        nextStep = `**Next step: skip roster attribution.** This group has no rosters, so individual member tracking isn't available. Briefly let the user know and call update_campaign_fields with enable_roster_attribution=false to move on.`;
+      } else if (singleRoster) {
+        nextStep = `**Next step: roster attribution.** Roster attribution gives each roster member an individual fundraising goal and a personalized URL so they can track their own contributions to the campaign. This group has exactly one roster: **${singleRoster.roster_year}${singleRoster.current_roster ? " (Current)" : ""}** (id: ${singleRoster.id}). Ask in one short sentence: "Want to enable individual goals and personalized URLs for each roster member?" The UI will show Yes/No buttons. If they say yes, call update_campaign_fields with BOTH enable_roster_attribution=true AND roster_id=${singleRoster.id} in the same tool call — do NOT ask them to pick a roster.`;
+      } else {
+        nextStep = `**Next step: roster attribution.** Roster attribution gives each roster member an individual fundraising goal and a personalized URL so they can track their own contributions to the campaign. Ask in one short sentence: "Want to enable individual goals and personalized URLs for each roster member?" The UI will show Yes/No buttons.`;
+      }
     } else if (collectedFields.enable_roster_attribution && !rosterPicked) {
       nextStep = `**Next step: pick a roster.** Ask which roster to use for attribution. The UI will show the available rosters as numbered buttons. Available rosters:\n${rostersList}`;
     } else if (!directionsAddressed) {
