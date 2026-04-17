@@ -830,6 +830,17 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Detect typed final action when in "complete" phase
+    let finalAction: "publish" | "open_editor" | null = null;
+    if (phase === "complete" && lastUserMsg) {
+      const t = lastUserMsg.replace(/[.!?]+$/, "").trim();
+      if (/^(publish|publish now|publish it|publish the campaign|1)$/.test(t)) {
+        finalAction = "publish";
+      } else if (/^(open editor|open the editor|editor|open in editor|fine.?tune|2)$/.test(t)) {
+        finalAction = "open_editor";
+      }
+    }
+
     return new Response(
       JSON.stringify({
         assistantMessage,
@@ -840,6 +851,7 @@ Deno.serve(async (req) => {
         suggestions,
         createdCampaignId,
         createDraftError,
+        finalAction,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
