@@ -71,6 +71,29 @@ export default function AICampaignPreview({
   const [extendedOpen, setExtendedOpen] = useState(true);
   const [extendedAutoCollapsed, setExtendedAutoCollapsed] = useState(false);
 
+  const [items, setItems] = useState<CampaignItemRow[]>([]);
+
+  useEffect(() => {
+    if (!campaignId) {
+      setItems([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("campaign_items")
+        .select("id, name, cost, quantity_offered, has_variants")
+        .eq("campaign_id", campaignId)
+        .order("created_at", { ascending: true });
+      if (!cancelled && !error && data) {
+        setItems(data as CampaignItemRow[]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignId, itemsAdded]);
+
   const postDraftItems = [
     {
       key: "image_url",
