@@ -24,7 +24,7 @@ interface ItemFieldDef {
 }
 
 const ITEM_FIELDS: ItemFieldDef[] = [
-  { key: "name", label: "Name", prompt: "What's the name of this {itemNoun}?", type: "string", required: true },
+  { key: "name", label: "Name", prompt: "What's the name of your {ordinal} {itemNoun}? ({examples})", type: "string", required: true },
   { key: "description", label: "Description", prompt: "Add a short description, or say skip.", type: "longtext", required: false },
   { key: "cost", label: "Price (dollars)", prompt: "How much does it cost? (in dollars, e.g. 25)", type: "number", required: true },
   { key: "quantity_offered", label: "Quantity offered", prompt: "How many are you offering in total?", type: "number", required: true },
@@ -36,11 +36,20 @@ const ITEM_FIELDS: ItemFieldDef[] = [
 
 function itemNounForType(typeName?: string | null): string {
   const t = (typeName || "").toLowerCase();
-  if (t.includes("sponsor")) return "sponsorship level";
+  if (t.includes("sponsor")) return "sponsorship item";
   if (t.includes("merch")) return "item";
   if (t.includes("event")) return "ticket";
   if (t.includes("donation")) return "donation tier";
   return "item";
+}
+
+function itemExamplesForType(typeName?: string | null): string {
+  const t = (typeName || "").toLowerCase();
+  if (t.includes("sponsor")) return "e.g. Large Banner, Event Sponsor, Platinum Sponsor";
+  if (t.includes("merch")) return "e.g. T-Shirt, Hoodie, Mug";
+  if (t.includes("event")) return "e.g. General Admission, VIP Ticket, Table for 8";
+  if (t.includes("donation")) return "e.g. Friend, Supporter, Champion";
+  return "e.g. Item Name";
 }
 
 function isItemFieldAnswered(key: string, draft: Record<string, any>): boolean {
