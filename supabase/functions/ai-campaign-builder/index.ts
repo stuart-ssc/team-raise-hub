@@ -135,7 +135,8 @@ function buildSystemPrompt(
   campaignTypes: { id: string; name: string }[],
   groups: { id: string; group_name: string }[],
   collectedFields: Record<string, any>,
-  autoFilledGroupName: string | null
+  autoFilledGroupName: string | null,
+  todayIso: string
 ): string {
   const typesList = campaignTypes.map((t) => `  - "${t.name}" → id: ${t.id}`).join("\n");
   const groupsList = groups.map((g) => `  - "${g.group_name}" → id: ${g.id}`).join("\n");
