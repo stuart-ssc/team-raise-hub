@@ -8,6 +8,10 @@ const corsHeaders = {
 
 const REQUIRED_KEYS = ["name", "campaign_type_id", "group_id", "goal_amount", "start_date", "end_date"];
 
+function slugify(text: string): string {
+  return text.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+}
+
 const MONTHS: Record<string, number> = {
   jan: 1, january: 1,
   feb: 2, february: 2,
