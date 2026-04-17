@@ -10,6 +10,61 @@ const REQUIRED_FACTUAL_KEYS = ["name", "campaign_type_id", "group_id", "goal_amo
 // requires_business_info is a boolean, so we gate on its *presence* (answered) rather than truthiness.
 const REQUIRED_KEYS = REQUIRED_FACTUAL_KEYS;
 
+// =====================================================================
+// Campaign Item field definitions (mirrors src/lib/ai/campaignSchema.ts)
+// =====================================================================
+interface ItemFieldDef {
+  key: string;
+  label: string;
+  prompt: string;
+  type: "string" | "longtext" | "number" | "boolean" | "choice";
+  required: boolean;
+  options?: { label: string; value: string }[];
+  dependsOn?: { key: string; equals: any };
+}
+
+const ITEM_FIELDS: ItemFieldDef[] = [
+  { key: "name", label: "Name", prompt: "What's the name of this {itemNoun}?", type: "string", required: true },
+  { key: "description", label: "Description", prompt: "Add a short description, or say skip.", type: "longtext", required: false },
+  { key: "cost", label: "Price (dollars)", prompt: "How much does it cost? (in dollars, e.g. 25)", type: "number", required: true },
+  { key: "quantity_offered", label: "Quantity offered", prompt: "How many are you offering in total?", type: "number", required: true },
+  { key: "max_items_purchased", label: "Limit per buyer", prompt: "Limit per buyer? (a number, or skip for no limit)", type: "number", required: false },
+  { key: "size", label: "Size / tier label", prompt: "Any size or tier label? (e.g. 'Large', 'Gold tier' — skip if none)", type: "string", required: false },
+  { key: "is_recurring", label: "Recurring", prompt: "Should this be a recurring charge?", type: "boolean", required: false },
+  { key: "recurring_interval", label: "Recurring interval", prompt: "How often should it recur?", type: "choice", required: false, options: [{ label: "Monthly", value: "month" }, { label: "Yearly", value: "year" }], dependsOn: { key: "is_recurring", equals: true } },
+];
+
+function itemNounForType(typeName?: string | null): string {
+  const t = (typeName || "").toLowerCase();
+  if (t.includes("sponsor")) return "sponsorship level";
+  if (t.includes("merch")) return "item";
+  if (t.includes("event")) return "ticket";
+  if (t.includes("donation")) return "donation tier";
+  return "item";
+}
+
+function isItemFieldAnswered(key: string, draft: Record<string, any>): boolean {
+  if (draft[`${key}_skipped`] === true) return true;
+  const v = draft[key];
+  if (key === "is_recurring") return v !== undefined && v !== null;
+  return v !== undefined && v !== null && v !== "";
+}
+
+function getNextItemField(draft: Record<string, any>): ItemFieldDef | null {
+  for (const f of ITEM_FIELDS) {
+    if (f.dependsOn) {
+      const depVal = draft[f.dependsOn.key];
+      if (depVal !== f.dependsOn.equals) continue;
+    }
+    if (!isItemFieldAnswered(f.key, draft)) return f;
+  }
+  return null;
+}
+
+function isItemReadyToSave(draft: Record<string, any>): boolean {
+  return ITEM_FIELDS.filter((f) => f.required).every((f) => isItemFieldAnswered(f.key, draft));
+}
+
 // Every field the AI should walk through, in the order to ask. `required: false`
 // means the user can skip without blocking save — NOT that the AI may silently omit it.
 const ASK_ORDER = [
