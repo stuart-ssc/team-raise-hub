@@ -488,15 +488,31 @@ Deno.serve(async (req) => {
         }
       }
 
-      if (!assistantMessage) {
+      // Force a follow-up when draft was just created (so AI starts post-draft convo)
+      // OR when there's no assistant text yet
+      const needsFollowUp = !assistantMessage || createdCampaignId !== null || createDraftError !== null;
+
+      if (needsFollowUp) {
+        // If we just created the draft, fetch rosters and rebuild the prompt in post-draft mode
+        let followUpSystemPrompt = systemPrompt;
+        if (createdCampaignId) {
+          const { data: rData } = await adminSb
+            .from("rosters")
+            .select("id, roster_year, current_roster")
+            .eq("group_id", updatedFields.group_id)
+            .order("roster_year", { ascending: false });
+          rosters = rData || [];
+          followUpSystemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso, createdCampaignId, rosters);
+        }
+
         const followUpMessages = [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: followUpSystemPrompt },
           ...messages,
           choice.message,
-          ...choice.message.tool_calls.map((tc: any) => ({
+          ...toolResults.map((tr) => ({
             role: "tool",
-            tool_call_id: tc.id,
-            content: JSON.stringify({ success: true, updatedFields }),
+            tool_call_id: tr.id,
+            content: tr.content,
           })),
         ];
 
@@ -514,9 +530,17 @@ Deno.serve(async (req) => {
 
         if (followUp.ok) {
           const followUpData = await followUp.json();
-          assistantMessage = followUpData.choices?.[0]?.message?.content || "Got it!";
-        } else {
-          assistantMessage = "Got it!";
+          const followUpText = followUpData.choices?.[0]?.message?.content;
+          if (followUpText) assistantMessage = followUpText;
+        }
+        if (!assistantMessage) {
+          if (createDraftError) {
+            assistantMessage = createDraftError;
+          } else if (createdCampaignId) {
+            assistantMessage = "Draft saved! 🎉 Would you like to upload a campaign image?";
+          } else {
+            assistantMessage = "Got it!";
+          }
         }
       }
     }
