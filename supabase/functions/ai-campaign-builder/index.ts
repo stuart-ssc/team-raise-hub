@@ -1169,9 +1169,17 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Split assistant message into separate bubbles on \n\n boundaries
+    // (typically: acknowledgment paragraph + question paragraph)
+    const assistantMessages = (assistantMessage || "")
+      .split(/\n{2,}/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
     return new Response(
       JSON.stringify({
         assistantMessage,
+        assistantMessages: assistantMessages.length > 0 ? assistantMessages : [assistantMessage],
         updatedFields,
         missingRequired,
         readyToCreate,

@@ -119,13 +119,17 @@ export default function AICampaignBuilder() {
         return;
       }
 
+      const parts: string[] = Array.isArray(data.assistantMessages) && data.assistantMessages.length > 0
+        ? data.assistantMessages
+        : [data.assistantMessage].filter(Boolean);
+
       setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          content: data.assistantMessage,
-          suggestions: data.suggestions ?? null,
-        },
+        ...parts.map((content, idx) => ({
+          role: "assistant" as const,
+          content,
+          suggestions: idx === parts.length - 1 ? (data.suggestions ?? null) : null,
+        })),
       ]);
       setCollectedFields(data.updatedFields || fieldsToSend);
       setReadyToCreate(data.readyToCreate || false);
