@@ -122,7 +122,7 @@ const FIELD_DEFS: FieldDef[] = [
   { key: "goal_amount", label: "Goal Amount (cents)", type: "number", required: true, aiDescription: "Fundraising goal in cents (e.g. 50000 = $500)." },
   { key: "start_date", label: "Start Date", type: "date", required: true, aiDescription: "Start date in YYYY-MM-DD format." },
   { key: "end_date", label: "End Date", type: "date", required: true, aiDescription: "End date in YYYY-MM-DD format." },
-  { key: "requires_business_info", label: "Requires Business Info", type: "boolean", required: false, aiDescription: "Whether to collect business info at checkout." },
+  { key: "requires_business_info", label: "Sponsors Provide Info/Assets", type: "boolean", required: true, aiDescription: "Whether sponsors must provide information or assets to participate (e.g. a logo for a banner/shirt, a website link for social media recognition)." },
 ];
 
 function buildSystemPrompt(
