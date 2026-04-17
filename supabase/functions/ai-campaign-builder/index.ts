@@ -116,6 +116,13 @@ function detectFieldFromAssistantText(text: string): string | null {
   if (/sponsor.*(info|asset|provide)|requires_business_info|business info|provide information or assets/.test(t)) {
     return "requires_business_info";
   }
+  // Date detection — check end_date BEFORE start_date because "end" is more specific.
+  if (/\bend date\b|when (do|does|should|will) .*(end|finish|close|wrap)|ending on|when .*\bend\b|campaign .*\bend\b|end of (the )?campaign/.test(t)) {
+    return "end_date";
+  }
+  if (/\bstart date\b|when (do|does|should|will) .*(start|begin|kick off|launch)|starting on|when .*\bstart\b|campaign .*\bstart\b/.test(t)) {
+    return "start_date";
+  }
   if (/description|describe|short description|tell .* about the campaign/.test(t)) {
     return "description";
   }
