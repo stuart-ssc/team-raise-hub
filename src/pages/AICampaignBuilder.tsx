@@ -199,7 +199,7 @@ export default function AICampaignBuilder() {
         const name = data.updatedFields?.name || collectedFields.name || "your campaign";
         const transition: ChatMessage = {
           role: "assistant",
-          content: `✅ **Primary details saved!** Your draft **${name}** is ready.\n\nBefore we add items, I just need three quick things: a **campaign image**, whether this is a **peer-to-peer fundraiser**, and any **participant directions**. Let's start with the image — want to upload one?`,
+          content: `✅ **Primary details saved!** Your draft **${name}** is ready.\n\nBefore we add items, I just need three quick things: a **campaign image**, whether to enable **roster tracking** (each player gets their own personalized fundraising URL to track their individual contributions), and any **participant directions**. Let's start with the image — want to upload one?`,
           suggestions: {
             type: "image_upload",
             field: "image_url",
@@ -336,7 +336,7 @@ export default function AICampaignBuilder() {
       // Kick off the post-draft conversation
       const transition: ChatMessage = {
         role: "assistant",
-        content: `✅ **Primary details saved!** Your draft **${collectedFields.name}** is ready.\n\nBefore we add items, I just need three quick things: a **campaign image**, whether this is a **peer-to-peer fundraiser**, and any **participant directions**. Let's start with the image — want to upload one?`,
+        content: `✅ **Primary details saved!** Your draft **${collectedFields.name}** is ready.\n\nBefore we add items, I just need three quick things: a **campaign image**, whether to enable **roster tracking** (each player gets their own personalized fundraising URL to track their individual contributions), and any **participant directions**. Let's start with the image — want to upload one?`,
         suggestions: {
           type: "image_upload",
           field: "image_url",

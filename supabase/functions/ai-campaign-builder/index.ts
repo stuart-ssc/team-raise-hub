@@ -1435,9 +1435,9 @@ Deno.serve(async (req) => {
         suggestions = {
           type: "choice",
           field: "enable_roster_attribution",
-          label: "Enable roster attribution?",
+          label: "Enable roster tracking?",
           options: [
-            { label: "Yes, enable individual goals & URLs", value: "true" },
+            { label: "Yes, give each player their own URL", value: "true" },
             { label: "No, skip this", value: "false" },
           ],
         };
