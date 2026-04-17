@@ -248,6 +248,10 @@ export default function AICampaignBuilder() {
     if (campaignId) navigate(`/dashboard/campaigns/${campaignId}/edit`);
   };
 
+  const handlePublishClick = () => {
+    if (campaignId) setShowPublishDialog(true);
+  };
+
   return (
     <DashboardPageLayout segments={[{ label: "Campaigns", path: "/dashboard/campaigns" }, { label: "AI Builder" }]}>
       <div className="flex flex-col lg:flex-row h-[calc(100vh-10rem)] gap-0 border rounded-lg overflow-hidden bg-background">
@@ -262,6 +266,7 @@ export default function AICampaignBuilder() {
             phase={phase}
             campaignId={campaignId}
             onOpenEditor={handleOpenEditor}
+            onPublishClick={handlePublishClick}
           />
         </div>
 
@@ -276,6 +281,24 @@ export default function AICampaignBuilder() {
           />
         </div>
       </div>
+
+      {campaignId && collectedFields.group_id && (
+        <CampaignPublicationControl
+          campaignId={campaignId}
+          campaignName={collectedFields.name || "Campaign"}
+          groupId={collectedFields.group_id}
+          currentStatus={campaignStatus}
+          enableRosterAttribution={collectedFields.enable_roster_attribution || false}
+          onStatusChange={() => {
+            setCampaignStatus("published");
+            setShowPublishDialog(false);
+            navigate(`/dashboard/campaigns/${campaignId}/edit`);
+          }}
+          triggerOpen={showPublishDialog}
+          onClose={() => setShowPublishDialog(false)}
+          hideButton
+        />
+      )}
     </DashboardPageLayout>
   );
 }
