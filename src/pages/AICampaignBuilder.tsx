@@ -91,11 +91,16 @@ export default function AICampaignBuilder() {
     loadData();
   }, [organizationUser?.organization_id]);
 
-  const callAi = async (newMessages: ChatMessage[], overrideFields?: Record<string, any>) => {
+  const callAi = async (
+    newMessages: ChatMessage[],
+    overrideFields?: Record<string, any>,
+    overrideItemDraft?: Record<string, any>,
+  ) => {
     setIsLoading(true);
     try {
       const apiMessages = newMessages.map((m) => ({ role: m.role, content: m.content }));
       const fieldsToSend = overrideFields ?? collectedFields;
+      const itemDraftToSend = overrideItemDraft ?? currentItemDraft;
 
       const { data, error } = await supabase.functions.invoke("ai-campaign-builder", {
         body: JSON.stringify({
@@ -105,7 +110,7 @@ export default function AICampaignBuilder() {
           groups,
           activeGroupId: knownGroup?.id || null,
           campaignId,
-          currentItemDraft,
+          currentItemDraft: itemDraftToSend,
           itemsAdded,
           awaitingAddAnother,
           phase,
