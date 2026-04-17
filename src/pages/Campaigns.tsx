@@ -301,6 +301,7 @@ export default function Campaigns() {
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="draft">Drafts</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
