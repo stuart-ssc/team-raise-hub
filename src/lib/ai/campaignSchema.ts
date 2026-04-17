@@ -123,7 +123,7 @@ export const campaignItemFields: CampaignItemFieldDef[] = [
   {
     key: "name",
     label: "Name",
-    prompt: "What's the name of this {itemNoun}?",
+    prompt: "What's the name of your {ordinal} {itemNoun}? ({examples})",
     type: "string",
     required: true,
   },
