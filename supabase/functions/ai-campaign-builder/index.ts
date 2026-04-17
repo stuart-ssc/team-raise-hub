@@ -25,6 +25,7 @@ interface ItemFieldDef {
 
 const ITEM_FIELDS: ItemFieldDef[] = [
   { key: "name", label: "Name", prompt: "What's the name of your {ordinal} {itemNoun}? ({examples})", type: "string", required: true },
+  { key: "image", label: "Image", prompt: "Want to upload an image for this {itemNoun}? You can also skip.", type: "string", required: false },
   { key: "description", label: "Description", prompt: "Add a short description, or say skip.", type: "longtext", required: false },
   { key: "cost", label: "Price (dollars)", prompt: "How much does it cost? (in dollars, e.g. 25)", type: "number", required: true },
   { key: "quantity_offered", label: "Quantity offered", prompt: "How many are you offering in total?", type: "number", required: true },
