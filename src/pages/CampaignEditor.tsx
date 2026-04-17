@@ -90,6 +90,8 @@ export default function CampaignEditor() {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [campaignData, setCampaignData] = useState<CampaignData>({
     name: "",
     slug: "",
