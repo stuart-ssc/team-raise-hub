@@ -8,7 +8,17 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
-import { Save, FileText, Calendar, Users, Heart, ListPlus, Megaphone, Loader2, ShoppingCart } from "lucide-react";
+import { Save, FileText, Calendar, Users, Heart, ListPlus, Megaphone, Loader2, ShoppingCart, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { BasicDetailsSection } from "@/components/campaign-editor/BasicDetailsSection";
 import { ScheduleSection } from "@/components/campaign-editor/ScheduleSection";
