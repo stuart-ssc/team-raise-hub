@@ -442,13 +442,42 @@ export default function Campaigns() {
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">{campaign.group_name || "—"}</p>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
-                          >
-                            Manage
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
+                            >
+                              Manage
+                            </Button>
+                            {filterBy === "deleted" ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRestoreCampaign(campaign.id)}
+                                title="Restore campaign"
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                              </Button>
+                            ) : isDeletable(campaign) ? (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" size="sm" className="px-2">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => setCampaignToDelete(campaign)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            ) : null}
+                          </div>
                         </div>
                         <div className="flex flex-wrap gap-2 mt-2">
                           <Badge variant="outline">{campaign.campaign_type_name || "—"}</Badge>
