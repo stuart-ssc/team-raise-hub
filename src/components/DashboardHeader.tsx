@@ -165,6 +165,14 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters, hideGroupsFil
       </div>
       
       <div className="hidden md:flex items-center gap-2 md:gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/dashboard/messages")}
+          aria-label="Messages"
+        >
+          <MessageCircle className="h-5 w-5" />
+        </Button>
         <NotificationDropdown />
         
         <DropdownMenu>
@@ -179,6 +187,10 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters, hideGroupsFil
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/dashboard/orders")}>
+              <Package className="h-4 w-4 mr-2" />
+              My Orders
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/dashboard/help")}>
               <HelpCircle className="h-4 w-4 mr-2" />
               Help & Support
