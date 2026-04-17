@@ -10,6 +10,48 @@ const REQUIRED_FACTUAL_KEYS = ["name", "campaign_type_id", "group_id", "goal_amo
 // requires_business_info is a boolean, so we gate on its *presence* (answered) rather than truthiness.
 const REQUIRED_KEYS = REQUIRED_FACTUAL_KEYS;
 
+// Every field the AI should walk through, in the order to ask. `required: false`
+// means the user can skip without blocking save — NOT that the AI may silently omit it.
+const ASK_ORDER = [
+  "name",
+  "campaign_type_id",
+  "group_id",
+  "goal_amount",
+  "start_date",
+  "end_date",
+  "description",
+  "requires_business_info",
+];
+
+function isFieldAnswered(key: string, collected: Record<string, any>): boolean {
+  if (collected[`${key}_skipped`] === true) return true;
+  const v = collected[key];
+  if (key === "requires_business_info") return v !== undefined && v !== null;
+  return v !== undefined && v !== null && v !== "";
+}
+
+function getStillToAskAbout(collected: Record<string, any>): string[] {
+  return ASK_ORDER.filter((k) => !isFieldAnswered(k, collected));
+}
+
+const SKIP_WORDS = new Set([
+  "skip", "skip it", "no", "no thanks", "no thank you", "none", "nope",
+  "n/a", "na", "not now", "later", "pass",
+]);
+
+function isSkipMessage(text: string): boolean {
+  return SKIP_WORDS.has(text.trim().toLowerCase().replace(/[.!?]+$/, ""));
+}
+
+// Heuristic: figure out which un-asked optional field the assistant most likely
+// just asked about, so we can apply a "skip" deterministically.
+function detectFieldFromAssistantText(text: string): string | null {
+  const t = text.toLowerCase();
+  if (/description/.test(t)) return "description";
+  if (/sponsor.*(info|asset|provide)|requires_business_info|business info/.test(t)) return "requires_business_info";
+  return null;
+}
+
 function slugify(text: string): string {
   return text.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
