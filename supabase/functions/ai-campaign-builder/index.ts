@@ -545,6 +545,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    // If a draft was just created in this turn, treat it as the active campaign for phase/suggestions
+    const effectiveCampaignId = campaignId || createdCampaignId;
+
     // Compute readiness + phase
     const missingRequired = REQUIRED_KEYS.filter(
       (k) => !updatedFields[k] || updatedFields[k] === ""
@@ -552,7 +555,7 @@ Deno.serve(async (req) => {
     const readyToCreate = missingRequired.length === 0;
 
     let phase: "collecting" | "ready_to_create" | "post_draft" | "complete" = "collecting";
-    if (campaignId) {
+    if (effectiveCampaignId) {
       const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
       const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
         (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
@@ -567,7 +570,7 @@ Deno.serve(async (req) => {
       | { type?: string; field: string; label: string; options: { label: string; value: string }[] }
       | null = null;
 
-    if (campaignId) {
+    if (effectiveCampaignId) {
       const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
       const rosterAttrAddressed = updatedFields.enable_roster_attribution !== undefined;
       const rosterPicked = !updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0;
@@ -608,6 +611,16 @@ Deno.serve(async (req) => {
           options: [{ label: "Skip — no directions", value: "skip" }],
         };
       }
+    } else if (phase === "ready_to_create") {
+      suggestions = {
+        type: "choice",
+        field: "confirm_create_draft",
+        label: "Save as draft?",
+        options: [
+          { label: "Yes, save as draft", value: "yes" },
+          { label: "Not yet, let me change something", value: "no" },
+        ],
+      };
     } else {
       const nextMissing = missingRequired[0];
       if (nextMissing === "campaign_type_id" && types.length > 0) {
@@ -635,6 +648,8 @@ Deno.serve(async (req) => {
         readyToCreate,
         phase,
         suggestions,
+        createdCampaignId,
+        createDraftError,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
