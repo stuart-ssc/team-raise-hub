@@ -1394,6 +1394,7 @@ Deno.serve(async (req) => {
         if (persistFields.enable_roster_attribution !== undefined) dbUpdate.enable_roster_attribution = persistFields.enable_roster_attribution;
         if (persistFields.roster_id !== undefined) dbUpdate.roster_id = persistFields.roster_id;
         if (persistFields.group_directions !== undefined) dbUpdate.group_directions = persistFields.group_directions;
+        if (persistFields.asset_upload_deadline) dbUpdate.asset_upload_deadline = persistFields.asset_upload_deadline;
 
         if (Object.keys(dbUpdate).length > 0) {
           const { error: updErr } = await adminSb.from("campaigns").update(dbUpdate).eq("id", campaignId);
@@ -1408,6 +1409,43 @@ Deno.serve(async (req) => {
             });
           } catch (e) {
             console.error("Failed to generate roster member links:", e);
+          }
+        }
+
+        // Sponsor required-assets: insert any newly added assets that aren't yet in DB.
+        // We track all pending assets in updatedFields.pending_required_assets; on every
+        // turn, sync the diff to the campaign_required_assets table so the manual editor
+        // and preview see them in real time.
+        const pendingAssets: any[] = Array.isArray(updatedFields.pending_required_assets)
+          ? updatedFields.pending_required_assets
+          : [];
+        if (pendingAssets.length > 0) {
+          try {
+            const { data: existing } = await adminSb
+              .from("campaign_required_assets")
+              .select("asset_name")
+              .eq("campaign_id", campaignId);
+            const existingNames = new Set((existing || []).map((r: any) => r.asset_name.toLowerCase()));
+            const toInsert = pendingAssets
+              .filter((a) => a.asset_name && !existingNames.has(a.asset_name.toLowerCase()))
+              .map((a, i) => ({
+                campaign_id: campaignId,
+                asset_name: a.asset_name,
+                asset_description: a.asset_description || "",
+                file_types: a.file_types || [],
+                dimensions_hint: a.dimensions_hint || "",
+                max_file_size_mb: a.max_file_size_mb || 10,
+                is_required: a.is_required !== false,
+                display_order: existingNames.size + i,
+              }));
+            if (toInsert.length > 0) {
+              const { error: insErr } = await adminSb
+                .from("campaign_required_assets")
+                .insert(toInsert);
+              if (insErr) console.error("Failed to insert required assets:", insErr);
+            }
+          } catch (e) {
+            console.error("Required-assets sync failed:", e);
           }
         }
       }
