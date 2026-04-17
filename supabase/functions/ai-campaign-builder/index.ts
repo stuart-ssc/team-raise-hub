@@ -1348,7 +1348,14 @@ Deno.serve(async (req) => {
         };
       } else {
         const next = getNextItemField(currentItemDraft);
-        if (next?.type === "boolean") {
+        if (next?.key === "image") {
+          suggestions = {
+            type: "image_upload",
+            field: "item_image",
+            label: "Item image",
+            options: [],
+          };
+        } else if (next?.type === "boolean") {
           suggestions = {
             type: "choice",
             field: next.key,
