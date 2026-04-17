@@ -1019,7 +1019,46 @@ Deno.serve(async (req) => {
       | { type?: string; field: string; label: string; options: { label: string; value: string }[] }
       | null = null;
 
-    if (effectiveCampaignId) {
+    if (effectiveCampaignId && phase === "collecting_items") {
+      if (awaitingAddAnother) {
+        suggestions = {
+          type: "choice",
+          field: "add_another_item",
+          label: `Want to add another ${itemNoun}?`,
+          options: [
+            { label: "Add another", value: "add another" },
+            { label: "I'm done", value: "I'm done" },
+          ],
+        };
+      } else {
+        const next = getNextItemField(currentItemDraft);
+        if (next?.type === "boolean") {
+          suggestions = {
+            type: "choice",
+            field: next.key,
+            label: next.label,
+            options: [
+              { label: "Yes", value: "yes" },
+              { label: "No", value: "no" },
+            ],
+          };
+        } else if (next?.type === "choice" && next.options) {
+          suggestions = {
+            type: "choice",
+            field: next.key,
+            label: next.label,
+            options: next.options,
+          };
+        } else if (next && !next.required) {
+          suggestions = {
+            type: "choice",
+            field: next.key,
+            label: next.label,
+            options: [{ label: `Skip — no ${next.label.toLowerCase()}`, value: "skip" }],
+          };
+        }
+      }
+    } else if (effectiveCampaignId) {
       const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
       const rosterAttrAddressed = updatedFields.enable_roster_attribution !== undefined;
       const rosterPicked = !updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0;
