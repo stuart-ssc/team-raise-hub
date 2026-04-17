@@ -17,6 +17,7 @@ interface AICampaignPreviewProps {
   phase?: Phase;
   campaignId?: string | null;
   onOpenEditor?: () => void;
+  onPublishClick?: () => void;
 }
 
 export default function AICampaignPreview({
@@ -29,6 +30,7 @@ export default function AICampaignPreview({
   phase = "collecting",
   campaignId,
   onOpenEditor,
+  onPublishClick,
 }: AICampaignPreviewProps) {
   const missingRequired = getMissingRequiredFields(collectedFields);
   const filledCount = allFields.filter(
@@ -233,10 +235,16 @@ export default function AICampaignPreview({
 
       <div className="p-4 border-t">
         {phase === "complete" ? (
-          <Button onClick={onOpenEditor} className="w-full gap-2" size="lg">
-            <ExternalLink className="h-4 w-4" />
-            Open Campaign Editor
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={onPublishClick} className="flex-1 gap-2" size="lg">
+              <Rocket className="h-4 w-4" />
+              Publish Campaign
+            </Button>
+            <Button onClick={onOpenEditor} variant="outline" className="flex-1 gap-2" size="lg">
+              <ExternalLink className="h-4 w-4" />
+              Open in Editor
+            </Button>
+          </div>
         ) : isPostDraft ? (
           <Button
             onClick={onOpenEditor}
