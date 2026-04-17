@@ -59,6 +59,9 @@ export default function AICampaignPreview({
     if (detailsCollapsedDefault) setDetailsOpen(false);
   }, [detailsCollapsedDefault]);
 
+  const [extendedOpen, setExtendedOpen] = useState(true);
+  const [extendedAutoCollapsed, setExtendedAutoCollapsed] = useState(false);
+
   const postDraftItems = [
     {
       key: "image_url",
@@ -233,6 +236,82 @@ export default function AICampaignPreview({
           </Card>
         </Collapsible>
 
+        {isPostDraft && (() => {
+          const completedCount = postDraftItems.filter((i) => i.done).length;
+          const extendedDetailsDone = completedCount === postDraftItems.length;
+
+          if (extendedDetailsDone && !extendedAutoCollapsed) {
+            queueMicrotask(() => {
+              setExtendedAutoCollapsed(true);
+              setExtendedOpen(false);
+            });
+          }
+
+          return (
+            <Collapsible open={extendedOpen} onOpenChange={setExtendedOpen}>
+              <Card>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="pb-2 pt-3 px-4 cursor-pointer hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Extended Details
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        {extendedDetailsDone ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] border-green-600/40 text-green-700 dark:text-green-400 gap-1"
+                          >
+                            <Check className="h-3 w-3" />
+                            Complete
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px]">
+                            {completedCount} of {postDraftItems.length}
+                          </Badge>
+                        )}
+                        <ChevronDown
+                          className={`h-4 w-4 text-muted-foreground transition-transform ${
+                            extendedOpen ? "rotate-180" : ""
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="px-4 pb-3">
+                    <div className="space-y-2">
+                      {postDraftItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <div key={item.key} className="flex items-center justify-between py-1">
+                            <div className="flex items-center gap-2">
+                              {item.done ? (
+                                <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                              ) : (
+                                <Icon className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+                              )}
+                              <span className="text-sm">{item.label}</span>
+                            </div>
+                            <span
+                              className={`text-sm text-right max-w-[50%] truncate ${
+                                item.done ? "font-medium" : "text-muted-foreground/40 text-xs"
+                              }`}
+                            >
+                              {item.value || "Pending"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          );
+        })()}
+
         {(isPostDraft || isCollectingItems) && (
           <Card>
             <CardHeader className="pb-2 pt-3 px-4">
@@ -251,42 +330,6 @@ export default function AICampaignPreview({
                 <Badge variant={itemsAdded > 0 ? "default" : "outline"}>
                   {itemsAdded}
                 </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {isPostDraft && (
-          <Card>
-            <CardHeader className="pb-2 pt-3 px-4">
-              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Extended Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-3">
-              <div className="space-y-2">
-                {postDraftItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.key} className="flex items-center justify-between py-1">
-                      <div className="flex items-center gap-2">
-                        {item.done ? (
-                          <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />
-                        ) : (
-                          <Icon className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
-                        )}
-                        <span className="text-sm">{item.label}</span>
-                      </div>
-                      <span
-                        className={`text-sm text-right max-w-[50%] truncate ${
-                          item.done ? "font-medium" : "text-muted-foreground/40 text-xs"
-                        }`}
-                      >
-                        {item.value || "Pending"}
-                      </span>
-                    </div>
-                  );
-                })}
               </div>
             </CardContent>
           </Card>
