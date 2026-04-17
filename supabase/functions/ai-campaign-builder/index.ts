@@ -615,6 +615,10 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Today (used by deterministic date capture below and items phase below).
+    const today = new Date();
+    const todayIso = `${today.getUTCFullYear()}-${pad(today.getUTCMonth() + 1)}-${pad(today.getUTCDate())}`;
+
     // Deterministic free-text / yes-no capture (pre-draft only).
     // Safety net: if the model asked about description or requires_business_info
     // and the user replied, capture the answer server-side even if the model
@@ -650,22 +654,26 @@ Deno.serve(async (req) => {
           (askedField === "start_date" || askedField === "end_date") &&
           !isFieldAnswered(askedField, updatedFields)
         ) {
-          const trimmed = lastUserMsgRaw.trim();
-          const isMeta = /^(i\s|already|what\?|why\?|huh\?)/i.test(trimmed) && trimmed.length < 60;
-          if (!isMeta && trimmed.length > 0) {
-            const iso = normalizeDate(trimmed, today);
-            if (iso) {
-              updatedFields[askedField] = iso;
-              // Sanity guard: drop end_date if it's before start_date
-              if (
-                updatedFields.start_date &&
-                updatedFields.end_date &&
-                updatedFields.end_date < updatedFields.start_date
-              ) {
-                console.warn("Captured end_date before start_date; dropping end_date");
-                delete updatedFields.end_date;
+          try {
+            const trimmed = lastUserMsgRaw.trim();
+            const isMeta = /^(i\s|already|what\?|why\?|huh\?)/i.test(trimmed) && trimmed.length < 60;
+            if (!isMeta && trimmed.length > 0) {
+              const iso = normalizeDate(trimmed, today);
+              if (iso) {
+                updatedFields[askedField] = iso;
+                // Sanity guard: drop end_date if it's before start_date
+                if (
+                  updatedFields.start_date &&
+                  updatedFields.end_date &&
+                  updatedFields.end_date < updatedFields.start_date
+                ) {
+                  console.warn("Captured end_date before start_date; dropping end_date");
+                  delete updatedFields.end_date;
+                }
               }
             }
+          } catch (e) {
+            console.error("Deterministic date capture failed:", e);
           }
         }
       }
@@ -680,8 +688,7 @@ Deno.serve(async (req) => {
       rosters = rData || [];
     }
 
-    const today = new Date();
-    const todayIso = `${today.getUTCFullYear()}-${pad(today.getUTCMonth() + 1)}-${pad(today.getUTCDate())}`;
+    // (today/todayIso declared earlier)
 
     // ---- Items collection state ----
     let currentItemDraft: Record<string, any> = { ...(rawItemDraft || {}) };
