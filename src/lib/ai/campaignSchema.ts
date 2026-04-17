@@ -189,11 +189,20 @@ export const itemRequiredKeys = campaignItemFields
 
 export function itemNounForCampaignType(typeName?: string | null): string {
   const t = (typeName || "").toLowerCase();
-  if (t.includes("sponsor")) return "sponsorship level";
+  if (t.includes("sponsor")) return "sponsorship item";
   if (t.includes("merch")) return "item";
   if (t.includes("event")) return "ticket";
   if (t.includes("donation")) return "donation tier";
   return "item";
+}
+
+export function itemExamplesForCampaignType(typeName?: string | null): string {
+  const t = (typeName || "").toLowerCase();
+  if (t.includes("sponsor")) return "e.g. Large Banner, Event Sponsor, Platinum Sponsor";
+  if (t.includes("merch")) return "e.g. T-Shirt, Hoodie, Mug";
+  if (t.includes("event")) return "e.g. General Admission, VIP Ticket, Table for 8";
+  if (t.includes("donation")) return "e.g. Friend, Supporter, Champion";
+  return "e.g. Item Name";
 }
 
 export function isItemFieldAnswered(
