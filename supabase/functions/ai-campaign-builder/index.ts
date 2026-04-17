@@ -457,6 +457,16 @@ Deno.serve(async (req) => {
             toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "parse_error" }) });
           }
         } else if (toolCall.function?.name === "create_campaign_draft" && !campaignId) {
+          // Defensive guard: ensure group_id and campaign_type_id reference real records
+          if (!grps.find((g) => g.id === updatedFields.group_id)) {
+            createDraftError = "The selected group is invalid. Please pick a group from the list before saving.";
+            delete updatedFields.group_id;
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: createDraftError }) });
+          } else if (!types.find((t) => t.id === updatedFields.campaign_type_id)) {
+            createDraftError = "The selected campaign type is invalid. Please pick a campaign type from the list before saving.";
+            delete updatedFields.campaign_type_id;
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: createDraftError }) });
+          } else {
           // Validate required fields are present before attempting insert
           const missingNow = REQUIRED_KEYS.filter((k) => !updatedFields[k] || updatedFields[k] === "");
           if (missingNow.length > 0) {
