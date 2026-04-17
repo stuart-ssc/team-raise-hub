@@ -26,6 +26,8 @@ interface AIChatPanelProps {
   campaignId?: string | null;
   onImageUploaded?: (url: string) => void;
   onImageSkipped?: () => void;
+  onItemImageUploaded?: (url: string) => void;
+  onItemImageSkipped?: () => void;
 }
 
 export default function AIChatPanel({
