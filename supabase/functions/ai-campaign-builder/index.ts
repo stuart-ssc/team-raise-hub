@@ -722,6 +722,118 @@ Deno.serve(async (req) => {
       rosters = rData || [];
     }
 
+    // POST-DRAFT FALLBACK: figure out which post-draft field the previous assistant
+    // message was asking about, and capture the user's reply server-side so the model
+    // can't get stuck in a loop by forgetting the tool call.
+    if (campaignId && lastUserMsg) {
+      const lastAssistantRaw = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "assistant")
+        ?.content as string | undefined;
+      const lastUserRaw = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "user")
+        ?.content as string | undefined;
+
+      if (lastAssistantRaw && lastUserRaw) {
+        const at = lastAssistantRaw.toLowerCase();
+        const userRawTrimmed = lastUserRaw.trim();
+        const userLower = userRawTrimmed.toLowerCase().replace(/[.!?]+$/, "");
+
+        // Detect which post-draft step the assistant just asked about
+        const askedImage = /upload .*(image|photo|hero)|campaign image|hero photo/.test(at) &&
+          !/roster|direction|instruction/.test(at);
+        const askedRoster = /roster (tracking|attribution)|each (player|participant) gets|personalized url|personalized fundraising url/.test(at);
+        const askedRosterPick = /which roster|pick a roster|select roster|available rosters/.test(at);
+        const askedDirections = /participant direction|internal.only instruction|directions for (your|the) team|directions for participants|instructions for (your|the) team/.test(at);
+
+        // Image: skip-only fallback (image upload is handled by the upload widget which sends a synthetic message)
+        if (askedImage && !updatedFields.image_url && !updatedFields.image_skipped) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.image_skipped = true;
+            postDraftFallbackApplied = true;
+            await adminSb.from("campaigns").update({ image_url: null }).eq("id", campaignId).then(() => {});
+          }
+        }
+
+        // Roster yes/no
+        if (askedRoster && updatedFields.enable_roster_attribution === undefined) {
+          const yn = parseYesNo(userRawTrimmed);
+          if (yn !== null) {
+            updatedFields.enable_roster_attribution = yn;
+            postDraftFallbackApplied = true;
+            const dbUpd: Record<string, any> = { enable_roster_attribution: yn };
+            // Auto-pick single roster
+            if (yn && rosters.length === 1) {
+              updatedFields.roster_id = rosters[0].id;
+              dbUpd.roster_id = rosters[0].id;
+            }
+            await adminSb.from("campaigns").update(dbUpd).eq("id", campaignId);
+            // Fire link generation if enabled with a roster
+            if (yn && updatedFields.roster_id) {
+              try {
+                await adminSb.functions.invoke("generate-roster-member-links", {
+                  body: { campaignId, rosterId: Number(updatedFields.roster_id) },
+                });
+              } catch (e) {
+                console.error("Failed to generate roster member links (fallback):", e);
+              }
+            }
+          }
+        }
+
+        // Roster pick (numeric reply or roster-year match)
+        if (askedRosterPick && updatedFields.enable_roster_attribution && !updatedFields.roster_id && rosters.length > 0) {
+          const numMatch = userRawTrimmed.match(/\d{4}|\d+/);
+          if (numMatch) {
+            const num = Number(numMatch[0]);
+            const byYear = rosters.find((r) => r.roster_year === num);
+            const byId = rosters.find((r) => r.id === num);
+            const picked = byYear || byId;
+            if (picked) {
+              updatedFields.roster_id = picked.id;
+              postDraftFallbackApplied = true;
+              await adminSb.from("campaigns").update({ roster_id: picked.id }).eq("id", campaignId);
+              try {
+                await adminSb.functions.invoke("generate-roster-member-links", {
+                  body: { campaignId, rosterId: picked.id },
+                });
+              } catch (e) {
+                console.error("Failed to generate roster member links (pick fallback):", e);
+              }
+            }
+          }
+        }
+
+        // Participant directions (free text or skip)
+        if (askedDirections && !updatedFields.group_directions_addressed) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.group_directions_addressed = true;
+            postDraftFallbackApplied = true;
+            // Nothing to persist on the campaigns row for skip
+          } else if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 500) {
+            updatedFields.group_directions = userRawTrimmed;
+            updatedFields.group_directions_addressed = true;
+            postDraftFallbackApplied = true;
+            await adminSb.from("campaigns").update({ group_directions: userRawTrimmed }).eq("id", campaignId);
+          }
+        }
+
+        if (postDraftFallbackApplied) {
+          console.log("[ai-campaign-builder] post-draft fallback applied", JSON.stringify({
+            askedImage, askedRoster, askedRosterPick, askedDirections,
+            captured: {
+              image_skipped: updatedFields.image_skipped,
+              enable_roster_attribution: updatedFields.enable_roster_attribution,
+              roster_id: updatedFields.roster_id,
+              group_directions: updatedFields.group_directions ? "(set)" : undefined,
+              group_directions_addressed: updatedFields.group_directions_addressed,
+            },
+          }));
+        }
+      }
+    }
+
     // (today/todayIso declared earlier)
 
     // ---- Items collection state ----
