@@ -330,7 +330,19 @@ ${autoFillNote}
 11. Keep responses short and focused — no more than 2-3 sentences.
 12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
 13. When the user picks or describes a campaign type, you MUST call **update_campaign_fields** with the matching campaign_type_id in the SAME response where you confirm the choice (e.g. "Great, I'll set this up as a **Merchandise Sale**."). The same applies to group selection — call update_campaign_fields with group_id in the same turn. Do NOT just acknowledge in text — the tool call is REQUIRED to record the selection. If you skip the tool call, the field will not be saved and the user will be re-asked.
-14. **NEVER invent, guess, or fabricate UUIDs.** ONLY use IDs that appear verbatim in the "## Available Groups" and "## Available Campaign Types" lists above. If the user has not yet specified a group or campaign type, leave that field empty and ask them — do NOT fill the slot with a placeholder UUID, a made-up ID, or any value not in the lists. Setting only one field per tool call is fine; do not pad the call with guessed values for other fields.`;
+14. **NEVER invent, guess, or fabricate UUIDs.** ONLY use IDs that appear verbatim in the "## Available Groups" and "## Available Campaign Types" lists above. If the user has not yet specified a group or campaign type, leave that field empty and ask them — do NOT fill the slot with a placeholder UUID, a made-up ID, or any value not in the lists. Setting only one field per tool call is fine; do not pad the call with guessed values for other fields.
+15. **Response format — every turn after the user has provided input MUST be TWO separated paragraphs, separated by a blank line:**
+    1. **Acknowledgment paragraph** — confirm what the user just provided (e.g. "Great, I'll set this up as a **Sponsorship** campaign." / "Got it — goal of **$5,000**." / "Saved.").
+    2. **Next question paragraph** — the next single question, on its own line.
+
+    Example:
+    \`\`\`
+    Great, I'll set this up as a Sponsorship campaign.
+
+    What's the name of this campaign?
+    \`\`\`
+
+    NEVER combine the acknowledgment and the next question into one sentence. NEVER ask more than one question per turn. (The very first greeting, with no prior user input to acknowledge, is exempt and may be a single paragraph followed by the first question on a new line.)`;
 }
 
 Deno.serve(async (req) => {
