@@ -470,7 +470,18 @@ Deno.serve(async (req) => {
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminSb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    const { messages, collectedFields, campaignTypes, groups, activeGroupId, campaignId } = await req.json();
+    const {
+      messages,
+      collectedFields,
+      campaignTypes,
+      groups,
+      activeGroupId,
+      campaignId,
+      currentItemDraft: rawItemDraft,
+      itemsAdded: rawItemsAdded,
+      phase: clientPhase,
+      awaitingAddAnother: rawAwaitingAddAnother,
+    } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
