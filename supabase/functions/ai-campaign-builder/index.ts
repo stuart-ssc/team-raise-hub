@@ -1180,6 +1180,11 @@ Deno.serve(async (req) => {
         createdCampaignId,
         createDraftError,
         finalAction,
+        currentItemDraft,
+        itemsAdded,
+        awaitingAddAnother,
+        savedItemId,
+        itemNoun,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
