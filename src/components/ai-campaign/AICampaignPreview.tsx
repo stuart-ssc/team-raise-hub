@@ -81,27 +81,36 @@ export default function AICampaignPreview({
   const [extendedAutoCollapsed, setExtendedAutoCollapsed] = useState(false);
 
   const [items, setItems] = useState<CampaignItemRow[]>([]);
+  const [requiredAssets, setRequiredAssets] = useState<RequiredAssetRow[]>([]);
 
   useEffect(() => {
     if (!campaignId) {
       setItems([]);
+      setRequiredAssets([]);
       return;
     }
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("campaign_items")
-        .select("id, name, cost, quantity_offered, has_variants")
-        .eq("campaign_id", campaignId)
-        .order("created_at", { ascending: true });
-      if (!cancelled && !error && data) {
-        setItems(data as CampaignItemRow[]);
-      }
+      const [itemsRes, assetsRes] = await Promise.all([
+        supabase
+          .from("campaign_items")
+          .select("id, name, cost, quantity_offered, has_variants")
+          .eq("campaign_id", campaignId)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("campaign_required_assets")
+          .select("id, asset_name, is_required")
+          .eq("campaign_id", campaignId)
+          .order("display_order", { ascending: true }),
+      ]);
+      if (cancelled) return;
+      if (!itemsRes.error && itemsRes.data) setItems(itemsRes.data as CampaignItemRow[]);
+      if (!assetsRes.error && assetsRes.data) setRequiredAssets(assetsRes.data as RequiredAssetRow[]);
     })();
     return () => {
       cancelled = true;
     };
-  }, [campaignId, itemsAdded]);
+  }, [campaignId, itemsAdded, collectedFields.asset_upload_deadline, collectedFields.required_assets_count]);
 
   const postDraftItems = [
     {
