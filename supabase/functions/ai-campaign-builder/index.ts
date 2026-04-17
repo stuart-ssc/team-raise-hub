@@ -95,6 +95,54 @@ function isFieldAnswered(key: string, collected: Record<string, any>): boolean {
   return v !== undefined && v !== null && v !== "";
 }
 
+// Preset sponsor-asset templates the user can quickly add.
+const SPONSOR_ASSET_PRESETS: Record<string, { asset_name: string; asset_description: string; file_types: string[]; dimensions_hint: string; max_file_size_mb: number }> = {
+  logo: {
+    asset_name: "Company Logo",
+    asset_description: "Your company logo for recognition in campaign materials",
+    file_types: ["image/png", "image/jpeg", "image/svg+xml"],
+    dimensions_hint: "400x400px minimum, transparent background preferred",
+    max_file_size_mb: 10,
+  },
+  banner: {
+    asset_name: "Banner Ad",
+    asset_description: "Banner advertisement for program materials",
+    file_types: ["image/png", "image/jpeg"],
+    dimensions_hint: "300x250px or 728x90px",
+    max_file_size_mb: 10,
+  },
+  fullpage: {
+    asset_name: "Full Page Ad",
+    asset_description: "Full page advertisement for printed materials",
+    file_types: ["application/pdf", "image/png", "image/jpeg"],
+    dimensions_hint: "8.5x11 inches, 300 DPI minimum",
+    max_file_size_mb: 10,
+  },
+  website: {
+    asset_name: "Website URL",
+    asset_description: "Link to your website for online recognition",
+    file_types: [],
+    dimensions_hint: "",
+    max_file_size_mb: 1,
+  },
+};
+
+// Match a free-text reply to one of the preset assets (or return null).
+function matchAssetPreset(text: string): { key: string; preset: typeof SPONSOR_ASSET_PRESETS[string] } | null {
+  const t = text.toLowerCase().trim();
+  if (/\b(logo|company logo)\b/.test(t)) return { key: "logo", preset: SPONSOR_ASSET_PRESETS.logo };
+  if (/\bbanner( ad)?\b/.test(t)) return { key: "banner", preset: SPONSOR_ASSET_PRESETS.banner };
+  if (/\bfull[- ]?page( ad)?\b/.test(t)) return { key: "fullpage", preset: SPONSOR_ASSET_PRESETS.fullpage };
+  if (/\b(website|url|link)\b/.test(t)) return { key: "website", preset: SPONSOR_ASSET_PRESETS.website };
+  return null;
+}
+
+// Phrases that mean "I'm done adding assets".
+function isDoneAssetsMessage(text: string): boolean {
+  const t = text.trim().toLowerCase().replace(/[.!?]+$/, "");
+  return /^(done|i'?m done|that'?s it|finished|finish|no more|nothing else|nope|no)$/.test(t);
+}
+
 function getStillToAskAbout(collected: Record<string, any>): string[] {
   return ASK_ORDER.filter((k) => !isFieldAnswered(k, collected));
 }
