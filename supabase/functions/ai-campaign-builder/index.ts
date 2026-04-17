@@ -386,9 +386,9 @@ ${nextStep}
 - Do NOT list options as text when the UI will show buttons.
 - When the user provides a value, IMMEDIATELY call update_campaign_fields with it, then briefly confirm.
 - Never re-ask about a step that's already been addressed (look at "Saved Draft" above).
-- **Response format — every turn must be TWO separated paragraphs (separated by a blank line):**
-  1. **Acknowledgment paragraph** — confirm what the user just provided (e.g. "Got it — image saved." / "Saved.").
-  2. **Next question paragraph** — the next single question on its own line.
+- **Response format — every turn after user input MUST be EXACTLY TWO paragraphs separated by a blank line. Never more, never fewer:**
+  1. **Acknowledgment paragraph FIRST** — confirm what the user just provided (e.g. "Got it — image saved." / "Saved.").
+  2. **Next question paragraph SECOND** — the next single question on its own line.
 
   Example:
   \`\`\`
@@ -396,7 +396,7 @@ ${nextStep}
 
   Want to enable roster attribution for this campaign?
   \`\`\`
-  Never combine the acknowledgment and the next question into one sentence.`;
+  NEVER combine acknowledgment and question in one sentence. NEVER repeat the question text in both paragraphs. NEVER add a third paragraph (no clarifying notes, no trailing emoji-only lines, no extra commentary).`;
   }
 
   // PRE-DRAFT MODE (collecting required fields)
