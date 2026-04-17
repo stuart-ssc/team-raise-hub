@@ -1,29 +1,48 @@
 
+The user wants the suggestion chips redesigned to look more like Claude's prompt UI — a distinct, prominent card-like prompt with numbered, tappable rows below the assistant message, instead of small outline buttons inline.
 
-# Fix: Active Group Not Reflected in AI Builder Initial Message
+Looking at the screenshot:
+- A bordered card sits below the message
+- A question/header at top with a dismiss (X) button
+- Each option is a full-width row with a number badge (1, 2, 3...), label, and an enter/return icon on the right
+- Hover state shows highlight
+- A "Something else" free-text option at the bottom with a "Skip" button
+- Keyboard hints at the bottom: "↑↓ to navigate · Enter to select · Esc to skip"
 
-## Problem
-Race condition: the initial message `useEffect` fires when `campaignTypes` load, but `activeGroup` from context hasn't resolved yet (it depends on an async fetch). Once `initialMessageSet = true`, the effect never re-runs.
+## Plan
 
-For org admins, `activeGroup` is only set if `?group=xxx` is in the URL. The header group selector sets this param, but the context fetches groups asynchronously — so it's often `null` when the initial message fires.
+Redesign suggestion rendering in `src/components/ai-campaign/AIChatPanel.tsx`:
 
-## Fix
+### New SuggestionPrompt component (inline or separate file)
+A bordered card rendered below the latest assistant message containing:
+- **Header row**: the suggestion `label` (e.g. "Campaign type") + small X dismiss button (dismisses just the prompt for this turn — local state)
+- **Option rows**: full-width clickable rows, each with:
+  - Numbered badge (1, 2, 3, 4…) on the left
+  - Option label
+  - Return/Enter arrow icon on the right (visible on hover/selected)
+  - Hover background highlight using `hover:bg-accent`
+- **Free-text row** at bottom: pencil icon + "Type your answer..." placeholder + "Skip" button (clicking "Skip" sends a "skip" message; typing falls back to normal textarea)
+- **Keyboard hints footer**: small muted text "↑↓ to navigate · Enter to select · Esc to skip"
 
-In `src/pages/AICampaignBuilder.tsx`:
+### Keyboard navigation
+- Track `selectedIndex` with arrow keys when prompt is visible
+- Enter selects highlighted option → calls `onSend(option.label)`
+- Esc dismisses the prompt
+- Number keys (1–9) directly select corresponding option
+- Auto-attach key listener on `window` only when prompt is visible
 
-1. **Wait for the ActiveGroupContext to finish loading before setting the initial message.** Add a guard: don't fire the initial message effect until `activeGroups.length > 0` (context groups loaded) OR `activeGroup` is set. For org admins with multiple groups and none selected, also wait for the context's groups to load, then fall back to the locally-fetched `groups` list to check for single-group auto-select.
+### Styling
+- Card: `border rounded-lg bg-background` matching app theme
+- Number badge: small circular/square muted background (`bg-muted text-muted-foreground text-xs`)
+- Use existing design tokens (no hardcoded colors)
+- Full width within the messages area (not constrained to 85%)
 
-2. **Simplify the guard logic:** Wait for both `campaignTypes` AND the context's `groups` array to be populated (or `activeGroup` to be set) before composing the initial message. This ensures we know the user's group situation before greeting them.
+### Behavior
+- Only the latest assistant message's suggestions render as a prompt card (existing logic preserved)
+- Once user clicks/selects/dismisses, prompt collapses naturally on next message
+- Existing chip-button rendering removed
 
-3. **Updated effect condition:**
-   ```
-   if (initialMessageSet) return;
-   if (campaignTypes.length === 0) return;
-   if (activeGroups.length === 0 && !activeGroup) return; // wait for context
-   ```
+### File
+- `src/components/ai-campaign/AIChatPanel.tsx` — replace the chip rendering block with the new SuggestionPrompt card, add keyboard nav, dismiss state
 
-This ensures the greeting always reflects the active group when one is selected in the header.
-
-## File
-- `src/pages/AICampaignBuilder.tsx` — add guard for `activeGroups` loading before setting initial message
-
+No backend or other component changes needed — the data shape (`suggestions.options`) stays the same.
