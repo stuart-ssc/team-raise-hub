@@ -1189,7 +1189,7 @@ Deno.serve(async (req) => {
             for (const [key, value] of Object.entries(args)) {
               if (value === undefined || value === null || value === "") continue;
 
-              if (key === "start_date" || key === "end_date") {
+              if (key === "start_date" || key === "end_date" || key === "asset_upload_deadline") {
                 const normalized = normalizeDate(value, today);
                 if (!normalized) {
                   console.warn(`Could not normalize ${key}:`, value);
@@ -1210,6 +1210,41 @@ Deno.serve(async (req) => {
                 }
                 updatedFields[key] = num;
                 persistFields[key] = num;
+              } else if (key === "add_required_asset") {
+                // Append to pending list. Match preset key OR treat as custom name.
+                const list: any[] = Array.isArray(updatedFields.pending_required_assets)
+                  ? [...updatedFields.pending_required_assets]
+                  : [];
+                const raw = String(value).trim();
+                const matched = matchAssetPreset(raw);
+                let asset: any;
+                if (matched) {
+                  asset = { ...matched.preset, is_required: true, display_order: list.length };
+                } else if (raw.length > 0 && raw.length <= 120) {
+                  asset = {
+                    asset_name: raw,
+                    asset_description: "",
+                    file_types: ["image/png", "image/jpeg", "application/pdf"],
+                    dimensions_hint: "",
+                    max_file_size_mb: 10,
+                    is_required: true,
+                    display_order: list.length,
+                  };
+                } else {
+                  continue;
+                }
+                // Avoid duplicates by name
+                if (!list.some((a) => a.asset_name?.toLowerCase() === asset.asset_name.toLowerCase())) {
+                  list.push(asset);
+                }
+                updatedFields.pending_required_assets = list;
+                persistFields.pending_required_assets = list;
+              } else if (key === "sponsor_assets_complete") {
+                if (value === true) {
+                  updatedFields.sponsor_assets_complete = true;
+                  updatedFields.sponsor_assets_phase = "complete";
+                  persistFields.sponsor_assets_complete = true;
+                }
               } else {
                 updatedFields[key] = value;
                 persistFields[key] = value;
