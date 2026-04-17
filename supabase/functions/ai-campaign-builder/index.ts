@@ -312,6 +312,8 @@ function buildItemsSystemPrompt(
     nextStep = `**Awaiting choice: add another or finish.** Your message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1: confirm the last ${itemNoun} was saved (e.g. "Saved.").\n  Paragraph 2: ask "Want to add another ${itemNoun}, or are you done?" — the UI shows two buttons (Add another / I'm done). Do NOT call any tool.`;
   } else if (ready && nextField === null) {
     nextStep = `**All required fields collected.** IMMEDIATELY call the **save_campaign_item** tool with the values from "Current ${itemNoun} draft" below. Do NOT ask any more questions for this ${itemNoun}.`;
+  } else if (nextField && nextField.key === "image") {
+    nextStep = `**Next field: image** (optional). Briefly ask in one short sentence if they'd like to upload an image for this ${itemNoun} — the UI shows an upload widget below your message with a Skip button. Do NOT call any tool for this step; the upload widget will report back when done or skipped.`;
   } else if (nextField) {
     const promptText = nextField.prompt
       .replace(/\{itemNoun\}/g, itemNoun)
