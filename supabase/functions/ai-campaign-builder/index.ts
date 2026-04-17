@@ -992,7 +992,7 @@ Deno.serve(async (req) => {
           if (createDraftError) {
             assistantMessage = createDraftError;
           } else if (createdCampaignId) {
-            assistantMessage = `Your campaign is created. 🎉\n\nNow let's add your first ${itemNoun}. What's the name?`;
+            assistantMessage = `Your campaign is created. 🎉\n\nNow let's add your first ${itemNoun}. What's the name? (${itemExamples})`;
           } else if (savedItemId) {
             assistantMessage = `Saved.\n\nWant to add another ${itemNoun}, or are you done?`;
           } else {
