@@ -232,7 +232,9 @@ Deno.serve(async (req) => {
       autoFilledGroupName = grps[0].group_name;
     }
 
-    const systemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName);
+    const today = new Date();
+    const todayIso = `${today.getUTCFullYear()}-${pad(today.getUTCMonth() + 1)}-${pad(today.getUTCDate())}`;
+    const systemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso);
 
     const tools = [
       {
