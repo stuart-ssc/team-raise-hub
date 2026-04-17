@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Check, Minus, AlertCircle, Rocket, Loader2, ExternalLink, Eye, ImageIcon, Users, FileText, Package, ChevronDown } from "lucide-react";
+import { Check, Minus, AlertCircle, Rocket, Loader2, ExternalLink, Eye, ImageIcon, Users, FileText, Package, ChevronDown, Briefcase, CalendarClock } from "lucide-react";
+import { format } from "date-fns";
 import { allFields, formatFieldValue, getMissingRequiredFields } from "@/lib/ai/campaignSchema";
 import { supabase } from "@/integrations/supabase/client";
 
