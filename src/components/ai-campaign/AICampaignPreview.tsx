@@ -353,16 +353,34 @@ export default function AICampaignPreview({
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
-                  {itemsAdded === 0
-                    ? `No ${itemNoun}s added yet`
-                    : `${itemsAdded} ${itemNoun}${itemsAdded === 1 ? "" : "s"} added`}
-                </span>
-                <Badge variant={itemsAdded > 0 ? "default" : "outline"}>
-                  {itemsAdded}
-                </Badge>
-              </div>
+              {items.length === 0 ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    No {itemNoun}s added yet
+                  </span>
+                  <Badge variant="outline">0</Badge>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between gap-2 py-1 border-b last:border-0 border-border/40"
+                    >
+                      <span className="text-sm font-medium truncate flex-1">
+                        {item.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {item.cost != null ? `$${Number(item.cost).toFixed(2)}` : "—"}
+                        {" · "}
+                        {item.has_variants
+                          ? "Sized"
+                          : `Qty ${item.quantity_offered ?? "∞"}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
