@@ -376,7 +376,26 @@ Deno.serve(async (req) => {
       }
     }
 
-    // If post-draft mode, fetch rosters for the campaign's group
+    // Deterministic "skip" handling for optional fields (pre-draft only).
+    // If the latest user message is a skip-word AND the previous assistant message
+    // asked about a known optional field, mark it as skipped server-side so the
+    // AI can move on without looping or silently dropping the field.
+    if (!campaignId && lastUserMsg && isSkipMessage(lastUserMsg)) {
+      const lastAssistantMsg = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "assistant")
+        ?.content as string | undefined;
+      if (lastAssistantMsg) {
+        const askedField = detectFieldFromAssistantText(lastAssistantMsg);
+        // Only auto-skip optional fields. Required fields can't be skipped.
+        if (askedField) {
+          const def = FIELD_DEFS.find((f) => f.key === askedField);
+          if (def && !def.required) {
+            updatedFields[`${askedField}_skipped`] = true;
+          }
+        }
+      }
+    }
     let rosters: { id: number; roster_year: number; current_roster: boolean }[] = [];
     if (campaignId && updatedFields.group_id) {
       const { data: rData } = await adminSb
