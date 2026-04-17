@@ -198,6 +198,15 @@ function buildSystemPrompt(
     ? missingRequired.map((k) => `  - ${k}`).join("\n")
     : "  (all required fields collected!)";
 
+  const stillToAsk = getStillToAskAbout(collectedFields);
+  const stillToAskList = stillToAsk.length > 0
+    ? stillToAsk.map((k) => {
+        const def = FIELD_DEFS.find((f) => f.key === k);
+        const tag = def?.required ? "REQUIRED" : "optional — user may skip";
+        return `  - ${k} (${tag})`;
+      }).join("\n")
+    : "  (every field has a value or has been skipped — ready to save!)";
+
   const autoFillNote = autoFilledGroupName
     ? `\n## Auto-Selected Group\nThe organization only has one group, so it has been auto-selected: "${autoFilledGroupName}". Briefly confirm this in your next message (e.g. "Got it — this is for ${autoFilledGroupName}.") and move on to the next missing field.\n`
     : "";
