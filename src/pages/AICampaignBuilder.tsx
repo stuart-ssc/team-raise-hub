@@ -8,13 +8,14 @@ import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import { useToast } from "@/hooks/use-toast";
 
+type Phase = "collecting" | "ready_to_create" | "post_draft" | "complete";
+
 export default function AICampaignBuilder() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { organizationUser } = useOrganizationUser();
   const { activeGroup, groups: activeGroups } = useActiveGroup();
 
-  // Determine the known group (from header selection or single group)
   const knownGroup = activeGroup || (activeGroups.length === 1 ? activeGroups[0] : null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -23,16 +24,16 @@ export default function AICampaignBuilder() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [readyToCreate, setReadyToCreate] = useState(false);
+  const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>("collecting");
 
-  // Load reference data
   const [campaignTypes, setCampaignTypes] = useState<{ id: string; name: string }[]>([]);
   const [groups, setGroups] = useState<{ id: string; group_name: string }[]>([]);
 
-  // Set initial message and pre-fill group once campaign types are loaded
   useEffect(() => {
     if (initialMessageSet) return;
-    if (campaignTypes.length === 0) return; // wait for types to load
-    if (activeGroups.length === 0 && !activeGroup) return; // wait for group context
+    if (campaignTypes.length === 0) return;
+    if (activeGroups.length === 0 && !activeGroup) return;
 
     const prefill: Record<string, any> = {};
     let greeting: string;
@@ -50,6 +51,7 @@ export default function AICampaignBuilder() {
         role: "assistant",
         content: greeting,
         suggestions: campaignTypes.length > 0 ? {
+          type: "choice",
           field: "campaign_type_id",
           label: "Campaign type",
           options: campaignTypes.map((t) => ({ label: t.name, value: t.id })),
@@ -61,14 +63,12 @@ export default function AICampaignBuilder() {
 
   useEffect(() => {
     const loadData = async () => {
-      // Load campaign types
       const { data: types } = await supabase
         .from("campaign_type")
         .select("id, name")
         .order("name");
       if (types) setCampaignTypes(types);
 
-      // Load groups for the user's organization
       if (organizationUser?.organization_id) {
         const { data: orgGroups } = await supabase
           .from("groups")
@@ -82,40 +82,27 @@ export default function AICampaignBuilder() {
     loadData();
   }, [organizationUser?.organization_id]);
 
-  const handleSend = async (userMessage: string) => {
-    const userMsg: ChatMessage = { role: "user", content: userMessage };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
+  const callAi = async (newMessages: ChatMessage[], overrideFields?: Record<string, any>) => {
     setIsLoading(true);
-
     try {
-      // Build conversation history for the API (exclude the initial greeting for cleaner context)
-      const apiMessages = newMessages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      const apiMessages = newMessages.map((m) => ({ role: m.role, content: m.content }));
+      const fieldsToSend = overrideFields ?? collectedFields;
 
       const { data, error } = await supabase.functions.invoke("ai-campaign-builder", {
         body: JSON.stringify({
           messages: apiMessages,
-          collectedFields,
+          collectedFields: fieldsToSend,
           campaignTypes,
           groups,
           activeGroupId: knownGroup?.id || null,
+          campaignId,
         }),
       });
 
-      if (error) {
-        throw new Error(error.message || "Failed to get AI response");
-      }
+      if (error) throw new Error(error.message || "Failed to get AI response");
 
       if (data.error) {
-        toast({
-          title: "AI Error",
-          description: data.error,
-          variant: "destructive",
-        });
-        setIsLoading(false);
+        toast({ title: "AI Error", description: data.error, variant: "destructive" });
         return;
       }
 
@@ -127,8 +114,9 @@ export default function AICampaignBuilder() {
           suggestions: data.suggestions ?? null,
         },
       ]);
-      setCollectedFields(data.updatedFields || collectedFields);
+      setCollectedFields(data.updatedFields || fieldsToSend);
       setReadyToCreate(data.readyToCreate || false);
+      setPhase((data.phase as Phase) || "collecting");
     } catch (err: any) {
       console.error("AI campaign builder error:", err);
       toast({
@@ -141,21 +129,49 @@ export default function AICampaignBuilder() {
     }
   };
 
+  const handleSend = async (userMessage: string) => {
+    const userMsg: ChatMessage = { role: "user", content: userMessage };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    await callAi(newMessages);
+  };
+
+  const handleImageUploaded = async (url: string) => {
+    // Optimistically merge so the next AI call sees the URL
+    const merged = { ...collectedFields, image_url: url };
+    setCollectedFields(merged);
+    const newMessages: ChatMessage[] = [
+      ...messages,
+      { role: "user", content: `Image uploaded: ${url}` },
+    ];
+    setMessages(newMessages);
+    await callAi(newMessages, merged);
+  };
+
+  const handleImageSkipped = async () => {
+    const merged = { ...collectedFields, image_skipped: true };
+    setCollectedFields(merged);
+    const newMessages: ChatMessage[] = [
+      ...messages,
+      { role: "user", content: "Skip image for now" },
+    ];
+    setMessages(newMessages);
+    await callAi(newMessages, merged);
+  };
+
   const handleCreateDraft = async () => {
-    if (!readyToCreate || isCreating) return;
+    if (!readyToCreate || isCreating || campaignId) return;
     setIsCreating(true);
 
     try {
-      // Build the campaign insert object
       const campaignData: Record<string, any> = {
         name: collectedFields.name,
         campaign_type_id: collectedFields.campaign_type_id,
         group_id: collectedFields.group_id,
-        status: false, // Draft
+        status: false,
         publication_status: "draft",
       };
 
-      // Add optional fields if provided
       if (collectedFields.description) campaignData.description = collectedFields.description;
       if (collectedFields.goal_amount) campaignData.goal_amount = collectedFields.goal_amount;
       if (collectedFields.start_date) campaignData.start_date = collectedFields.start_date;
@@ -171,12 +187,10 @@ export default function AICampaignBuilder() {
         .single();
 
       if (error) {
-        // Handle slug collision
         if (error.message?.includes("slug") || error.code === "23505") {
           toast({
             title: "Name conflict",
-            description:
-              "A campaign with a similar name already exists. Try a slightly different name.",
+            description: "A campaign with a similar name already exists. Try a slightly different name.",
             variant: "destructive",
           });
           setIsCreating(false);
@@ -185,12 +199,27 @@ export default function AICampaignBuilder() {
         throw error;
       }
 
+      const newId = data.id;
+      setCampaignId(newId);
+      setPhase("post_draft");
+
       toast({
-        title: "Campaign draft created!",
-        description: "Opening the campaign editor to add items and finalize details.",
+        title: "Draft saved!",
+        description: "Let's add a few more details.",
       });
 
-      navigate(`/dashboard/campaigns/${data.id}/edit`);
+      // Kick off the post-draft conversation
+      const transition: ChatMessage = {
+        role: "assistant",
+        content: `Great — your draft **${collectedFields.name}** is saved. 🎉 Let's add a few more details to make it shine. First, would you like to upload a campaign image?`,
+        suggestions: {
+          type: "image_upload",
+          field: "image_url",
+          label: "Campaign image",
+          options: [],
+        },
+      };
+      setMessages((prev) => [...prev, transition]);
     } catch (err: any) {
       console.error("Create draft error:", err);
       toast({
@@ -203,10 +232,13 @@ export default function AICampaignBuilder() {
     }
   };
 
+  const handleOpenEditor = () => {
+    if (campaignId) navigate(`/dashboard/campaigns/${campaignId}/edit`);
+  };
+
   return (
     <DashboardPageLayout segments={[{ label: "Campaigns", path: "/dashboard/campaigns" }, { label: "AI Builder" }]}>
       <div className="flex flex-col lg:flex-row h-[calc(100vh-10rem)] gap-0 border rounded-lg overflow-hidden bg-background">
-        {/* Preview Panel (Left on desktop, top on mobile) */}
         <div className="lg:w-3/5 w-full lg:border-r border-b lg:border-b-0 overflow-hidden flex flex-col min-h-[300px] lg:min-h-0">
           <AICampaignPreview
             collectedFields={collectedFields}
@@ -215,15 +247,20 @@ export default function AICampaignBuilder() {
             readyToCreate={readyToCreate}
             isCreating={isCreating}
             onCreateDraft={handleCreateDraft}
+            phase={phase}
+            campaignId={campaignId}
+            onOpenEditor={handleOpenEditor}
           />
         </div>
 
-        {/* Chat Panel (Right on desktop, bottom on mobile) */}
         <div className="lg:w-2/5 w-full overflow-hidden flex flex-col flex-1 lg:flex-none">
           <AIChatPanel
             messages={messages}
             isLoading={isLoading}
             onSend={handleSend}
+            campaignId={campaignId}
+            onImageUploaded={handleImageUploaded}
+            onImageSkipped={handleImageSkipped}
           />
         </div>
       </div>

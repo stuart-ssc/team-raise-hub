@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -33,7 +35,7 @@ function buildIso(y: number, m: number, d: number): string | null {
     dt.getUTCMonth() !== m - 1 ||
     dt.getUTCDate() !== d
   ) {
-    return null; // invalid (e.g. Feb 31)
+    return null;
   }
   return `${y}-${pad(m)}-${pad(d)}`;
 }
@@ -41,25 +43,18 @@ function buildIso(y: number, m: number, d: number): string | null {
 function inferYear(month: number, day: number, today: Date): number {
   const curYear = today.getUTCFullYear();
   const candidate = new Date(Date.UTC(curYear, month - 1, day));
-  // strip today's time
   const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
   return candidate.getTime() < todayUtc.getTime() ? curYear + 1 : curYear;
 }
 
-/**
- * Normalize a variety of date inputs to YYYY-MM-DD (US mm/dd convention).
- * Returns null if unparseable.
- */
 function normalizeDate(input: any, today: Date = new Date()): string | null {
   if (input === null || input === undefined) return null;
   const raw = String(input).trim();
   if (!raw) return null;
 
-  // 1. Already ISO YYYY-MM-DD
   let m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (m) return buildIso(+m[1], +m[2], +m[3]);
 
-  // 2. M/D/YYYY or M-D-YYYY (US)
   m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
   if (m) {
     let y = +m[3];
@@ -67,7 +62,6 @@ function normalizeDate(input: any, today: Date = new Date()): string | null {
     return buildIso(y, +m[1], +m[2]);
   }
 
-  // 3. M/D or M-D (no year — infer)
   m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
   if (m) {
     const mo = +m[1], d = +m[2];
@@ -75,11 +69,9 @@ function normalizeDate(input: any, today: Date = new Date()): string | null {
     return buildIso(y, mo, d);
   }
 
-  // 4. Verbal: "May 1", "May 1st", "May 1, 2026", "1 May 2026", "May 1st 2026"
   const cleaned = raw.toLowerCase().replace(/(\d+)(st|nd|rd|th)/g, "$1").replace(/,/g, " ");
   const parts = cleaned.split(/\s+/).filter(Boolean);
 
-  // Try "month day [year]"
   if (parts.length >= 2 && MONTHS[parts[0]]) {
     const mo = MONTHS[parts[0]];
     const d = parseInt(parts[1], 10);
@@ -91,7 +83,6 @@ function normalizeDate(input: any, today: Date = new Date()): string | null {
     }
   }
 
-  // Try "day month [year]"
   if (parts.length >= 2 && MONTHS[parts[1]]) {
     const d = parseInt(parts[0], 10);
     const mo = MONTHS[parts[1]];
@@ -103,7 +94,6 @@ function normalizeDate(input: any, today: Date = new Date()): string | null {
     }
   }
 
-  // 5. Last resort: native Date parser (handles "next Friday", ISO datetime, etc.)
   const parsed = new Date(raw);
   if (!isNaN(parsed.getTime())) {
     return buildIso(parsed.getUTCFullYear(), parsed.getUTCMonth() + 1, parsed.getUTCDate());
@@ -136,7 +126,9 @@ function buildSystemPrompt(
   groups: { id: string; group_name: string }[],
   collectedFields: Record<string, any>,
   autoFilledGroupName: string | null,
-  todayIso: string
+  todayIso: string,
+  campaignId: string | null,
+  rosters: { id: number; roster_year: number; current_roster: boolean }[],
 ): string {
   const typesList = campaignTypes.map((t) => `  - "${t.name}" → id: ${t.id}`).join("\n");
   const groupsList = groups.map((g) => `  - "${g.group_name}" → id: ${g.id}`).join("\n");
@@ -162,6 +154,60 @@ function buildSystemPrompt(
     ? `\n## Auto-Selected Group\nThe organization only has one group, so it has been auto-selected: "${autoFilledGroupName}". Briefly confirm this in your next message (e.g. "Got it — this is for ${autoFilledGroupName}.") and move on to the next missing field.\n`
     : "";
 
+  // POST-DRAFT MODE
+  if (campaignId) {
+    const hasImage = !!collectedFields.image_url;
+    const rosterAttrAddressed = collectedFields.enable_roster_attribution !== undefined;
+    const rosterPicked = !collectedFields.enable_roster_attribution || !!collectedFields.roster_id || rosters.length === 0;
+    const directionsAddressed = collectedFields.group_directions_addressed === true;
+
+    const rostersList = rosters.length > 0
+      ? rosters.map((r) => `  - "${r.roster_year}${r.current_roster ? " (Current)" : ""}" → id: ${r.id}`).join("\n")
+      : "  (no rosters available for this group)";
+
+    let nextStep: string;
+    if (!hasImage && !collectedFields.image_skipped) {
+      nextStep = `**Next step: campaign image.** Briefly ask if the user wants to upload a campaign image (a hero photo for the campaign page). Keep it to one short sentence — the UI shows an upload widget below your message. Do NOT call any tool for this step yet; the upload widget will report back when done or skipped.`;
+    } else if (!rosterAttrAddressed) {
+      nextStep = `**Next step: roster attribution.** Ask whether they want to enable peer-to-peer fundraising — each roster member gets their own personal link, and donations are credited to them. One short sentence. The UI will show Yes/No buttons.`;
+    } else if (collectedFields.enable_roster_attribution && !rosterPicked) {
+      nextStep = `**Next step: pick a roster.** Ask which roster to use for attribution. The UI will show the available rosters as numbered buttons. Available rosters:\n${rostersList}`;
+    } else if (!directionsAddressed) {
+      nextStep = `**Next step: participant directions.** Ask if they'd like to add internal-only instructions for their team (e.g., "Each player should sell 10 items by Nov 15"). One short sentence. They can type directions or say "skip". When they reply, call the update_campaign_fields tool with group_directions (or set group_directions_addressed=true if skipped).`;
+    } else {
+      nextStep = `**All done!** Confirm everything is set up and let the user know they can open the campaign editor to add items, customize the pitch, and publish. Do NOT call any tool. Be brief and celebratory.`;
+    }
+
+    return `You are a campaign creation assistant for Sponsorly. The user just created a draft campaign and you're now helping them fill in a few more details.
+
+Today is **${todayIso}**.
+
+## Saved Draft
+${alreadyCollected}
+
+## Available Rosters (for the campaign's group)
+${rostersList}
+
+## Post-Draft Tool
+Use the "update_campaign_fields" tool to record:
+- image_url (string): set when user uploads an image (the UI handles the upload and sends a synthetic message — you parse the URL from it)
+- image_skipped (boolean): set to true if user skips image
+- enable_roster_attribution (boolean): true/false based on user's answer
+- roster_id (number): the roster id when they pick one
+- group_directions (string): the participant directions text
+- group_directions_addressed (boolean): set to true when they answer (even if skipping)
+
+## Current Step
+${nextStep}
+
+## Rules
+- Ask ONE thing at a time. Keep messages to 1 short sentence.
+- Do NOT list options as text when the UI will show buttons.
+- When the user provides a value, IMMEDIATELY call update_campaign_fields with it, then briefly confirm.
+- Never re-ask about a step that's already been addressed (look at "Saved Draft" above).`;
+  }
+
+  // PRE-DRAFT MODE (collecting required fields)
   return `You are a campaign creation assistant for Sponsorly, a fundraising platform for schools and nonprofits.
 
 Today's date is **${todayIso}**. Use this when interpreting relative dates ("next Friday", "in 2 weeks") or inferring missing years.
@@ -205,11 +251,13 @@ Deno.serve(async (req) => {
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { messages, collectedFields, campaignTypes, groups, activeGroupId } = await req.json();
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const adminSb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    const { messages, collectedFields, campaignTypes, groups, activeGroupId, campaignId } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -222,7 +270,6 @@ Deno.serve(async (req) => {
     const grps: { id: string; group_name: string }[] = groups || [];
     let updatedFields: Record<string, any> = { ...(collectedFields || {}) };
 
-    // Auto-fill group if activeGroupId provided, or if only one exists
     let autoFilledGroupName: string | null = null;
     if (!updatedFields.group_id && activeGroupId && grps.find((g: any) => g.id === activeGroupId)) {
       updatedFields.group_id = activeGroupId;
@@ -232,9 +279,20 @@ Deno.serve(async (req) => {
       autoFilledGroupName = grps[0].group_name;
     }
 
+    // If post-draft mode, fetch rosters for the campaign's group
+    let rosters: { id: number; roster_year: number; current_roster: boolean }[] = [];
+    if (campaignId && updatedFields.group_id) {
+      const { data: rData } = await adminSb
+        .from("rosters")
+        .select("id, roster_year, current_roster")
+        .eq("group_id", updatedFields.group_id)
+        .order("roster_year", { ascending: false });
+      rosters = rData || [];
+    }
+
     const today = new Date();
     const todayIso = `${today.getUTCFullYear()}-${pad(today.getUTCMonth() + 1)}-${pad(today.getUTCDate())}`;
-    const systemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso);
+    const systemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso, campaignId || null, rosters);
 
     const tools = [
       {
@@ -246,14 +304,21 @@ Deno.serve(async (req) => {
           parameters: {
             type: "object",
             properties: {
-              name: { type: "string", description: "Campaign name" },
-              campaign_type_id: { type: "string", description: "Campaign type UUID" },
-              group_id: { type: "string", description: "Group UUID" },
-              description: { type: "string", description: "Campaign description" },
-              goal_amount: { type: "number", description: "Goal amount in cents" },
-              start_date: { type: "string", description: "Start date YYYY-MM-DD" },
-              end_date: { type: "string", description: "End date YYYY-MM-DD" },
-              requires_business_info: { type: "boolean", description: "Collect business info at checkout" },
+              name: { type: "string" },
+              campaign_type_id: { type: "string" },
+              group_id: { type: "string" },
+              description: { type: "string" },
+              goal_amount: { type: "number" },
+              start_date: { type: "string" },
+              end_date: { type: "string" },
+              requires_business_info: { type: "boolean" },
+              // Post-draft fields:
+              image_url: { type: "string", description: "URL of uploaded campaign image" },
+              image_skipped: { type: "boolean", description: "True if user chose to skip image upload" },
+              enable_roster_attribution: { type: "boolean" },
+              roster_id: { type: "number" },
+              group_directions: { type: "string" },
+              group_directions_addressed: { type: "boolean", description: "True once the user has answered the directions question (even if skipped)" },
             },
             additionalProperties: false,
           },
@@ -298,14 +363,11 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
     const choice = data.choices?.[0];
-
-    if (!choice) {
-      throw new Error("No response from AI");
-    }
+    if (!choice) throw new Error("No response from AI");
 
     let assistantMessage = choice.message?.content || "";
+    const persistFields: Record<string, any> = {};
 
-    // Process tool calls if any
     if (choice.message?.tool_calls && choice.message.tool_calls.length > 0) {
       for (const toolCall of choice.message.tool_calls) {
         if (toolCall.function?.name === "update_campaign_fields") {
@@ -314,16 +376,17 @@ Deno.serve(async (req) => {
             for (const [key, value] of Object.entries(args)) {
               if (value === undefined || value === null || value === "") continue;
 
-              // Normalize date fields server-side
               if (key === "start_date" || key === "end_date") {
                 const normalized = normalizeDate(value, today);
                 if (!normalized) {
                   console.warn(`Could not normalize ${key}:`, value);
-                  continue; // drop unparseable date so AI re-asks
+                  continue;
                 }
                 updatedFields[key] = normalized;
+                persistFields[key] = normalized;
               } else {
                 updatedFields[key] = value;
+                persistFields[key] = value;
               }
             }
           } catch (e) {
@@ -332,13 +395,37 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Sanity check: if end_date is before start_date, drop end_date
       if (updatedFields.start_date && updatedFields.end_date && updatedFields.end_date < updatedFields.start_date) {
-        console.warn("end_date before start_date; dropping end_date", updatedFields);
+        console.warn("end_date before start_date; dropping end_date");
         delete updatedFields.end_date;
+        delete persistFields.end_date;
       }
 
-      // If there was a tool call but no text content, make a follow-up call
+      // POST-DRAFT: persist directly to the campaigns row
+      if (campaignId) {
+        const dbUpdate: Record<string, any> = {};
+        if (persistFields.image_url) dbUpdate.image_url = persistFields.image_url;
+        if (persistFields.enable_roster_attribution !== undefined) dbUpdate.enable_roster_attribution = persistFields.enable_roster_attribution;
+        if (persistFields.roster_id !== undefined) dbUpdate.roster_id = persistFields.roster_id;
+        if (persistFields.group_directions !== undefined) dbUpdate.group_directions = persistFields.group_directions;
+
+        if (Object.keys(dbUpdate).length > 0) {
+          const { error: updErr } = await adminSb.from("campaigns").update(dbUpdate).eq("id", campaignId);
+          if (updErr) console.error("Failed to persist post-draft fields:", updErr);
+        }
+
+        // If roster attribution was enabled and a roster picked, generate links
+        if (persistFields.enable_roster_attribution === true && updatedFields.roster_id) {
+          try {
+            await adminSb.functions.invoke("generate-roster-member-links", {
+              body: { campaignId, rosterId: Number(updatedFields.roster_id) },
+            });
+          } catch (e) {
+            console.error("Failed to generate roster member links:", e);
+          }
+        }
+      }
+
       if (!assistantMessage) {
         const followUpMessages = [
           { role: "system", content: systemPrompt },
@@ -365,34 +452,93 @@ Deno.serve(async (req) => {
 
         if (followUp.ok) {
           const followUpData = await followUp.json();
-          assistantMessage = followUpData.choices?.[0]?.message?.content || "Got it! What else would you like to add?";
+          assistantMessage = followUpData.choices?.[0]?.message?.content || "Got it!";
         } else {
-          assistantMessage = "Got it! What else would you like to add?";
+          assistantMessage = "Got it!";
         }
       }
     }
 
-    // Server-side readiness computation
+    // Compute readiness + phase
     const missingRequired = REQUIRED_KEYS.filter(
       (k) => !updatedFields[k] || updatedFields[k] === ""
     );
     const readyToCreate = missingRequired.length === 0;
 
-    // Build suggestions for the next missing select field
-    let suggestions: { field: string; label: string; options: { label: string; value: string }[] } | null = null;
-    const nextMissing = missingRequired[0];
-    if (nextMissing === "campaign_type_id" && types.length > 0) {
-      suggestions = {
-        field: "campaign_type_id",
-        label: "Campaign type",
-        options: types.map((t) => ({ label: t.name, value: t.id })),
-      };
-    } else if (nextMissing === "group_id" && grps.length > 1) {
-      suggestions = {
-        field: "group_id",
-        label: "Group",
-        options: grps.map((g) => ({ label: g.group_name, value: g.id })),
-      };
+    let phase: "collecting" | "ready_to_create" | "post_draft" | "complete" = "collecting";
+    if (campaignId) {
+      const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
+      const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
+        (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
+      const directionsDone = updatedFields.group_directions_addressed === true;
+      phase = imageDone && rosterDone && directionsDone ? "complete" : "post_draft";
+    } else if (readyToCreate) {
+      phase = "ready_to_create";
+    }
+
+    // Build suggestions for next step
+    let suggestions:
+      | { type?: string; field: string; label: string; options: { label: string; value: string }[] }
+      | null = null;
+
+    if (campaignId) {
+      const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
+      const rosterAttrAddressed = updatedFields.enable_roster_attribution !== undefined;
+      const rosterPicked = !updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0;
+      const directionsDone = updatedFields.group_directions_addressed === true;
+
+      if (!imageDone) {
+        suggestions = {
+          type: "image_upload",
+          field: "image_url",
+          label: "Campaign image",
+          options: [],
+        };
+      } else if (!rosterAttrAddressed) {
+        suggestions = {
+          type: "choice",
+          field: "enable_roster_attribution",
+          label: "Enable roster attribution?",
+          options: [
+            { label: "Yes, enable peer-to-peer fundraising", value: "true" },
+            { label: "No, skip this", value: "false" },
+          ],
+        };
+      } else if (updatedFields.enable_roster_attribution && !rosterPicked && rosters.length > 0) {
+        suggestions = {
+          type: "choice",
+          field: "roster_id",
+          label: "Select roster",
+          options: rosters.map((r) => ({
+            label: `${r.roster_year}${r.current_roster ? " (Current)" : ""}`,
+            value: r.id.toString(),
+          })),
+        };
+      } else if (!directionsDone) {
+        suggestions = {
+          type: "choice",
+          field: "group_directions",
+          label: "Participant directions",
+          options: [{ label: "Skip — no directions", value: "skip" }],
+        };
+      }
+    } else {
+      const nextMissing = missingRequired[0];
+      if (nextMissing === "campaign_type_id" && types.length > 0) {
+        suggestions = {
+          type: "choice",
+          field: "campaign_type_id",
+          label: "Campaign type",
+          options: types.map((t) => ({ label: t.name, value: t.id })),
+        };
+      } else if (nextMissing === "group_id" && grps.length > 1) {
+        suggestions = {
+          type: "choice",
+          field: "group_id",
+          label: "Group",
+          options: grps.map((g) => ({ label: g.group_name, value: g.id })),
+        };
+      }
     }
 
     return new Response(
@@ -401,6 +547,7 @@ Deno.serve(async (req) => {
         updatedFields,
         missingRequired,
         readyToCreate,
+        phase,
         suggestions,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

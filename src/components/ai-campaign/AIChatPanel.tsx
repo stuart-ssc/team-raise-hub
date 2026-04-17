@@ -4,8 +4,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, Sparkles, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import SuggestionPrompt from "./SuggestionPrompt";
+import ImageUploadPrompt from "./ImageUploadPrompt";
 
 export interface ChatSuggestions {
+  type?: "choice" | "image_upload";
   field: string;
   label?: string;
   options: { label: string; value: string }[];
@@ -21,9 +23,19 @@ interface AIChatPanelProps {
   messages: ChatMessage[];
   isLoading: boolean;
   onSend: (message: string) => void;
+  campaignId?: string | null;
+  onImageUploaded?: (url: string) => void;
+  onImageSkipped?: () => void;
 }
 
-export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanelProps) {
+export default function AIChatPanel({
+  messages,
+  isLoading,
+  onSend,
+  campaignId,
+  onImageUploaded,
+  onImageSkipped,
+}: AIChatPanelProps) {
   const [input, setInput] = useState("");
   const [dismissedAt, setDismissedAt] = useState<number>(-1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -59,7 +71,6 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
     }
   };
 
-  // Find index of latest assistant message — only its suggestions should render
   let latestAssistantIdx = -1;
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i].role === "assistant") {
@@ -84,13 +95,15 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
         )}
 
         {messages.map((msg, i) => {
-          const showSuggestions =
+          const isLatest = i === latestAssistantIdx;
+          const showPrompt =
             msg.role === "assistant" &&
-            i === latestAssistantIdx &&
+            isLatest &&
             !isLoading &&
             i !== dismissedAt &&
-            msg.suggestions &&
-            msg.suggestions.options.length > 0;
+            !!msg.suggestions;
+
+          const promptType = msg.suggestions?.type ?? "choice";
 
           return (
             <div
@@ -113,7 +126,19 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
                 )}
               </div>
 
-              {showSuggestions && (
+              {showPrompt && promptType === "image_upload" && campaignId && (
+                <div className="mt-3 w-full">
+                  <ImageUploadPrompt
+                    campaignId={campaignId}
+                    disabled={isLoading}
+                    onUploaded={(url) => onImageUploaded?.(url)}
+                    onSkip={() => onImageSkipped?.()}
+                    onDismiss={() => setDismissedAt(i)}
+                  />
+                </div>
+              )}
+
+              {showPrompt && promptType === "choice" && msg.suggestions!.options.length > 0 && (
                 <div className="mt-3 w-full">
                   <SuggestionPrompt
                     label={msg.suggestions!.label}
