@@ -1757,7 +1757,19 @@ Deno.serve(async (req) => {
       createdCampaignId,
       savedItemId,
       itemsAdded,
+      postDraftFallbackApplied,
     }));
+
+    if (AI_DEBUG) {
+      const diff: Record<string, { before: any; after: any }> = {};
+      const allKeys = new Set([...Object.keys(collectedBefore), ...Object.keys(updatedFields)]);
+      for (const k of allKeys) {
+        if (JSON.stringify(collectedBefore[k]) !== JSON.stringify(updatedFields[k])) {
+          diff[k] = { before: collectedBefore[k], after: updatedFields[k] };
+        }
+      }
+      console.log("[ai-campaign-builder][debug] FIELDS_DIFF", JSON.stringify(diff));
+    }
 
     return new Response(
       JSON.stringify({
