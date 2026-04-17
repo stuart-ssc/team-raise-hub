@@ -1087,6 +1087,17 @@ Deno.serve(async (req) => {
     const choice = data.choices?.[0];
     if (!choice) throw new Error("No response from AI");
 
+    if (AI_DEBUG) {
+      console.log("[ai-campaign-builder][debug] RESPONSE", JSON.stringify({
+        text: choice.message?.content || null,
+        tool_calls: (choice.message?.tool_calls || []).map((tc: any) => ({
+          name: tc.function?.name,
+          arguments: tc.function?.arguments,
+        })),
+        finish_reason: choice.finish_reason,
+      }));
+    }
+
     let assistantMessage = choice.message?.content || "";
     const persistFields: Record<string, any> = {};
     let createdCampaignId: string | null = null;
