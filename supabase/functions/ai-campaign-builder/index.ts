@@ -353,7 +353,8 @@ ${nextStep}
   1. Acknowledgment paragraph (e.g. "Got it — $25.").
   2. Next question paragraph.
 
-  Never combine acknowledgment and the next question into one sentence.`;
+  Never combine acknowledgment and the next question into one sentence.
+- **Never repeat your immediately previous question verbatim.** If the user's reply was unclear, briefly re-frame or ask a short clarifier — do not paste the same question again.`;
 }
 
 function buildSystemPrompt(
