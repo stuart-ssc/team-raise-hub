@@ -995,13 +995,21 @@ Deno.serve(async (req) => {
     const readyToCreate =
       missingRequired.length === 0 && businessInfoAnswered && stillToAskNow.length === 0;
 
-    let phase: "collecting" | "ready_to_create" | "post_draft" | "complete" = "collecting";
+    let phase: "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete" = "collecting";
     if (effectiveCampaignId) {
-      const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
-      const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
-        (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
-      const directionsDone = updatedFields.group_directions_addressed === true;
-      phase = imageDone && rosterDone && directionsDone ? "complete" : "post_draft";
+      const stayInItems =
+        (createdCampaignId !== null) ||
+        (inItemsPhase && !exitItemsCollection);
+
+      if (stayInItems) {
+        phase = "collecting_items";
+      } else {
+        const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
+        const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
+          (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
+        const directionsDone = updatedFields.group_directions_addressed === true;
+        phase = imageDone && rosterDone && directionsDone ? "complete" : "post_draft";
+      }
     } else if (readyToCreate) {
       phase = "ready_to_create";
     }
