@@ -1048,6 +1048,10 @@ Deno.serve(async (req) => {
               roster_id: { type: "number" },
               group_directions: { type: "string" },
               group_directions_addressed: { type: "boolean", description: "True once the user has answered the directions question (even if skipped)" },
+              // Sponsor-asset sub-flow (only used when requires_business_info === true):
+              asset_upload_deadline: { type: "string", description: "Deadline for sponsors to upload assets, in YYYY-MM-DD format" },
+              add_required_asset: { type: "string", description: "Add one required sponsor asset. Use 'logo', 'banner', 'fullpage', 'website', or a free-text custom name." },
+              sponsor_assets_complete: { type: "boolean", description: "True once the user has finished adding required sponsor assets" },
             },
             additionalProperties: false,
           },
