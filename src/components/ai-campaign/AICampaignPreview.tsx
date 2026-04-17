@@ -17,6 +17,12 @@ interface CampaignItemRow {
   has_variants: boolean | null;
 }
 
+interface RequiredAssetRow {
+  id: string;
+  asset_name: string;
+  is_required: boolean | null;
+}
+
 type Phase = "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete";
 
 interface AICampaignPreviewProps {
