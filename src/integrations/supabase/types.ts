@@ -975,6 +975,7 @@ export type Database = {
           asset_upload_deadline: string | null
           campaign_type_id: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           enable_roster_attribution: boolean | null
           end_date: string | null
@@ -1003,6 +1004,7 @@ export type Database = {
           asset_upload_deadline?: string | null
           campaign_type_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           enable_roster_attribution?: boolean | null
           end_date?: string | null
@@ -1031,6 +1033,7 @@ export type Database = {
           asset_upload_deadline?: string | null
           campaign_type_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           enable_roster_attribution?: boolean | null
           end_date?: string | null

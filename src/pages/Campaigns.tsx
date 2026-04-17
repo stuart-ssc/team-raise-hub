@@ -13,8 +13,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, ChevronUp, Plus, Search, ExternalLink, Globe, Eye, AlertCircle, Sparkles, PenLine } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Search, ExternalLink, Globe, Eye, AlertCircle, Sparkles, PenLine, MoreHorizontal, Trash2, RotateCcw } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Campaign {
   id: string;
@@ -43,6 +53,7 @@ export default function Campaigns() {
   const [sortBy, setSortBy] = useState<keyof Campaign>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterBy, setFilterBy] = useState("all");
+  const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(null);
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup, groups } = useActiveGroup();
   const { toast } = useToast();
@@ -75,6 +86,13 @@ export default function Campaigns() {
             name
           )
         `);
+
+      // Filter by deleted_at based on current view
+      if (filterBy === "deleted") {
+        query = query.not("deleted_at", "is", null);
+      } else {
+        query = query.is("deleted_at", null);
+      }
 
       // Apply role-based filtering
       const permissionLevel = organizationUser.user_type.permission_level;
@@ -175,6 +193,59 @@ export default function Campaigns() {
     }
   };
 
+  const handleDeleteCampaign = async () => {
+    if (!campaignToDelete) return;
+    try {
+      const { error } = await supabase
+        .from("campaigns")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", campaignToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Campaign deleted",
+        description: "You can restore it from the Deleted filter.",
+      });
+      setCampaignToDelete(null);
+      fetchCampaigns();
+    } catch (error) {
+      console.error("Error deleting campaign:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete campaign",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRestoreCampaign = async (campaignId: string) => {
+    try {
+      const { error } = await supabase
+        .from("campaigns")
+        .update({ deleted_at: null })
+        .eq("id", campaignId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Campaign restored",
+        description: "The campaign is back in your drafts.",
+      });
+      fetchCampaigns();
+    } catch (error) {
+      console.error("Error restoring campaign:", error);
+      toast({
+        title: "Error",
+        description: "Failed to restore campaign",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const isDeletable = (c: Campaign) =>
+    c.publication_status === "draft" || c.publication_status === "pending_verification";
+
   const handleSort = (field: keyof Campaign) => {
     if (sortBy === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -190,6 +261,7 @@ export default function Campaigns() {
                          campaign.campaign_type_name?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = filterBy === "all" || 
+                         filterBy === "deleted" ||
                          (filterBy === "active" && campaign.status) ||
                          (filterBy === "inactive" && !campaign.status && campaign.publication_status !== 'draft') ||
                          (filterBy === "draft" && campaign.publication_status === 'draft');
@@ -228,7 +300,7 @@ export default function Campaigns() {
     if (organizationUser) {
       fetchCampaigns();
     }
-  }, [activeGroup?.id]);
+  }, [activeGroup?.id, filterBy]);
 
   if (organizationUserLoading || loading) {
     return (
@@ -303,6 +375,7 @@ export default function Campaigns() {
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="draft">Drafts</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="deleted">Deleted</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -369,13 +442,42 @@ export default function Campaigns() {
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">{campaign.group_name || "—"}</p>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
-                          >
-                            Manage
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
+                            >
+                              Manage
+                            </Button>
+                            {filterBy === "deleted" ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRestoreCampaign(campaign.id)}
+                                title="Restore campaign"
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                              </Button>
+                            ) : isDeletable(campaign) ? (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" size="sm" className="px-2">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => setCampaignToDelete(campaign)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            ) : null}
+                          </div>
                         </div>
                         <div className="flex flex-wrap gap-2 mt-2">
                           <Badge variant="outline">{campaign.campaign_type_name || "—"}</Badge>
@@ -553,13 +655,42 @@ export default function Campaigns() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
-                          >
-                            Manage
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
+                            >
+                              Manage
+                            </Button>
+                            {filterBy === "deleted" ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRestoreCampaign(campaign.id)}
+                                title="Restore campaign"
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                              </Button>
+                            ) : isDeletable(campaign) ? (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" size="sm" className="px-2">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => setCampaignToDelete(campaign)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            ) : null}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -569,6 +700,26 @@ export default function Campaigns() {
               </div>
             )}
         </div>
+
+        <AlertDialog open={!!campaignToDelete} onOpenChange={(open) => !open && setCampaignToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this campaign?</AlertDialogTitle>
+              <AlertDialogDescription>
+                "{campaignToDelete?.name}" will be moved to the Deleted filter. You can restore it later.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteCampaign}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
     </DashboardPageLayout>
   );
 }
