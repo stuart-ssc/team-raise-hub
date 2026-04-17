@@ -1291,21 +1291,22 @@ Deno.serve(async (req) => {
     let phase: "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete" = "collecting";
     if (effectiveCampaignId) {
       const stayInItems = inItemsPhase && !exitItemsCollection;
+      const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
+      const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
+        (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
+      const directionsDone = updatedFields.group_directions_addressed === true;
+      const setupDone = imageDone && rosterDone && directionsDone;
 
-      if (stayInItems) {
+      if (exitItemsCollection) {
+        // User said "I'm done" adding items — move to final publish/edit choice.
+        phase = "complete";
+      } else if (stayInItems) {
+        phase = "collecting_items";
+      } else if (setupDone) {
+        // Post-draft setup finished — start items collection.
         phase = "collecting_items";
       } else {
-        const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
-        const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
-          (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
-        const directionsDone = updatedFields.group_directions_addressed === true;
-        // After post-draft setup completes, move into items collection (not "complete").
-        // "complete" is reserved for after items are added and the user is ready to publish.
-        if (imageDone && rosterDone && directionsDone) {
-          phase = "collecting_items";
-        } else {
-          phase = "post_draft";
-        }
+        phase = "post_draft";
       }
     } else if (readyToCreate) {
       phase = "ready_to_create";
