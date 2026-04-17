@@ -1170,11 +1170,13 @@ Deno.serve(async (req) => {
     }
 
     // Split assistant message into separate bubbles on \n\n boundaries
-    // (typically: acknowledgment paragraph + question paragraph)
+    // (typically: acknowledgment paragraph + question paragraph).
+    // Filter empty/whitespace-only and emoji-only trailing fragments.
+    const isEmojiOnly = (s: string) => !/[A-Za-z0-9]/.test(s);
     const assistantMessages = (assistantMessage || "")
       .split(/\n{2,}/)
       .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+      .filter((s) => s.length > 0 && !isEmojiOnly(s));
 
     return new Response(
       JSON.stringify({
