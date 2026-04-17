@@ -95,6 +95,54 @@ function isFieldAnswered(key: string, collected: Record<string, any>): boolean {
   return v !== undefined && v !== null && v !== "";
 }
 
+// Preset sponsor-asset templates the user can quickly add.
+const SPONSOR_ASSET_PRESETS: Record<string, { asset_name: string; asset_description: string; file_types: string[]; dimensions_hint: string; max_file_size_mb: number }> = {
+  logo: {
+    asset_name: "Company Logo",
+    asset_description: "Your company logo for recognition in campaign materials",
+    file_types: ["image/png", "image/jpeg", "image/svg+xml"],
+    dimensions_hint: "400x400px minimum, transparent background preferred",
+    max_file_size_mb: 10,
+  },
+  banner: {
+    asset_name: "Banner Ad",
+    asset_description: "Banner advertisement for program materials",
+    file_types: ["image/png", "image/jpeg"],
+    dimensions_hint: "300x250px or 728x90px",
+    max_file_size_mb: 10,
+  },
+  fullpage: {
+    asset_name: "Full Page Ad",
+    asset_description: "Full page advertisement for printed materials",
+    file_types: ["application/pdf", "image/png", "image/jpeg"],
+    dimensions_hint: "8.5x11 inches, 300 DPI minimum",
+    max_file_size_mb: 10,
+  },
+  website: {
+    asset_name: "Website URL",
+    asset_description: "Link to your website for online recognition",
+    file_types: [],
+    dimensions_hint: "",
+    max_file_size_mb: 1,
+  },
+};
+
+// Match a free-text reply to one of the preset assets (or return null).
+function matchAssetPreset(text: string): { key: string; preset: typeof SPONSOR_ASSET_PRESETS[string] } | null {
+  const t = text.toLowerCase().trim();
+  if (/\b(logo|company logo)\b/.test(t)) return { key: "logo", preset: SPONSOR_ASSET_PRESETS.logo };
+  if (/\bbanner( ad)?\b/.test(t)) return { key: "banner", preset: SPONSOR_ASSET_PRESETS.banner };
+  if (/\bfull[- ]?page( ad)?\b/.test(t)) return { key: "fullpage", preset: SPONSOR_ASSET_PRESETS.fullpage };
+  if (/\b(website|url|link)\b/.test(t)) return { key: "website", preset: SPONSOR_ASSET_PRESETS.website };
+  return null;
+}
+
+// Phrases that mean "I'm done adding assets".
+function isDoneAssetsMessage(text: string): boolean {
+  const t = text.trim().toLowerCase().replace(/[.!?]+$/, "");
+  return /^(done|i'?m done|that'?s it|finished|finish|no more|nothing else|nope|no)$/.test(t);
+}
+
 function getStillToAskAbout(collected: Record<string, any>): string[] {
   return ASK_ORDER.filter((k) => !isFieldAnswered(k, collected));
 }
@@ -412,12 +460,34 @@ function buildSystemPrompt(
       !!singleRoster;
     const directionsAddressed = collectedFields.group_directions_addressed === true;
 
+    // Sponsor-assets sub-flow state. Only relevant when requires_business_info === true.
+    const sponsorAssetsRequired = collectedFields.requires_business_info === true;
+    const sponsorAssetsPhase: string | null = collectedFields.sponsor_assets_phase || null;
+    const sponsorDeadlineSet = !!collectedFields.asset_upload_deadline;
+    const pendingAssets: any[] = Array.isArray(collectedFields.pending_required_assets)
+      ? collectedFields.pending_required_assets
+      : [];
+    const sponsorAssetsComplete = collectedFields.sponsor_assets_complete === true ||
+      sponsorAssetsPhase === "complete" ||
+      !sponsorAssetsRequired;
+
     const rostersList = rosters.length > 0
       ? rosters.map((r) => `  - "${r.roster_year}${r.current_roster ? " (Current)" : ""}" → id: ${r.id}`).join("\n")
       : "  (no rosters available for this group)";
 
     let nextStep: string;
-    if (!hasImage && !collectedFields.image_skipped) {
+    if (sponsorAssetsRequired && !sponsorAssetsComplete && !sponsorDeadlineSet) {
+      nextStep = `**Next step: sponsor asset upload deadline.** Sponsors will need to upload their assets — ask in one short sentence: "When do sponsors need to upload their assets by?" The UI will show quick-pick options (1 week before campaign end, 2 weeks before, or pick a date). When the user replies, you MUST call **update_campaign_fields** with \`asset_upload_deadline\` set to the date in YYYY-MM-DD format in the SAME turn.`;
+    } else if (sponsorAssetsRequired && !sponsorAssetsComplete) {
+      const collected = pendingAssets.length > 0
+        ? pendingAssets.map((a: any, i: number) => `  ${i + 1}. ${a.asset_name}`).join("\n")
+        : "  (none yet — at least one asset is required)";
+      const isFirst = pendingAssets.length === 0;
+      const ack = isFirst
+        ? `Ask in one short sentence: "What assets do sponsors need to provide?"`
+        : `Acknowledge the asset just added (e.g. "Saved — ${pendingAssets[pendingAssets.length - 1]?.asset_name}.") and then ask "Anything else?"`;
+      nextStep = `**Next step: required sponsor assets.** ${ack} The UI will show quick-pick buttons (Company Logo, Banner Ad, Full Page Ad, Website URL, Done). When the user picks one, you MUST call **update_campaign_fields** with \`add_required_asset\` set to one of: "logo", "banner", "fullpage", "website", OR a free-text custom name. When the user is finished, call **update_campaign_fields** with \`sponsor_assets_complete: true\`.\n\n## Assets added so far\n${collected}`;
+    } else if (!hasImage && !collectedFields.image_skipped) {
       nextStep = `**Next step: campaign image.** Briefly ask if the user wants to upload a campaign image (a hero photo for the campaign page). Keep it to one short sentence — the UI shows an upload widget below your message. Do NOT call any tool for this step yet; the upload widget will report back when done or skipped.`;
     } else if (!rosterAttrAddressed) {
       if (rosters.length === 0) {
@@ -447,6 +517,9 @@ ${rostersList}
 
 ## Post-Draft Tool
 Use the "update_campaign_fields" tool to record:
+- asset_upload_deadline (string, YYYY-MM-DD): the deadline for sponsors to upload their assets (only when requires_business_info is true)
+- add_required_asset (string): "logo" | "banner" | "fullpage" | "website" OR a custom free-text name — appends one required asset
+- sponsor_assets_complete (boolean): true once the user is done adding required sponsor assets
 - image_url (string): set when user uploads an image (the UI handles the upload and sends a synthetic message — you parse the URL from it)
 - image_skipped (boolean): set to true if user skips image
 - enable_roster_attribution (boolean): true/false based on user's answer
@@ -742,10 +815,78 @@ Deno.serve(async (req) => {
 
         // Detect which post-draft step the assistant just asked about
         const askedImage = /upload .*(image|photo|hero)|campaign image|hero photo/.test(at) &&
-          !/roster|direction|instruction/.test(at);
+          !/roster|direction|instruction|sponsor|asset/.test(at);
         const askedRoster = /roster (tracking|attribution)|each (player|participant) gets|personalized url|personalized fundraising url/.test(at);
         const askedRosterPick = /which roster|pick a roster|select roster|available rosters/.test(at);
         const askedDirections = /participant direction|internal.only instruction|directions for (your|the) team|directions for participants|instructions for (your|the) team/.test(at);
+        const askedDeadline = /(when|by what date|what.*deadline).*(sponsor|asset|upload)|sponsor.*upload.*by|asset.*deadline|upload.*deadline/.test(at);
+        const askedAssets = /(what|which) assets|sponsors? need to provide|required assets|anything else\?.*asset|add .*another.*asset|company logo|banner ad|full[- ]?page/.test(at) && !askedDeadline;
+
+        // Sponsor asset deadline (free-text date or quick-pick value)
+        const sponsorRequired = updatedFields.requires_business_info === true;
+        if (askedDeadline && sponsorRequired && !updatedFields.asset_upload_deadline) {
+          // Quick-pick values are emitted by the UI as ISO dates already; otherwise parse.
+          const iso = normalizeDate(userRawTrimmed, today);
+          if (iso) {
+            updatedFields.asset_upload_deadline = iso;
+            postDraftFallbackApplied = true;
+            await adminSb.from("campaigns").update({ asset_upload_deadline: iso }).eq("id", campaignId);
+          }
+        }
+
+        // Sponsor required assets (preset name, custom name, or "done")
+        if (askedAssets && sponsorRequired && updatedFields.sponsor_assets_complete !== true) {
+          if (isDoneAssetsMessage(userRawTrimmed)) {
+            // Only mark complete if at least one asset has been added
+            const list: any[] = Array.isArray(updatedFields.pending_required_assets)
+              ? updatedFields.pending_required_assets
+              : [];
+            if (list.length > 0) {
+              updatedFields.sponsor_assets_complete = true;
+              updatedFields.sponsor_assets_phase = "complete";
+              postDraftFallbackApplied = true;
+            }
+          } else {
+            const matched = matchAssetPreset(userRawTrimmed);
+            const list: any[] = Array.isArray(updatedFields.pending_required_assets)
+              ? [...updatedFields.pending_required_assets]
+              : [];
+            let asset: any = null;
+            if (matched) {
+              asset = { ...matched.preset, is_required: true, display_order: list.length };
+            } else if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 120) {
+              asset = {
+                asset_name: userRawTrimmed,
+                asset_description: "",
+                file_types: ["image/png", "image/jpeg", "application/pdf"],
+                dimensions_hint: "",
+                max_file_size_mb: 10,
+                is_required: true,
+                display_order: list.length,
+              };
+            }
+            if (asset && !list.some((a) => a.asset_name?.toLowerCase() === asset.asset_name.toLowerCase())) {
+              list.push(asset);
+              updatedFields.pending_required_assets = list;
+              postDraftFallbackApplied = true;
+              // Insert immediately so it shows up in DB and the editor
+              try {
+                await adminSb.from("campaign_required_assets").insert({
+                  campaign_id: campaignId,
+                  asset_name: asset.asset_name,
+                  asset_description: asset.asset_description,
+                  file_types: asset.file_types,
+                  dimensions_hint: asset.dimensions_hint,
+                  max_file_size_mb: asset.max_file_size_mb,
+                  is_required: asset.is_required,
+                  display_order: asset.display_order,
+                });
+              } catch (e) {
+                console.error("Failed to insert required asset (fallback):", e);
+              }
+            }
+          }
+        }
 
         // Image: skip-only fallback (image upload is handled by the upload widget which sends a synthetic message)
         if (askedImage && !updatedFields.image_url && !updatedFields.image_skipped) {
@@ -975,6 +1116,10 @@ Deno.serve(async (req) => {
               roster_id: { type: "number" },
               group_directions: { type: "string" },
               group_directions_addressed: { type: "boolean", description: "True once the user has answered the directions question (even if skipped)" },
+              // Sponsor-asset sub-flow (only used when requires_business_info === true):
+              asset_upload_deadline: { type: "string", description: "Deadline for sponsors to upload assets, in YYYY-MM-DD format" },
+              add_required_asset: { type: "string", description: "Add one required sponsor asset. Use 'logo', 'banner', 'fullpage', 'website', or a free-text custom name." },
+              sponsor_assets_complete: { type: "boolean", description: "True once the user has finished adding required sponsor assets" },
             },
             additionalProperties: false,
           },
@@ -1112,7 +1257,7 @@ Deno.serve(async (req) => {
             for (const [key, value] of Object.entries(args)) {
               if (value === undefined || value === null || value === "") continue;
 
-              if (key === "start_date" || key === "end_date") {
+              if (key === "start_date" || key === "end_date" || key === "asset_upload_deadline") {
                 const normalized = normalizeDate(value, today);
                 if (!normalized) {
                   console.warn(`Could not normalize ${key}:`, value);
@@ -1133,6 +1278,41 @@ Deno.serve(async (req) => {
                 }
                 updatedFields[key] = num;
                 persistFields[key] = num;
+              } else if (key === "add_required_asset") {
+                // Append to pending list. Match preset key OR treat as custom name.
+                const list: any[] = Array.isArray(updatedFields.pending_required_assets)
+                  ? [...updatedFields.pending_required_assets]
+                  : [];
+                const raw = String(value).trim();
+                const matched = matchAssetPreset(raw);
+                let asset: any;
+                if (matched) {
+                  asset = { ...matched.preset, is_required: true, display_order: list.length };
+                } else if (raw.length > 0 && raw.length <= 120) {
+                  asset = {
+                    asset_name: raw,
+                    asset_description: "",
+                    file_types: ["image/png", "image/jpeg", "application/pdf"],
+                    dimensions_hint: "",
+                    max_file_size_mb: 10,
+                    is_required: true,
+                    display_order: list.length,
+                  };
+                } else {
+                  continue;
+                }
+                // Avoid duplicates by name
+                if (!list.some((a) => a.asset_name?.toLowerCase() === asset.asset_name.toLowerCase())) {
+                  list.push(asset);
+                }
+                updatedFields.pending_required_assets = list;
+                persistFields.pending_required_assets = list;
+              } else if (key === "sponsor_assets_complete") {
+                if (value === true) {
+                  updatedFields.sponsor_assets_complete = true;
+                  updatedFields.sponsor_assets_phase = "complete";
+                  persistFields.sponsor_assets_complete = true;
+                }
               } else {
                 updatedFields[key] = value;
                 persistFields[key] = value;
@@ -1282,6 +1462,7 @@ Deno.serve(async (req) => {
         if (persistFields.enable_roster_attribution !== undefined) dbUpdate.enable_roster_attribution = persistFields.enable_roster_attribution;
         if (persistFields.roster_id !== undefined) dbUpdate.roster_id = persistFields.roster_id;
         if (persistFields.group_directions !== undefined) dbUpdate.group_directions = persistFields.group_directions;
+        if (persistFields.asset_upload_deadline) dbUpdate.asset_upload_deadline = persistFields.asset_upload_deadline;
 
         if (Object.keys(dbUpdate).length > 0) {
           const { error: updErr } = await adminSb.from("campaigns").update(dbUpdate).eq("id", campaignId);
@@ -1296,6 +1477,43 @@ Deno.serve(async (req) => {
             });
           } catch (e) {
             console.error("Failed to generate roster member links:", e);
+          }
+        }
+
+        // Sponsor required-assets: insert any newly added assets that aren't yet in DB.
+        // We track all pending assets in updatedFields.pending_required_assets; on every
+        // turn, sync the diff to the campaign_required_assets table so the manual editor
+        // and preview see them in real time.
+        const pendingAssets: any[] = Array.isArray(updatedFields.pending_required_assets)
+          ? updatedFields.pending_required_assets
+          : [];
+        if (pendingAssets.length > 0) {
+          try {
+            const { data: existing } = await adminSb
+              .from("campaign_required_assets")
+              .select("asset_name")
+              .eq("campaign_id", campaignId);
+            const existingNames = new Set((existing || []).map((r: any) => r.asset_name.toLowerCase()));
+            const toInsert = pendingAssets
+              .filter((a) => a.asset_name && !existingNames.has(a.asset_name.toLowerCase()))
+              .map((a, i) => ({
+                campaign_id: campaignId,
+                asset_name: a.asset_name,
+                asset_description: a.asset_description || "",
+                file_types: a.file_types || [],
+                dimensions_hint: a.dimensions_hint || "",
+                max_file_size_mb: a.max_file_size_mb || 10,
+                is_required: a.is_required !== false,
+                display_order: existingNames.size + i,
+              }));
+            if (toInsert.length > 0) {
+              const { error: insErr } = await adminSb
+                .from("campaign_required_assets")
+                .insert(toInsert);
+              if (insErr) console.error("Failed to insert required assets:", insErr);
+            }
+          } catch (e) {
+            console.error("Required-assets sync failed:", e);
           }
         }
       }
@@ -1482,11 +1700,13 @@ Deno.serve(async (req) => {
     // avoids (a) the dead-end statement that required the user to type "ok"
     // and (b) a double prompt being emitted across consecutive turns.
     {
+      const sponsorRequiredX = updatedFields.requires_business_info === true;
+      const sponsorAssetsDoneX = !sponsorRequiredX || updatedFields.sponsor_assets_complete === true;
       const imageDoneNow = !!updatedFields.image_url || !!updatedFields.image_skipped;
       const rosterDoneNow = updatedFields.enable_roster_attribution !== undefined &&
         (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
       const directionsDoneNow = updatedFields.group_directions_addressed === true;
-      const setupJustFinished = imageDoneNow && rosterDoneNow && directionsDoneNow;
+      const setupJustFinished = sponsorAssetsDoneX && imageDoneNow && rosterDoneNow && directionsDoneNow;
       const justEnteringItemsPhase =
         !!campaignId &&
         !inItemsPhase &&
@@ -1515,19 +1735,19 @@ Deno.serve(async (req) => {
     let phase: "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete" = "collecting";
     if (effectiveCampaignId) {
       const stayInItems = inItemsPhase && !exitItemsCollection;
+      const sponsorRequired = updatedFields.requires_business_info === true;
+      const sponsorAssetsDone = !sponsorRequired || updatedFields.sponsor_assets_complete === true;
       const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
       const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
         (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
       const directionsDone = updatedFields.group_directions_addressed === true;
-      const setupDone = imageDone && rosterDone && directionsDone;
+      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone;
 
       if (exitItemsCollection) {
-        // User said "I'm done" adding items — move to final publish/edit choice.
         phase = "complete";
       } else if (stayInItems) {
         phase = "collecting_items";
       } else if (setupDone) {
-        // Post-draft setup finished — start items collection.
         phase = "collecting_items";
       } else {
         phase = "post_draft";
@@ -1588,12 +1808,58 @@ Deno.serve(async (req) => {
         }
       }
     } else if (effectiveCampaignId) {
+      const sponsorRequired = updatedFields.requires_business_info === true;
+      const sponsorAssetsComplete = !sponsorRequired || updatedFields.sponsor_assets_complete === true;
+      const sponsorDeadlineSet = !!updatedFields.asset_upload_deadline;
+      const pendingAssetCount = Array.isArray(updatedFields.pending_required_assets)
+        ? updatedFields.pending_required_assets.length
+        : 0;
       const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
       const rosterAttrAddressed = updatedFields.enable_roster_attribution !== undefined;
       const rosterPicked = !updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0;
       const directionsDone = updatedFields.group_directions_addressed === true;
 
-      if (!imageDone) {
+      const endDateStr: string | undefined = updatedFields.end_date;
+      const minusDays = (iso: string, days: number): string | null => {
+        const d = new Date(iso + "T00:00:00Z");
+        if (isNaN(d.getTime())) return null;
+        d.setUTCDate(d.getUTCDate() - days);
+        return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+      };
+
+      if (sponsorRequired && !sponsorAssetsComplete && !sponsorDeadlineSet) {
+        const opts: { label: string; value: string }[] = [];
+        if (endDateStr) {
+          const twoWk = minusDays(endDateStr, 14);
+          const oneWk = minusDays(endDateStr, 7);
+          if (twoWk) opts.push({ label: "2 weeks before campaign end", value: twoWk });
+          if (oneWk) opts.push({ label: "1 week before campaign end", value: oneWk });
+        }
+        opts.push({ label: "Same as campaign end date", value: endDateStr || "pick" });
+        suggestions = {
+          type: "choice",
+          field: "asset_upload_deadline",
+          label: "Asset upload deadline",
+          options: opts,
+        };
+      } else if (sponsorRequired && !sponsorAssetsComplete) {
+        const presetOpts: { label: string; value: string }[] = [
+          { label: "Company Logo", value: "logo" },
+          { label: "Banner Ad", value: "banner" },
+          { label: "Full Page Ad", value: "fullpage" },
+          { label: "Website URL", value: "website" },
+        ];
+        if (pendingAssetCount > 0) {
+          presetOpts.push({ label: "Done — that's all", value: "done" });
+        }
+        suggestions = {
+          type: "choice",
+          field: "add_required_asset",
+          label: pendingAssetCount === 0 ? "Required sponsor assets" : "Add another asset?",
+          options: presetOpts,
+        };
+      } else if (!imageDone) {
+
         suggestions = {
           type: "image_upload",
           field: "image_url",
