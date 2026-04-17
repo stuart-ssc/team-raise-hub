@@ -1,38 +1,38 @@
 
 
-The user wants the AI's responses to be split into two clearly separated parts:
-1. **Acknowledgment** of what was just selected/saved (e.g., "Great, I'll set this up as a Sponsorship campaign.")
-2. **Next question** as its own paragraph (e.g., "What's the name of this campaign?")
+## Goal
+After the AI builder finishes (all fields collected + draft saved + post-draft details added), present the user with a clear choice: **Publish** the campaign now, or **Open the editor** to refine further.
 
-Currently both run together as one sentence/paragraph. ReactMarkdown is already used to render assistant messages, so a blank line between the two will produce two visually distinct paragraphs.
+## Current state
+- `phase` transitions: `collecting` → `ready_to_create` → `post_draft` → `complete`
+- `AICampaignPreview` already has an `onOpenEditor` button wired up
+- `CampaignPublicationControl` exists and handles publish requirements/dialog
+- The `complete` phase is reached but currently only offers "Open editor"
 
-## Fix (one file: `supabase/functions/ai-campaign-builder/index.ts`)
+## Fix
 
-Update the system prompt to require this two-part response format for every turn after a user provides input.
+### A. `AICampaignBuilder.tsx`
+- Track a `showPublishDialog` state
+- Add `handlePublishClick` that sets `showPublishDialog = true`
+- Render `<CampaignPublicationControl>` with `hideButton`, `triggerOpen={showPublishDialog}`, and `onClose` to reset state
+- Pass `onPublishClick` down to `AICampaignPreview`
+- Need to fetch campaign's `groupId`, `name`, and `enableRosterAttribution` (already in `collectedFields` for name; group_id known; roster attribution likely false by default for AI builder — pass undefined)
 
-### Add a new explicit formatting rule
-Insert into the rules section (e.g., as Rule 15 or appended to Rule 9):
+### B. `AICampaignPreview.tsx`
+- When `phase === "complete"` (or `post_draft` with all post-draft fields done), show TWO buttons side by side:
+  - **Publish Campaign** (primary) → calls `onPublishClick`
+  - **Open in Editor** (outline) → existing `onOpenEditor`
+- Add the new optional `onPublishClick` prop
 
-> **Response format — every turn must be two separated paragraphs:**
-> 1. **Acknowledgment paragraph** — confirm what the user just provided (e.g., "Great, I'll set this up as a Sponsorship campaign." / "Got it — goal of $5,000." / "Saved.")
-> 2. **Next question paragraph** — the next single question, on its own line, separated from the acknowledgment by a blank line.
->
-> Example:
-> ```
-> Great, I'll set this up as a Sponsorship campaign.
->
-> What's the name of this campaign?
-> ```
->
-> Never combine the acknowledgment and the next question into one sentence. Never ask more than one question per turn. The very first greeting (no prior user input to acknowledge) is exempt — it can be a single paragraph followed by the first question on a new line.
-
-### Why this works
-- ReactMarkdown in `AIChatPanel` already renders `\n\n` as separate `<p>` blocks (the existing `prose` styling handles paragraph spacing).
-- No frontend changes needed.
-- Keeps all existing field-collection, skip handling, and tool-call logic intact.
+### C. Edge function (`supabase/functions/ai-campaign-builder/index.ts`)
+- Update the post-draft completion message so the AI's final turn says something like:
+  > "Your campaign is ready. 🎉
+  >
+  > Would you like to publish it now or open the full editor to fine-tune?"
+- No suggestion chips needed (the buttons in the preview pane handle the choice), OR emit a `choice` suggestion with `["Publish now", "Open editor"]` that mirrors the buttons. Recommend buttons-only to avoid duplication.
 
 ### Out of scope
-- No changes to `AIChatPanel`, `AICampaignPreview`, or schema files
-- Greeting message in `AICampaignBuilder.tsx` stays as-is (it's the opening turn)
-- Post-draft conversation flow already uses similar phrasing — Rule applies uniformly to both phases
+- No changes to `CampaignPublicationControl` itself — it already supports `triggerOpen` / `hideButton` / `onClose`
+- No schema changes
+- Acknowledgment + question two-paragraph format already enforced
 
