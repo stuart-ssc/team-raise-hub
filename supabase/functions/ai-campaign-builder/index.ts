@@ -731,6 +731,53 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Deterministic capture of the current item field from the user's reply
+    // (the model sometimes acknowledges without calling update_item_field, leaving the
+    // conversation stuck — capture server-side so the follow-up can ask the next field).
+    let deterministicItemCaptured = false;
+    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && lastUserMsg && !isSkipMessage(lastUserMsg)) {
+      try {
+        const next = getNextItemField(currentItemDraft);
+        if (next) {
+          const raw = lastUserMsg.trim();
+          if (next.key === "cost") {
+            const m = raw.match(/-?\d+(?:\.\d+)?/);
+            if (m) {
+              currentItemDraft.cost = Number(m[0]);
+              deterministicItemCaptured = true;
+            }
+          } else if (next.key === "quantity_offered" || next.key === "max_items_purchased") {
+            const m = raw.match(/\d+/);
+            if (m) {
+              currentItemDraft[next.key] = Number(m[0]);
+              deterministicItemCaptured = true;
+            }
+          } else if (next.key === "is_recurring") {
+            if (/^(yes|y|yep|sure|true|monthly|yearly)\b/i.test(raw)) {
+              currentItemDraft.is_recurring = true;
+              deterministicItemCaptured = true;
+            } else if (/^(no|n|nope|false|one[- ]?time)\b/i.test(raw)) {
+              currentItemDraft.is_recurring = false;
+              currentItemDraft.recurring_interval_skipped = true;
+              deterministicItemCaptured = true;
+            }
+          } else if (next.key === "recurring_interval") {
+            if (/month/i.test(raw)) {
+              currentItemDraft.recurring_interval = "month";
+              deterministicItemCaptured = true;
+            } else if (/year|annual/i.test(raw)) {
+              currentItemDraft.recurring_interval = "year";
+              deterministicItemCaptured = true;
+            }
+          }
+          // For string fields (name, description, size) we let the model handle it,
+          // since arbitrary text shouldn't be auto-captured (could be conversational).
+        }
+      } catch (e) {
+        console.error("Deterministic item capture failed:", e);
+      }
+    }
+
     let systemPrompt: string;
     if (inItemsPhase && !exitItemsCollection) {
       systemPrompt = buildItemsSystemPrompt(
@@ -1116,6 +1163,105 @@ Deno.serve(async (req) => {
           } else {
             assistantMessage = "Got it!";
           }
+        }
+      }
+    }
+
+    // If we deterministically captured an item field but the model gave only an
+    // acknowledgment (or no question), force a follow-up so it asks the next field.
+    if (
+      deterministicItemCaptured &&
+      inItemsPhase &&
+      !exitItemsCollection &&
+      !awaitingAddAnother &&
+      savedItemId === null
+    ) {
+      const nextField = getNextItemField(currentItemDraft);
+      const ready = isItemReadyToSave(currentItemDraft);
+      const looksLikeQuestion = /\?\s*$/.test(assistantMessage.trim()) || /\n\s*\n/.test(assistantMessage);
+      if (!looksLikeQuestion && (nextField || ready)) {
+        const followUpSystemPrompt = buildItemsSystemPrompt(
+          campaignNameForItems,
+          itemNoun,
+          itemsAdded,
+          currentItemDraft,
+          false,
+          todayIso,
+          itemExamples,
+        );
+        try {
+          const followUp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                { role: "system", content: followUpSystemPrompt },
+                ...messages,
+                {
+                  role: "system",
+                  content: `The user's last value was captured for the current item field. ${
+                    ready
+                      ? `All required fields are now filled — call the **save_campaign_item** tool now.`
+                      : `Now ask the next field as instructed in the Current Step section.`
+                  }`,
+                },
+              ],
+              tools: itemsTools,
+              tool_choice: "auto",
+            }),
+          });
+          if (followUp.ok) {
+            const followUpData = await followUp.json();
+            const fChoice = followUpData.choices?.[0];
+            const fText = fChoice?.message?.content;
+            if (fText) {
+              assistantMessage = assistantMessage
+                ? `${assistantMessage}\n\n${fText}`
+                : fText;
+            }
+            if (fChoice?.message?.tool_calls?.length) {
+              for (const tc of fChoice.message.tool_calls) {
+                if (tc.function?.name === "save_campaign_item" && campaignId && isItemReadyToSave(currentItemDraft)) {
+                  const dollarsToCents = (n: any) => Math.round(Number(n) * 100);
+                  const insertItem: Record<string, any> = {
+                    campaign_id: campaignId,
+                    name: currentItemDraft.name,
+                    cost: dollarsToCents(currentItemDraft.cost),
+                    quantity_offered: Number(currentItemDraft.quantity_offered),
+                    quantity_available: Number(currentItemDraft.quantity_offered),
+                  };
+                  if (currentItemDraft.description && !currentItemDraft.description_skipped) insertItem.description = currentItemDraft.description;
+                  if (currentItemDraft.max_items_purchased !== undefined && !currentItemDraft.max_items_purchased_skipped) {
+                    insertItem.max_items_purchased = Number(currentItemDraft.max_items_purchased);
+                  }
+                  if (currentItemDraft.size && !currentItemDraft.size_skipped) insertItem.size = currentItemDraft.size;
+                  if (currentItemDraft.is_recurring === true) {
+                    insertItem.is_recurring = true;
+                    if (currentItemDraft.recurring_interval) insertItem.recurring_interval = currentItemDraft.recurring_interval;
+                  }
+                  const { data: newItem, error: itemErr } = await adminSb
+                    .from("campaign_items")
+                    .insert(insertItem)
+                    .select("id, name")
+                    .single();
+                  if (!itemErr && newItem) {
+                    savedItemId = newItem.id;
+                    itemsAdded += 1;
+                    awaitingAddAnother = true;
+                    currentItemDraft = {};
+                  } else if (itemErr) {
+                    console.error("Deterministic save_campaign_item error:", itemErr);
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Deterministic item follow-up failed:", e);
         }
       }
     }
