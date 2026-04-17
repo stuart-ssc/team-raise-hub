@@ -1,8 +1,10 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Check, Minus, AlertCircle, Rocket, Loader2, ExternalLink, ImageIcon, Users, FileText, Package } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Check, Minus, AlertCircle, Rocket, Loader2, ExternalLink, ImageIcon, Users, FileText, Package, ChevronDown } from "lucide-react";
 import { allFields, formatFieldValue, getMissingRequiredFields } from "@/lib/ai/campaignSchema";
 
 type Phase = "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete";
