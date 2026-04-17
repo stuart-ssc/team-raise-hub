@@ -1,35 +1,30 @@
 
 
-The user wants three fixes to the AI Campaign Builder:
+## Issues
+1. **Two prompts collapsed into one turn** — screenshot shows "Will donors purchase as a business..." and "Save as draft?" buttons appear simultaneously. The suggestions block jumps to `ready_to_create` because all required fields are filled, even though the business-info question hasn't been answered yet.
+2. **Wrong concept for `requires_business_info`** — current copy says "Will donors purchase as a business (for sponsor recognition / tax records)?" but actually this flag means: *sponsors must provide info/assets (logo for banner/shirt, website link for social media, etc.) to participate*.
+3. **Roster attribution chip still says "peer-to-peer"** (line 604) — leftover from previous fix.
 
-1. **Terminology**: Replace "peer-to-peer fundraising" language with the correct concept — each roster member gets an individual goal and a personalized URL to track their contributions.
-2. **Single-roster shortcut**: If the group has only one roster, default to it and just confirm ("I'll attribute donations to your **[Roster Name]** roster — sound good?") instead of asking the user to pick.
-3. **Missing question**: The AI skipped asking about `requires_business_info` before prompting to save the draft. It should be asked during the collection phase.
+## Fix (one file: `supabase/functions/ai-campaign-builder/index.ts`)
 
-Let me confirm by checking the edge function's system prompt and how rosters are currently fetched.
+### A. Rewrite the `requires_business_info` framing
+- System prompt (line 257) and field aiDescription (line 125): describe it as **"Will sponsors need to provide information or assets to participate? (e.g. logo for a banner/shirt, website link for social media recognition)"**
+- Treat it as a required collection step that must be answered (Yes/No) **before** the "Save as draft?" confirmation appears.
 
-## Plan
+### B. Separate the two questions into distinct turns
+- Add `requires_business_info` to the `REQUIRED_KEYS` list (or a parallel "must-answer" list) so `readyToCreate` stays `false` until the user has explicitly answered it.
+- Track answered state with `updatedFields.requires_business_info !== undefined` (since the value is boolean, presence = answered).
+- In the suggestions block (lines 636-653), add a new branch: if all other required fields are filled but `requires_business_info` is undefined → emit Yes/No chips labelled **"Yes, sponsors must provide info"** / **"No, not required"** with field `requires_business_info`. Do NOT emit the "Save as draft?" chips yet.
+- Only after `requires_business_info` is set → phase transitions to `ready_to_create` and the "Save as draft?" chips appear in the next turn.
 
-### File: `supabase/functions/ai-campaign-builder/index.ts`
+### C. Fix lingering "peer-to-peer" text
+- Line 604: change `"Yes, enable peer-to-peer fundraising"` → `"Yes, enable individual goals & URLs"`.
 
-**1. Fix terminology in the system prompt (post-draft section)**
-- Remove all "peer-to-peer" language.
-- Replace with: "Roster attribution gives each roster member an individual fundraising goal and a personalized URL so they can track their own contributions to the campaign."
-- When asking the user, phrase it as: "Want to enable individual goals and personalized URLs for each roster member?" (yes/no).
+### D. System prompt update
+- Make the order explicit: collect required factual fields → ask about `requires_business_info` (with the new sponsor-asset framing) → wait for answer → then ask "Ready to save as a draft?" → on yes, call `create_campaign_draft`.
+- Forbid combining the business-info question with the save-draft confirmation in a single message.
 
-**2. Smart roster default**
-- The function already fetches rosters for the group when `campaignId` is set (post-draft phase). Extend this:
-  - If `rosters.length === 1`: include in the system prompt: "The group has exactly one roster: **[name]** (id: [id]). When the user enables roster attribution, automatically use this roster_id and just confirm with them — do NOT ask them to choose."
-  - If `rosters.length > 1`: keep current behavior (offer numbered choices).
-  - If `rosters.length === 0`: tell the AI to skip roster attribution and explain why.
-
-**3. Add `requires_business_info` to the collection phase**
-- Update the system prompt's collection-phase checklist so the AI explicitly asks: "Will donors purchase as a business (for sponsor recognition / tax records)?" before calling `create_campaign_draft`.
-- Add `requires_business_info` to the list of fields the AI must collect/confirm before transitioning to `ready_to_create`.
-- The field already exists in the tool schema and frontend insert path — just need to make the AI ask for it.
-- Suggest yes/no chips when asking.
-
-### Out of scope
-- No frontend changes needed — the edge function changes flow through the existing message/suggestion pipeline.
-- Roster fetching logic already exists; only the prompt instructions need updating.
+## Out of scope
+- No frontend changes — the existing suggestion-rendering pipeline in `AIChatPanel` already handles boolean Yes/No chips.
+- Post-draft flow (image, roster, directions) unchanged.
 
