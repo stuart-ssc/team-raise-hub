@@ -87,6 +87,13 @@ export default function Campaigns() {
           )
         `);
 
+      // Filter by deleted_at based on current view
+      if (filterBy === "deleted") {
+        query = query.not("deleted_at", "is", null);
+      } else {
+        query = query.is("deleted_at", null);
+      }
+
       // Apply role-based filtering
       const permissionLevel = organizationUser.user_type.permission_level;
       
