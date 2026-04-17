@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import AIChatPanel, { ChatMessage } from "@/components/ai-campaign/AIChatPanel";
 import AICampaignPreview from "@/components/ai-campaign/AICampaignPreview";
+import { CampaignPublicationControl } from "@/components/CampaignPublicationControl";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
