@@ -1724,11 +1724,24 @@ Deno.serve(async (req) => {
         const newLast = lastParaOf(assistantMessages.join("\n\n")).toLowerCase();
         const prevLast = lastParaOf(prevAssistant).toLowerCase();
         if (newLast && prevLast && newLast === prevLast) {
-          console.log("[ai-campaign-builder] no-repeat guard tripped, rewriting duplicate question");
-          // Drop the duplicate trailing question and replace with a clarifier.
-          assistantMessages = assistantMessages.slice(0, -1);
-          assistantMessages.push("Sorry, I didn't quite catch that — could you rephrase your answer?");
-          assistantMessage = assistantMessages.join("\n\n");
+          if (postDraftFallbackApplied) {
+            // We already captured the user's answer server-side this turn — the
+            // model's repeated question is a stale echo. Trust the fallback to
+            // advance state on the NEXT turn; just drop the duplicate question
+            // and let the acknowledgment paragraph stand on its own.
+            console.log("[ai-campaign-builder] no-repeat guard: suppressing duplicate (post-draft fallback applied)");
+            assistantMessages = assistantMessages.slice(0, -1);
+            if (assistantMessages.length === 0) {
+              assistantMessages.push("Got it — saved.");
+            }
+            assistantMessage = assistantMessages.join("\n\n");
+          } else {
+            console.log("[ai-campaign-builder] no-repeat guard tripped, rewriting duplicate question");
+            // Drop the duplicate trailing question and replace with a clarifier.
+            assistantMessages = assistantMessages.slice(0, -1);
+            assistantMessages.push("Sorry, I didn't quite catch that — could you rephrase your answer?");
+            assistantMessage = assistantMessages.join("\n\n");
+          }
         }
       }
     } catch (e) {
