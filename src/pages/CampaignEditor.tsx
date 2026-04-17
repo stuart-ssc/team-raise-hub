@@ -8,7 +8,14 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
-import { Save, FileText, Calendar, Users, Heart, ListPlus, Megaphone, Loader2, ShoppingCart, Trash2 } from "lucide-react";
+import { Save, FileText, Calendar, Users, Heart, ListPlus, Megaphone, Loader2, ShoppingCart, Trash2, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -447,29 +454,70 @@ export default function CampaignEditor() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {/* Desktop: full button row */}
+            <div className="hidden lg:flex items-center gap-2">
+              {isEditing && id && campaignData.groupId && (
+                <CampaignQuickActions
+                  campaignId={id}
+                  campaignName={campaignData.name}
+                  groupId={campaignData.groupId}
+                  slug={campaignData.slug || null}
+                  publicationStatus={campaignData.publicationStatus}
+                  onPublicationChange={() => {
+                    window.location.reload();
+                  }}
+                />
+              )}
+              {isEditing && id && (campaignData.publicationStatus === "draft" || campaignData.publicationStatus === "pending_verification") && (
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              )}
+            </div>
+
+            {/* Mobile / tablet: collapsed dropdown */}
             {isEditing && id && campaignData.groupId && (
-              <CampaignQuickActions
-                campaignId={id}
-                campaignName={campaignData.name}
-                groupId={campaignData.groupId}
-                slug={campaignData.slug || null}
-                publicationStatus={campaignData.publicationStatus}
-                onPublicationChange={() => {
-                  // Refetch campaign data to get updated publication status
-                  window.location.reload();
-                }}
-              />
+              <div className="lg:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" aria-label="More actions">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <CampaignQuickActions
+                      compact
+                      campaignId={id}
+                      campaignName={campaignData.name}
+                      groupId={campaignData.groupId}
+                      slug={campaignData.slug || null}
+                      publicationStatus={campaignData.publicationStatus}
+                      onPublicationChange={() => {
+                        window.location.reload();
+                      }}
+                    />
+                    {(campaignData.publicationStatus === "draft" || campaignData.publicationStatus === "pending_verification") && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={(e) => { e.preventDefault(); setDeleteDialogOpen(true); }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             )}
-            {isEditing && id && (campaignData.publicationStatus === "draft" || campaignData.publicationStatus === "pending_verification") && (
-              <Button
-                variant="outline"
-                onClick={() => setDeleteDialogOpen(true)}
-                className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
-            )}
+
             <Button onClick={handleSave} disabled={saving} className="gap-2">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {saving ? "Saving..." : "Save Campaign"}
