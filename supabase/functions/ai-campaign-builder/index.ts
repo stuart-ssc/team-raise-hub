@@ -107,12 +107,26 @@ function isSkipMessage(text: string): boolean {
   return SKIP_WORDS.has(text.trim().toLowerCase().replace(/[.!?]+$/, ""));
 }
 
-// Heuristic: figure out which un-asked optional field the assistant most likely
-// just asked about, so we can apply a "skip" deterministically.
+// Heuristic: figure out which field the assistant most likely just asked about,
+// so we can apply skips OR free-text answers deterministically.
 function detectFieldFromAssistantText(text: string): string | null {
   const t = text.toLowerCase();
-  if (/description/.test(t)) return "description";
-  if (/sponsor.*(info|asset|provide)|requires_business_info|business info/.test(t)) return "requires_business_info";
+  // Order matters: business-info patterns are more specific than the generic
+  // "description" keyword, so check them first.
+  if (/sponsor.*(info|asset|provide)|requires_business_info|business info|provide information or assets/.test(t)) {
+    return "requires_business_info";
+  }
+  if (/description|describe|short description|tell .* about the campaign/.test(t)) {
+    return "description";
+  }
+  return null;
+}
+
+// Parse a yes/no-style user reply. Returns true/false or null if unclear.
+function parseYesNo(text: string): boolean | null {
+  const t = text.trim().toLowerCase().replace(/[.!?]+$/, "");
+  if (/^(yes|yep|yeah|yup|sure|ok|okay|y|true|1|yes please|definitely|absolutely|sounds good)$/.test(t)) return true;
+  if (/^(no|nope|nah|n|false|0|not really|don'?t|do not)$/.test(t)) return false;
   return null;
 }
 
@@ -443,7 +457,7 @@ ${stillToAskList}
 ${autoFillNote}
 ## Rules
 1. Ask about ONE field at a time, in the order shown in "## Still To Ask About". Be conversational and brief (1-2 sentences).
-2. When the user provides information, call the "update_campaign_fields" tool with the extracted values.
+2. When the user provides information, **immediately** call the "update_campaign_fields" tool with the extracted values in the SAME turn. Never just acknowledge in text — the tool call is mandatory or the field will not be saved and the user will be re-asked.
 3. For campaign_type_id: match the user's description to the closest campaign type and use its ID.
 4. For group_id: match the user's description to the closest group and use its ID.
 5. For goal_amount: convert dollar amounts to cents (e.g. $500 → 50000).
@@ -453,9 +467,9 @@ ${autoFillNote}
 9. **Walk through every field in "## Still To Ask About" — never skip one.** For each field:
    - If it's REQUIRED, the user must answer (no skipping).
    - If it's optional, tell them they can say "skip" if they don't want to provide it.
-   - For **description**, ask something like: "Want to add a short description of the campaign? You can say skip." (free text — no buttons)
-   - For **requires_business_info**, ask: "Will sponsors need to provide information or assets to participate? (e.g. a logo for a banner/shirt, a website link for social media recognition)" — the UI will show Yes/No buttons. Set it via update_campaign_fields based on their answer. **Do NOT combine this question with the "save as draft" confirmation.**
-10. Only AFTER "## Still To Ask About" is empty (every field answered or skipped), in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft. After the tool runs, the conversation continues into post-draft setup automatically.
+   - For **description**, ask something like: "Want to add a short description of the campaign? You can say skip." (free text — no buttons). When the user types ANY free-text answer (e.g. "Let's cover the gym", "Raising money for new uniforms"), you MUST call **update_campaign_fields** with \`description: "<their exact text>"\` in the SAME turn. Never just say "Got it" — the tool call is required.
+   - For **requires_business_info**, ask: "Will sponsors need to provide information or assets to participate? (e.g. a logo for a banner/shirt, a website link for social media recognition)" — the UI will show Yes/No buttons. When the user answers yes/no (or true/false), you MUST call **update_campaign_fields** with \`requires_business_info: true\` or \`requires_business_info: false\` in the SAME turn. **Do NOT combine this question with the "save as draft" confirmation.**
+10. **The "## Still To Ask About" list above is the source of truth for what to ask next.** Do NOT ask "Ready to save this as a draft?" — and do NOT call **create_campaign_draft** — until that list is COMPLETELY EMPTY. If even one field appears in the list, your next question MUST be about that field, in the order listed. Skipping ahead to the save confirmation is forbidden. Once the list is finally empty, in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft.
 11. Keep responses short and focused — no more than 2-3 sentences.
 12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
 13. When the user picks or describes a campaign type, you MUST call **update_campaign_fields** with the matching campaign_type_id in the SAME response where you confirm the choice (e.g. "Great, I'll set this up as a **Merchandise Sale**."). The same applies to group selection — call update_campaign_fields with group_id in the same turn. Do NOT just acknowledge in text — the tool call is REQUIRED to record the selection. If you skip the tool call, the field will not be saved and the user will be re-asked.
@@ -555,6 +569,41 @@ Deno.serve(async (req) => {
           const def = FIELD_DEFS.find((f) => f.key === askedField);
           if (def && !def.required) {
             updatedFields[`${askedField}_skipped`] = true;
+          }
+        }
+      }
+    }
+
+    // Deterministic free-text / yes-no capture (pre-draft only).
+    // Safety net: if the model asked about description or requires_business_info
+    // and the user replied, capture the answer server-side even if the model
+    // forgot to call update_campaign_fields. This prevents stale chip cards
+    // and the "still asking the same field" loop.
+    if (!campaignId && lastUserMsg && !isSkipMessage(lastUserMsg)) {
+      const lastAssistantMsgRaw = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "assistant")
+        ?.content as string | undefined;
+      const lastUserMsgRaw = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "user")
+        ?.content as string | undefined;
+      if (lastAssistantMsgRaw && lastUserMsgRaw) {
+        const askedField = detectFieldFromAssistantText(lastAssistantMsgRaw);
+        if (askedField === "description" && !isFieldAnswered("description", updatedFields)) {
+          // Don't capture short meta-replies like "I already gave the description?".
+          const trimmed = lastUserMsgRaw.trim();
+          const isMeta = /^(i\s|already|what\?|why\?|huh\?)/i.test(trimmed) && trimmed.length < 60;
+          if (!isMeta && trimmed.length > 0) {
+            updatedFields.description = trimmed;
+          }
+        } else if (
+          askedField === "requires_business_info" &&
+          !isFieldAnswered("requires_business_info", updatedFields)
+        ) {
+          const yn = parseYesNo(lastUserMsgRaw);
+          if (yn !== null) {
+            updatedFields.requires_business_info = yn;
           }
         }
       }
@@ -1162,7 +1211,7 @@ Deno.serve(async (req) => {
         suggestions = {
           type: "choice",
           field: "description",
-          label: "Add a short description?",
+          label: "Description (optional)",
           options: [{ label: "Skip — no description", value: "skip" }],
         };
       } else if (nextField === "requires_business_info") {
