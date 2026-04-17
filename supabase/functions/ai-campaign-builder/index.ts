@@ -507,6 +507,7 @@ Deno.serve(async (req) => {
               toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, campaignId: createdCampaignId }) });
             }
           }
+          }
         } else {
           toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "unknown_tool" }) });
         }
