@@ -51,6 +51,13 @@ export default function AICampaignPreview({
   const resolvedGroupName = groups.find((g) => g.id === collectedFields.group_id)?.group_name;
 
   const isPostDraft = phase === "post_draft" || phase === "complete";
+  const isCollectingItems = phase === "collecting_items";
+  const detailsCollapsedDefault = isPostDraft || isCollectingItems;
+  const [detailsOpen, setDetailsOpen] = useState(!detailsCollapsedDefault);
+
+  useEffect(() => {
+    if (detailsCollapsedDefault) setDetailsOpen(false);
+  }, [detailsCollapsedDefault]);
 
   const postDraftItems = [
     {
