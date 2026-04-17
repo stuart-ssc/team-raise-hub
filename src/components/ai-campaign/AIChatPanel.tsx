@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Sparkles, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import SuggestionPrompt from "./SuggestionPrompt";
 
 export interface ChatSuggestions {
   field: string;
@@ -24,6 +25,7 @@ interface AIChatPanelProps {
 
 export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanelProps) {
   const [input, setInput] = useState("");
+  const [dismissedAt, setDismissedAt] = useState<number>(-1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -86,6 +88,7 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
             msg.role === "assistant" &&
             i === latestAssistantIdx &&
             !isLoading &&
+            i !== dismissedAt &&
             msg.suggestions &&
             msg.suggestions.options.length > 0;
 
@@ -111,19 +114,14 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
               </div>
 
               {showSuggestions && (
-                <div className="mt-2 flex flex-wrap gap-2 max-w-[85%]">
-                  {msg.suggestions!.options.map((opt) => (
-                    <Button
-                      key={opt.value}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSend(opt.label)}
-                      disabled={isLoading}
-                      className="h-auto py-1.5 px-3 text-xs"
-                    >
-                      {opt.label}
-                    </Button>
-                  ))}
+                <div className="mt-3 w-full">
+                  <SuggestionPrompt
+                    label={msg.suggestions!.label}
+                    options={msg.suggestions!.options}
+                    disabled={isLoading}
+                    onSelect={(label) => handleSend(label)}
+                    onDismiss={() => setDismissedAt(i)}
+                  />
                 </div>
               )}
             </div>
