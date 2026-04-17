@@ -1808,12 +1808,58 @@ Deno.serve(async (req) => {
         }
       }
     } else if (effectiveCampaignId) {
+      const sponsorRequired = updatedFields.requires_business_info === true;
+      const sponsorAssetsComplete = !sponsorRequired || updatedFields.sponsor_assets_complete === true;
+      const sponsorDeadlineSet = !!updatedFields.asset_upload_deadline;
+      const pendingAssetCount = Array.isArray(updatedFields.pending_required_assets)
+        ? updatedFields.pending_required_assets.length
+        : 0;
       const imageDone = !!updatedFields.image_url || !!updatedFields.image_skipped;
       const rosterAttrAddressed = updatedFields.enable_roster_attribution !== undefined;
       const rosterPicked = !updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0;
       const directionsDone = updatedFields.group_directions_addressed === true;
 
-      if (!imageDone) {
+      const endDateStr: string | undefined = updatedFields.end_date;
+      const minusDays = (iso: string, days: number): string | null => {
+        const d = new Date(iso + "T00:00:00Z");
+        if (isNaN(d.getTime())) return null;
+        d.setUTCDate(d.getUTCDate() - days);
+        return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+      };
+
+      if (sponsorRequired && !sponsorAssetsComplete && !sponsorDeadlineSet) {
+        const opts: { label: string; value: string }[] = [];
+        if (endDateStr) {
+          const twoWk = minusDays(endDateStr, 14);
+          const oneWk = minusDays(endDateStr, 7);
+          if (twoWk) opts.push({ label: "2 weeks before campaign end", value: twoWk });
+          if (oneWk) opts.push({ label: "1 week before campaign end", value: oneWk });
+        }
+        opts.push({ label: "Same as campaign end date", value: endDateStr || "pick" });
+        suggestions = {
+          type: "choice",
+          field: "asset_upload_deadline",
+          label: "Asset upload deadline",
+          options: opts,
+        };
+      } else if (sponsorRequired && !sponsorAssetsComplete) {
+        const presetOpts: { label: string; value: string }[] = [
+          { label: "Company Logo", value: "logo" },
+          { label: "Banner Ad", value: "banner" },
+          { label: "Full Page Ad", value: "fullpage" },
+          { label: "Website URL", value: "website" },
+        ];
+        if (pendingAssetCount > 0) {
+          presetOpts.push({ label: "Done — that's all", value: "done" });
+        }
+        suggestions = {
+          type: "choice",
+          field: "add_required_asset",
+          label: pendingAssetCount === 0 ? "Required sponsor assets" : "Add another asset?",
+          options: presetOpts,
+        };
+      } else if (!imageDone) {
+
         suggestions = {
           type: "image_upload",
           field: "image_url",
