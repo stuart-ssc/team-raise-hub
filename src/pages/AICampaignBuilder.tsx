@@ -30,6 +30,12 @@ export default function AICampaignBuilder() {
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [campaignStatus, setCampaignStatus] = useState<string>("draft");
 
+  // Items collection state (mirrors edge function)
+  const [currentItemDraft, setCurrentItemDraft] = useState<Record<string, any>>({});
+  const [itemsAdded, setItemsAdded] = useState<number>(0);
+  const [awaitingAddAnother, setAwaitingAddAnother] = useState<boolean>(false);
+  const [itemNoun, setItemNoun] = useState<string>("item");
+
   const [campaignTypes, setCampaignTypes] = useState<{ id: string; name: string }[]>([]);
   const [groups, setGroups] = useState<{ id: string; group_name: string }[]>([]);
 
@@ -99,6 +105,10 @@ export default function AICampaignBuilder() {
           groups,
           activeGroupId: knownGroup?.id || null,
           campaignId,
+          currentItemDraft,
+          itemsAdded,
+          awaitingAddAnother,
+          phase,
         }),
       });
 
@@ -121,12 +131,25 @@ export default function AICampaignBuilder() {
       setReadyToCreate(data.readyToCreate || false);
       setPhase((data.phase as Phase) || "collecting");
 
+      // Sync items-collection state from edge function
+      if (data.currentItemDraft !== undefined) setCurrentItemDraft(data.currentItemDraft || {});
+      if (typeof data.itemsAdded === "number") setItemsAdded(data.itemsAdded);
+      if (typeof data.awaitingAddAnother === "boolean") setAwaitingAddAnother(data.awaitingAddAnother);
+      if (data.itemNoun) setItemNoun(data.itemNoun);
+
+      if (data.savedItemId) {
+        toast({
+          title: `${itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} added`,
+          description: `You now have ${data.itemsAdded ?? itemsAdded + 1} ${itemNoun}${(data.itemsAdded ?? itemsAdded + 1) === 1 ? "" : "s"}.`,
+        });
+      }
+
       // If the AI just created the draft via the create_campaign_draft tool, capture the new id
       if (data.createdCampaignId && !campaignId) {
         setCampaignId(data.createdCampaignId);
         toast({
           title: "Draft saved!",
-          description: "Let's add a few more details.",
+          description: "Let's add your campaign items.",
         });
       }
 
@@ -277,6 +300,8 @@ export default function AICampaignBuilder() {
             campaignId={campaignId}
             onOpenEditor={handleOpenEditor}
             onPublishClick={handlePublishClick}
+            itemsAdded={itemsAdded}
+            itemNoun={itemNoun}
           />
         </div>
 
