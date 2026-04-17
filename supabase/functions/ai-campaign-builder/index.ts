@@ -205,6 +205,33 @@ function normalizeDate(input: any, today: Date = new Date()): string | null {
   const cleaned = raw.toLowerCase().replace(/(\d+)(st|nd|rd|th)/g, "$1").replace(/,/g, " ");
   const parts = cleaned.split(/\s+/).filter(Boolean);
 
+  // "end of <month>" / "end of <month> <year>" → last day of that month
+  const endOfMonth = cleaned.match(/^end of (?:the )?(\w+)(?:\s+(\d{2,4}))?$/);
+  if (endOfMonth && MONTHS[endOfMonth[1]]) {
+    const mo = MONTHS[endOfMonth[1]];
+    let y: number;
+    if (endOfMonth[2]) {
+      y = endOfMonth[2].length === 2 ? 2000 + +endOfMonth[2] : +endOfMonth[2];
+    } else {
+      y = inferYear(mo, 28, today); // use 28 to safely infer year, then take last day
+    }
+    const lastDay = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    return buildIso(y, mo, lastDay);
+  }
+
+  // "beginning of <month>" / "start of <month>" → first day
+  const startOfMonth = cleaned.match(/^(?:beginning|start) of (?:the )?(\w+)(?:\s+(\d{2,4}))?$/);
+  if (startOfMonth && MONTHS[startOfMonth[1]]) {
+    const mo = MONTHS[startOfMonth[1]];
+    let y: number;
+    if (startOfMonth[2]) {
+      y = startOfMonth[2].length === 2 ? 2000 + +startOfMonth[2] : +startOfMonth[2];
+    } else {
+      y = inferYear(mo, 1, today);
+    }
+    return buildIso(y, mo, 1);
+  }
+
   if (parts.length >= 2 && MONTHS[parts[0]]) {
     const mo = MONTHS[parts[0]];
     const d = parseInt(parts[1], 10);
@@ -225,6 +252,13 @@ function normalizeDate(input: any, today: Date = new Date()): string | null {
         : inferYear(mo, d, today);
       return buildIso(y, mo, d);
     }
+  }
+
+  // Just a month name → first day of that month
+  if (parts.length === 1 && MONTHS[parts[0]]) {
+    const mo = MONTHS[parts[0]];
+    const y = inferYear(mo, 1, today);
+    return buildIso(y, mo, 1);
   }
 
   const parsed = new Date(raw);
