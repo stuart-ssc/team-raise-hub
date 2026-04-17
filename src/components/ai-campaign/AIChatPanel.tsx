@@ -88,6 +88,7 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
             msg.role === "assistant" &&
             i === latestAssistantIdx &&
             !isLoading &&
+            i !== dismissedAt &&
             msg.suggestions &&
             msg.suggestions.options.length > 0;
 
@@ -113,19 +114,14 @@ export default function AIChatPanel({ messages, isLoading, onSend }: AIChatPanel
               </div>
 
               {showSuggestions && (
-                <div className="mt-2 flex flex-wrap gap-2 max-w-[85%]">
-                  {msg.suggestions!.options.map((opt) => (
-                    <Button
-                      key={opt.value}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSend(opt.label)}
-                      disabled={isLoading}
-                      className="h-auto py-1.5 px-3 text-xs"
-                    >
-                      {opt.label}
-                    </Button>
-                  ))}
+                <div className="mt-3 w-full">
+                  <SuggestionPrompt
+                    label={msg.suggestions!.label}
+                    options={msg.suggestions!.options}
+                    disabled={isLoading}
+                    onSelect={(label) => handleSend(label)}
+                    onDismiss={() => setDismissedAt(i)}
+                  />
                 </div>
               )}
             </div>
