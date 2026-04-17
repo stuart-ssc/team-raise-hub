@@ -6,7 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const REQUIRED_KEYS = ["name", "campaign_type_id", "group_id", "goal_amount", "start_date", "end_date"];
+const REQUIRED_FACTUAL_KEYS = ["name", "campaign_type_id", "group_id", "goal_amount", "start_date", "end_date"];
+// requires_business_info is a boolean, so we gate on its *presence* (answered) rather than truthiness.
+const REQUIRED_KEYS = REQUIRED_FACTUAL_KEYS;
 
 function slugify(text: string): string {
   return text.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -122,7 +124,7 @@ const FIELD_DEFS: FieldDef[] = [
   { key: "goal_amount", label: "Goal Amount (cents)", type: "number", required: true, aiDescription: "Fundraising goal in cents (e.g. 50000 = $500)." },
   { key: "start_date", label: "Start Date", type: "date", required: true, aiDescription: "Start date in YYYY-MM-DD format." },
   { key: "end_date", label: "End Date", type: "date", required: true, aiDescription: "End date in YYYY-MM-DD format." },
-  { key: "requires_business_info", label: "Requires Business Info", type: "boolean", required: false, aiDescription: "Whether to collect business info at checkout." },
+  { key: "requires_business_info", label: "Sponsors Provide Info/Assets", type: "boolean", required: true, aiDescription: "Whether sponsors must provide information or assets to participate (e.g. a logo for a banner/shirt, a website link for social media recognition)." },
 ];
 
 function buildSystemPrompt(
@@ -254,8 +256,8 @@ ${autoFillNote}
 6. For start_date and end_date: accept ANY natural format the user provides — "May 1", "5/1", "5/1/2026", "next Friday", "May 1st", "in 2 weeks", etc. ALWAYS interpret M/D or M/D/YYYY as US-style **month/day/year**. If the user omits the year, assume the current year (${todayIso.slice(0, 4)}) — but if that date has already passed, roll forward to next year. ALWAYS pass the date to the tool in **YYYY-MM-DD** format. After setting a date, briefly confirm it back in friendly format (e.g. "Got it — starting **May 1, 2026**.").
 7. Do NOT make up values. Only extract what the user explicitly says.
 8. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
-9. Once all REQUIRED fields are collected, you MUST also ask about **requires_business_info** before saving the draft. Phrase it like: "Will donors purchase as a business (for sponsor recognition / tax records)?" — the UI will show Yes/No buttons. Set it via update_campaign_fields based on their answer. Also offer (one at a time) any other remaining optional field like description; the user can answer or say "skip". Only AFTER requires_business_info has been answered AND any optional fields have been addressed, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons.
-10. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft. After the tool runs, the conversation continues into post-draft setup automatically.
+9. Once all REQUIRED factual fields above are collected, you MUST ask about **requires_business_info** as its own separate turn. Phrase it like: "Will sponsors need to provide information or assets to participate? (e.g. a logo for a banner/shirt, a website link for social media recognition)" — the UI will show Yes/No buttons. Set it via update_campaign_fields based on their answer. **Do NOT combine this question with the "save as draft" confirmation in the same message.** Also offer (one at a time, in earlier turns) any optional field like description; the user can answer or say "skip".
+10. Only AFTER requires_business_info has been explicitly answered (true or false), in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft. After the tool runs, the conversation continues into post-draft setup automatically.
 11. Keep responses short and focused — no more than 2-3 sentences.
 12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
 13. When you match a campaign type from the user's description, CONFIRM it explicitly in your response (e.g. "Great, I'll set this up as a **Merchandise Sale**.") before moving to the next field. Never silently set the campaign type.`;
@@ -564,7 +566,8 @@ Deno.serve(async (req) => {
     const missingRequired = REQUIRED_KEYS.filter(
       (k) => !updatedFields[k] || updatedFields[k] === ""
     );
-    const readyToCreate = missingRequired.length === 0;
+    const businessInfoAnswered = updatedFields.requires_business_info !== undefined;
+    const readyToCreate = missingRequired.length === 0 && businessInfoAnswered;
 
     let phase: "collecting" | "ready_to_create" | "post_draft" | "complete" = "collecting";
     if (effectiveCampaignId) {
@@ -601,7 +604,7 @@ Deno.serve(async (req) => {
           field: "enable_roster_attribution",
           label: "Enable roster attribution?",
           options: [
-            { label: "Yes, enable peer-to-peer fundraising", value: "true" },
+            { label: "Yes, enable individual goals & URLs", value: "true" },
             { label: "No, skip this", value: "false" },
           ],
         };
@@ -648,6 +651,17 @@ Deno.serve(async (req) => {
           field: "group_id",
           label: "Group",
           options: grps.map((g) => ({ label: g.group_name, value: g.id })),
+        };
+      } else if (!nextMissing && !businessInfoAnswered) {
+        // All factual fields collected, but the sponsor-info question hasn't been answered yet.
+        suggestions = {
+          type: "choice",
+          field: "requires_business_info",
+          label: "Will sponsors provide info/assets to participate?",
+          options: [
+            { label: "Yes, sponsors must provide info", value: "true" },
+            { label: "No, not required", value: "false" },
+          ],
         };
       }
     }
