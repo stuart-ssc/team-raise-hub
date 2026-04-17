@@ -946,7 +946,7 @@ Deno.serve(async (req) => {
         if (createdCampaignId) {
           // Transition into items-collection phase right after the draft is saved
           const cName = updatedFields.name || "your campaign";
-          followUpSystemPrompt = buildItemsSystemPrompt(cName, itemNoun, 0, {}, false, todayIso);
+          followUpSystemPrompt = buildItemsSystemPrompt(cName, itemNoun, 0, {}, false, todayIso, itemExamples);
         } else if (savedItemId && inItemsPhase) {
           // Just saved an item — rebuild prompt so AI asks add-another
           followUpSystemPrompt = buildItemsSystemPrompt(
@@ -956,6 +956,7 @@ Deno.serve(async (req) => {
             {},
             true,
             todayIso,
+            itemExamples,
           );
         }
 
