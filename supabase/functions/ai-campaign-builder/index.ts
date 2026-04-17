@@ -353,7 +353,8 @@ ${nextStep}
   1. Acknowledgment paragraph (e.g. "Got it — $25.").
   2. Next question paragraph.
 
-  Never combine acknowledgment and the next question into one sentence.`;
+  Never combine acknowledgment and the next question into one sentence.
+- **Never repeat your immediately previous question verbatim.** If the user's reply was unclear, briefly re-frame or ask a short clarifier — do not paste the same question again.`;
 }
 
 function buildSystemPrompt(
@@ -471,7 +472,8 @@ ${nextStep}
 
   Want to enable roster attribution for this campaign?
   \`\`\`
-  NEVER combine acknowledgment and question in one sentence. NEVER repeat the question text in both paragraphs. NEVER add a third paragraph (no clarifying notes, no trailing emoji-only lines, no extra commentary).`;
+  NEVER combine acknowledgment and question in one sentence. NEVER repeat the question text in both paragraphs. NEVER add a third paragraph (no clarifying notes, no trailing emoji-only lines, no extra commentary).
+- **Never repeat your immediately previous question verbatim.** If the user's reply was unclear, briefly re-frame or ask a short clarifier — do not paste the same question again.`;
   }
 
   // PRE-DRAFT MODE (collecting required fields)
@@ -529,7 +531,8 @@ ${autoFillNote}
     What's the name of this campaign?
     \`\`\`
 
-    NEVER combine acknowledgment and question in one sentence. NEVER repeat the question text in both paragraphs. NEVER ask more than one question per turn. NEVER add a third paragraph (no clarifying notes, no trailing emoji-only lines, no extra commentary). (The very first greeting, with no prior user input to acknowledge, is exempt and may be a single paragraph followed by the first question on a new line.)`;
+    NEVER combine acknowledgment and question in one sentence. NEVER repeat the question text in both paragraphs. NEVER ask more than one question per turn. NEVER add a third paragraph (no clarifying notes, no trailing emoji-only lines, no extra commentary). (The very first greeting, with no prior user input to acknowledge, is exempt and may be a single paragraph followed by the first question on a new line.)
+16. **Never repeat your immediately previous question verbatim.** If the user's reply was unclear, briefly re-frame or ask a short clarifier — do not paste the same question again.`;
 }
 
 Deno.serve(async (req) => {
@@ -564,6 +567,25 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Diagnostic: log incoming request shape so stalls can be traced via fn logs.
+    console.log("[ai-campaign-builder] req", JSON.stringify({
+      msgCount: messages.length,
+      phase: clientPhase,
+      campaignId: campaignId || null,
+      itemsAdded: rawItemsAdded || 0,
+      awaitingAddAnother: !!rawAwaitingAddAnother,
+      collectedKeys: Object.keys(collectedFields || {}),
+      itemDraftKeys: Object.keys(rawItemDraft || {}),
+    }));
+
+    // Cap chat history sent to the model to the last N messages so the prompt
+    // does not grow unbounded across long sessions (cause of model drift /
+    // dropped suggestions / silent stalls). Always keep the latest user turn.
+    const HISTORY_CAP = 20;
+    const trimmedMessages = messages.length > HISTORY_CAP
+      ? messages.slice(messages.length - HISTORY_CAP)
+      : messages;
 
     const types: { id: string; name: string }[] = campaignTypes || [];
     const grps: { id: string; group_name: string }[] = groups || [];
@@ -898,7 +920,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        messages: [{ role: "system", content: systemPrompt }, ...trimmedMessages],
         tools,
         tool_choice: "auto",
       }),
@@ -1166,7 +1188,7 @@ Deno.serve(async (req) => {
 
         const followUpMessages = [
           { role: "system", content: followUpSystemPrompt },
-          ...messages,
+          ...trimmedMessages,
           choice.message,
           ...toolResults.map((tr) => ({
             role: "tool",
@@ -1239,7 +1261,7 @@ Deno.serve(async (req) => {
               model: "google/gemini-2.5-flash",
               messages: [
                 { role: "system", content: followUpSystemPrompt },
-                ...messages,
+                ...trimmedMessages,
                 {
                   role: "system",
                   content: `The user's last value was captured for the current item field. ${
@@ -1533,10 +1555,49 @@ Deno.serve(async (req) => {
     // (typically: acknowledgment paragraph + question paragraph).
     // Filter empty/whitespace-only and emoji-only trailing fragments.
     const isEmojiOnly = (s: string) => !/[A-Za-z0-9]/.test(s);
-    const assistantMessages = (assistantMessage || "")
+    let assistantMessages = (assistantMessage || "")
       .split(/\n{2,}/)
       .map((s) => s.trim())
       .filter((s) => s.length > 0 && !isEmojiOnly(s));
+
+    // No-repeat guard: if the model's final paragraph (the "next question")
+    // matches the previous assistant turn's final paragraph verbatim, replace
+    // it with a brief clarifier so the user isn't double-prompted with the
+    // exact same question.
+    try {
+      const prevAssistant = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "assistant")
+        ?.content as string | undefined;
+      const lastParaOf = (s: string) => {
+        const parts = (s || "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+        return parts[parts.length - 1] || "";
+      };
+      if (prevAssistant && assistantMessages.length > 0) {
+        const newLast = lastParaOf(assistantMessages.join("\n\n")).toLowerCase();
+        const prevLast = lastParaOf(prevAssistant).toLowerCase();
+        if (newLast && prevLast && newLast === prevLast) {
+          console.log("[ai-campaign-builder] no-repeat guard tripped, rewriting duplicate question");
+          // Drop the duplicate trailing question and replace with a clarifier.
+          assistantMessages = assistantMessages.slice(0, -1);
+          assistantMessages.push("Sorry, I didn't quite catch that — could you rephrase your answer?");
+          assistantMessage = assistantMessages.join("\n\n");
+        }
+      }
+    } catch (e) {
+      console.error("no-repeat guard failed:", e);
+    }
+
+    console.log("[ai-campaign-builder] resp", JSON.stringify({
+      phase,
+      readyToCreate,
+      msgCount: assistantMessages.length,
+      hasSuggestions: !!suggestions,
+      suggestionField: suggestions?.field || null,
+      createdCampaignId,
+      savedItemId,
+      itemsAdded,
+    }));
 
     return new Response(
       JSON.stringify({
