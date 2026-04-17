@@ -191,7 +191,8 @@ export default function Campaigns() {
     
     const matchesFilter = filterBy === "all" || 
                          (filterBy === "active" && campaign.status) ||
-                         (filterBy === "inactive" && !campaign.status);
+                         (filterBy === "inactive" && !campaign.status && campaign.publication_status !== 'draft') ||
+                         (filterBy === "draft" && campaign.publication_status === 'draft');
     
     return matchesSearch && matchesFilter;
   });
