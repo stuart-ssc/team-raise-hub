@@ -6,6 +6,112 @@ const corsHeaders = {
 
 const REQUIRED_KEYS = ["name", "campaign_type_id", "group_id", "goal_amount", "start_date", "end_date"];
 
+const MONTHS: Record<string, number> = {
+  jan: 1, january: 1,
+  feb: 2, february: 2,
+  mar: 3, march: 3,
+  apr: 4, april: 4,
+  may: 5,
+  jun: 6, june: 6,
+  jul: 7, july: 7,
+  aug: 8, august: 8,
+  sep: 9, sept: 9, september: 9,
+  oct: 10, october: 10,
+  nov: 11, november: 11,
+  dec: 12, december: 12,
+};
+
+function pad(n: number): string {
+  return n.toString().padStart(2, "0");
+}
+
+function buildIso(y: number, m: number, d: number): string | null {
+  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (
+    dt.getUTCFullYear() !== y ||
+    dt.getUTCMonth() !== m - 1 ||
+    dt.getUTCDate() !== d
+  ) {
+    return null; // invalid (e.g. Feb 31)
+  }
+  return `${y}-${pad(m)}-${pad(d)}`;
+}
+
+function inferYear(month: number, day: number, today: Date): number {
+  const curYear = today.getUTCFullYear();
+  const candidate = new Date(Date.UTC(curYear, month - 1, day));
+  // strip today's time
+  const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  return candidate.getTime() < todayUtc.getTime() ? curYear + 1 : curYear;
+}
+
+/**
+ * Normalize a variety of date inputs to YYYY-MM-DD (US mm/dd convention).
+ * Returns null if unparseable.
+ */
+function normalizeDate(input: any, today: Date = new Date()): string | null {
+  if (input === null || input === undefined) return null;
+  const raw = String(input).trim();
+  if (!raw) return null;
+
+  // 1. Already ISO YYYY-MM-DD
+  let m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return buildIso(+m[1], +m[2], +m[3]);
+
+  // 2. M/D/YYYY or M-D-YYYY (US)
+  m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (m) {
+    let y = +m[3];
+    if (y < 100) y += 2000;
+    return buildIso(y, +m[1], +m[2]);
+  }
+
+  // 3. M/D or M-D (no year — infer)
+  m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+  if (m) {
+    const mo = +m[1], d = +m[2];
+    const y = inferYear(mo, d, today);
+    return buildIso(y, mo, d);
+  }
+
+  // 4. Verbal: "May 1", "May 1st", "May 1, 2026", "1 May 2026", "May 1st 2026"
+  const cleaned = raw.toLowerCase().replace(/(\d+)(st|nd|rd|th)/g, "$1").replace(/,/g, " ");
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+
+  // Try "month day [year]"
+  if (parts.length >= 2 && MONTHS[parts[0]]) {
+    const mo = MONTHS[parts[0]];
+    const d = parseInt(parts[1], 10);
+    if (!isNaN(d)) {
+      const y = parts[2] && /^\d{2,4}$/.test(parts[2])
+        ? (parts[2].length === 2 ? 2000 + +parts[2] : +parts[2])
+        : inferYear(mo, d, today);
+      return buildIso(y, mo, d);
+    }
+  }
+
+  // Try "day month [year]"
+  if (parts.length >= 2 && MONTHS[parts[1]]) {
+    const d = parseInt(parts[0], 10);
+    const mo = MONTHS[parts[1]];
+    if (!isNaN(d)) {
+      const y = parts[2] && /^\d{2,4}$/.test(parts[2])
+        ? (parts[2].length === 2 ? 2000 + +parts[2] : +parts[2])
+        : inferYear(mo, d, today);
+      return buildIso(y, mo, d);
+    }
+  }
+
+  // 5. Last resort: native Date parser (handles "next Friday", ISO datetime, etc.)
+  const parsed = new Date(raw);
+  if (!isNaN(parsed.getTime())) {
+    return buildIso(parsed.getUTCFullYear(), parsed.getUTCMonth() + 1, parsed.getUTCDate());
+  }
+
+  return null;
+}
+
 interface FieldDef {
   key: string;
   label: string;
