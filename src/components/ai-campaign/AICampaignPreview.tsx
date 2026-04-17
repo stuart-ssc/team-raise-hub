@@ -371,7 +371,7 @@ export default function AICampaignPreview({
                         {item.name}
                       </span>
                       <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {item.cost != null ? `$${Number(item.cost).toFixed(2)}` : "—"}
+                        {item.cost != null ? `$${(Number(item.cost) / 100).toFixed(2)}` : "—"}
                         {" · "}
                         {item.has_variants
                           ? "Sized"
