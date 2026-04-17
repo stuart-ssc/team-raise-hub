@@ -329,6 +329,15 @@ Deno.serve(async (req) => {
           },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "create_campaign_draft",
+          description:
+            "Create the campaign draft in the database. Call this ONLY after all required fields are collected AND the user has explicitly confirmed they want to save the draft (e.g. said yes/ok/save/create). Do not call before user confirmation.",
+          parameters: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
     ];
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
