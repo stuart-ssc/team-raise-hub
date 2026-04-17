@@ -759,23 +759,31 @@ Deno.serve(async (req) => {
         ],
       };
     } else {
-      const nextMissing = missingRequired[0];
-      if (nextMissing === "campaign_type_id" && types.length > 0) {
+      // Walk every un-answered field in order — required AND optional.
+      const nextField = stillToAskNow[0];
+      if (nextField === "campaign_type_id" && types.length > 0) {
         suggestions = {
           type: "choice",
           field: "campaign_type_id",
           label: "Campaign type",
           options: types.map((t) => ({ label: t.name, value: t.id })),
         };
-      } else if (nextMissing === "group_id" && grps.length > 1) {
+      } else if (nextField === "group_id" && grps.length > 1) {
         suggestions = {
           type: "choice",
           field: "group_id",
           label: "Group",
           options: grps.map((g) => ({ label: g.group_name, value: g.id })),
         };
-      } else if (!nextMissing && !businessInfoAnswered) {
-        // All factual fields collected, but the sponsor-info question hasn't been answered yet.
+      } else if (nextField === "description") {
+        // Optional free-text field — offer a Skip chip; the chat input handles the text.
+        suggestions = {
+          type: "choice",
+          field: "description",
+          label: "Add a short description?",
+          options: [{ label: "Skip — no description", value: "skip" }],
+        };
+      } else if (nextField === "requires_business_info") {
         suggestions = {
           type: "choice",
           field: "requires_business_info",
