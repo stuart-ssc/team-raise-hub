@@ -300,7 +300,7 @@ export default function Campaigns() {
     if (organizationUser) {
       fetchCampaigns();
     }
-  }, [activeGroup?.id]);
+  }, [activeGroup?.id, filterBy]);
 
   if (organizationUserLoading || loading) {
     return (
