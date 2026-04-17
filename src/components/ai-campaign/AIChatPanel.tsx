@@ -37,7 +37,7 @@ export default function AIChatPanel({
   onImageSkipped,
 }: AIChatPanelProps) {
   const [input, setInput] = useState("");
-  const [dismissedAt, setDismissedAt] = useState<number>(-1);
+  const [dismissedTurnStart, setDismissedTurnStart] = useState<number>(-1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -72,20 +72,38 @@ export default function AIChatPanel({
     }
   };
 
-  let latestAssistantIdx = -1;
+  // Find the start index of the latest assistant turn (contiguous run of assistant messages at the end)
+  let latestTurnStart = -1;
+  let latestTurnEnd = -1;
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i].role === "assistant") {
-      latestAssistantIdx = i;
+      if (latestTurnEnd === -1) latestTurnEnd = i;
+      latestTurnStart = i;
+    } else if (latestTurnEnd !== -1) {
       break;
     }
   }
 
+  // Pick suggestions from any message in the latest turn (prefer the last one that has them)
+  let turnSuggestions: ChatSuggestions | null = null;
+  if (latestTurnStart !== -1) {
+    for (let i = latestTurnEnd; i >= latestTurnStart; i--) {
+      const s = messages[i]?.suggestions;
+      if (s) {
+        turnSuggestions = s;
+        break;
+      }
+    }
+  }
+
+  const showTurnPrompt =
+    !isLoading &&
+    latestTurnStart !== -1 &&
+    latestTurnStart !== dismissedTurnStart &&
+    !!turnSuggestions;
+
   const activeSuggestions =
-    latestAssistantIdx !== -1 &&
-    latestAssistantIdx !== dismissedAt &&
-    messages[latestAssistantIdx]?.suggestions?.type === "choice"
-      ? messages[latestAssistantIdx]!.suggestions!
-      : null;
+    showTurnPrompt && turnSuggestions?.type === "choice" ? turnSuggestions : null;
 
   const maybeMapNumericInput = (raw: string): string => {
     const trimmed = raw.trim();
@@ -112,15 +130,8 @@ export default function AIChatPanel({
         )}
 
         {messages.map((msg, i) => {
-          const isLatest = i === latestAssistantIdx;
-          const showPrompt =
-            msg.role === "assistant" &&
-            isLatest &&
-            !isLoading &&
-            i !== dismissedAt &&
-            !!msg.suggestions;
-
-          const promptType = msg.suggestions?.type ?? "choice";
+          const isLastOfTurn = i === latestTurnEnd;
+          const promptType = turnSuggestions?.type ?? "choice";
 
           return (
             <div
@@ -143,26 +154,26 @@ export default function AIChatPanel({
                 )}
               </div>
 
-              {showPrompt && promptType === "image_upload" && campaignId && (
+              {showTurnPrompt && isLastOfTurn && promptType === "image_upload" && campaignId && (
                 <div className="mt-3 w-full">
                   <ImageUploadPrompt
                     campaignId={campaignId}
                     disabled={isLoading}
                     onUploaded={(url) => onImageUploaded?.(url)}
                     onSkip={() => onImageSkipped?.()}
-                    onDismiss={() => setDismissedAt(i)}
+                    onDismiss={() => setDismissedTurnStart(latestTurnStart)}
                   />
                 </div>
               )}
 
-              {showPrompt && promptType === "choice" && msg.suggestions!.options.length > 0 && (
+              {showTurnPrompt && isLastOfTurn && promptType === "choice" && turnSuggestions!.options.length > 0 && (
                 <div className="mt-3 w-full">
                   <SuggestionPrompt
-                    label={msg.suggestions!.label}
-                    options={msg.suggestions!.options}
+                    label={turnSuggestions!.label}
+                    options={turnSuggestions!.options}
                     disabled={isLoading}
                     onSelect={(label) => handleSend(label)}
-                    onDismiss={() => setDismissedAt(i)}
+                    onDismiss={() => setDismissedTurnStart(latestTurnStart)}
                   />
                 </div>
               )}
