@@ -6,6 +6,112 @@ const corsHeaders = {
 
 const REQUIRED_KEYS = ["name", "campaign_type_id", "group_id", "goal_amount", "start_date", "end_date"];
 
+const MONTHS: Record<string, number> = {
+  jan: 1, january: 1,
+  feb: 2, february: 2,
+  mar: 3, march: 3,
+  apr: 4, april: 4,
+  may: 5,
+  jun: 6, june: 6,
+  jul: 7, july: 7,
+  aug: 8, august: 8,
+  sep: 9, sept: 9, september: 9,
+  oct: 10, october: 10,
+  nov: 11, november: 11,
+  dec: 12, december: 12,
+};
+
+function pad(n: number): string {
+  return n.toString().padStart(2, "0");
+}
+
+function buildIso(y: number, m: number, d: number): string | null {
+  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (
+    dt.getUTCFullYear() !== y ||
+    dt.getUTCMonth() !== m - 1 ||
+    dt.getUTCDate() !== d
+  ) {
+    return null; // invalid (e.g. Feb 31)
+  }
+  return `${y}-${pad(m)}-${pad(d)}`;
+}
+
+function inferYear(month: number, day: number, today: Date): number {
+  const curYear = today.getUTCFullYear();
+  const candidate = new Date(Date.UTC(curYear, month - 1, day));
+  // strip today's time
+  const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  return candidate.getTime() < todayUtc.getTime() ? curYear + 1 : curYear;
+}
+
+/**
+ * Normalize a variety of date inputs to YYYY-MM-DD (US mm/dd convention).
+ * Returns null if unparseable.
+ */
+function normalizeDate(input: any, today: Date = new Date()): string | null {
+  if (input === null || input === undefined) return null;
+  const raw = String(input).trim();
+  if (!raw) return null;
+
+  // 1. Already ISO YYYY-MM-DD
+  let m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return buildIso(+m[1], +m[2], +m[3]);
+
+  // 2. M/D/YYYY or M-D-YYYY (US)
+  m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (m) {
+    let y = +m[3];
+    if (y < 100) y += 2000;
+    return buildIso(y, +m[1], +m[2]);
+  }
+
+  // 3. M/D or M-D (no year — infer)
+  m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+  if (m) {
+    const mo = +m[1], d = +m[2];
+    const y = inferYear(mo, d, today);
+    return buildIso(y, mo, d);
+  }
+
+  // 4. Verbal: "May 1", "May 1st", "May 1, 2026", "1 May 2026", "May 1st 2026"
+  const cleaned = raw.toLowerCase().replace(/(\d+)(st|nd|rd|th)/g, "$1").replace(/,/g, " ");
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+
+  // Try "month day [year]"
+  if (parts.length >= 2 && MONTHS[parts[0]]) {
+    const mo = MONTHS[parts[0]];
+    const d = parseInt(parts[1], 10);
+    if (!isNaN(d)) {
+      const y = parts[2] && /^\d{2,4}$/.test(parts[2])
+        ? (parts[2].length === 2 ? 2000 + +parts[2] : +parts[2])
+        : inferYear(mo, d, today);
+      return buildIso(y, mo, d);
+    }
+  }
+
+  // Try "day month [year]"
+  if (parts.length >= 2 && MONTHS[parts[1]]) {
+    const d = parseInt(parts[0], 10);
+    const mo = MONTHS[parts[1]];
+    if (!isNaN(d)) {
+      const y = parts[2] && /^\d{2,4}$/.test(parts[2])
+        ? (parts[2].length === 2 ? 2000 + +parts[2] : +parts[2])
+        : inferYear(mo, d, today);
+      return buildIso(y, mo, d);
+    }
+  }
+
+  // 5. Last resort: native Date parser (handles "next Friday", ISO datetime, etc.)
+  const parsed = new Date(raw);
+  if (!isNaN(parsed.getTime())) {
+    return buildIso(parsed.getUTCFullYear(), parsed.getUTCMonth() + 1, parsed.getUTCDate());
+  }
+
+  return null;
+}
+
 interface FieldDef {
   key: string;
   label: string;
@@ -29,7 +135,8 @@ function buildSystemPrompt(
   campaignTypes: { id: string; name: string }[],
   groups: { id: string; group_name: string }[],
   collectedFields: Record<string, any>,
-  autoFilledGroupName: string | null
+  autoFilledGroupName: string | null,
+  todayIso: string
 ): string {
   const typesList = campaignTypes.map((t) => `  - "${t.name}" → id: ${t.id}`).join("\n");
   const groupsList = groups.map((g) => `  - "${g.group_name}" → id: ${g.id}`).join("\n");
@@ -57,6 +164,8 @@ function buildSystemPrompt(
 
   return `You are a campaign creation assistant for Sponsorly, a fundraising platform for schools and nonprofits.
 
+Today's date is **${todayIso}**. Use this when interpreting relative dates ("next Friday", "in 2 weeks") or inferring missing years.
+
 Your job is to help the user set up a new fundraising campaign by collecting the required information through natural conversation.
 
 ## Available Campaign Types
@@ -80,12 +189,13 @@ ${autoFillNote}
 3. For campaign_type_id: match the user's description to the closest campaign type and use its ID.
 4. For group_id: match the user's description to the closest group and use its ID.
 5. For goal_amount: convert dollar amounts to cents (e.g. $500 → 50000).
-6. Do NOT make up values. Only extract what the user explicitly says.
-7. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
-8. If all required fields are collected, continue asking about any remaining optional fields (description, requires_business_info) one at a time. The user can answer or say "skip". Once ALL fields have been addressed, confirm the campaign is ready to create.
-9. Keep responses short and focused — no more than 2-3 sentences.
-10. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
-11. When you match a campaign type from the user's description, CONFIRM it explicitly in your response (e.g. "Great, I'll set this up as a **Merchandise Sale**.") before moving to the next field. Never silently set the campaign type.`;
+6. For start_date and end_date: accept ANY natural format the user provides — "May 1", "5/1", "5/1/2026", "next Friday", "May 1st", "in 2 weeks", etc. ALWAYS interpret M/D or M/D/YYYY as US-style **month/day/year**. If the user omits the year, assume the current year (${todayIso.slice(0, 4)}) — but if that date has already passed, roll forward to next year. ALWAYS pass the date to the tool in **YYYY-MM-DD** format. After setting a date, briefly confirm it back in friendly format (e.g. "Got it — starting **May 1, 2026**.").
+7. Do NOT make up values. Only extract what the user explicitly says.
+8. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
+9. If all required fields are collected, continue asking about any remaining optional fields (description, requires_business_info) one at a time. The user can answer or say "skip". Once ALL fields have been addressed, confirm the campaign is ready to create.
+10. Keep responses short and focused — no more than 2-3 sentences.
+11. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
+12. When you match a campaign type from the user's description, CONFIRM it explicitly in your response (e.g. "Great, I'll set this up as a **Merchandise Sale**.") before moving to the next field. Never silently set the campaign type.`;
 }
 
 Deno.serve(async (req) => {
@@ -122,7 +232,9 @@ Deno.serve(async (req) => {
       autoFilledGroupName = grps[0].group_name;
     }
 
-    const systemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName);
+    const today = new Date();
+    const todayIso = `${today.getUTCFullYear()}-${pad(today.getUTCMonth() + 1)}-${pad(today.getUTCDate())}`;
+    const systemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso);
 
     const tools = [
       {
@@ -200,7 +312,17 @@ Deno.serve(async (req) => {
           try {
             const args = JSON.parse(toolCall.function.arguments);
             for (const [key, value] of Object.entries(args)) {
-              if (value !== undefined && value !== null && value !== "") {
+              if (value === undefined || value === null || value === "") continue;
+
+              // Normalize date fields server-side
+              if (key === "start_date" || key === "end_date") {
+                const normalized = normalizeDate(value, today);
+                if (!normalized) {
+                  console.warn(`Could not normalize ${key}:`, value);
+                  continue; // drop unparseable date so AI re-asks
+                }
+                updatedFields[key] = normalized;
+              } else {
                 updatedFields[key] = value;
               }
             }
@@ -208,6 +330,12 @@ Deno.serve(async (req) => {
             console.error("Failed to parse tool call arguments:", e);
           }
         }
+      }
+
+      // Sanity check: if end_date is before start_date, drop end_date
+      if (updatedFields.start_date && updatedFields.end_date && updatedFields.end_date < updatedFields.start_date) {
+        console.warn("end_date before start_date; dropping end_date", updatedFields);
+        delete updatedFields.end_date;
       }
 
       // If there was a tool call but no text content, make a follow-up call
