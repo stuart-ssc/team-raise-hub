@@ -160,54 +160,78 @@ export default function AICampaignPreview({
           </Card>
         )}
 
-        <Card>
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="space-y-2">
-              {allFields.map((field) => {
-                const value = collectedFields[field.key];
-                const hasValue = value !== undefined && value !== null && value !== "";
-                let displayValue = "";
-                if (hasValue) {
-                  if (field.key === "campaign_type_id") displayValue = resolvedTypeName || value;
-                  else if (field.key === "group_id") displayValue = resolvedGroupName || value;
-                  else displayValue = formatFieldValue(field.key, value);
-                }
-
-                return (
-                  <div key={field.key} className="flex items-center justify-between py-1">
-                    <div className="flex items-center gap-2">
-                      {hasValue ? (
-                        <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />
-                      ) : field.required ? (
-                        <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                      ) : (
-                        <Minus className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
-                      )}
-                      <span className="text-sm">{field.label}</span>
-                      {field.required && <span className="text-[10px] text-muted-foreground">*</span>}
-                    </div>
-                    <span
-                      className={`text-sm text-right max-w-[50%] truncate ${
-                        hasValue
-                          ? "font-medium"
-                          : field.required
-                            ? "text-amber-500 text-xs"
-                            : "text-muted-foreground/40 text-xs"
+        <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="pb-2 pt-3 px-4 cursor-pointer hover:bg-muted/30 transition-colors">
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Details
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    {campaignId && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] border-green-600/40 text-green-700 dark:text-green-400 gap-1"
+                      >
+                        <Check className="h-3 w-3" />
+                        Draft saved
+                      </Badge>
+                    )}
+                    <ChevronDown
+                      className={`h-4 w-4 text-muted-foreground transition-transform ${
+                        detailsOpen ? "rotate-180" : ""
                       }`}
-                    >
-                      {hasValue ? displayValue : field.required ? "Needed" : "---"}
-                    </span>
+                    />
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="px-4 pb-3">
+                <div className="space-y-2">
+                  {allFields.map((field) => {
+                    const value = collectedFields[field.key];
+                    const hasValue = value !== undefined && value !== null && value !== "";
+                    let displayValue = "";
+                    if (hasValue) {
+                      if (field.key === "campaign_type_id") displayValue = resolvedTypeName || value;
+                      else if (field.key === "group_id") displayValue = resolvedGroupName || value;
+                      else displayValue = formatFieldValue(field.key, value);
+                    }
+
+                    return (
+                      <div key={field.key} className="flex items-center justify-between py-1">
+                        <div className="flex items-center gap-2">
+                          {hasValue ? (
+                            <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                          ) : field.required ? (
+                            <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                          ) : (
+                            <Minus className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                          )}
+                          <span className="text-sm">{field.label}</span>
+                          {field.required && <span className="text-[10px] text-muted-foreground">*</span>}
+                        </div>
+                        <span
+                          className={`text-sm text-right max-w-[50%] truncate ${
+                            hasValue
+                              ? "font-medium"
+                              : field.required
+                                ? "text-amber-500 text-xs"
+                                : "text-muted-foreground/40 text-xs"
+                          }`}
+                        >
+                          {hasValue ? displayValue : field.required ? "Needed" : "---"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
         {phase === "collecting_items" && (
           <Card>
