@@ -222,6 +222,8 @@ export default function AICampaignPreview({
             </CardContent>
           </Card>
         )}
+
+        {isPostDraft && (
           <Card>
             <CardHeader className="pb-2 pt-3 px-4">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
