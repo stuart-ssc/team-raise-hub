@@ -1,36 +1,35 @@
 
 
-## Problem
-Once all required fields are collected, the AI says "ready to create" but has no tool to actually create the draft. The only way to create it is the "Create Draft Campaign" button in the right preview pane. When the user replies "Ok" in chat, the AI re-acknowledges but nothing triggers — leaving the user stuck.
+The user wants three fixes to the AI Campaign Builder:
 
-## Fix: Let the AI create the draft from chat
+1. **Terminology**: Replace "peer-to-peer fundraising" language with the correct concept — each roster member gets an individual goal and a personalized URL to track their contributions.
+2. **Single-roster shortcut**: If the group has only one roster, default to it and just confirm ("I'll attribute donations to your **[Roster Name]** roster — sound good?") instead of asking the user to pick.
+3. **Missing question**: The AI skipped asking about `requires_business_info` before prompting to save the draft. It should be asked during the collection phase.
 
-### 1. Add a `create_campaign_draft` tool (edge function)
-In `supabase/functions/ai-campaign-builder/index.ts`:
-- Add a new tool the AI can call once all required fields are collected and the user confirms
-- Server-side handler validates required fields are present, then INSERTs into `campaigns` table using the admin client (status=false, publication_status='draft')
-- Returns the new `campaignId` in the response payload
-- Handles slug-conflict (duplicate name) gracefully — return an error message the AI can relay
+Let me confirm by checking the edge function's system prompt and how rosters are currently fetched.
 
-### 2. Update system prompt
-- When `phase === "ready_to_create"`: instruct the AI to confirm with the user (one short sentence: "Ready to save this as a draft?") and offer Yes/No suggestion buttons
-- When the user says yes/ok/create/save → call `create_campaign_draft` tool
-- After tool succeeds, transition naturally into post-draft conversation (image upload prompt)
+## Plan
 
-### 3. Wire response → frontend
-In `src/pages/AICampaignBuilder.tsx`:
-- When the edge function response includes a newly-created `campaignId` (from the tool result), set it in state and switch phase to `post_draft`
-- Skip the manual `handleCreateDraft` path when the AI already created it
-- Keep the existing "Create Draft Campaign" button as a fallback for users who prefer to click
+### File: `supabase/functions/ai-campaign-builder/index.ts`
 
-### 4. Add a confirm suggestion at ready_to_create phase
-Add a Yes/No suggestion in the suggestions block when `phase === "ready_to_create"` so the user sees clear "Yes, create draft" / "Not yet, let me change something" buttons in the chat.
+**1. Fix terminology in the system prompt (post-draft section)**
+- Remove all "peer-to-peer" language.
+- Replace with: "Roster attribution gives each roster member an individual fundraising goal and a personalized URL so they can track their own contributions to the campaign."
+- When asking the user, phrase it as: "Want to enable individual goals and personalized URLs for each roster member?" (yes/no).
 
-### Files
-- `supabase/functions/ai-campaign-builder/index.ts` — new tool, server-side INSERT, return campaignId, suggestion for ready_to_create phase
-- `src/pages/AICampaignBuilder.tsx` — handle `campaignId` returned from edge function response, transition phase, kick off post-draft conversation
+**2. Smart roster default**
+- The function already fetches rosters for the group when `campaignId` is set (post-draft phase). Extend this:
+  - If `rosters.length === 1`: include in the system prompt: "The group has exactly one roster: **[name]** (id: [id]). When the user enables roster attribution, automatically use this roster_id and just confirm with them — do NOT ask them to choose."
+  - If `rosters.length > 1`: keep current behavior (offer numbered choices).
+  - If `rosters.length === 0`: tell the AI to skip roster attribution and explain why.
+
+**3. Add `requires_business_info` to the collection phase**
+- Update the system prompt's collection-phase checklist so the AI explicitly asks: "Will donors purchase as a business (for sponsor recognition / tax records)?" before calling `create_campaign_draft`.
+- Add `requires_business_info` to the list of fields the AI must collect/confirm before transitioning to `ready_to_create`.
+- The field already exists in the tool schema and frontend insert path — just need to make the AI ask for it.
+- Suggest yes/no chips when asking.
 
 ### Out of scope
-- The "Create Draft" button stays as a fallback — no UI removal
-- Roster link generation logic unchanged (already wired in the post-draft step)
+- No frontend changes needed — the edge function changes flow through the existing message/suggestion pipeline.
+- Roster fetching logic already exists; only the prompt instructions need updating.
 
