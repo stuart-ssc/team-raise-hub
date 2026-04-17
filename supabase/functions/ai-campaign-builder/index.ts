@@ -951,6 +951,19 @@ Deno.serve(async (req) => {
                 }
                 updatedFields[key] = normalized;
                 persistFields[key] = normalized;
+              } else if (key === "goal_amount") {
+                // Sanitize: strip $/commas/spaces, parse as plain dollars (no cents conversion)
+                let raw: any = value;
+                if (typeof raw === "string") {
+                  raw = raw.replace(/[$,\s]/g, "");
+                }
+                const num = Number(raw);
+                if (!isFinite(num) || num <= 0) {
+                  console.warn("Invalid goal_amount, skipping:", value);
+                  continue;
+                }
+                updatedFields[key] = num;
+                persistFields[key] = num;
               } else {
                 updatedFields[key] = value;
                 persistFields[key] = value;
