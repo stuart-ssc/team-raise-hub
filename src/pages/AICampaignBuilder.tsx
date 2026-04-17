@@ -27,6 +27,8 @@ export default function AICampaignBuilder() {
   const [readyToCreate, setReadyToCreate] = useState(false);
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("collecting");
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [campaignStatus, setCampaignStatus] = useState<string>("draft");
 
   const [campaignTypes, setCampaignTypes] = useState<{ id: string; name: string }[]>([]);
   const [groups, setGroups] = useState<{ id: string; group_name: string }[]>([]);
