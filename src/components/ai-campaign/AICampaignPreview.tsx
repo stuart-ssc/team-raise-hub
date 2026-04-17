@@ -17,6 +17,7 @@ interface AICampaignPreviewProps {
   phase?: Phase;
   campaignId?: string | null;
   onOpenEditor?: () => void;
+  onPublishClick?: () => void;
 }
 
 export default function AICampaignPreview({
