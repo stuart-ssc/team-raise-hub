@@ -472,7 +472,8 @@ ${nextStep}
 
   Want to enable roster attribution for this campaign?
   \`\`\`
-  NEVER combine acknowledgment and question in one sentence. NEVER repeat the question text in both paragraphs. NEVER add a third paragraph (no clarifying notes, no trailing emoji-only lines, no extra commentary).`;
+  NEVER combine acknowledgment and question in one sentence. NEVER repeat the question text in both paragraphs. NEVER add a third paragraph (no clarifying notes, no trailing emoji-only lines, no extra commentary).
+- **Never repeat your immediately previous question verbatim.** If the user's reply was unclear, briefly re-frame or ask a short clarifier — do not paste the same question again.`;
   }
 
   // PRE-DRAFT MODE (collecting required fields)
