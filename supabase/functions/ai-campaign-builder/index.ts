@@ -769,9 +769,20 @@ Deno.serve(async (req) => {
               currentItemDraft.recurring_interval = "year";
               deterministicItemCaptured = true;
             }
+          } else if (next.key === "name" || next.key === "size") {
+            // Capture short free-text replies for name/size so the state machine advances
+            // and the next (often optional) field gets explicitly asked with a Skip chip.
+            if (raw.length > 0 && raw.length <= 120) {
+              currentItemDraft[next.key] = raw;
+              deterministicItemCaptured = true;
+            }
+          } else if (next.key === "description") {
+            // Capture description text deterministically too (skip already handled above).
+            if (raw.length > 0) {
+              currentItemDraft.description = raw;
+              deterministicItemCaptured = true;
+            }
           }
-          // For string fields (name, description, size) we let the model handle it,
-          // since arbitrary text shouldn't be auto-captured (could be conversational).
         }
       } catch (e) {
         console.error("Deterministic item capture failed:", e);
