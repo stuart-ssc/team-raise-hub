@@ -43,7 +43,8 @@ export default function ImageUploadPrompt({
     setUploading(true);
     try {
       const ext = file.name.split(".").pop() || "jpg";
-      const path = `${campaignId}/cover-${Date.now()}.${ext}`;
+      const prefix = pathPrefix || "cover";
+      const path = `${campaignId}/${prefix}-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("campaign-item-images")
         .upload(path, file, { contentType: file.type, upsert: true });
