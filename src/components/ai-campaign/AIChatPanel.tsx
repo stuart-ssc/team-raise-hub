@@ -37,7 +37,7 @@ export default function AIChatPanel({
   onImageSkipped,
 }: AIChatPanelProps) {
   const [input, setInput] = useState("");
-  const [dismissedAt, setDismissedAt] = useState<number>(-1);
+  const [dismissedTurnStart, setDismissedTurnStart] = useState<number>(-1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
