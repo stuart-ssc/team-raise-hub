@@ -1,59 +1,41 @@
 
 
-## Issue Analysis
+## Issue
+User typed `10000` for the fundraising goal. AI replied "Got it — goal of **$100.00**" and the goal didn't appear on the preview card.
 
-Looking at the screenshot, three distinct problems happened in sequence:
+## Root cause hypothesis
+The edge function (or its tool schema) is treating the goal as **cents** instead of **dollars**, so `10000` → `$100.00`. Per project memory: *"Store currency as decimal dollars (`500` = $500), do not convert from cents."* Two likely culprits:
 
-1. **Dead-end statement**: After extended details, AI said "Now that we've covered the basics, let's add some items!" with no question/CTA. User had to type "ok" to advance.
-2. **Double response**: AI sent two messages back-to-back asking for the item name ("Alright, let's add the first sponsorship item..." AND "Great! What's the name of your first sponsorship item...").
-3. **Wrong UI affordance**: The image upload prompt appeared *before* the item name was collected, and the input placeholder still says "Describe your campaign…" instead of something contextual like "Type the item name…".
+1. The system prompt / tool schema in `ai-campaign-builder/index.ts` instructs the model to convert dollar input into cents, OR formats `goal_amount` for display by dividing by 100.
+2. The model is dividing on its own and then storing the divided value into `collectedFields.goal_amount`, which is why the preview card (left) shows nothing or wrong value — it may be reading `goal_amount` expecting dollars.
 
-## Root Causes (to confirm by reading edge function)
+Also, the preview card not updating suggests `AICampaignPreview` reads `collectedFields.goal_amount` but the field is either missing, named differently, or stored in a place the card doesn't read until the draft is created.
 
-I need to read `supabase/functions/ai-campaign-builder/index.ts` to confirm, but based on prior context:
-
-- **Cause 1 (dead-end)**: After the post-draft phase completes, the function emits a transition message announcing items collection but doesn't immediately ask for the first field (`name`). The very next turn re-enters and prompts properly — but only after the user sends something.
-- **Cause 2 (double-ask)**: When my last change added `image` to `ITEM_FIELDS`, I likely also kept a separate hand-written intro message *and* let the model generate its own prompt → two assistant messages in `assistantMessages[]`.
-- **Cause 3 (image first)**: I placed `image` too early in `ITEM_FIELDS` (before `name`), or the suggestion builder is emitting `image_upload` even though the next required field is `name`. The image step must come *after* the required `name` (and ideally `price`) are captured.
-- **Cause 4 (placeholder)**: `AIChatPanel` uses a static placeholder. It should adapt to the current phase / current item field.
+## Investigation needed
+1. `supabase/functions/ai-campaign-builder/index.ts` — search for `goal_amount`, `cents`, `/ 100`, `* 100`, and the system prompt text around fundraising goal.
+2. `src/components/ai-campaign/AICampaignPreview.tsx` — confirm how `goal_amount` is read/formatted and whether it expects dollars or cents.
+3. `src/pages/AICampaignBuilder.tsx` — confirm `goal_amount` is passed straight through to `campaigns.insert` (which expects dollars per memory).
 
 ## Plan
 
-### 1. Reorder `ITEM_FIELDS` in the edge function
-Move `image` to come **after** the required fields (`name`, `price`, anything else required). Order should be roughly: `name` → `price` → `description` → `image` → other optional fields. Image is always optional/skippable.
+### 1. Edge function (`ai-campaign-builder/index.ts`)
+- Update the system prompt: explicitly state "Goal amount is stored in **whole dollars**. If the user types `10000`, store `10000` and confirm as `$10,000.00`. Do NOT convert to cents."
+- Remove any `* 100` / `/ 100` math on `goal_amount` in tool handling or display formatting.
+- Ensure the assistant's confirmation message formats with `Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)` on the raw dollar value (no division).
+- Add a small server-side guard: if the model returns `goal_amount` as a string with `$` or commas, strip them and parse as a plain number (dollars).
 
-### 2. Fix the double prompt at the start of items phase
-When transitioning into `collecting_items`:
-- Emit **one** assistant message that both announces the phase AND asks for the first field's value (e.g. "Now let's add your first sponsorship item — what's its name? e.g. Large Banner, Event Sponsor, Platinum Sponsor.").
-- Do not let the model generate a follow-up prompt in the same turn. Either: (a) skip the model call on the transition turn and return only the canned message, or (b) include the field question inside the canned message and clear `assistantMessages` from the model call.
+### 2. Preview card (`AICampaignPreview.tsx`)
+- Confirm it reads `collectedFields.goal_amount` and renders as dollars (no `/100`). Fix if needed so it shows the goal as soon as it's captured (before draft is saved).
+- If the goal is being rendered conditionally on `campaignId`, surface it from `collectedFields` immediately.
 
-### 3. Fix the dead-end "ok" requirement
-The transition into items collection must be triggered by the *previous* user turn (the one that completed extended details), not require a fresh user message. Concretely: when the post-draft phase finishes in a given turn, immediately roll into producing the first items prompt in that same response.
+### 3. Page (`AICampaignBuilder.tsx`)
+- Verify `handleCreateDraft` passes `goal_amount` straight through (already does). No change expected unless the value is being mangled upstream.
 
-### 4. Suppress `image_upload` suggestion until item is named
-In the suggestions builder, only emit `type: "image_upload"` with `field: "item_image_url"` when:
-- `phase === "collecting_items"` AND
-- `currentItemDraft.name` is set AND
-- `currentItemDraft.price` is set (or whatever required fields precede image)
+### 4. Files to change
+- `supabase/functions/ai-campaign-builder/index.ts` — prompt + sanitization
+- `src/components/ai-campaign/AICampaignPreview.tsx` — display fix if needed
 
-Otherwise emit a text prompt suggestion (or none).
-
-### 5. Contextual chat input placeholder
-In `AIChatPanel.tsx`:
-- Accept a new `placeholder?: string` prop (or derive from `phase` / latest suggestion).
-- In `AICampaignBuilder.tsx`, pass a placeholder based on `phase`:
-  - `collecting` → "Describe your campaign…"
-  - `post_draft` → "Answer the question above…"
-  - `collecting_items` → "Type your answer…" (or use the current field's label, e.g. "Type the item name…")
-  - `complete` → "Anything else?"
-
-### 6. Files to change
-- `supabase/functions/ai-campaign-builder/index.ts` — reorder `ITEM_FIELDS`, fix transition turn (no double prompt), gate `image_upload` suggestion behind `name`/`price` presence.
-- `src/components/ai-campaign/AIChatPanel.tsx` — accept dynamic `placeholder` prop.
-- `src/pages/AICampaignBuilder.tsx` — compute and pass `placeholder` based on `phase` and `currentItemDraft`.
-
-### 7. Out of scope
-- Redesigning the items collection flow.
-- Letting the user upload multiple images per item.
-- Editing items already saved (handled in regular editor).
+### 5. Out of scope
+- Changing how `campaigns.goal_amount` is stored in the DB (it's already dollars).
+- Refactoring item `cost` handling (separate field, also dollars).
 
