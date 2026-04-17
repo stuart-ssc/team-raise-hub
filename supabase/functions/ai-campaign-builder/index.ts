@@ -584,6 +584,7 @@ Deno.serve(async (req) => {
     const resolvedTypeName =
       types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null;
     const itemNoun = itemNounForType(resolvedTypeName);
+    const itemExamples = itemExamplesForType(resolvedTypeName);
 
     // Fetch campaign name when needed for items prompt
     let campaignNameForItems: string = updatedFields.name || "";
