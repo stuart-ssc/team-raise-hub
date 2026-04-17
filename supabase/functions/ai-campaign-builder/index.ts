@@ -440,6 +440,17 @@ Deno.serve(async (req) => {
                 persistFields[key] = value;
               }
             }
+            // Drop hallucinated UUIDs that don't match any known group/type
+            if (updatedFields.group_id && !grps.find((g) => g.id === updatedFields.group_id)) {
+              console.warn("Dropping invalid group_id from tool call:", updatedFields.group_id);
+              delete updatedFields.group_id;
+              delete persistFields.group_id;
+            }
+            if (updatedFields.campaign_type_id && !types.find((t) => t.id === updatedFields.campaign_type_id)) {
+              console.warn("Dropping invalid campaign_type_id from tool call:", updatedFields.campaign_type_id);
+              delete updatedFields.campaign_type_id;
+              delete persistFields.campaign_type_id;
+            }
             toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, updatedFields }) });
           } catch (e) {
             console.error("Failed to parse tool call arguments:", e);
