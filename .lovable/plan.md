@@ -1,56 +1,61 @@
 
 
-## What's broken
-Edge function 500 on user reply "monday" (start date). Goal capture worked, but start_date entry crashes the function.
+## Goal
+After draft save, add a clear transition into the items phase and collapse the Details summary card so the Campaign Items card is visible.
 
-## Likely cause
-In the last change I added deterministic date capture using `normalizeDate(...)`. The most probable failure modes:
+## Investigation needed
+<lov-tool-use id="toolu_vrtx_01Xx9QEdb6TUYbwxLrkz3jEk" name="code--search_files" integration-id="code" data="{\"query\": \"ai-builder|AIBuilder|ai_builder\", \"include_patterns\": \"src/**/*.tsx,src/**/*.ts\"}">
+</lov-tool-use>
 
-1. `normalizeDate` is called with arguments it doesn't handle (e.g. `today` is a `Date` but the function expects a string, or vice-versa) → throws → uncaught → 500.
-2. The new "end of <month>" / "beginning of <month>" / bare-month branch uses `MONTHS` as an object map but elsewhere in the file `MONTHS` may be defined as an array (or not defined at all in scope) → ReferenceError on the very first date turn.
-3. `detectFieldFromAssistantText` was extended to detect start_date/end_date but uses a regex that throws or returns a value the downstream switch doesn't expect.
+<lov-tool-use id="toolu_vrtx_013u2UXcgy4TTLcGndBE6y7k" name="code--search_files" integration-id="code" data="{\"query\": \"create_campaign_draft\", \"include_patterns\": \"src/**/*.tsx,src/**/*.ts,supabase/**/*.ts\"}">
+</lov-tool-use>
 
-Need to view the current edge function to confirm which one — but plan stays the same regardless: wrap the new capture in try/catch, fix the `MONTHS` reference, and verify with logs.
+<lov-tool-use id="toolu_vrtx_01MuMt9K7zuSWbeW62LinY6A" name="code--search_files" integration-id="code" data="{\"query\": \"ai-builder|AICampaignBuilder|create_campaign_draft\", \"include_patterns\": \"src/**/*.tsx,src/**/*.ts\"}">
+</lov-tool-use>
 
-## Fix
+<lov-tool-use id="toolu_vrtx_01BHMbn9HUKZTRvTgouznmhp" name="code--view" integration-id="code" data="{\"file_path\": \"src/pages/AICampaignBuilder.tsx\"}">
+</lov-tool-use>
 
-### A. Inspect logs + code first (during implementation)
-- Read the current `supabase/functions/ai-campaign-builder/index.ts` around `normalizeDate`, `MONTHS`, and the new deterministic capture block.
-- Pull recent edge function logs for `ai-campaign-builder` to see the exact stack trace.
+<lov-tool-use id="toolu_vrtx_019SHx9cJcRWqYowkiGh5es4" name="code--view" integration-id="code" data="{\"file_path\": \"src/components/ai-campaign/AICampaignPreview.tsx\"}">
+</lov-tool-use>
+Now I have enough context. The user wants two things:
 
-### B. Harden the deterministic date capture
-Wrap the new server-side date parsing in try/catch so a parser bug never 500s the whole function:
-```ts
-try {
-  if (askedField === "start_date" || askedField === "end_date") {
-    const iso = normalizeDate(lastUserMsgRaw, today);
-    if (iso) updatedFields[askedField] = iso;
-  }
-} catch (e) {
-  console.error("date capture failed", e);
-}
-```
+1. A transition message in chat when draft is saved (currently just toast + brief message)
+2. Collapse the "Details" card after draft saved, showing "Draft saved" status, and surface the "Campaign items" card prominently
 
-### C. Fix `MONTHS` lookup in `normalizeDate`
-Ensure `MONTHS` is a single consistent structure (object map: `{jan:1, january:1, feb:2, ...}`) defined once at module scope, and all branches (`end of`, `beginning of`, bare month, MM/DD/YYYY parsing) use it the same way. Remove any duplicate/shadowed definitions introduced in the last edit.
+<lov-plan>
 
-### D. Sanity-check `today` argument
-Make sure every call site passes the same type (ISO string `YYYY-MM-DD`) and `normalizeDate` derives a `Date` internally — no `today.getUTCFullYear()` calls on a string.
+## What's changing
+After the campaign draft is saved, the right-hand preview panel and the chat both need to clearly signal a phase transition to "items collection".
 
-### E. Keep the existing "model must call update_campaign_fields" prompt rule
-No prompt changes needed for this fix.
+## Changes
+
+### 1. Preview panel — collapse Details card post-draft (`src/components/ai-campaign/AICampaignPreview.tsx`)
+- Wrap the **Details** card in a `<Collapsible>` (already in `src/components/ui/collapsible.tsx`).
+- Default state: **expanded** during `collecting` / `ready_to_create`, **collapsed** once `phase === "post_draft"` or `"collecting_items"` or `"complete"`.
+- Card header becomes a `CollapsibleTrigger`: shows "Details" + green "Draft saved" badge on the right + chevron indicator. Clicking toggles.
+- Move the **Campaign items** card so it renders directly under Details (so when Details collapses, items card is immediately visible without scrolling).
+- Keep all existing field-row content unchanged inside `CollapsibleContent`.
+
+### 2. Chat transition message (`src/pages/AICampaignBuilder.tsx`)
+The current post-draft assistant message ("Great — your draft … is saved. 🎉 Let's add a few more details…") only mentions image upload. Replace with a clearer two-part transition that names the new step:
+
+> "✅ **Primary details saved!** Your draft **{name}** is ready.
+> Now let's add your campaign **{itemNoun}s** — these are what supporters will sponsor or purchase. First, would you like to upload a campaign image to make it stand out?"
+
+Keep the existing image-upload suggestion chip.
+
+Also: when the AI edge function returns `createdCampaignId` (server-side draft creation path in `callAi`), inject the same transition assistant message into chat (currently only a toast fires — chat continues silently). This guarantees both code paths (manual "Create Draft" button + AI tool-triggered draft) show the transition.
+
+### 3. Tweak toast copy
+Change toast description from "Let's add your campaign items." to "Now let's add your campaign items." (matches user's wording).
 
 ## Files to change
-- `supabase/functions/ai-campaign-builder/index.ts` — fix `MONTHS` definition / usage, wrap deterministic date capture in try/catch, normalize `today` argument type.
-
-## Verification
-After the fix:
-1. Reply "monday" to the start-date question → start_date should populate, no 500.
-2. Reply "end of may" to the end-date question → end_date should populate to last day of May.
-3. Check edge function logs are clean.
+- `src/components/ai-campaign/AICampaignPreview.tsx` — collapsible Details card, reorder cards, add "Draft saved" inline badge in header.
+- `src/pages/AICampaignBuilder.tsx` — richer transition chat message in `handleCreateDraft` AND in `callAi` when `createdCampaignId` first appears.
 
 ## Out of scope
-- No frontend changes
-- No item-collection logic changes
-- No new fields
+- No edge-function logic changes.
+- No schema/phase changes.
+- Items card UI itself unchanged (just repositioned).
 
