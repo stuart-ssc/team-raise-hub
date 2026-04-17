@@ -917,21 +917,27 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Force a follow-up when draft was just created (so AI starts post-draft convo)
+      // Force a follow-up when draft was just created (so AI starts items convo)
+      // OR when an item was just saved (so AI asks add-another)
       // OR when there's no assistant text yet
-      const needsFollowUp = !assistantMessage || createdCampaignId !== null || createDraftError !== null;
+      const needsFollowUp = !assistantMessage || createdCampaignId !== null || savedItemId !== null || createDraftError !== null;
 
       if (needsFollowUp) {
-        // If we just created the draft, fetch rosters and rebuild the prompt in post-draft mode
         let followUpSystemPrompt = systemPrompt;
         if (createdCampaignId) {
-          const { data: rData } = await adminSb
-            .from("rosters")
-            .select("id, roster_year, current_roster")
-            .eq("group_id", updatedFields.group_id)
-            .order("roster_year", { ascending: false });
-          rosters = rData || [];
-          followUpSystemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso, createdCampaignId, rosters);
+          // Transition into items-collection phase right after the draft is saved
+          const cName = updatedFields.name || "your campaign";
+          followUpSystemPrompt = buildItemsSystemPrompt(cName, itemNoun, 0, {}, false, todayIso);
+        } else if (savedItemId && inItemsPhase) {
+          // Just saved an item — rebuild prompt so AI asks add-another
+          followUpSystemPrompt = buildItemsSystemPrompt(
+            campaignNameForItems,
+            itemNoun,
+            itemsAdded,
+            {},
+            true,
+            todayIso,
+          );
         }
 
         const followUpMessages = [
@@ -966,7 +972,9 @@ Deno.serve(async (req) => {
           if (createDraftError) {
             assistantMessage = createDraftError;
           } else if (createdCampaignId) {
-            assistantMessage = "Draft saved! 🎉 Would you like to upload a campaign image?";
+            assistantMessage = `Your campaign is created. 🎉\n\nNow let's add your first ${itemNoun}. What's the name?`;
+          } else if (savedItemId) {
+            assistantMessage = `Saved.\n\nWant to add another ${itemNoun}, or are you done?`;
           } else {
             assistantMessage = "Got it!";
           }
