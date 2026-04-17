@@ -6,6 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Check, Minus, AlertCircle, Rocket, Loader2, ExternalLink, ImageIcon, Users, FileText, Package, ChevronDown } from "lucide-react";
 import { allFields, formatFieldValue, getMissingRequiredFields } from "@/lib/ai/campaignSchema";
+import { supabase } from "@/integrations/supabase/client";
+
+interface CampaignItemRow {
+  id: string;
+  name: string;
+  cost: number | null;
+  quantity_offered: number | null;
+  has_variants: boolean | null;
+}
 
 type Phase = "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete";
 
