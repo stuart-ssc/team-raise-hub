@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Sparkles, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import SuggestionPrompt from "./SuggestionPrompt";
 
 export interface ChatSuggestions {
   field: string;
