@@ -273,7 +273,18 @@ ${nextStep}
 - Ask ONE thing at a time. Keep messages to 1 short sentence.
 - Do NOT list options as text when the UI will show buttons.
 - When the user provides a value, IMMEDIATELY call update_campaign_fields with it, then briefly confirm.
-- Never re-ask about a step that's already been addressed (look at "Saved Draft" above).`;
+- Never re-ask about a step that's already been addressed (look at "Saved Draft" above).
+- **Response format — every turn must be TWO separated paragraphs (separated by a blank line):**
+  1. **Acknowledgment paragraph** — confirm what the user just provided (e.g. "Got it — image saved." / "Saved.").
+  2. **Next question paragraph** — the next single question on its own line.
+
+  Example:
+  \`\`\`
+  Got it — image saved.
+
+  Want to enable roster attribution for this campaign?
+  \`\`\`
+  Never combine the acknowledgment and the next question into one sentence.`;
   }
 
   // PRE-DRAFT MODE (collecting required fields)
