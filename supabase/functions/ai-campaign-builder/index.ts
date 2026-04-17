@@ -312,7 +312,17 @@ Deno.serve(async (req) => {
           try {
             const args = JSON.parse(toolCall.function.arguments);
             for (const [key, value] of Object.entries(args)) {
-              if (value !== undefined && value !== null && value !== "") {
+              if (value === undefined || value === null || value === "") continue;
+
+              // Normalize date fields server-side
+              if (key === "start_date" || key === "end_date") {
+                const normalized = normalizeDate(value, today);
+                if (!normalized) {
+                  console.warn(`Could not normalize ${key}:`, value);
+                  continue; // drop unparseable date so AI re-asks
+                }
+                updatedFields[key] = normalized;
+              } else {
                 updatedFields[key] = value;
               }
             }
@@ -320,6 +330,12 @@ Deno.serve(async (req) => {
             console.error("Failed to parse tool call arguments:", e);
           }
         }
+      }
+
+      // Sanity check: if end_date is before start_date, drop end_date
+      if (updatedFields.start_date && updatedFields.end_date && updatedFields.end_date < updatedFields.start_date) {
+        console.warn("end_date before start_date; dropping end_date", updatedFields);
+        delete updatedFields.end_date;
       }
 
       // If there was a tool call but no text content, make a follow-up call
