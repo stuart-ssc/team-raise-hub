@@ -821,7 +821,7 @@ Deno.serve(async (req) => {
               campaign_type_id: { type: "string" },
               group_id: { type: "string" },
               description: { type: "string" },
-              goal_amount: { type: "number" },
+              goal_amount: { type: "number", description: "Fundraising goal in WHOLE DOLLARS (e.g. 10000 = $10,000.00). Do NOT convert to cents." },
               start_date: { type: "string" },
               end_date: { type: "string" },
               requires_business_info: { type: "boolean" },
