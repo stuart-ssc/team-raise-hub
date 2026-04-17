@@ -79,6 +79,22 @@ export default function AIChatPanel({
     }
   }
 
+  const activeSuggestions =
+    latestAssistantIdx !== -1 &&
+    latestAssistantIdx !== dismissedAt &&
+    messages[latestAssistantIdx]?.suggestions?.type === "choice"
+      ? messages[latestAssistantIdx]!.suggestions!
+      : null;
+
+  const maybeMapNumericInput = (raw: string): string => {
+    const trimmed = raw.trim();
+    if (!activeSuggestions) return trimmed;
+    if (!/^[1-9]$/.test(trimmed)) return trimmed;
+    const idx = parseInt(trimmed, 10) - 1;
+    const opt = activeSuggestions.options[idx];
+    return opt ? opt.label : trimmed;
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 p-4 border-b bg-muted/30">
