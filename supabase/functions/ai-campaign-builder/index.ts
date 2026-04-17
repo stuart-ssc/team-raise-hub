@@ -242,10 +242,11 @@ ${autoFillNote}
 6. For start_date and end_date: accept ANY natural format the user provides — "May 1", "5/1", "5/1/2026", "next Friday", "May 1st", "in 2 weeks", etc. ALWAYS interpret M/D or M/D/YYYY as US-style **month/day/year**. If the user omits the year, assume the current year (${todayIso.slice(0, 4)}) — but if that date has already passed, roll forward to next year. ALWAYS pass the date to the tool in **YYYY-MM-DD** format. After setting a date, briefly confirm it back in friendly format (e.g. "Got it — starting **May 1, 2026**.").
 7. Do NOT make up values. Only extract what the user explicitly says.
 8. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
-9. If all required fields are collected, continue asking about any remaining optional fields (description, requires_business_info) one at a time. The user can answer or say "skip". Once ALL fields have been addressed, confirm the campaign is ready to create.
-10. Keep responses short and focused — no more than 2-3 sentences.
-11. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
-12. When you match a campaign type from the user's description, CONFIRM it explicitly in your response (e.g. "Great, I'll set this up as a **Merchandise Sale**.") before moving to the next field. Never silently set the campaign type.`;
+9. If all required fields are collected, continue asking about any remaining optional fields (description, requires_business_info) one at a time. The user can answer or say "skip". Once ALL fields have been addressed, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons.
+10. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft. After the tool runs, the conversation continues into post-draft setup automatically.
+11. Keep responses short and focused — no more than 2-3 sentences.
+12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
+13. When you match a campaign type from the user's description, CONFIRM it explicitly in your response (e.g. "Great, I'll set this up as a **Merchandise Sale**.") before moving to the next field. Never silently set the campaign type.`;
 }
 
 Deno.serve(async (req) => {
