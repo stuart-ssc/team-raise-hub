@@ -1,61 +1,59 @@
 
 
 ## Goal
-After draft save, add a clear transition into the items phase and collapse the Details summary card so the Campaign Items card is visible.
+Reorder the post-draft flow so the user is asked about (1) campaign image, (2) roster/peer-to-peer attribution, and (3) any campaign instructions BEFORE the assistant starts collecting campaign items.
 
-## Investigation needed
-<lov-tool-use id="toolu_vrtx_01Xx9QEdb6TUYbwxLrkz3jEk" name="code--search_files" integration-id="code" data="{\"query\": \"ai-builder|AIBuilder|ai_builder\", \"include_patterns\": \"src/**/*.tsx,src/**/*.ts\"}">
-</lov-tool-use>
+## Current flow (broken ordering)
+After draft save → image prompt → immediately jumps into items collection (name, price, qty…). Roster attribution and instructions are never asked.
 
-<lov-tool-use id="toolu_vrtx_013u2UXcgy4TTLcGndBE6y7k" name="code--search_files" integration-id="code" data="{\"query\": \"create_campaign_draft\", \"include_patterns\": \"src/**/*.tsx,src/**/*.ts,supabase/**/*.ts\"}">
-</lov-tool-use>
-
-<lov-tool-use id="toolu_vrtx_01MuMt9K7zuSWbeW62LinY6A" name="code--search_files" integration-id="code" data="{\"query\": \"ai-builder|AICampaignBuilder|create_campaign_draft\", \"include_patterns\": \"src/**/*.tsx,src/**/*.ts\"}">
-</lov-tool-use>
-
-<lov-tool-use id="toolu_vrtx_01BHMbn9HUKZTRvTgouznmhp" name="code--view" integration-id="code" data="{\"file_path\": \"src/pages/AICampaignBuilder.tsx\"}">
-</lov-tool-use>
-
-<lov-tool-use id="toolu_vrtx_019SHx9cJcRWqYowkiGh5es4" name="code--view" integration-id="code" data="{\"file_path\": \"src/components/ai-campaign/AICampaignPreview.tsx\"}">
-</lov-tool-use>
-Now I have enough context. The user wants two things:
-
-1. A transition message in chat when draft is saved (currently just toast + brief message)
-2. Collapse the "Details" card after draft saved, showing "Draft saved" status, and surface the "Campaign items" card prominently
-
-<lov-plan>
-
-## What's changing
-After the campaign draft is saved, the right-hand preview panel and the chat both need to clearly signal a phase transition to "items collection".
+## Desired flow
+After draft save (`phase = post_draft`):
+1. **Image upload** — "Want to upload a campaign image?" (existing image_upload chip, can skip)
+2. **Roster attribution** — "Is this a peer-to-peer fundraiser where individual roster members get their own page?" (yes/no chip → sets `enable_roster_attribution`)
+3. **Campaign instructions / extra notes** — "Any special instructions for supporters at checkout? (e.g. delivery info, event date reminder) — or say skip" (free text → `instructions` / `checkout_instructions` field, optional)
+4. THEN transition to items: "Great — now let's add your first {itemNoun}."
+   → phase flips to `collecting_items`, item questions begin.
 
 ## Changes
 
-### 1. Preview panel — collapse Details card post-draft (`src/components/ai-campaign/AICampaignPreview.tsx`)
-- Wrap the **Details** card in a `<Collapsible>` (already in `src/components/ui/collapsible.tsx`).
-- Default state: **expanded** during `collecting` / `ready_to_create`, **collapsed** once `phase === "post_draft"` or `"collecting_items"` or `"complete"`.
-- Card header becomes a `CollapsibleTrigger`: shows "Details" + green "Draft saved" badge on the right + chevron indicator. Clicking toggles.
-- Move the **Campaign items** card so it renders directly under Details (so when Details collapses, items card is immediately visible without scrolling).
-- Keep all existing field-row content unchanged inside `CollapsibleContent`.
+### 1. Edge function (`supabase/functions/ai-campaign-builder/index.ts`)
+- Add a new intermediate phase `post_draft_setup` (or reuse `post_draft` as a multi-step state) with an internal step counter: `image → attribution → instructions → done`.
+- Track step in payload echoed to/from frontend (`postDraftStep: "image" | "attribution" | "instructions" | "done"`).
+- System prompt: add explicit ordering rule — "After draft creation, ask in order: image, then roster attribution, then instructions. Only after instructions step (answered or skipped) move to `collecting_items` and call the item flow."
+- Add deterministic capture:
+  - `enable_roster_attribution` boolean from yes/no replies on attribution step.
+  - `checkout_instructions` (or appropriate existing column — we'll confirm during impl by reading the campaigns schema) string from the instructions step; "skip" → mark skipped.
+- Suggestion chips returned per step:
+  - image step → existing `image_upload` chip
+  - attribution step → `choice` chip with Yes / No
+  - instructions step → `choice` chip with "Skip" + free text input
+- Only emit `phase: "collecting_items"` after the instructions step is resolved.
 
-### 2. Chat transition message (`src/pages/AICampaignBuilder.tsx`)
-The current post-draft assistant message ("Great — your draft … is saved. 🎉 Let's add a few more details…") only mentions image upload. Replace with a clearer two-part transition that names the new step:
+### 2. Frontend (`src/pages/AICampaignBuilder.tsx`)
+- Add `postDraftStep` state, send/receive it in `callAi` payload (mirrors existing items-state sync pattern).
+- Update transition message after draft save to set expectations:
+  > "✅ Primary details saved! Before we add items, I just need three quick things: a campaign image, whether this is a peer-to-peer fundraiser, and any checkout instructions."
+- Then immediately ask the image question (step 1).
 
-> "✅ **Primary details saved!** Your draft **{name}** is ready.
-> Now let's add your campaign **{itemNoun}s** — these are what supporters will sponsor or purchase. First, would you like to upload a campaign image to make it stand out?"
+### 3. Preview panel (`src/components/ai-campaign/AICampaignPreview.tsx`)
+- Show a small "Setup checklist" section above the Campaign Items card while `phase === "post_draft"`:
+  - ☐/☑ Campaign image
+  - ☐/☑ Peer-to-peer attribution
+  - ☐/☑ Checkout instructions
+- Each item checks off as the corresponding field is captured (or skipped).
+- Items card stays disabled/grayed until checklist is done, then activates.
 
-Keep the existing image-upload suggestion chip.
-
-Also: when the AI edge function returns `createdCampaignId` (server-side draft creation path in `callAi`), inject the same transition assistant message into chat (currently only a toast fires — chat continues silently). This guarantees both code paths (manual "Create Draft" button + AI tool-triggered draft) show the transition.
-
-### 3. Tweak toast copy
-Change toast description from "Let's add your campaign items." to "Now let's add your campaign items." (matches user's wording).
+### 4. Field verification
+During implementation, read `src/integrations/supabase/types.ts` to confirm exact column names on `campaigns` for:
+- roster attribution flag (likely `enable_roster_attribution`)
+- checkout/campaign instructions (likely `instructions` or `checkout_instructions` — use whichever exists; if neither, store on `description` append or add note in plan).
 
 ## Files to change
-- `src/components/ai-campaign/AICampaignPreview.tsx` — collapsible Details card, reorder cards, add "Draft saved" inline badge in header.
-- `src/pages/AICampaignBuilder.tsx` — richer transition chat message in `handleCreateDraft` AND in `callAi` when `createdCampaignId` first appears.
+- `supabase/functions/ai-campaign-builder/index.ts` — new post-draft step machine, prompt rules, deterministic capture for attribution + instructions.
+- `src/pages/AICampaignBuilder.tsx` — track and forward `postDraftStep`, updated transition message.
+- `src/components/ai-campaign/AICampaignPreview.tsx` — setup checklist UI between Details and Items cards.
 
 ## Out of scope
-- No edge-function logic changes.
-- No schema/phase changes.
-- Items card UI itself unchanged (just repositioned).
+- Items-collection logic itself (already working after last fix).
+- No schema migrations unless a missing column is discovered during impl — in that case I'll surface it before adding.
 
