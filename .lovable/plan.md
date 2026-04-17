@@ -1,61 +1,53 @@
 
 
-## Problem
-The AI assistant in the campaign builder degrades over the course of a conversation:
-1. Sometimes double-prompts (asks the same question twice in a row, no acknowledgement)
-2. Stops returning structured `suggestions` (option selects) midway through
-3. Eventually "stalls" — no response, no error visible to user
+## Diagnosis
 
-## Investigation needed
-Read the edge function and the page that drives the loop:
-- `supabase/functions/ai-campaign-builder/index.ts` — system prompt, tool schema, message history shape, error handling, response shape
-- `src/pages/AICampaignBuilder.tsx` — how messages are accumulated/sent, how `suggestions` are merged into the message stream, error handling on `invoke`
+The screenshot shows three back-to-back failures of the same kind: you answered the "participant directions" question, the AI **claimed** it saved your answer ("I've saved 'Share on social' as the instructions…"), but it never actually called the `update_campaign_fields` tool. So:
 
-I'll inspect these before finalizing a fix plan, but the most likely root causes — based on the symptoms and the file excerpts already in context — are:
+- Server still sees `group_directions_addressed === false`
+- `nextStep` re-injects "ask for participant directions"
+- AI re-asks → no-repeat guard fires generic clarifier → eventually a third try succeeds
 
-### Likely root causes
+This is a **model tool-compliance bug**, not a flow bug. The model is saying "saved" without saving.
 
-**A. Conversation context grows unbounded.** Every turn we re-send the full chat history plus a server-computed `nextStep` instruction plus the entire `collectedFields` snapshot. As the conversation grows (basics → 8 extended detail Q&As → items, each with 6+ sub-questions), the prompt balloons and the model:
-- forgets the structured-suggestion rule (it's buried far above)
-- loses track of where it is in the flow → repeats prompts
-- eventually hits a token/timeout limit → silent failure / "stall"
+## Why we can't tell exactly why the model skipped the tool call
 
-**B. `nextStep` injection competes with chat history.** The server appends a fresh "Next step: …" instruction every turn. Once we're deep into items, the model sometimes obeys the chat history (which already showed it asked the question) and sometimes obeys `nextStep` (which tells it to ask again) → double-prompt.
-
-**C. Suggestions are attached to the *last* assistant message only.** When the model sends a multi-line response or splits into two messages, the suggestion metadata gets dropped or attached to the wrong message → user sees a question with no chips.
-
-**D. No error surfacing.** If the edge function 429s, times out, or returns a malformed JSON, `AICampaignBuilder` likely just stops appending — looks like a "stall" with no toast.
+We log envelope metadata (msgCount, phase, collectedKeys, hasSuggestions) but **not** the prompt text or the model's raw response (text + tool_calls). So we can't see *what* the model returned vs. what we expected.
 
 ## Plan
 
-### 1. Trim and stabilize the prompt sent to the model
-- Cap chat history sent to the model to the **last N turns** (e.g. last 16 messages). Always keep the system prompt + a compact "state snapshot" (collectedFields summary + currentItemDraft + phase) instead of relying on the full transcript for state.
-- Move all flow state (phase, current field being asked, items already saved) into a **single structured "STATE" block** prepended to the system prompt every turn. This becomes the source of truth so the model doesn't have to infer state from a long transcript.
+### 1. Force the tool call before acknowledgment (server-side guard)
+In the post-draft "participant directions" step, after the model responds:
+- If the previous user message was a reply to the directions question AND the model's response did NOT include a `update_campaign_fields` tool call setting `group_directions` or `group_directions_addressed=true`:
+  - Treat the user's reply as the answer:
+    - If reply matches `/^(skip|no|none|n\/a|no thanks)$/i` → set `group_directions_addressed=true`
+    - Otherwise → set `group_directions` = user's reply, `group_directions_addressed=true`
+  - Persist to DB and to `updatedFields`
+  - Let the existing `needsFollowUp` path re-run with directions now done, so the model moves on to the "all done" step
 
-### 2. Eliminate double-prompts
-- On the server, after computing `nextStep`, check whether the **immediately previous assistant message already asked that exact question**. If yes, instead of re-prompting, instruct the model to acknowledge the user's last answer and move forward (or, if the answer was unclear, ask a clarifying follow-up — not a verbatim repeat).
-- Add an explicit rule to the system prompt: *"Never repeat your previous question verbatim. If the user's reply is unclear, ask a brief clarifier instead."*
+This same fallback pattern should be applied to other small free-text post-draft answers where the model has shown it sometimes forgets to call the tool (e.g. roster attribution yes/no, image skip).
 
-### 3. Make suggestions reliable
-- Always attach `suggestions` to the **final** assistant message in the turn (the one rendered last), and only when `nextStep` defines a choice/image_upload prompt.
-- In `AIChatPanel`, this is already handled (it scans the latest turn). Confirm the server only ever returns one assistant message per turn for the items phase to remove ambiguity.
-- Add a server-side guarantee: when `phase === "items"` and we're asking a field with predefined options (e.g. `is_recurring`, `recurring_interval`), `suggestions` must be present.
+### 2. Strengthen the system-prompt rule
+Add an explicit rule for post-draft fields:
+> "When the user answers a post-draft question (image, roster attribution, roster pick, participant directions), you MUST call `update_campaign_fields` in the SAME turn before writing your acknowledgment. Saying 'saved' or 'got it' without calling the tool is a bug."
 
-### 4. Surface stalls and recover
-- Wrap the `supabase.functions.invoke` call in `AICampaignBuilder` with a timeout (e.g. 30s) and error toast on failure (rate limit, network, malformed response).
-- On error, set `isLoading=false` and append a system-style assistant message: *"Hmm, I lost my train of thought — could you repeat that?"* with a "Retry" chip.
-- Log the request/response shape in the edge function so we can debug stalls via Supabase function logs.
+### 3. Add full prompt + response logging (debug)
+Add (gated behind an `AI_DEBUG_LOGS` env var so it's easy to flip) logging of:
+- The system prompt + last 3 messages sent to the gateway
+- The model's raw response: text content + tool_calls array (names + arguments)
+- A diff of `collectedFields` before/after the turn
 
-### 5. Inspect & confirm before coding
-Before writing changes I'll read the current edge function and page to verify the exact message/response shape and tool-calling pattern (so the trim/state-block changes don't break the existing tool flow).
+This is what you'd need next time the assistant misbehaves to know whether it's a missing tool call, a wrong tool call, or a parsing issue on our side.
 
-### Files likely to change
-- `supabase/functions/ai-campaign-builder/index.ts` — history trimming, STATE block, no-repeat guard, guaranteed suggestions, better logs
-- `src/pages/AICampaignBuilder.tsx` — invoke timeout + error toast + recovery message
-- `src/components/ai-campaign/AIChatPanel.tsx` — minor: render a visible error/retry state if a turn fails
+### 4. Tighten the no-repeat guard
+Right now the guard's clarifier ("Sorry, I didn't quite catch that…") fires whenever the question is repeated, but the user's answer was actually fine — they just got punished for the model's failure. Change it so:
+- If a tool-fallback (step 1) was applied this turn, suppress the clarifier and use the normal acknowledge-and-advance flow
+- Only show the clarifier when the model truly couldn't extract an answer
+
+### Files to change
+- `supabase/functions/ai-campaign-builder/index.ts` — post-tool fallback for directions (and roster yes/no), strengthened prompt rule, debug logging behind env flag, guard refinement
 
 ### Out of scope
-- Switching AI models or providers
-- Persisting conversation across reloads
-- Redesigning the items collection flow
+- Changing AI providers/models
+- Persisting raw prompt/response logs to a DB table (env-gated console logs are enough for debugging)
 
