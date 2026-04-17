@@ -60,6 +60,7 @@ export default function AICampaignBuilder() {
   const [isCreating, setIsCreating] = useState(false);
   const [readyToCreate, setReadyToCreate] = useState(false);
   const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [campaignSlug, setCampaignSlug] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("collecting");
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [campaignStatus, setCampaignStatus] = useState<string>("draft");
@@ -307,7 +308,7 @@ export default function AICampaignBuilder() {
       const { data, error } = await supabase
         .from("campaigns")
         .insert(campaignData as any)
-        .select("id")
+        .select("id, slug")
         .single();
 
       if (error) {
@@ -325,6 +326,7 @@ export default function AICampaignBuilder() {
 
       const newId = data.id;
       setCampaignId(newId);
+      setCampaignSlug((data as any).slug ?? null);
       setPhase("post_draft");
 
       toast({
@@ -361,6 +363,20 @@ export default function AICampaignBuilder() {
     if (campaignId) navigate(`/dashboard/campaigns/${campaignId}/edit`);
   };
 
+  const handlePreview = async () => {
+    let slug = campaignSlug;
+    if (!slug && campaignId) {
+      const { data } = await supabase
+        .from("campaigns")
+        .select("slug")
+        .eq("id", campaignId)
+        .single();
+      slug = (data as any)?.slug ?? null;
+      if (slug) setCampaignSlug(slug);
+    }
+    if (slug) window.open(`/c/${slug}`, "_blank");
+  };
+
   const handlePublishClick = () => {
     if (campaignId) setShowPublishDialog(true);
   };
@@ -379,6 +395,7 @@ export default function AICampaignBuilder() {
             phase={phase}
             campaignId={campaignId}
             onOpenEditor={handleOpenEditor}
+            onPreview={handlePreview}
             onPublishClick={handlePublishClick}
             itemsAdded={itemsAdded}
             itemNoun={itemNoun}

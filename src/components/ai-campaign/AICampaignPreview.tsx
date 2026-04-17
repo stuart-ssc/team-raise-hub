@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Check, Minus, AlertCircle, Rocket, Loader2, ExternalLink, ImageIcon, Users, FileText, Package, ChevronDown } from "lucide-react";
+import { Check, Minus, AlertCircle, Rocket, Loader2, ExternalLink, Eye, ImageIcon, Users, FileText, Package, ChevronDown } from "lucide-react";
 import { allFields, formatFieldValue, getMissingRequiredFields } from "@/lib/ai/campaignSchema";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,6 +28,7 @@ interface AICampaignPreviewProps {
   phase?: Phase;
   campaignId?: string | null;
   onOpenEditor?: () => void;
+  onPreview?: () => void;
   onPublishClick?: () => void;
   itemsAdded?: number;
   itemNoun?: string;
@@ -43,6 +44,7 @@ export default function AICampaignPreview({
   phase = "collecting",
   campaignId,
   onOpenEditor,
+  onPreview,
   onPublishClick,
   itemsAdded = 0,
   itemNoun = "item",
@@ -388,12 +390,16 @@ export default function AICampaignPreview({
 
       <div className="p-4 border-t">
         {phase === "complete" ? (
-          <div className="flex gap-2">
-            <Button onClick={onPublishClick} className="flex-1 gap-2" size="lg">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={onPublishClick} className="flex-1 min-w-[140px] gap-2" size="lg">
               <Rocket className="h-4 w-4" />
               Publish Campaign
             </Button>
-            <Button onClick={onOpenEditor} variant="outline" className="flex-1 gap-2" size="lg">
+            <Button onClick={onPreview} variant="outline" className="flex-1 min-w-[120px] gap-2" size="lg">
+              <Eye className="h-4 w-4" />
+              Preview
+            </Button>
+            <Button onClick={onOpenEditor} variant="outline" className="flex-1 min-w-[140px] gap-2" size="lg">
               <ExternalLink className="h-4 w-4" />
               Open in Editor
             </Button>
