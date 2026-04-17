@@ -193,7 +193,58 @@ export default function Campaigns() {
     }
   };
 
-  const handleSort = (field: keyof Campaign) => {
+  const handleDeleteCampaign = async () => {
+    if (!campaignToDelete) return;
+    try {
+      const { error } = await supabase
+        .from("campaigns")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", campaignToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Campaign deleted",
+        description: "You can restore it from the Deleted filter.",
+      });
+      setCampaignToDelete(null);
+      fetchCampaigns();
+    } catch (error) {
+      console.error("Error deleting campaign:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete campaign",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRestoreCampaign = async (campaignId: string) => {
+    try {
+      const { error } = await supabase
+        .from("campaigns")
+        .update({ deleted_at: null })
+        .eq("id", campaignId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Campaign restored",
+        description: "The campaign is back in your drafts.",
+      });
+      fetchCampaigns();
+    } catch (error) {
+      console.error("Error restoring campaign:", error);
+      toast({
+        title: "Error",
+        description: "Failed to restore campaign",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const isDeletable = (c: Campaign) =>
+    c.publication_status === "draft" || c.publication_status === "pending_verification";
     if (sortBy === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
