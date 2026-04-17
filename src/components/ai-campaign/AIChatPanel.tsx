@@ -52,8 +52,9 @@ export default function AIChatPanel({
   }, [isLoading]);
 
   const handleSend = (overrideText?: string) => {
-    const text = (overrideText ?? input).trim();
-    if (!text || isLoading) return;
+    const rawText = (overrideText ?? input).trim();
+    if (!rawText || isLoading) return;
+    const text = overrideText !== undefined ? rawText : maybeMapNumericInput(rawText);
     onSend(text);
     if (overrideText === undefined) {
       setInput("");
