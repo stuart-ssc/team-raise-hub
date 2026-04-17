@@ -37,6 +37,8 @@ export default function AIChatPanel({
   campaignId,
   onImageUploaded,
   onImageSkipped,
+  onItemImageUploaded,
+  onItemImageSkipped,
 }: AIChatPanelProps) {
   const [input, setInput] = useState("");
   const [dismissedTurnStart, setDismissedTurnStart] = useState<number>(-1);
