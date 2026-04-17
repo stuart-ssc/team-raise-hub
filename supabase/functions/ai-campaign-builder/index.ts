@@ -162,7 +162,13 @@ function buildSystemPrompt(
   if (campaignId) {
     const hasImage = !!collectedFields.image_url;
     const rosterAttrAddressed = collectedFields.enable_roster_attribution !== undefined;
-    const rosterPicked = !collectedFields.enable_roster_attribution || !!collectedFields.roster_id || rosters.length === 0;
+    const singleRoster = rosters.length === 1 ? rosters[0] : null;
+    // If there's only one roster, auto-pick it as soon as attribution is enabled (no need to ask).
+    const rosterPicked =
+      !collectedFields.enable_roster_attribution ||
+      !!collectedFields.roster_id ||
+      rosters.length === 0 ||
+      !!singleRoster;
     const directionsAddressed = collectedFields.group_directions_addressed === true;
 
     const rostersList = rosters.length > 0
@@ -173,7 +179,13 @@ function buildSystemPrompt(
     if (!hasImage && !collectedFields.image_skipped) {
       nextStep = `**Next step: campaign image.** Briefly ask if the user wants to upload a campaign image (a hero photo for the campaign page). Keep it to one short sentence — the UI shows an upload widget below your message. Do NOT call any tool for this step yet; the upload widget will report back when done or skipped.`;
     } else if (!rosterAttrAddressed) {
-      nextStep = `**Next step: roster attribution.** Ask whether they want to enable peer-to-peer fundraising — each roster member gets their own personal link, and donations are credited to them. One short sentence. The UI will show Yes/No buttons.`;
+      if (rosters.length === 0) {
+        nextStep = `**Next step: skip roster attribution.** This group has no rosters, so individual member tracking isn't available. Briefly let the user know and call update_campaign_fields with enable_roster_attribution=false to move on.`;
+      } else if (singleRoster) {
+        nextStep = `**Next step: roster attribution.** Roster attribution gives each roster member an individual fundraising goal and a personalized URL so they can track their own contributions to the campaign. This group has exactly one roster: **${singleRoster.roster_year}${singleRoster.current_roster ? " (Current)" : ""}** (id: ${singleRoster.id}). Ask in one short sentence: "Want to enable individual goals and personalized URLs for each roster member?" The UI will show Yes/No buttons. If they say yes, call update_campaign_fields with BOTH enable_roster_attribution=true AND roster_id=${singleRoster.id} in the same tool call — do NOT ask them to pick a roster.`;
+      } else {
+        nextStep = `**Next step: roster attribution.** Roster attribution gives each roster member an individual fundraising goal and a personalized URL so they can track their own contributions to the campaign. Ask in one short sentence: "Want to enable individual goals and personalized URLs for each roster member?" The UI will show Yes/No buttons.`;
+      }
     } else if (collectedFields.enable_roster_attribution && !rosterPicked) {
       nextStep = `**Next step: pick a roster.** Ask which roster to use for attribution. The UI will show the available rosters as numbered buttons. Available rosters:\n${rostersList}`;
     } else if (!directionsAddressed) {
@@ -242,7 +254,7 @@ ${autoFillNote}
 6. For start_date and end_date: accept ANY natural format the user provides — "May 1", "5/1", "5/1/2026", "next Friday", "May 1st", "in 2 weeks", etc. ALWAYS interpret M/D or M/D/YYYY as US-style **month/day/year**. If the user omits the year, assume the current year (${todayIso.slice(0, 4)}) — but if that date has already passed, roll forward to next year. ALWAYS pass the date to the tool in **YYYY-MM-DD** format. After setting a date, briefly confirm it back in friendly format (e.g. "Got it — starting **May 1, 2026**.").
 7. Do NOT make up values. Only extract what the user explicitly says.
 8. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
-9. If all required fields are collected, continue asking about any remaining optional fields (description, requires_business_info) one at a time. The user can answer or say "skip". Once ALL fields have been addressed, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons.
+9. Once all REQUIRED fields are collected, you MUST also ask about **requires_business_info** before saving the draft. Phrase it like: "Will donors purchase as a business (for sponsor recognition / tax records)?" — the UI will show Yes/No buttons. Set it via update_campaign_fields based on their answer. Also offer (one at a time) any other remaining optional field like description; the user can answer or say "skip". Only AFTER requires_business_info has been answered AND any optional fields have been addressed, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons.
 10. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft. After the tool runs, the conversation continues into post-draft setup automatically.
 11. Keep responses short and focused — no more than 2-3 sentences.
 12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
