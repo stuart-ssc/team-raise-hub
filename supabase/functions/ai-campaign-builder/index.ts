@@ -1258,7 +1258,7 @@ Deno.serve(async (req) => {
               model: "google/gemini-2.5-flash",
               messages: [
                 { role: "system", content: followUpSystemPrompt },
-                ...messages,
+                ...trimmedMessages,
                 {
                   role: "system",
                   content: `The user's last value was captured for the current item field. ${
