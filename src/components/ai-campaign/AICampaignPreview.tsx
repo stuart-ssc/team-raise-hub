@@ -200,7 +200,28 @@ export default function AICampaignPreview({
           </CardContent>
         </Card>
 
-        {isPostDraft && (
+        {phase === "collecting_items" && (
+          <Card>
+            <CardHeader className="pb-2 pt-3 px-4">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                <Package className="h-3.5 w-3.5" />
+                Campaign {itemNoun}s
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  {itemsAdded === 0
+                    ? `No ${itemNoun}s added yet`
+                    : `${itemsAdded} ${itemNoun}${itemsAdded === 1 ? "" : "s"} added`}
+                </span>
+                <Badge variant={itemsAdded > 0 ? "default" : "outline"}>
+                  {itemsAdded}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        )}
           <Card>
             <CardHeader className="pb-2 pt-3 px-4">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
