@@ -531,7 +531,8 @@ ${autoFillNote}
     What's the name of this campaign?
     \`\`\`
 
-    NEVER combine acknowledgment and question in one sentence. NEVER repeat the question text in both paragraphs. NEVER ask more than one question per turn. NEVER add a third paragraph (no clarifying notes, no trailing emoji-only lines, no extra commentary). (The very first greeting, with no prior user input to acknowledge, is exempt and may be a single paragraph followed by the first question on a new line.)`;
+    NEVER combine acknowledgment and question in one sentence. NEVER repeat the question text in both paragraphs. NEVER ask more than one question per turn. NEVER add a third paragraph (no clarifying notes, no trailing emoji-only lines, no extra commentary). (The very first greeting, with no prior user input to acknowledge, is exempt and may be a single paragraph followed by the first question on a new line.)
+16. **Never repeat your immediately previous question verbatim.** If the user's reply was unclear, briefly re-frame or ask a short clarifier — do not paste the same question again.`;
 }
 
 Deno.serve(async (req) => {
