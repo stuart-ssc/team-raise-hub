@@ -1185,7 +1185,7 @@ Deno.serve(async (req) => {
 
         const followUpMessages = [
           { role: "system", content: followUpSystemPrompt },
-          ...messages,
+          ...trimmedMessages,
           choice.message,
           ...toolResults.map((tr) => ({
             role: "tool",
