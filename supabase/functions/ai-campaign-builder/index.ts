@@ -704,6 +704,14 @@ Deno.serve(async (req) => {
         }
       }
     }
+
+    // POST-DRAFT deterministic fallback: when the model claims to save but skips
+    // the tool call (a recurring model bug), capture the user's answer server-side
+    // for participant_directions, roster yes/no, and image-skip. We can't inspect
+    // the model's tool_calls until after the call, so this runs as a SECOND-PASS
+    // capture below — but we set a flag here so the no-repeat guard can be relaxed.
+    let postDraftFallbackApplied = false;
+
     let rosters: { id: number; roster_year: number; current_roster: boolean }[] = [];
     if (campaignId && updatedFields.group_id) {
       const { data: rData } = await adminSb
