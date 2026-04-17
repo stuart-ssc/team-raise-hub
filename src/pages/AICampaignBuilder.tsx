@@ -117,6 +117,15 @@ export default function AICampaignBuilder() {
       setCollectedFields(data.updatedFields || fieldsToSend);
       setReadyToCreate(data.readyToCreate || false);
       setPhase((data.phase as Phase) || "collecting");
+
+      // If the AI just created the draft via the create_campaign_draft tool, capture the new id
+      if (data.createdCampaignId && !campaignId) {
+        setCampaignId(data.createdCampaignId);
+        toast({
+          title: "Draft saved!",
+          description: "Let's add a few more details.",
+        });
+      }
     } catch (err: any) {
       console.error("AI campaign builder error:", err);
       toast({
