@@ -317,7 +317,7 @@ function buildItemsSystemPrompt(
       .replace(/\{ordinal\}/g, ordinal)
       .replace(/\{examples\}/g, itemExamples);
     const skipNote = nextField.required ? "" : " The user may say **skip**.";
-    nextStep = `**Next field: ${nextField.key}** (${nextField.required ? "REQUIRED" : "optional"}). Ask: "${promptText}"${skipNote}\n\nWhen the user answers, IMMEDIATELY call the **update_item_field** tool with the value (use the exact key \`${nextField.key}\`).`;
+    nextStep = `**Next field: ${nextField.key}** (${nextField.required ? "REQUIRED" : "optional"}). Ask: "${promptText}"${skipNote}\n\nWhen the user answers, IMMEDIATELY call the **update_item_field** tool with the value (use the exact key \`${nextField.key}\`).\n\n**CRITICAL:** Ask every field in order, including optional ones. NEVER skip an optional field on the user's behalf — always ask so the user can choose to skip via the Skip button. Do not combine multiple field questions into one message.`;
   } else {
     nextStep = `Wait for user input.`;
   }
@@ -769,9 +769,20 @@ Deno.serve(async (req) => {
               currentItemDraft.recurring_interval = "year";
               deterministicItemCaptured = true;
             }
+          } else if (next.key === "name" || next.key === "size") {
+            // Capture short free-text replies for name/size so the state machine advances
+            // and the next (often optional) field gets explicitly asked with a Skip chip.
+            if (raw.length > 0 && raw.length <= 120) {
+              currentItemDraft[next.key] = raw;
+              deterministicItemCaptured = true;
+            }
+          } else if (next.key === "description") {
+            // Capture description text deterministically too (skip already handled above).
+            if (raw.length > 0) {
+              currentItemDraft.description = raw;
+              deterministicItemCaptured = true;
+            }
           }
-          // For string fields (name, description, size) we let the model handle it,
-          // since arbitrary text shouldn't be auto-captured (could be conversational).
         }
       } catch (e) {
         console.error("Deterministic item capture failed:", e);
