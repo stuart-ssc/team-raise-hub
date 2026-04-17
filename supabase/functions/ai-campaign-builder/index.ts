@@ -731,6 +731,53 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Deterministic capture of the current item field from the user's reply
+    // (the model sometimes acknowledges without calling update_item_field, leaving the
+    // conversation stuck — capture server-side so the follow-up can ask the next field).
+    let deterministicItemCaptured = false;
+    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && lastUserMsg && !isSkipMessage(lastUserMsg)) {
+      try {
+        const next = getNextItemField(currentItemDraft);
+        if (next) {
+          const raw = lastUserMsg.trim();
+          if (next.key === "cost") {
+            const m = raw.match(/-?\d+(?:\.\d+)?/);
+            if (m) {
+              currentItemDraft.cost = Number(m[0]);
+              deterministicItemCaptured = true;
+            }
+          } else if (next.key === "quantity_offered" || next.key === "max_items_purchased") {
+            const m = raw.match(/\d+/);
+            if (m) {
+              currentItemDraft[next.key] = Number(m[0]);
+              deterministicItemCaptured = true;
+            }
+          } else if (next.key === "is_recurring") {
+            if (/^(yes|y|yep|sure|true|monthly|yearly)\b/i.test(raw)) {
+              currentItemDraft.is_recurring = true;
+              deterministicItemCaptured = true;
+            } else if (/^(no|n|nope|false|one[- ]?time)\b/i.test(raw)) {
+              currentItemDraft.is_recurring = false;
+              currentItemDraft.recurring_interval_skipped = true;
+              deterministicItemCaptured = true;
+            }
+          } else if (next.key === "recurring_interval") {
+            if (/month/i.test(raw)) {
+              currentItemDraft.recurring_interval = "month";
+              deterministicItemCaptured = true;
+            } else if (/year|annual/i.test(raw)) {
+              currentItemDraft.recurring_interval = "year";
+              deterministicItemCaptured = true;
+            }
+          }
+          // For string fields (name, description, size) we let the model handle it,
+          // since arbitrary text shouldn't be auto-captured (could be conversational).
+        }
+      } catch (e) {
+        console.error("Deterministic item capture failed:", e);
+      }
+    }
+
     let systemPrompt: string;
     if (inItemsPhase && !exitItemsCollection) {
       systemPrompt = buildItemsSystemPrompt(
