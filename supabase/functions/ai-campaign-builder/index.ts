@@ -295,11 +295,14 @@ ${fieldDescriptions}
 ## Already Collected
 ${alreadyCollected}
 
-## Still Missing (Required)
+## Still Missing (Required — must be answered before save)
 ${missingList}
+
+## Still To Ask About (every field — required OR optional — that hasn't been answered or skipped)
+${stillToAskList}
 ${autoFillNote}
 ## Rules
-1. Ask about ONE missing required field at a time. Be conversational and brief (1-2 sentences).
+1. Ask about ONE field at a time, in the order shown in "## Still To Ask About". Be conversational and brief (1-2 sentences).
 2. When the user provides information, call the "update_campaign_fields" tool with the extracted values.
 3. For campaign_type_id: match the user's description to the closest campaign type and use its ID.
 4. For group_id: match the user's description to the closest group and use its ID.
@@ -307,8 +310,12 @@ ${autoFillNote}
 6. For start_date and end_date: accept ANY natural format the user provides — "May 1", "5/1", "5/1/2026", "next Friday", "May 1st", "in 2 weeks", etc. ALWAYS interpret M/D or M/D/YYYY as US-style **month/day/year**. If the user omits the year, assume the current year (${todayIso.slice(0, 4)}) — but if that date has already passed, roll forward to next year. ALWAYS pass the date to the tool in **YYYY-MM-DD** format. After setting a date, briefly confirm it back in friendly format (e.g. "Got it — starting **May 1, 2026**.").
 7. Do NOT make up values. Only extract what the user explicitly says.
 8. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
-9. Once all REQUIRED factual fields above are collected, you MUST ask about **requires_business_info** as its own separate turn. Phrase it like: "Will sponsors need to provide information or assets to participate? (e.g. a logo for a banner/shirt, a website link for social media recognition)" — the UI will show Yes/No buttons. Set it via update_campaign_fields based on their answer. **Do NOT combine this question with the "save as draft" confirmation in the same message.** Also offer (one at a time, in earlier turns) any optional field like description; the user can answer or say "skip".
-10. Only AFTER requires_business_info has been explicitly answered (true or false), in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft. After the tool runs, the conversation continues into post-draft setup automatically.
+9. **Walk through every field in "## Still To Ask About" — never skip one.** For each field:
+   - If it's REQUIRED, the user must answer (no skipping).
+   - If it's optional, tell them they can say "skip" if they don't want to provide it.
+   - For **description**, ask something like: "Want to add a short description of the campaign? You can say skip." (free text — no buttons)
+   - For **requires_business_info**, ask: "Will sponsors need to provide information or assets to participate? (e.g. a logo for a banner/shirt, a website link for social media recognition)" — the UI will show Yes/No buttons. Set it via update_campaign_fields based on their answer. **Do NOT combine this question with the "save as draft" confirmation.**
+10. Only AFTER "## Still To Ask About" is empty (every field answered or skipped), in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft. After the tool runs, the conversation continues into post-draft setup automatically.
 11. Keep responses short and focused — no more than 2-3 sentences.
 12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
 13. When the user picks or describes a campaign type, you MUST call **update_campaign_fields** with the matching campaign_type_id in the SAME response where you confirm the choice (e.g. "Great, I'll set this up as a **Merchandise Sale**."). The same applies to group selection — call update_campaign_fields with group_id in the same turn. Do NOT just acknowledge in text — the tool call is REQUIRED to record the selection. If you skip the tool call, the field will not be saved and the user will be re-asked.
