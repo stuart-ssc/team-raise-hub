@@ -565,6 +565,25 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Diagnostic: log incoming request shape so stalls can be traced via fn logs.
+    console.log("[ai-campaign-builder] req", JSON.stringify({
+      msgCount: messages.length,
+      phase: clientPhase,
+      campaignId: campaignId || null,
+      itemsAdded: rawItemsAdded || 0,
+      awaitingAddAnother: !!rawAwaitingAddAnother,
+      collectedKeys: Object.keys(collectedFields || {}),
+      itemDraftKeys: Object.keys(rawItemDraft || {}),
+    }));
+
+    // Cap chat history sent to the model to the last N messages so the prompt
+    // does not grow unbounded across long sessions (cause of model drift /
+    // dropped suggestions / silent stalls). Always keep the latest user turn.
+    const HISTORY_CAP = 20;
+    const trimmedMessages = messages.length > HISTORY_CAP
+      ? messages.slice(messages.length - HISTORY_CAP)
+      : messages;
+
     const types: { id: string; name: string }[] = campaignTypes || [];
     const grps: { id: string; group_name: string }[] = groups || [];
     let updatedFields: Record<string, any> = { ...(collectedFields || {}) };
