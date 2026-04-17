@@ -145,6 +145,7 @@ export default function AICampaignBuilder() {
         toast({
           title: `${itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} added`,
           description: `You now have ${data.itemsAdded ?? itemsAdded + 1} ${itemNoun}${(data.itemsAdded ?? itemsAdded + 1) === 1 ? "" : "s"}.`,
+          duration: 3000,
         });
       }
 
@@ -154,6 +155,7 @@ export default function AICampaignBuilder() {
         toast({
           title: "Draft saved!",
           description: "A few quick setup questions before adding items.",
+          duration: 3000,
         });
         const name = data.updatedFields?.name || collectedFields.name || "your campaign";
         const transition: ChatMessage = {
@@ -267,6 +269,7 @@ export default function AICampaignBuilder() {
       toast({
         title: "Draft saved!",
         description: "A few quick setup questions before adding items.",
+        duration: 3000,
       });
 
       // Kick off the post-draft conversation
