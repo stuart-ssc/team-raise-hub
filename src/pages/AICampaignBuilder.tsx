@@ -235,7 +235,7 @@ export default function AICampaignBuilder() {
       { role: "user", content: `Item image uploaded: ${url}` },
     ];
     setMessages(newMessages);
-    await callAi(newMessages);
+    await callAi(newMessages, undefined, mergedDraft);
   };
 
   const handleItemImageSkipped = async () => {
@@ -246,7 +246,7 @@ export default function AICampaignBuilder() {
       { role: "user", content: "Skip item image" },
     ];
     setMessages(newMessages);
-    await callAi(newMessages);
+    await callAi(newMessages, undefined, mergedDraft);
   };
 
   const handleCreateDraft = async () => {
