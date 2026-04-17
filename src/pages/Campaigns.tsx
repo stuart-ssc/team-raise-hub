@@ -42,7 +42,7 @@ export default function Campaigns() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<keyof Campaign>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [filterBy, setFilterBy] = useState("active");
+  const [filterBy, setFilterBy] = useState("all");
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup, groups } = useActiveGroup();
   const { toast } = useToast();
