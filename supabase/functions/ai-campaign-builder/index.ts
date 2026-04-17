@@ -224,6 +224,63 @@ const FIELD_DEFS: FieldDef[] = [
   { key: "requires_business_info", label: "Sponsors Provide Info/Assets", type: "boolean", required: true, aiDescription: "Whether sponsors must provide information or assets to participate (e.g. a logo for a banner/shirt, a website link for social media recognition)." },
 ];
 
+function buildItemsSystemPrompt(
+  campaignName: string,
+  itemNoun: string,
+  itemsAdded: number,
+  currentItemDraft: Record<string, any>,
+  awaitingAddAnother: boolean,
+  todayIso: string,
+): string {
+  const draftSummary = Object.entries(currentItemDraft)
+    .filter(([k, v]) => !k.endsWith("_skipped") && v !== undefined && v !== null && v !== "")
+    .map(([k, v]) => `  - ${k}: ${JSON.stringify(v)}`)
+    .join("\n") || "  (nothing yet)";
+
+  const nextField = getNextItemField(currentItemDraft);
+  const ready = isItemReadyToSave(currentItemDraft);
+
+  let nextStep: string;
+  if (awaitingAddAnother) {
+    nextStep = `**Awaiting choice: add another or finish.** Your message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1: confirm the last ${itemNoun} was saved (e.g. "Saved.").\n  Paragraph 2: ask "Want to add another ${itemNoun}, or are you done?" — the UI shows two buttons (Add another / I'm done). Do NOT call any tool.`;
+  } else if (ready && nextField === null) {
+    nextStep = `**All required fields collected.** IMMEDIATELY call the **save_campaign_item** tool with the values from "Current ${itemNoun} draft" below. Do NOT ask any more questions for this ${itemNoun}.`;
+  } else if (nextField) {
+    const promptText = nextField.prompt.replace(/\{itemNoun\}/g, itemNoun);
+    const skipNote = nextField.required ? "" : " The user may say **skip**.";
+    nextStep = `**Next field: ${nextField.key}** (${nextField.required ? "REQUIRED" : "optional"}). Ask: "${promptText}"${skipNote}\n\nWhen the user answers, IMMEDIATELY call the **update_item_field** tool with the value (use the exact key \`${nextField.key}\`).`;
+  } else {
+    nextStep = `Wait for user input.`;
+  }
+
+  return `You are a campaign creation assistant. The user just created the campaign **"${campaignName}"** and is now adding ${itemNoun}s to it.
+
+Today is **${todayIso}**.
+
+## Items added so far: ${itemsAdded}
+
+## Current ${itemNoun} draft
+${draftSummary}
+
+## Tools
+- **update_item_field**: record a single value the user just provided. Pass exactly one key from the item schema (\`name\`, \`description\`, \`cost\`, \`quantity_offered\`, \`max_items_purchased\`, \`size\`, \`is_recurring\`, \`recurring_interval\`) plus its value. Also accepts \`<key>_skipped: true\` to mark an optional field as skipped.
+- **save_campaign_item**: insert the current draft into the database. Call ONLY when all required fields are filled.
+
+## Current Step
+${nextStep}
+
+## Rules
+- Ask ONE field at a time. Keep messages to 1 short sentence per question.
+- For \`cost\`: the user types dollars (e.g. "25" or "$25"). Pass the dollar number (decimals OK) — the server converts to cents.
+- For \`is_recurring\`: the UI shows Yes/No buttons. Pass true/false.
+- Never make up values; only record what the user explicitly says.
+- **Response format — every turn after user input MUST be TWO paragraphs separated by a blank line:**
+  1. Acknowledgment paragraph (e.g. "Got it — $25.").
+  2. Next question paragraph.
+
+  Never combine acknowledgment and the next question into one sentence.`;
+}
+
 function buildSystemPrompt(
   campaignTypes: { id: string; name: string }[],
   groups: { id: string; group_name: string }[],
