@@ -1,28 +1,38 @@
 
 
-The user clarified the design intent: every field defined in the schema should be prompted by the AI. `required: false` only means the user can skip without blocking save — it does NOT mean the AI should silently omit it.
+The user wants the AI's responses to be split into two clearly separated parts:
+1. **Acknowledgment** of what was just selected/saved (e.g., "Great, I'll set this up as a Sponsorship campaign.")
+2. **Next question** as its own paragraph (e.g., "What's the name of this campaign?")
 
-Currently, the system prompt only tells the AI what's "still missing" via `getMissingRequiredFields`, so optional fields (description, requires_business_info) get treated as fully skippable and the AI breezes past them.
+Currently both run together as one sentence/paragraph. ReactMarkdown is already used to render assistant messages, so a blank line between the two will produce two visually distinct paragraphs.
 
 ## Fix (one file: `supabase/functions/ai-campaign-builder/index.ts`)
 
-### A. Add a "fields to ask about" list separate from required
-Build a second list — every field in `allFields` that isn't yet collected AND hasn't been explicitly skipped (tracked via a `<field>_skipped` flag in `collectedFields`). Inject this into the system prompt as `## Still To Ask About` alongside the existing `## Still Missing` (required-only) list.
+Update the system prompt to require this two-part response format for every turn after a user provides input.
 
-### B. Update Rule 9 to enforce sequential prompting
-Rewrite to: "Walk through every field in `## Still To Ask About` one at a time, in order. For optional fields, the user may answer or say 'skip'. For required fields, they must answer. Do not finalize/save until every field has either a value or a skip flag."
+### Add a new explicit formatting rule
+Insert into the rules section (e.g., as Rule 15 or appended to Rule 9):
 
-### C. Deterministic skip detection
-When the latest user message is "skip" / "no" / "no thanks" / "none" AND the last assistant turn asked about a specific optional field, set `collectedFields.<field>_skipped = true` server-side so the AI won't loop.
+> **Response format — every turn must be two separated paragraphs:**
+> 1. **Acknowledgment paragraph** — confirm what the user just provided (e.g., "Great, I'll set this up as a Sponsorship campaign." / "Got it — goal of $5,000." / "Saved.")
+> 2. **Next question paragraph** — the next single question, on its own line, separated from the acknowledgment by a blank line.
+>
+> Example:
+> ```
+> Great, I'll set this up as a Sponsorship campaign.
+>
+> What's the name of this campaign?
+> ```
+>
+> Never combine the acknowledgment and the next question into one sentence. Never ask more than one question per turn. The very first greeting (no prior user input to acknowledge) is exempt — it can be a single paragraph followed by the first question on a new line.
 
-### D. Gate the "Ready to save?" prompt
-Only allow the AI to ask "Ready to save as a draft?" when `## Still To Ask About` is empty (every field answered or skipped).
+### Why this works
+- ReactMarkdown in `AIChatPanel` already renders `\n\n` as separate `<p>` blocks (the existing `prose` styling handles paragraph spacing).
+- No frontend changes needed.
+- Keeps all existing field-collection, skip handling, and tool-call logic intact.
 
-### E. Suggestion chips for each field
-Extend the suggestions block so when the next un-asked field is `description` it emits a free-text prompt (no chips), and when it's a boolean like `requires_business_info` it emits Yes/No/Skip chips. Existing chip emission for `campaign_type_id` and `group_id` stays.
-
-## Out of scope
-- No frontend changes (chat already handles free-text and skip naturally)
-- Schema definitions in `campaignSchema.ts` stay as-is — `required` still controls save-blocking only
-- Post-draft flow unchanged
+### Out of scope
+- No changes to `AIChatPanel`, `AICampaignPreview`, or schema files
+- Greeting message in `AICampaignBuilder.tsx` stays as-is (it's the opening turn)
+- Post-draft conversation flow already uses similar phrasing — Rule applies uniformly to both phases
 
