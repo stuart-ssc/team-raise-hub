@@ -402,6 +402,63 @@ export default function AICampaignPreview({
             </CardContent>
           </Card>
         )}
+
+        {(isPostDraft || isCollectingItems) && collectedFields.requires_business_info === true && (
+          <Card>
+            <CardHeader className="pb-2 pt-3 px-4">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                <Briefcase className="h-3.5 w-3.5" />
+                Required Sponsor Assets
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-3 space-y-2">
+              {collectedFields.asset_upload_deadline ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">Deadline:</span>
+                  <span className="font-medium">
+                    {(() => {
+                      try {
+                        return format(new Date(collectedFields.asset_upload_deadline), "MMM d, yyyy");
+                      } catch {
+                        return collectedFields.asset_upload_deadline;
+                      }
+                    })()}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground/60">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  <span>Deadline pending</span>
+                </div>
+              )}
+
+              {requiredAssets.length === 0 ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">No assets added yet</span>
+                  <Badge variant="outline">0</Badge>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {requiredAssets.map((asset) => (
+                    <div
+                      key={asset.id}
+                      className="flex items-center justify-between gap-2 py-1 border-b last:border-0 border-border/40"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                        <span className="text-sm font-medium truncate">{asset.asset_name}</span>
+                      </div>
+                      {asset.is_required && (
+                        <Badge variant="outline" className="text-[10px]">Required</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="p-4 border-t">
