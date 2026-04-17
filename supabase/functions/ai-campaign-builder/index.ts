@@ -514,7 +514,8 @@ ${autoFillNote}
    - If it's REQUIRED, the user must answer (no skipping).
    - If it's optional, tell them they can say "skip" if they don't want to provide it.
    - For **description**, ask something like: "Want to add a short description of the campaign? You can say skip." (free text — no buttons). When the user types ANY free-text answer (e.g. "Let's cover the gym", "Raising money for new uniforms"), you MUST call **update_campaign_fields** with \`description: "<their exact text>"\` in the SAME turn. Never just say "Got it" — the tool call is required.
-   - For **requires_business_info**, ask: "Will sponsors need to provide information or assets to participate? (e.g. a logo for a banner/shirt, a website link for social media recognition)" — the UI will show Yes/No buttons. When the user answers yes/no (or true/false), you MUST call **update_campaign_fields** with \`requires_business_info: true\` or \`requires_business_info: false\` in the SAME turn. **Do NOT combine this question with the "save as draft" confirmation.**
+  - For **requires_business_info**, ask: "Will sponsors need to provide information or assets to participate? (e.g. a logo for a banner/shirt, a website link for social media recognition)" — the UI will show Yes/No buttons. When the user answers yes/no (or true/false), you MUST call **update_campaign_fields** with \`requires_business_info: true\` or \`requires_business_info: false\` in the SAME turn. **Do NOT combine this question with the "save as draft" confirmation.**
+   - **POST-DRAFT FIELDS — CRITICAL:** When the user answers any post-draft question (image upload/skip, roster attribution yes/no, roster pick, participant directions), you MUST call **update_campaign_fields** in the SAME turn BEFORE writing your acknowledgment. Saying "saved" or "got it" without calling the tool is a bug — the field will not be saved and the user will be stuck in a loop.
 10. **The "## Still To Ask About" list above is the source of truth for what to ask next.** Do NOT ask "Ready to save this as a draft?" — and do NOT call **create_campaign_draft** — until that list is COMPLETELY EMPTY. If even one field appears in the list, your next question MUST be about that field, in the order listed. Skipping ahead to the save confirmation is forbidden. Once the list is finally empty, in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft.
 11. Keep responses short and focused — no more than 2-3 sentences.
 12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
@@ -703,6 +704,14 @@ Deno.serve(async (req) => {
         }
       }
     }
+
+    // POST-DRAFT deterministic fallback: when the model claims to save but skips
+    // the tool call (a recurring model bug), capture the user's answer server-side
+    // for participant_directions, roster yes/no, and image-skip. We can't inspect
+    // the model's tool_calls until after the call, so this runs as a SECOND-PASS
+    // capture below — but we set a flag here so the no-repeat guard can be relaxed.
+    let postDraftFallbackApplied = false;
+
     let rosters: { id: number; roster_year: number; current_roster: boolean }[] = [];
     if (campaignId && updatedFields.group_id) {
       const { data: rData } = await adminSb
@@ -711,6 +720,118 @@ Deno.serve(async (req) => {
         .eq("group_id", updatedFields.group_id)
         .order("roster_year", { ascending: false });
       rosters = rData || [];
+    }
+
+    // POST-DRAFT FALLBACK: figure out which post-draft field the previous assistant
+    // message was asking about, and capture the user's reply server-side so the model
+    // can't get stuck in a loop by forgetting the tool call.
+    if (campaignId && lastUserMsg) {
+      const lastAssistantRaw = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "assistant")
+        ?.content as string | undefined;
+      const lastUserRaw = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "user")
+        ?.content as string | undefined;
+
+      if (lastAssistantRaw && lastUserRaw) {
+        const at = lastAssistantRaw.toLowerCase();
+        const userRawTrimmed = lastUserRaw.trim();
+        const userLower = userRawTrimmed.toLowerCase().replace(/[.!?]+$/, "");
+
+        // Detect which post-draft step the assistant just asked about
+        const askedImage = /upload .*(image|photo|hero)|campaign image|hero photo/.test(at) &&
+          !/roster|direction|instruction/.test(at);
+        const askedRoster = /roster (tracking|attribution)|each (player|participant) gets|personalized url|personalized fundraising url/.test(at);
+        const askedRosterPick = /which roster|pick a roster|select roster|available rosters/.test(at);
+        const askedDirections = /participant direction|internal.only instruction|directions for (your|the) team|directions for participants|instructions for (your|the) team/.test(at);
+
+        // Image: skip-only fallback (image upload is handled by the upload widget which sends a synthetic message)
+        if (askedImage && !updatedFields.image_url && !updatedFields.image_skipped) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.image_skipped = true;
+            postDraftFallbackApplied = true;
+            await adminSb.from("campaigns").update({ image_url: null }).eq("id", campaignId).then(() => {});
+          }
+        }
+
+        // Roster yes/no
+        if (askedRoster && updatedFields.enable_roster_attribution === undefined) {
+          const yn = parseYesNo(userRawTrimmed);
+          if (yn !== null) {
+            updatedFields.enable_roster_attribution = yn;
+            postDraftFallbackApplied = true;
+            const dbUpd: Record<string, any> = { enable_roster_attribution: yn };
+            // Auto-pick single roster
+            if (yn && rosters.length === 1) {
+              updatedFields.roster_id = rosters[0].id;
+              dbUpd.roster_id = rosters[0].id;
+            }
+            await adminSb.from("campaigns").update(dbUpd).eq("id", campaignId);
+            // Fire link generation if enabled with a roster
+            if (yn && updatedFields.roster_id) {
+              try {
+                await adminSb.functions.invoke("generate-roster-member-links", {
+                  body: { campaignId, rosterId: Number(updatedFields.roster_id) },
+                });
+              } catch (e) {
+                console.error("Failed to generate roster member links (fallback):", e);
+              }
+            }
+          }
+        }
+
+        // Roster pick (numeric reply or roster-year match)
+        if (askedRosterPick && updatedFields.enable_roster_attribution && !updatedFields.roster_id && rosters.length > 0) {
+          const numMatch = userRawTrimmed.match(/\d{4}|\d+/);
+          if (numMatch) {
+            const num = Number(numMatch[0]);
+            const byYear = rosters.find((r) => r.roster_year === num);
+            const byId = rosters.find((r) => r.id === num);
+            const picked = byYear || byId;
+            if (picked) {
+              updatedFields.roster_id = picked.id;
+              postDraftFallbackApplied = true;
+              await adminSb.from("campaigns").update({ roster_id: picked.id }).eq("id", campaignId);
+              try {
+                await adminSb.functions.invoke("generate-roster-member-links", {
+                  body: { campaignId, rosterId: picked.id },
+                });
+              } catch (e) {
+                console.error("Failed to generate roster member links (pick fallback):", e);
+              }
+            }
+          }
+        }
+
+        // Participant directions (free text or skip)
+        if (askedDirections && !updatedFields.group_directions_addressed) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.group_directions_addressed = true;
+            postDraftFallbackApplied = true;
+            // Nothing to persist on the campaigns row for skip
+          } else if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 500) {
+            updatedFields.group_directions = userRawTrimmed;
+            updatedFields.group_directions_addressed = true;
+            postDraftFallbackApplied = true;
+            await adminSb.from("campaigns").update({ group_directions: userRawTrimmed }).eq("id", campaignId);
+          }
+        }
+
+        if (postDraftFallbackApplied) {
+          console.log("[ai-campaign-builder] post-draft fallback applied", JSON.stringify({
+            askedImage, askedRoster, askedRosterPick, askedDirections,
+            captured: {
+              image_skipped: updatedFields.image_skipped,
+              enable_roster_attribution: updatedFields.enable_roster_attribution,
+              roster_id: updatedFields.roster_id,
+              group_directions: updatedFields.group_directions ? "(set)" : undefined,
+              group_directions_addressed: updatedFields.group_directions_addressed,
+            },
+          }));
+        }
+      }
     }
 
     // (today/todayIso declared earlier)
@@ -912,6 +1033,21 @@ Deno.serve(async (req) => {
 
     const tools = inItemsPhase && !exitItemsCollection ? itemsTools : baseTools;
 
+    // Debug logging gated behind AI_DEBUG_LOGS env var (flip on without redeploy
+    // via Edge Function secrets). Logs the system prompt + last 3 messages and,
+    // after the call, the model's raw response (text + tool_calls) plus a diff
+    // of collectedFields so you can see exactly what the model did vs. expected.
+    const AI_DEBUG = Deno.env.get("AI_DEBUG_LOGS") === "true";
+    const collectedBefore = { ...updatedFields };
+    if (AI_DEBUG) {
+      console.log("[ai-campaign-builder][debug] PROMPT", JSON.stringify({
+        systemPromptHead: systemPrompt.slice(0, 2000),
+        lastMessages: trimmedMessages.slice(-3),
+        postDraftFallbackApplied,
+        collectedBefore,
+      }));
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -950,6 +1086,17 @@ Deno.serve(async (req) => {
     const data = await response.json();
     const choice = data.choices?.[0];
     if (!choice) throw new Error("No response from AI");
+
+    if (AI_DEBUG) {
+      console.log("[ai-campaign-builder][debug] RESPONSE", JSON.stringify({
+        text: choice.message?.content || null,
+        tool_calls: (choice.message?.tool_calls || []).map((tc: any) => ({
+          name: tc.function?.name,
+          arguments: tc.function?.arguments,
+        })),
+        finish_reason: choice.finish_reason,
+      }));
+    }
 
     let assistantMessage = choice.message?.content || "";
     const persistFields: Record<string, any> = {};
@@ -1577,11 +1724,24 @@ Deno.serve(async (req) => {
         const newLast = lastParaOf(assistantMessages.join("\n\n")).toLowerCase();
         const prevLast = lastParaOf(prevAssistant).toLowerCase();
         if (newLast && prevLast && newLast === prevLast) {
-          console.log("[ai-campaign-builder] no-repeat guard tripped, rewriting duplicate question");
-          // Drop the duplicate trailing question and replace with a clarifier.
-          assistantMessages = assistantMessages.slice(0, -1);
-          assistantMessages.push("Sorry, I didn't quite catch that — could you rephrase your answer?");
-          assistantMessage = assistantMessages.join("\n\n");
+          if (postDraftFallbackApplied) {
+            // We already captured the user's answer server-side this turn — the
+            // model's repeated question is a stale echo. Trust the fallback to
+            // advance state on the NEXT turn; just drop the duplicate question
+            // and let the acknowledgment paragraph stand on its own.
+            console.log("[ai-campaign-builder] no-repeat guard: suppressing duplicate (post-draft fallback applied)");
+            assistantMessages = assistantMessages.slice(0, -1);
+            if (assistantMessages.length === 0) {
+              assistantMessages.push("Got it — saved.");
+            }
+            assistantMessage = assistantMessages.join("\n\n");
+          } else {
+            console.log("[ai-campaign-builder] no-repeat guard tripped, rewriting duplicate question");
+            // Drop the duplicate trailing question and replace with a clarifier.
+            assistantMessages = assistantMessages.slice(0, -1);
+            assistantMessages.push("Sorry, I didn't quite catch that — could you rephrase your answer?");
+            assistantMessage = assistantMessages.join("\n\n");
+          }
         }
       }
     } catch (e) {
@@ -1597,7 +1757,19 @@ Deno.serve(async (req) => {
       createdCampaignId,
       savedItemId,
       itemsAdded,
+      postDraftFallbackApplied,
     }));
+
+    if (AI_DEBUG) {
+      const diff: Record<string, { before: any; after: any }> = {};
+      const allKeys = new Set([...Object.keys(collectedBefore), ...Object.keys(updatedFields)]);
+      for (const k of allKeys) {
+        if (JSON.stringify(collectedBefore[k]) !== JSON.stringify(updatedFields[k])) {
+          diff[k] = { before: collectedBefore[k], after: updatedFields[k] };
+        }
+      }
+      console.log("[ai-campaign-builder][debug] FIELDS_DIFF", JSON.stringify(diff));
+    }
 
     return new Response(
       JSON.stringify({
