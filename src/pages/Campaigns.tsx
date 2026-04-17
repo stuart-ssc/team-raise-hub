@@ -42,7 +42,7 @@ export default function Campaigns() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<keyof Campaign>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [filterBy, setFilterBy] = useState("active");
+  const [filterBy, setFilterBy] = useState("all");
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup, groups } = useActiveGroup();
   const { toast } = useToast();
@@ -191,7 +191,8 @@ export default function Campaigns() {
     
     const matchesFilter = filterBy === "all" || 
                          (filterBy === "active" && campaign.status) ||
-                         (filterBy === "inactive" && !campaign.status);
+                         (filterBy === "inactive" && !campaign.status && campaign.publication_status !== 'draft') ||
+                         (filterBy === "draft" && campaign.publication_status === 'draft');
     
     return matchesSearch && matchesFilter;
   });
@@ -300,6 +301,7 @@ export default function Campaigns() {
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="draft">Drafts</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
