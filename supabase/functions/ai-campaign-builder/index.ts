@@ -770,6 +770,17 @@ Deno.serve(async (req) => {
           label: "Participant directions",
           options: [{ label: "Skip — no directions", value: "skip" }],
         };
+      } else {
+        // Phase === "complete" — offer the final choice
+        suggestions = {
+          type: "choice",
+          field: "final_action",
+          label: "What's next?",
+          options: [
+            { label: "Publish now", value: "publish" },
+            { label: "Open in editor", value: "open_editor" },
+          ],
+        };
       }
     } else if (phase === "ready_to_create") {
       suggestions = {
