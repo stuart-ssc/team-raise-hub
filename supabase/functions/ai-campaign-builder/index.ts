@@ -10,6 +10,48 @@ const REQUIRED_FACTUAL_KEYS = ["name", "campaign_type_id", "group_id", "goal_amo
 // requires_business_info is a boolean, so we gate on its *presence* (answered) rather than truthiness.
 const REQUIRED_KEYS = REQUIRED_FACTUAL_KEYS;
 
+// Every field the AI should walk through, in the order to ask. `required: false`
+// means the user can skip without blocking save — NOT that the AI may silently omit it.
+const ASK_ORDER = [
+  "name",
+  "campaign_type_id",
+  "group_id",
+  "goal_amount",
+  "start_date",
+  "end_date",
+  "description",
+  "requires_business_info",
+];
+
+function isFieldAnswered(key: string, collected: Record<string, any>): boolean {
+  if (collected[`${key}_skipped`] === true) return true;
+  const v = collected[key];
+  if (key === "requires_business_info") return v !== undefined && v !== null;
+  return v !== undefined && v !== null && v !== "";
+}
+
+function getStillToAskAbout(collected: Record<string, any>): string[] {
+  return ASK_ORDER.filter((k) => !isFieldAnswered(k, collected));
+}
+
+const SKIP_WORDS = new Set([
+  "skip", "skip it", "no", "no thanks", "no thank you", "none", "nope",
+  "n/a", "na", "not now", "later", "pass",
+]);
+
+function isSkipMessage(text: string): boolean {
+  return SKIP_WORDS.has(text.trim().toLowerCase().replace(/[.!?]+$/, ""));
+}
+
+// Heuristic: figure out which un-asked optional field the assistant most likely
+// just asked about, so we can apply a "skip" deterministically.
+function detectFieldFromAssistantText(text: string): string | null {
+  const t = text.toLowerCase();
+  if (/description/.test(t)) return "description";
+  if (/sponsor.*(info|asset|provide)|requires_business_info|business info/.test(t)) return "requires_business_info";
+  return null;
+}
+
 function slugify(text: string): string {
   return text.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
@@ -156,6 +198,15 @@ function buildSystemPrompt(
     ? missingRequired.map((k) => `  - ${k}`).join("\n")
     : "  (all required fields collected!)";
 
+  const stillToAsk = getStillToAskAbout(collectedFields);
+  const stillToAskList = stillToAsk.length > 0
+    ? stillToAsk.map((k) => {
+        const def = FIELD_DEFS.find((f) => f.key === k);
+        const tag = def?.required ? "REQUIRED" : "optional — user may skip";
+        return `  - ${k} (${tag})`;
+      }).join("\n")
+    : "  (every field has a value or has been skipped — ready to save!)";
+
   const autoFillNote = autoFilledGroupName
     ? `\n## Auto-Selected Group\nThe organization only has one group, so it has been auto-selected: "${autoFilledGroupName}". Briefly confirm this in your next message (e.g. "Got it — this is for ${autoFilledGroupName}.") and move on to the next missing field.\n`
     : "";
@@ -244,11 +295,14 @@ ${fieldDescriptions}
 ## Already Collected
 ${alreadyCollected}
 
-## Still Missing (Required)
+## Still Missing (Required — must be answered before save)
 ${missingList}
+
+## Still To Ask About (every field — required OR optional — that hasn't been answered or skipped)
+${stillToAskList}
 ${autoFillNote}
 ## Rules
-1. Ask about ONE missing required field at a time. Be conversational and brief (1-2 sentences).
+1. Ask about ONE field at a time, in the order shown in "## Still To Ask About". Be conversational and brief (1-2 sentences).
 2. When the user provides information, call the "update_campaign_fields" tool with the extracted values.
 3. For campaign_type_id: match the user's description to the closest campaign type and use its ID.
 4. For group_id: match the user's description to the closest group and use its ID.
@@ -256,8 +310,12 @@ ${autoFillNote}
 6. For start_date and end_date: accept ANY natural format the user provides — "May 1", "5/1", "5/1/2026", "next Friday", "May 1st", "in 2 weeks", etc. ALWAYS interpret M/D or M/D/YYYY as US-style **month/day/year**. If the user omits the year, assume the current year (${todayIso.slice(0, 4)}) — but if that date has already passed, roll forward to next year. ALWAYS pass the date to the tool in **YYYY-MM-DD** format. After setting a date, briefly confirm it back in friendly format (e.g. "Got it — starting **May 1, 2026**.").
 7. Do NOT make up values. Only extract what the user explicitly says.
 8. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
-9. Once all REQUIRED factual fields above are collected, you MUST ask about **requires_business_info** as its own separate turn. Phrase it like: "Will sponsors need to provide information or assets to participate? (e.g. a logo for a banner/shirt, a website link for social media recognition)" — the UI will show Yes/No buttons. Set it via update_campaign_fields based on their answer. **Do NOT combine this question with the "save as draft" confirmation in the same message.** Also offer (one at a time, in earlier turns) any optional field like description; the user can answer or say "skip".
-10. Only AFTER requires_business_info has been explicitly answered (true or false), in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft. After the tool runs, the conversation continues into post-draft setup automatically.
+9. **Walk through every field in "## Still To Ask About" — never skip one.** For each field:
+   - If it's REQUIRED, the user must answer (no skipping).
+   - If it's optional, tell them they can say "skip" if they don't want to provide it.
+   - For **description**, ask something like: "Want to add a short description of the campaign? You can say skip." (free text — no buttons)
+   - For **requires_business_info**, ask: "Will sponsors need to provide information or assets to participate? (e.g. a logo for a banner/shirt, a website link for social media recognition)" — the UI will show Yes/No buttons. Set it via update_campaign_fields based on their answer. **Do NOT combine this question with the "save as draft" confirmation.**
+10. Only AFTER "## Still To Ask About" is empty (every field answered or skipped), in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft. After the tool runs, the conversation continues into post-draft setup automatically.
 11. Keep responses short and focused — no more than 2-3 sentences.
 12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
 13. When the user picks or describes a campaign type, you MUST call **update_campaign_fields** with the matching campaign_type_id in the SAME response where you confirm the choice (e.g. "Great, I'll set this up as a **Merchandise Sale**."). The same applies to group selection — call update_campaign_fields with group_id in the same turn. Do NOT just acknowledge in text — the tool call is REQUIRED to record the selection. If you skip the tool call, the field will not be saved and the user will be re-asked.
@@ -318,7 +376,26 @@ Deno.serve(async (req) => {
       }
     }
 
-    // If post-draft mode, fetch rosters for the campaign's group
+    // Deterministic "skip" handling for optional fields (pre-draft only).
+    // If the latest user message is a skip-word AND the previous assistant message
+    // asked about a known optional field, mark it as skipped server-side so the
+    // AI can move on without looping or silently dropping the field.
+    if (!campaignId && lastUserMsg && isSkipMessage(lastUserMsg)) {
+      const lastAssistantMsg = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "assistant")
+        ?.content as string | undefined;
+      if (lastAssistantMsg) {
+        const askedField = detectFieldFromAssistantText(lastAssistantMsg);
+        // Only auto-skip optional fields. Required fields can't be skipped.
+        if (askedField) {
+          const def = FIELD_DEFS.find((f) => f.key === askedField);
+          if (def && !def.required) {
+            updatedFields[`${askedField}_skipped`] = true;
+          }
+        }
+      }
+    }
     let rosters: { id: number; roster_year: number; current_roster: boolean }[] = [];
     if (campaignId && updatedFields.group_id) {
       const { data: rData } = await adminSb
@@ -609,7 +686,10 @@ Deno.serve(async (req) => {
       (k) => !updatedFields[k] || updatedFields[k] === ""
     );
     const businessInfoAnswered = updatedFields.requires_business_info !== undefined;
-    const readyToCreate = missingRequired.length === 0 && businessInfoAnswered;
+    // Ready to save only when EVERY field has been answered or explicitly skipped.
+    const stillToAskNow = getStillToAskAbout(updatedFields);
+    const readyToCreate =
+      missingRequired.length === 0 && businessInfoAnswered && stillToAskNow.length === 0;
 
     let phase: "collecting" | "ready_to_create" | "post_draft" | "complete" = "collecting";
     if (effectiveCampaignId) {
@@ -679,23 +759,31 @@ Deno.serve(async (req) => {
         ],
       };
     } else {
-      const nextMissing = missingRequired[0];
-      if (nextMissing === "campaign_type_id" && types.length > 0) {
+      // Walk every un-answered field in order — required AND optional.
+      const nextField = stillToAskNow[0];
+      if (nextField === "campaign_type_id" && types.length > 0) {
         suggestions = {
           type: "choice",
           field: "campaign_type_id",
           label: "Campaign type",
           options: types.map((t) => ({ label: t.name, value: t.id })),
         };
-      } else if (nextMissing === "group_id" && grps.length > 1) {
+      } else if (nextField === "group_id" && grps.length > 1) {
         suggestions = {
           type: "choice",
           field: "group_id",
           label: "Group",
           options: grps.map((g) => ({ label: g.group_name, value: g.id })),
         };
-      } else if (!nextMissing && !businessInfoAnswered) {
-        // All factual fields collected, but the sponsor-info question hasn't been answered yet.
+      } else if (nextField === "description") {
+        // Optional free-text field — offer a Skip chip; the chat input handles the text.
+        suggestions = {
+          type: "choice",
+          field: "description",
+          label: "Add a short description?",
+          options: [{ label: "Skip — no description", value: "skip" }],
+        };
+      } else if (nextField === "requires_business_info") {
         suggestions = {
           type: "choice",
           field: "requires_business_info",
