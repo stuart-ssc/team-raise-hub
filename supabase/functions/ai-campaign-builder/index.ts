@@ -554,9 +554,62 @@ Deno.serve(async (req) => {
 
     const today = new Date();
     const todayIso = `${today.getUTCFullYear()}-${pad(today.getUTCMonth() + 1)}-${pad(today.getUTCDate())}`;
-    const systemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso, campaignId || null, rosters);
 
-    const tools = [
+    // ---- Items collection state ----
+    let currentItemDraft: Record<string, any> = { ...(rawItemDraft || {}) };
+    let itemsAdded: number = Number(rawItemsAdded) || 0;
+    let awaitingAddAnother: boolean = !!rawAwaitingAddAnother;
+    let savedItemId: string | null = null;
+    let exitItemsCollection = false;
+    const inItemsPhase = clientPhase === "collecting_items" && !!campaignId;
+
+    // Resolve campaign type name (for item-noun in prompts)
+    const resolvedTypeName =
+      types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null;
+    const itemNoun = itemNounForType(resolvedTypeName);
+
+    // Fetch campaign name when needed for items prompt
+    let campaignNameForItems: string = updatedFields.name || "";
+    if (inItemsPhase && !campaignNameForItems && campaignId) {
+      const { data: c } = await adminSb.from("campaigns").select("name").eq("id", campaignId).single();
+      campaignNameForItems = c?.name || "your campaign";
+    }
+
+    // Deterministic add-another / done detection while awaiting that choice
+    if (inItemsPhase && awaitingAddAnother && lastUserMsg) {
+      const t = lastUserMsg.replace(/[.!?]+$/, "").trim();
+      if (/^(add another|another|yes|yep|sure|1)$/.test(t) || /\badd another\b/.test(t)) {
+        awaitingAddAnother = false;
+        currentItemDraft = {};
+      } else if (/^(i'?m done|done|no|nope|finish|finished|that'?s it|2)$/.test(t) || /\bdone\b/.test(t)) {
+        awaitingAddAnother = false;
+        exitItemsCollection = true;
+      }
+    }
+
+    // Deterministic skip on optional item field while collecting
+    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && lastUserMsg && isSkipMessage(lastUserMsg)) {
+      const next = getNextItemField(currentItemDraft);
+      if (next && !next.required) {
+        currentItemDraft[`${next.key}_skipped`] = true;
+      }
+    }
+
+    let systemPrompt: string;
+    if (inItemsPhase && !exitItemsCollection) {
+      systemPrompt = buildItemsSystemPrompt(
+        campaignNameForItems,
+        itemNoun,
+        itemsAdded,
+        currentItemDraft,
+        awaitingAddAnother,
+        todayIso,
+      );
+    } else {
+      systemPrompt = buildSystemPrompt(types, grps, updatedFields, autoFilledGroupName, todayIso, campaignId || null, rosters);
+    }
+
+    const baseTools = [
       {
         type: "function",
         function: {
@@ -596,6 +649,46 @@ Deno.serve(async (req) => {
         },
       },
     ];
+
+    const itemsTools = [
+      {
+        type: "function",
+        function: {
+          name: "update_item_field",
+          description:
+            "Record a single value for the campaign item being built. Pass exactly one item field key plus its value, OR a `<key>_skipped: true` marker to skip an optional field.",
+          parameters: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              description: { type: "string" },
+              cost: { type: "number", description: "Price in dollars (server converts to cents)" },
+              quantity_offered: { type: "number" },
+              max_items_purchased: { type: "number" },
+              size: { type: "string" },
+              is_recurring: { type: "boolean" },
+              recurring_interval: { type: "string", enum: ["month", "year"] },
+              description_skipped: { type: "boolean" },
+              max_items_purchased_skipped: { type: "boolean" },
+              size_skipped: { type: "boolean" },
+              is_recurring_skipped: { type: "boolean" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "save_campaign_item",
+          description:
+            "Insert the current item draft into the database. Call ONLY after all required item fields are filled.",
+          parameters: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
+    ];
+
+    const tools = inItemsPhase && !exitItemsCollection ? itemsTools : baseTools;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
