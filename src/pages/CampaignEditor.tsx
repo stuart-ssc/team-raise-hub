@@ -227,6 +227,35 @@ export default function CampaignEditor() {
     setCampaignData(prev => ({ ...prev, ...updates }));
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("campaigns")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Campaign deleted",
+        description: "You can restore it from the Deleted filter on the Campaigns page.",
+      });
+      setDeleteDialogOpen(false);
+      navigate("/dashboard/campaigns");
+    } catch (error) {
+      console.error("Error deleting campaign:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete campaign",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!organizationUser) return;
 
