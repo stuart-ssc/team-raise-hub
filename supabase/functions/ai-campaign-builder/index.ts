@@ -573,6 +573,41 @@ Deno.serve(async (req) => {
         }
       }
     }
+
+    // Deterministic free-text / yes-no capture (pre-draft only).
+    // Safety net: if the model asked about description or requires_business_info
+    // and the user replied, capture the answer server-side even if the model
+    // forgot to call update_campaign_fields. This prevents stale chip cards
+    // and the "still asking the same field" loop.
+    if (!campaignId && lastUserMsg && !isSkipMessage(lastUserMsg)) {
+      const lastAssistantMsgRaw = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "assistant")
+        ?.content as string | undefined;
+      const lastUserMsgRaw = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "user")
+        ?.content as string | undefined;
+      if (lastAssistantMsgRaw && lastUserMsgRaw) {
+        const askedField = detectFieldFromAssistantText(lastAssistantMsgRaw);
+        if (askedField === "description" && !isFieldAnswered("description", updatedFields)) {
+          // Don't capture short meta-replies like "I already gave the description?".
+          const trimmed = lastUserMsgRaw.trim();
+          const isMeta = /^(i\s|already|what\?|why\?|huh\?)/i.test(trimmed) && trimmed.length < 60;
+          if (!isMeta && trimmed.length > 0) {
+            updatedFields.description = trimmed;
+          }
+        } else if (
+          askedField === "requires_business_info" &&
+          !isFieldAnswered("requires_business_info", updatedFields)
+        ) {
+          const yn = parseYesNo(lastUserMsgRaw);
+          if (yn !== null) {
+            updatedFields.requires_business_info = yn;
+          }
+        }
+      }
+    }
     let rosters: { id: number; roster_year: number; current_roster: boolean }[] = [];
     if (campaignId && updatedFields.group_id) {
       const { data: rData } = await adminSb
