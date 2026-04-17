@@ -11,6 +11,8 @@ interface ImageUploadPromptProps {
   onUploaded: (url: string) => void;
   onSkip: () => void;
   onDismiss: () => void;
+  pathPrefix?: string;
+  label?: string;
 }
 
 export default function ImageUploadPrompt({
