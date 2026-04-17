@@ -615,6 +615,10 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Today (used by deterministic date capture below and items phase below).
+    const today = new Date();
+    const todayIso = `${today.getUTCFullYear()}-${pad(today.getUTCMonth() + 1)}-${pad(today.getUTCDate())}`;
+
     // Deterministic free-text / yes-no capture (pre-draft only).
     // Safety net: if the model asked about description or requires_business_info
     // and the user replied, capture the answer server-side even if the model
