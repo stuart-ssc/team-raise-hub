@@ -815,10 +815,78 @@ Deno.serve(async (req) => {
 
         // Detect which post-draft step the assistant just asked about
         const askedImage = /upload .*(image|photo|hero)|campaign image|hero photo/.test(at) &&
-          !/roster|direction|instruction/.test(at);
+          !/roster|direction|instruction|sponsor|asset/.test(at);
         const askedRoster = /roster (tracking|attribution)|each (player|participant) gets|personalized url|personalized fundraising url/.test(at);
         const askedRosterPick = /which roster|pick a roster|select roster|available rosters/.test(at);
         const askedDirections = /participant direction|internal.only instruction|directions for (your|the) team|directions for participants|instructions for (your|the) team/.test(at);
+        const askedDeadline = /(when|by what date|what.*deadline).*(sponsor|asset|upload)|sponsor.*upload.*by|asset.*deadline|upload.*deadline/.test(at);
+        const askedAssets = /(what|which) assets|sponsors? need to provide|required assets|anything else\?.*asset|add .*another.*asset|company logo|banner ad|full[- ]?page/.test(at) && !askedDeadline;
+
+        // Sponsor asset deadline (free-text date or quick-pick value)
+        const sponsorRequired = updatedFields.requires_business_info === true;
+        if (askedDeadline && sponsorRequired && !updatedFields.asset_upload_deadline) {
+          // Quick-pick values are emitted by the UI as ISO dates already; otherwise parse.
+          const iso = normalizeDate(userRawTrimmed, today);
+          if (iso) {
+            updatedFields.asset_upload_deadline = iso;
+            postDraftFallbackApplied = true;
+            await adminSb.from("campaigns").update({ asset_upload_deadline: iso }).eq("id", campaignId);
+          }
+        }
+
+        // Sponsor required assets (preset name, custom name, or "done")
+        if (askedAssets && sponsorRequired && updatedFields.sponsor_assets_complete !== true) {
+          if (isDoneAssetsMessage(userRawTrimmed)) {
+            // Only mark complete if at least one asset has been added
+            const list: any[] = Array.isArray(updatedFields.pending_required_assets)
+              ? updatedFields.pending_required_assets
+              : [];
+            if (list.length > 0) {
+              updatedFields.sponsor_assets_complete = true;
+              updatedFields.sponsor_assets_phase = "complete";
+              postDraftFallbackApplied = true;
+            }
+          } else {
+            const matched = matchAssetPreset(userRawTrimmed);
+            const list: any[] = Array.isArray(updatedFields.pending_required_assets)
+              ? [...updatedFields.pending_required_assets]
+              : [];
+            let asset: any = null;
+            if (matched) {
+              asset = { ...matched.preset, is_required: true, display_order: list.length };
+            } else if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 120) {
+              asset = {
+                asset_name: userRawTrimmed,
+                asset_description: "",
+                file_types: ["image/png", "image/jpeg", "application/pdf"],
+                dimensions_hint: "",
+                max_file_size_mb: 10,
+                is_required: true,
+                display_order: list.length,
+              };
+            }
+            if (asset && !list.some((a) => a.asset_name?.toLowerCase() === asset.asset_name.toLowerCase())) {
+              list.push(asset);
+              updatedFields.pending_required_assets = list;
+              postDraftFallbackApplied = true;
+              // Insert immediately so it shows up in DB and the editor
+              try {
+                await adminSb.from("campaign_required_assets").insert({
+                  campaign_id: campaignId,
+                  asset_name: asset.asset_name,
+                  asset_description: asset.asset_description,
+                  file_types: asset.file_types,
+                  dimensions_hint: asset.dimensions_hint,
+                  max_file_size_mb: asset.max_file_size_mb,
+                  is_required: asset.is_required,
+                  display_order: asset.display_order,
+                });
+              } catch (e) {
+                console.error("Failed to insert required asset (fallback):", e);
+              }
+            }
+          }
+        }
 
         // Image: skip-only fallback (image upload is handled by the upload widget which sends a synthetic message)
         if (askedImage && !updatedFields.image_url && !updatedFields.image_skipped) {
