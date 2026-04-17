@@ -686,7 +686,10 @@ Deno.serve(async (req) => {
       (k) => !updatedFields[k] || updatedFields[k] === ""
     );
     const businessInfoAnswered = updatedFields.requires_business_info !== undefined;
-    const readyToCreate = missingRequired.length === 0 && businessInfoAnswered;
+    // Ready to save only when EVERY field has been answered or explicitly skipped.
+    const stillToAskNow = getStillToAskAbout(updatedFields);
+    const readyToCreate =
+      missingRequired.length === 0 && businessInfoAnswered && stillToAskNow.length === 0;
 
     let phase: "collecting" | "ready_to_create" | "post_draft" | "complete" = "collecting";
     if (effectiveCampaignId) {
