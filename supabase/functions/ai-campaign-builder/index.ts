@@ -1109,9 +1109,18 @@ Deno.serve(async (req) => {
       if (needsFollowUp) {
         let followUpSystemPrompt = systemPrompt;
         if (createdCampaignId) {
-          // Transition into items-collection phase right after the draft is saved
-          const cName = updatedFields.name || "your campaign";
-          followUpSystemPrompt = buildItemsSystemPrompt(cName, itemNoun, 0, {}, false, todayIso, itemExamples);
+          // After draft creation, walk the user through post-draft setup
+          // (image → roster attribution → directions) BEFORE collecting items.
+          // Re-run buildSystemPrompt in post-draft mode with the new campaign id.
+          followUpSystemPrompt = buildSystemPrompt(
+            types,
+            grps,
+            updatedFields,
+            autoFilledGroupName,
+            todayIso,
+            createdCampaignId,
+            rosters,
+          );
         } else if (savedItemId && inItemsPhase) {
           // Just saved an item — rebuild prompt so AI asks add-another
           followUpSystemPrompt = buildItemsSystemPrompt(
