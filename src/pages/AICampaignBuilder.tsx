@@ -129,6 +129,16 @@ export default function AICampaignBuilder() {
           description: "Let's add a few more details.",
         });
       }
+
+      // Honor a typed/clicked final action when the builder is complete
+      if (data.finalAction === "publish") {
+        setTimeout(() => setShowPublishDialog(true), 150);
+      } else if (data.finalAction === "open_editor") {
+        const targetId = data.createdCampaignId || campaignId;
+        if (targetId) {
+          setTimeout(() => navigate(`/dashboard/campaigns/${targetId}/edit`), 300);
+        }
+      }
     } catch (err: any) {
       console.error("AI campaign builder error:", err);
       toast({
