@@ -260,7 +260,8 @@ ${autoFillNote}
 10. Only AFTER requires_business_info has been explicitly answered (true or false), in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft. After the tool runs, the conversation continues into post-draft setup automatically.
 11. Keep responses short and focused — no more than 2-3 sentences.
 12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
-13. When the user picks or describes a campaign type, you MUST call **update_campaign_fields** with the matching campaign_type_id in the SAME response where you confirm the choice (e.g. "Great, I'll set this up as a **Merchandise Sale**."). The same applies to group selection — call update_campaign_fields with group_id in the same turn. Do NOT just acknowledge in text — the tool call is REQUIRED to record the selection. If you skip the tool call, the field will not be saved and the user will be re-asked.`;
+13. When the user picks or describes a campaign type, you MUST call **update_campaign_fields** with the matching campaign_type_id in the SAME response where you confirm the choice (e.g. "Great, I'll set this up as a **Merchandise Sale**."). The same applies to group selection — call update_campaign_fields with group_id in the same turn. Do NOT just acknowledge in text — the tool call is REQUIRED to record the selection. If you skip the tool call, the field will not be saved and the user will be re-asked.
+14. **NEVER invent, guess, or fabricate UUIDs.** ONLY use IDs that appear verbatim in the "## Available Groups" and "## Available Campaign Types" lists above. If the user has not yet specified a group or campaign type, leave that field empty and ask them — do NOT fill the slot with a placeholder UUID, a made-up ID, or any value not in the lists. Setting only one field per tool call is fine; do not pad the call with guessed values for other fields.`;
 }
 
 Deno.serve(async (req) => {
@@ -439,12 +440,33 @@ Deno.serve(async (req) => {
                 persistFields[key] = value;
               }
             }
+            // Drop hallucinated UUIDs that don't match any known group/type
+            if (updatedFields.group_id && !grps.find((g) => g.id === updatedFields.group_id)) {
+              console.warn("Dropping invalid group_id from tool call:", updatedFields.group_id);
+              delete updatedFields.group_id;
+              delete persistFields.group_id;
+            }
+            if (updatedFields.campaign_type_id && !types.find((t) => t.id === updatedFields.campaign_type_id)) {
+              console.warn("Dropping invalid campaign_type_id from tool call:", updatedFields.campaign_type_id);
+              delete updatedFields.campaign_type_id;
+              delete persistFields.campaign_type_id;
+            }
             toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, updatedFields }) });
           } catch (e) {
             console.error("Failed to parse tool call arguments:", e);
             toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "parse_error" }) });
           }
         } else if (toolCall.function?.name === "create_campaign_draft" && !campaignId) {
+          // Defensive guard: ensure group_id and campaign_type_id reference real records
+          if (!grps.find((g) => g.id === updatedFields.group_id)) {
+            createDraftError = "The selected group is invalid. Please pick a group from the list before saving.";
+            delete updatedFields.group_id;
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: createDraftError }) });
+          } else if (!types.find((t) => t.id === updatedFields.campaign_type_id)) {
+            createDraftError = "The selected campaign type is invalid. Please pick a campaign type from the list before saving.";
+            delete updatedFields.campaign_type_id;
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: createDraftError }) });
+          } else {
           // Validate required fields are present before attempting insert
           const missingNow = REQUIRED_KEYS.filter((k) => !updatedFields[k] || updatedFields[k] === "");
           if (missingNow.length > 0) {
@@ -484,6 +506,7 @@ Deno.serve(async (req) => {
               createdCampaignId = newCampaign.id;
               toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, campaignId: createdCampaignId }) });
             }
+          }
           }
         } else {
           toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "unknown_tool" }) });
