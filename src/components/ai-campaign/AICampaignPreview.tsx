@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Check, Minus, AlertCircle, Rocket, Loader2, ExternalLink, Eye, ImageIcon, Users, FileText, Package, ChevronDown } from "lucide-react";
+import { Check, Minus, AlertCircle, Rocket, Loader2, ExternalLink, Eye, ImageIcon, Users, FileText, Package, ChevronDown, Briefcase, CalendarClock } from "lucide-react";
+import { format } from "date-fns";
 import { allFields, formatFieldValue, getMissingRequiredFields } from "@/lib/ai/campaignSchema";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,6 +15,12 @@ interface CampaignItemRow {
   cost: number | null;
   quantity_offered: number | null;
   has_variants: boolean | null;
+}
+
+interface RequiredAssetRow {
+  id: string;
+  asset_name: string;
+  is_required: boolean | null;
 }
 
 type Phase = "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete";
@@ -74,27 +81,36 @@ export default function AICampaignPreview({
   const [extendedAutoCollapsed, setExtendedAutoCollapsed] = useState(false);
 
   const [items, setItems] = useState<CampaignItemRow[]>([]);
+  const [requiredAssets, setRequiredAssets] = useState<RequiredAssetRow[]>([]);
 
   useEffect(() => {
     if (!campaignId) {
       setItems([]);
+      setRequiredAssets([]);
       return;
     }
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("campaign_items")
-        .select("id, name, cost, quantity_offered, has_variants")
-        .eq("campaign_id", campaignId)
-        .order("created_at", { ascending: true });
-      if (!cancelled && !error && data) {
-        setItems(data as CampaignItemRow[]);
-      }
+      const [itemsRes, assetsRes] = await Promise.all([
+        supabase
+          .from("campaign_items")
+          .select("id, name, cost, quantity_offered, has_variants")
+          .eq("campaign_id", campaignId)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("campaign_required_assets")
+          .select("id, asset_name, is_required")
+          .eq("campaign_id", campaignId)
+          .order("display_order", { ascending: true }),
+      ]);
+      if (cancelled) return;
+      if (!itemsRes.error && itemsRes.data) setItems(itemsRes.data as CampaignItemRow[]);
+      if (!assetsRes.error && assetsRes.data) setRequiredAssets(assetsRes.data as RequiredAssetRow[]);
     })();
     return () => {
       cancelled = true;
     };
-  }, [campaignId, itemsAdded]);
+  }, [campaignId, itemsAdded, collectedFields.asset_upload_deadline, collectedFields.required_assets_count]);
 
   const postDraftItems = [
     {
@@ -379,6 +395,63 @@ export default function AICampaignPreview({
                           ? "Sized"
                           : `Qty ${item.quantity_offered ?? "∞"}`}
                       </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {(isPostDraft || isCollectingItems) && collectedFields.requires_business_info === true && (
+          <Card>
+            <CardHeader className="pb-2 pt-3 px-4">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                <Briefcase className="h-3.5 w-3.5" />
+                Required Sponsor Assets
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-3 space-y-2">
+              {collectedFields.asset_upload_deadline ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">Deadline:</span>
+                  <span className="font-medium">
+                    {(() => {
+                      try {
+                        return format(new Date(collectedFields.asset_upload_deadline), "MMM d, yyyy");
+                      } catch {
+                        return collectedFields.asset_upload_deadline;
+                      }
+                    })()}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground/60">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  <span>Deadline pending</span>
+                </div>
+              )}
+
+              {requiredAssets.length === 0 ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">No assets added yet</span>
+                  <Badge variant="outline">0</Badge>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {requiredAssets.map((asset) => (
+                    <div
+                      key={asset.id}
+                      className="flex items-center justify-between gap-2 py-1 border-b last:border-0 border-border/40"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                        <span className="text-sm font-medium truncate">{asset.asset_name}</span>
+                      </div>
+                      {asset.is_required && (
+                        <Badge variant="outline" className="text-[10px]">Required</Badge>
+                      )}
                     </div>
                   ))}
                 </div>
