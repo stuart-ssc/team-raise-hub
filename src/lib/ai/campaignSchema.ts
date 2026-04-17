@@ -46,7 +46,7 @@ export const sharedFields: CampaignFieldDef[] = [
     type: "number",
     required: true,
     aiDescription:
-      "The fundraising goal in cents (e.g. 50000 = $500.00). Must be a positive integer.",
+      "The fundraising goal in whole dollars (e.g. 10000 = $10,000.00). Must be a positive number.",
     validation: (v) =>
       v !== undefined && v !== null && (typeof v !== "number" || v <= 0)
         ? "Goal amount must be a positive number"
@@ -237,7 +237,10 @@ export function formatFieldValue(key: string, value: any): string {
     return "";
 
   if (field.type === "number" && key === "goal_amount") {
-    return `$${(Number(value) / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(Number(value));
   }
   if (field.type === "boolean") {
     return value ? "Yes" : "No";
