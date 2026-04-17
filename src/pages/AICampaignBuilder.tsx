@@ -222,6 +222,28 @@ export default function AICampaignBuilder() {
     await callAi(newMessages, merged);
   };
 
+  const handleItemImageUploaded = async (url: string) => {
+    const mergedDraft = { ...currentItemDraft, image: url };
+    setCurrentItemDraft(mergedDraft);
+    const newMessages: ChatMessage[] = [
+      ...messages,
+      { role: "user", content: `Item image uploaded: ${url}` },
+    ];
+    setMessages(newMessages);
+    await callAi(newMessages);
+  };
+
+  const handleItemImageSkipped = async () => {
+    const mergedDraft = { ...currentItemDraft, image_skipped: true };
+    setCurrentItemDraft(mergedDraft);
+    const newMessages: ChatMessage[] = [
+      ...messages,
+      { role: "user", content: "Skip item image" },
+    ];
+    setMessages(newMessages);
+    await callAi(newMessages);
+  };
+
   const handleCreateDraft = async () => {
     if (!readyToCreate || isCreating || campaignId) return;
     setIsCreating(true);
