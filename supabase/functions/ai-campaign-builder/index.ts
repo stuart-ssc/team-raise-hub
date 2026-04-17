@@ -1258,6 +1258,7 @@ Deno.serve(async (req) => {
                     quantity_offered: Number(currentItemDraft.quantity_offered),
                     quantity_available: Number(currentItemDraft.quantity_offered),
                   };
+                  if (currentItemDraft.image && !currentItemDraft.image_skipped) insertItem.image = currentItemDraft.image;
                   if (currentItemDraft.description && !currentItemDraft.description_skipped) insertItem.description = currentItemDraft.description;
                   if (currentItemDraft.max_items_purchased !== undefined && !currentItemDraft.max_items_purchased_skipped) {
                     insertItem.max_items_purchased = Number(currentItemDraft.max_items_purchased);
