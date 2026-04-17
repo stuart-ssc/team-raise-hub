@@ -25,10 +25,10 @@ interface ItemFieldDef {
 
 const ITEM_FIELDS: ItemFieldDef[] = [
   { key: "name", label: "Name", prompt: "What's the name of your {ordinal} {itemNoun}? ({examples})", type: "string", required: true },
-  { key: "image", label: "Image", prompt: "Want to upload an image for this {itemNoun}? You can also skip.", type: "string", required: false },
-  { key: "description", label: "Description", prompt: "Add a short description, or say skip.", type: "longtext", required: false },
   { key: "cost", label: "Price (dollars)", prompt: "How much does it cost? (in dollars, e.g. 25)", type: "number", required: true },
   { key: "quantity_offered", label: "Quantity offered", prompt: "How many are you offering in total?", type: "number", required: true },
+  { key: "image", label: "Image", prompt: "Want to upload an image for this {itemNoun}? You can also skip.", type: "string", required: false },
+  { key: "description", label: "Description", prompt: "Add a short description, or say skip.", type: "longtext", required: false },
   { key: "max_items_purchased", label: "Limit per buyer", prompt: "Limit per buyer? (a number, or skip for no limit)", type: "number", required: false },
   { key: "size", label: "Size / tier label", prompt: "Any size or tier label? (e.g. 'Large', 'Gold tier' — skip if none)", type: "string", required: false },
   { key: "is_recurring", label: "Recurring", prompt: "Should this be a recurring charge?", type: "boolean", required: false },
@@ -1290,6 +1290,30 @@ Deno.serve(async (req) => {
         } catch (e) {
           console.error("Deterministic item follow-up failed:", e);
         }
+      }
+    }
+
+    // Detect post_draft → collecting_items transition in THIS turn.
+    // When setup just finished but the client thinks we're still in post_draft,
+    // replace the assistant message with a single canned message that BOTH
+    // announces items collection AND asks for the first item's name. This
+    // avoids (a) the dead-end statement that required the user to type "ok"
+    // and (b) a double prompt being emitted across consecutive turns.
+    {
+      const imageDoneNow = !!updatedFields.image_url || !!updatedFields.image_skipped;
+      const rosterDoneNow = updatedFields.enable_roster_attribution !== undefined &&
+        (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
+      const directionsDoneNow = updatedFields.group_directions_addressed === true;
+      const setupJustFinished = imageDoneNow && rosterDoneNow && directionsDoneNow;
+      const justEnteringItemsPhase =
+        !!campaignId &&
+        !inItemsPhase &&
+        !exitItemsCollection &&
+        setupJustFinished &&
+        Object.keys(currentItemDraft).filter((k) => !k.endsWith("_skipped")).length === 0;
+
+      if (justEnteringItemsPhase) {
+        assistantMessage = `Awesome — setup is done! 🎉\n\nNow let's add your first ${itemNoun}. **What's the name?** (${itemExamples})`;
       }
     }
 

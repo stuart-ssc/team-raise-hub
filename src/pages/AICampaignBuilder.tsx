@@ -11,6 +11,40 @@ import { useToast } from "@/hooks/use-toast";
 
 type Phase = "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete";
 
+const ITEM_FIELD_ORDER: { key: string; placeholder: string }[] = [
+  { key: "name", placeholder: "Type the {noun} name..." },
+  { key: "cost", placeholder: "Enter price in dollars..." },
+  { key: "quantity_offered", placeholder: "How many are available?" },
+  { key: "image", placeholder: "Upload an image or skip..." },
+  { key: "description", placeholder: "Add a short description or skip..." },
+  { key: "max_items_purchased", placeholder: "Limit per buyer, or skip..." },
+  { key: "size", placeholder: "Size or tier label, or skip..." },
+  { key: "is_recurring", placeholder: "Yes or no..." },
+  { key: "recurring_interval", placeholder: "Monthly or yearly..." },
+];
+
+function getChatPlaceholder(
+  phase: Phase,
+  currentItemDraft: Record<string, any>,
+  itemNoun: string,
+): string {
+  if (phase === "complete") return "Anything else?";
+  if (phase === "post_draft") return "Answer the question above...";
+  if (phase === "collecting_items") {
+    const next = ITEM_FIELD_ORDER.find(
+      (f) =>
+        currentItemDraft[`${f.key}_skipped`] !== true &&
+        (currentItemDraft[f.key] === undefined ||
+          currentItemDraft[f.key] === null ||
+          currentItemDraft[f.key] === ""),
+    );
+    if (!next) return "Type your answer...";
+    return next.placeholder.replace("{noun}", itemNoun);
+  }
+  return "Describe your campaign...";
+}
+
+
 export default function AICampaignBuilder() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -361,6 +395,7 @@ export default function AICampaignBuilder() {
             onImageSkipped={handleImageSkipped}
             onItemImageUploaded={handleItemImageUploaded}
             onItemImageSkipped={handleItemImageSkipped}
+            placeholder={getChatPlaceholder(phase, currentItemDraft, itemNoun)}
           />
         </div>
       </div>

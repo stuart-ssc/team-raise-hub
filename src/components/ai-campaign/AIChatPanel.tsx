@@ -28,6 +28,7 @@ interface AIChatPanelProps {
   onImageSkipped?: () => void;
   onItemImageUploaded?: (url: string) => void;
   onItemImageSkipped?: () => void;
+  placeholder?: string;
 }
 
 export default function AIChatPanel({
@@ -39,6 +40,7 @@ export default function AIChatPanel({
   onImageSkipped,
   onItemImageUploaded,
   onItemImageSkipped,
+  placeholder = "Describe your campaign...",
 }: AIChatPanelProps) {
   const [input, setInput] = useState("");
   const [dismissedTurnStart, setDismissedTurnStart] = useState<number>(-1);
@@ -218,7 +220,7 @@ export default function AIChatPanel({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe your campaign..."
+            placeholder={placeholder}
             className="min-h-[40px] max-h-[120px] resize-none text-sm"
             rows={1}
             disabled={isLoading}
