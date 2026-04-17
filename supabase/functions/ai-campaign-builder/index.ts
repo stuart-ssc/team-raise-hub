@@ -1555,10 +1555,49 @@ Deno.serve(async (req) => {
     // (typically: acknowledgment paragraph + question paragraph).
     // Filter empty/whitespace-only and emoji-only trailing fragments.
     const isEmojiOnly = (s: string) => !/[A-Za-z0-9]/.test(s);
-    const assistantMessages = (assistantMessage || "")
+    let assistantMessages = (assistantMessage || "")
       .split(/\n{2,}/)
       .map((s) => s.trim())
       .filter((s) => s.length > 0 && !isEmojiOnly(s));
+
+    // No-repeat guard: if the model's final paragraph (the "next question")
+    // matches the previous assistant turn's final paragraph verbatim, replace
+    // it with a brief clarifier so the user isn't double-prompted with the
+    // exact same question.
+    try {
+      const prevAssistant = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "assistant")
+        ?.content as string | undefined;
+      const lastParaOf = (s: string) => {
+        const parts = (s || "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+        return parts[parts.length - 1] || "";
+      };
+      if (prevAssistant && assistantMessages.length > 0) {
+        const newLast = lastParaOf(assistantMessages.join("\n\n")).toLowerCase();
+        const prevLast = lastParaOf(prevAssistant).toLowerCase();
+        if (newLast && prevLast && newLast === prevLast) {
+          console.log("[ai-campaign-builder] no-repeat guard tripped, rewriting duplicate question");
+          // Drop the duplicate trailing question and replace with a clarifier.
+          assistantMessages = assistantMessages.slice(0, -1);
+          assistantMessages.push("Sorry, I didn't quite catch that — could you rephrase your answer?");
+          assistantMessage = assistantMessages.join("\n\n");
+        }
+      }
+    } catch (e) {
+      console.error("no-repeat guard failed:", e);
+    }
+
+    console.log("[ai-campaign-builder] resp", JSON.stringify({
+      phase,
+      readyToCreate,
+      msgCount: assistantMessages.length,
+      hasSuggestions: !!suggestions,
+      suggestionField: suggestions?.field || null,
+      createdCampaignId,
+      savedItemId,
+      itemsAdded,
+    }));
 
     return new Response(
       JSON.stringify({
