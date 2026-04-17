@@ -1033,6 +1033,21 @@ Deno.serve(async (req) => {
 
     const tools = inItemsPhase && !exitItemsCollection ? itemsTools : baseTools;
 
+    // Debug logging gated behind AI_DEBUG_LOGS env var (flip on without redeploy
+    // via Edge Function secrets). Logs the system prompt + last 3 messages and,
+    // after the call, the model's raw response (text + tool_calls) plus a diff
+    // of collectedFields so you can see exactly what the model did vs. expected.
+    const AI_DEBUG = Deno.env.get("AI_DEBUG_LOGS") === "true";
+    const collectedBefore = { ...updatedFields };
+    if (AI_DEBUG) {
+      console.log("[ai-campaign-builder][debug] PROMPT", JSON.stringify({
+        systemPromptHead: systemPrompt.slice(0, 2000),
+        lastMessages: trimmedMessages.slice(-3),
+        postDraftFallbackApplied,
+        collectedBefore,
+      }));
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
