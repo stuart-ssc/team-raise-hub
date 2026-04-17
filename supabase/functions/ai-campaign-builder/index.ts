@@ -107,12 +107,26 @@ function isSkipMessage(text: string): boolean {
   return SKIP_WORDS.has(text.trim().toLowerCase().replace(/[.!?]+$/, ""));
 }
 
-// Heuristic: figure out which un-asked optional field the assistant most likely
-// just asked about, so we can apply a "skip" deterministically.
+// Heuristic: figure out which field the assistant most likely just asked about,
+// so we can apply skips OR free-text answers deterministically.
 function detectFieldFromAssistantText(text: string): string | null {
   const t = text.toLowerCase();
-  if (/description/.test(t)) return "description";
-  if (/sponsor.*(info|asset|provide)|requires_business_info|business info/.test(t)) return "requires_business_info";
+  // Order matters: business-info patterns are more specific than the generic
+  // "description" keyword, so check them first.
+  if (/sponsor.*(info|asset|provide)|requires_business_info|business info|provide information or assets/.test(t)) {
+    return "requires_business_info";
+  }
+  if (/description|describe|short description|tell .* about the campaign/.test(t)) {
+    return "description";
+  }
+  return null;
+}
+
+// Parse a yes/no-style user reply. Returns true/false or null if unclear.
+function parseYesNo(text: string): boolean | null {
+  const t = text.trim().toLowerCase().replace(/[.!?]+$/, "");
+  if (/^(yes|yep|yeah|yup|sure|ok|okay|y|true|1|yes please|definitely|absolutely|sounds good)$/.test(t)) return true;
+  if (/^(no|nope|nah|n|false|0|not really|don'?t|do not)$/.test(t)) return false;
   return null;
 }
 
