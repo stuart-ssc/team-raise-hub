@@ -153,8 +153,21 @@ export default function AICampaignBuilder() {
         setCampaignId(data.createdCampaignId);
         toast({
           title: "Draft saved!",
-          description: "Let's add your campaign items.",
+          description: "Now let's add your campaign items.",
         });
+        const noun = data.itemNoun || itemNoun || "item";
+        const name = data.updatedFields?.name || collectedFields.name || "your campaign";
+        const transition: ChatMessage = {
+          role: "assistant",
+          content: `✅ **Primary details saved!** Your draft **${name}** is ready.\n\nNow let's add your campaign **${noun}s** — these are what supporters will sponsor or purchase. First, would you like to upload a campaign image to make it stand out?`,
+          suggestions: {
+            type: "image_upload",
+            field: "image_url",
+            label: "Campaign image",
+            options: [],
+          },
+        };
+        setMessages((prev) => [...prev, transition]);
       }
 
       // Honor a typed/clicked final action when the builder is complete
@@ -254,13 +267,14 @@ export default function AICampaignBuilder() {
 
       toast({
         title: "Draft saved!",
-        description: "Let's add a few more details.",
+        description: "Now let's add your campaign items.",
       });
 
       // Kick off the post-draft conversation
+      const noun = itemNoun || "item";
       const transition: ChatMessage = {
         role: "assistant",
-        content: `Great — your draft **${collectedFields.name}** is saved. 🎉 Let's add a few more details to make it shine. First, would you like to upload a campaign image?`,
+        content: `✅ **Primary details saved!** Your draft **${collectedFields.name}** is ready.\n\nNow let's add your campaign **${noun}s** — these are what supporters will sponsor or purchase. First, would you like to upload a campaign image to make it stand out?`,
         suggestions: {
           type: "image_upload",
           field: "image_url",
