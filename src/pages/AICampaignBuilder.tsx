@@ -153,13 +153,12 @@ export default function AICampaignBuilder() {
         setCampaignId(data.createdCampaignId);
         toast({
           title: "Draft saved!",
-          description: "Now let's add your campaign items.",
+          description: "A few quick setup questions before adding items.",
         });
-        const noun = data.itemNoun || itemNoun || "item";
         const name = data.updatedFields?.name || collectedFields.name || "your campaign";
         const transition: ChatMessage = {
           role: "assistant",
-          content: `✅ **Primary details saved!** Your draft **${name}** is ready.\n\nNow let's add your campaign **${noun}s** — these are what supporters will sponsor or purchase. First, would you like to upload a campaign image to make it stand out?`,
+          content: `✅ **Primary details saved!** Your draft **${name}** is ready.\n\nBefore we add items, I just need three quick things: a **campaign image**, whether this is a **peer-to-peer fundraiser**, and any **participant directions**. Let's start with the image — want to upload one?`,
           suggestions: {
             type: "image_upload",
             field: "image_url",
