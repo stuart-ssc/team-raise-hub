@@ -260,7 +260,7 @@ export default function AICampaignPreview({
           <Card>
             <CardHeader className="pb-2 pt-3 px-4">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Setup Steps
+                Extended Details
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-3">
