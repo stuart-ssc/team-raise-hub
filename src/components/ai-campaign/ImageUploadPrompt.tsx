@@ -21,6 +21,8 @@ export default function ImageUploadPrompt({
   onUploaded,
   onSkip,
   onDismiss,
+  pathPrefix,
+  label = "Upload campaign image",
 }: ImageUploadPromptProps) {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
