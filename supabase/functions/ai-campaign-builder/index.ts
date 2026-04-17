@@ -317,7 +317,7 @@ function buildItemsSystemPrompt(
       .replace(/\{ordinal\}/g, ordinal)
       .replace(/\{examples\}/g, itemExamples);
     const skipNote = nextField.required ? "" : " The user may say **skip**.";
-    nextStep = `**Next field: ${nextField.key}** (${nextField.required ? "REQUIRED" : "optional"}). Ask: "${promptText}"${skipNote}\n\nWhen the user answers, IMMEDIATELY call the **update_item_field** tool with the value (use the exact key \`${nextField.key}\`).`;
+    nextStep = `**Next field: ${nextField.key}** (${nextField.required ? "REQUIRED" : "optional"}). Ask: "${promptText}"${skipNote}\n\nWhen the user answers, IMMEDIATELY call the **update_item_field** tool with the value (use the exact key \`${nextField.key}\`).\n\n**CRITICAL:** Ask every field in order, including optional ones. NEVER skip an optional field on the user's behalf — always ask so the user can choose to skip via the Skip button. Do not combine multiple field questions into one message.`;
   } else {
     nextStep = `Wait for user input.`;
   }
