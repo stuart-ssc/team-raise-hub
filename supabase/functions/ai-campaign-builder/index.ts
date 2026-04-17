@@ -116,6 +116,13 @@ function detectFieldFromAssistantText(text: string): string | null {
   if (/sponsor.*(info|asset|provide)|requires_business_info|business info|provide information or assets/.test(t)) {
     return "requires_business_info";
   }
+  // Date detection — check end_date BEFORE start_date because "end" is more specific.
+  if (/\bend date\b|when (do|does|should|will) .*(end|finish|close|wrap)|ending on|when .*\bend\b|campaign .*\bend\b|end of (the )?campaign/.test(t)) {
+    return "end_date";
+  }
+  if (/\bstart date\b|when (do|does|should|will) .*(start|begin|kick off|launch)|starting on|when .*\bstart\b|campaign .*\bstart\b/.test(t)) {
+    return "start_date";
+  }
   if (/description|describe|short description|tell .* about the campaign/.test(t)) {
     return "description";
   }
@@ -198,6 +205,33 @@ function normalizeDate(input: any, today: Date = new Date()): string | null {
   const cleaned = raw.toLowerCase().replace(/(\d+)(st|nd|rd|th)/g, "$1").replace(/,/g, " ");
   const parts = cleaned.split(/\s+/).filter(Boolean);
 
+  // "end of <month>" / "end of <month> <year>" → last day of that month
+  const endOfMonth = cleaned.match(/^end of (?:the )?(\w+)(?:\s+(\d{2,4}))?$/);
+  if (endOfMonth && MONTHS[endOfMonth[1]]) {
+    const mo = MONTHS[endOfMonth[1]];
+    let y: number;
+    if (endOfMonth[2]) {
+      y = endOfMonth[2].length === 2 ? 2000 + +endOfMonth[2] : +endOfMonth[2];
+    } else {
+      y = inferYear(mo, 28, today); // use 28 to safely infer year, then take last day
+    }
+    const lastDay = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    return buildIso(y, mo, lastDay);
+  }
+
+  // "beginning of <month>" / "start of <month>" → first day
+  const startOfMonth = cleaned.match(/^(?:beginning|start) of (?:the )?(\w+)(?:\s+(\d{2,4}))?$/);
+  if (startOfMonth && MONTHS[startOfMonth[1]]) {
+    const mo = MONTHS[startOfMonth[1]];
+    let y: number;
+    if (startOfMonth[2]) {
+      y = startOfMonth[2].length === 2 ? 2000 + +startOfMonth[2] : +startOfMonth[2];
+    } else {
+      y = inferYear(mo, 1, today);
+    }
+    return buildIso(y, mo, 1);
+  }
+
   if (parts.length >= 2 && MONTHS[parts[0]]) {
     const mo = MONTHS[parts[0]];
     const d = parseInt(parts[1], 10);
@@ -218,6 +252,13 @@ function normalizeDate(input: any, today: Date = new Date()): string | null {
         : inferYear(mo, d, today);
       return buildIso(y, mo, d);
     }
+  }
+
+  // Just a month name → first day of that month
+  if (parts.length === 1 && MONTHS[parts[0]]) {
+    const mo = MONTHS[parts[0]];
+    const y = inferYear(mo, 1, today);
+    return buildIso(y, mo, 1);
   }
 
   const parsed = new Date(raw);
@@ -461,7 +502,7 @@ ${autoFillNote}
 3. For campaign_type_id: match the user's description to the closest campaign type and use its ID.
 4. For group_id: match the user's description to the closest group and use its ID.
 5. For goal_amount: convert dollar amounts to cents (e.g. $500 → 50000).
-6. For start_date and end_date: accept ANY natural format the user provides — "May 1", "5/1", "5/1/2026", "next Friday", "May 1st", "in 2 weeks", etc. ALWAYS interpret M/D or M/D/YYYY as US-style **month/day/year**. If the user omits the year, assume the current year (${todayIso.slice(0, 4)}) — but if that date has already passed, roll forward to next year. ALWAYS pass the date to the tool in **YYYY-MM-DD** format. After setting a date, briefly confirm it back in friendly format (e.g. "Got it — starting **May 1, 2026**.").
+6. For start_date and end_date: accept ANY natural format the user provides — "May 1", "5/1", "5/1/2026", "next Friday", "May 1st", "in 2 weeks", "end of May", "Monday", etc. ALWAYS interpret M/D or M/D/YYYY as US-style **month/day/year**. If the user omits the year, assume the current year (${todayIso.slice(0, 4)}) — but if that date has already passed, roll forward to next year. ALWAYS pass the date to the tool in **YYYY-MM-DD** format. **CRITICAL: When the user gives a date, your text reply MUST be accompanied by an `update_campaign_fields` tool call with the normalized YYYY-MM-DD value in the SAME turn. Acknowledging the date only in text ("Got it — starting May 1, 2026") without the tool call is a bug — the date will be lost.** After the tool call, briefly confirm it back in friendly format (e.g. "Got it — starting **May 1, 2026**.").
 7. Do NOT make up values. Only extract what the user explicitly says.
 8. Do NOT write copy, taglines, or marketing content. Just collect the factual details.
 9. **Walk through every field in "## Still To Ask About" — never skip one.** For each field:
@@ -604,6 +645,27 @@ Deno.serve(async (req) => {
           const yn = parseYesNo(lastUserMsgRaw);
           if (yn !== null) {
             updatedFields.requires_business_info = yn;
+          }
+        } else if (
+          (askedField === "start_date" || askedField === "end_date") &&
+          !isFieldAnswered(askedField, updatedFields)
+        ) {
+          const trimmed = lastUserMsgRaw.trim();
+          const isMeta = /^(i\s|already|what\?|why\?|huh\?)/i.test(trimmed) && trimmed.length < 60;
+          if (!isMeta && trimmed.length > 0) {
+            const iso = normalizeDate(trimmed, today);
+            if (iso) {
+              updatedFields[askedField] = iso;
+              // Sanity guard: drop end_date if it's before start_date
+              if (
+                updatedFields.start_date &&
+                updatedFields.end_date &&
+                updatedFields.end_date < updatedFields.start_date
+              ) {
+                console.warn("Captured end_date before start_date; dropping end_date");
+                delete updatedFields.end_date;
+              }
+            }
           }
         }
       }
