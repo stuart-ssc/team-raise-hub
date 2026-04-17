@@ -566,7 +566,8 @@ Deno.serve(async (req) => {
     const missingRequired = REQUIRED_KEYS.filter(
       (k) => !updatedFields[k] || updatedFields[k] === ""
     );
-    const readyToCreate = missingRequired.length === 0;
+    const businessInfoAnswered = updatedFields.requires_business_info !== undefined;
+    const readyToCreate = missingRequired.length === 0 && businessInfoAnswered;
 
     let phase: "collecting" | "ready_to_create" | "post_draft" | "complete" = "collecting";
     if (effectiveCampaignId) {
@@ -650,6 +651,17 @@ Deno.serve(async (req) => {
           field: "group_id",
           label: "Group",
           options: grps.map((g) => ({ label: g.group_name, value: g.id })),
+        };
+      } else if (!nextMissing && !businessInfoAnswered) {
+        // All factual fields collected, but the sponsor-info question hasn't been answered yet.
+        suggestions = {
+          type: "choice",
+          field: "requires_business_info",
+          label: "Will sponsors provide info/assets to participate?",
+          options: [
+            { label: "Yes, sponsors must provide info", value: "true" },
+            { label: "No, not required", value: "false" },
+          ],
         };
       }
     }
