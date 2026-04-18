@@ -398,7 +398,7 @@ ${nextStep}
 
 ## Rules
 - Ask ONE field at a time. Keep messages to 1 short sentence per question.
-- For \`cost\`: the user types dollars (e.g. "25" or "$25"). Pass the dollar number (decimals OK) — the server converts to cents.
+- For \`cost\`: the user types dollars (e.g. "25" or "$25"). Pass the dollar number (decimals OK) — stored as-is in dollars.
 - For \`is_recurring\`: the UI shows Yes/No buttons. Pass true/false.
 - Never make up values; only record what the user explicitly says.
 - **Response format — every turn after user input MUST be TWO paragraphs separated by a blank line:**
@@ -1048,9 +1048,11 @@ Deno.serve(async (req) => {
         if (next) {
           const raw = lastUserMsg.trim();
           if (next.key === "cost") {
-            const m = raw.match(/-?\d+(?:\.\d+)?/);
-            if (m) {
-              currentItemDraft.cost = Number(m[0]);
+            const cleaned = raw.replace(/[$,]/g, "");
+            const m = cleaned.match(/\d+(?:\.\d+)?/);
+            const val = m ? Number(m[0]) : NaN;
+            if (!isNaN(val) && val > 0) {
+              currentItemDraft.cost = val;
               deterministicItemCaptured = true;
             }
           } else if (next.key === "quantity_offered" || next.key === "max_items_purchased") {
@@ -1170,7 +1172,7 @@ Deno.serve(async (req) => {
               name: { type: "string" },
               image: { type: "string", description: "URL of uploaded item image" },
               description: { type: "string" },
-              cost: { type: "number", description: "Price in dollars (server converts to cents)" },
+              cost: { type: "number", description: "Price in dollars (stored as decimal dollars)" },
               quantity_offered: { type: "number" },
               max_items_purchased: { type: "number" },
               size: { type: "string" },
@@ -1431,11 +1433,10 @@ Deno.serve(async (req) => {
             const missing = ITEM_FIELDS.filter((f) => f.required && !isItemFieldAnswered(f.key, currentItemDraft)).map((f) => f.key);
             toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: `Missing required fields: ${missing.join(", ")}` }) });
           } else {
-            const dollarsToCents = (n: any) => Math.round(Number(n) * 100);
             const insertItem: Record<string, any> = {
               campaign_id: campaignId,
               name: currentItemDraft.name,
-              cost: dollarsToCents(currentItemDraft.cost),
+              cost: Number(currentItemDraft.cost),
               quantity_offered: Number(currentItemDraft.quantity_offered),
               quantity_available: Number(currentItemDraft.quantity_offered),
             };
@@ -1676,11 +1677,10 @@ Deno.serve(async (req) => {
             if (fChoice?.message?.tool_calls?.length) {
               for (const tc of fChoice.message.tool_calls) {
                 if (tc.function?.name === "save_campaign_item" && campaignId && isItemReadyToSave(currentItemDraft)) {
-                  const dollarsToCents = (n: any) => Math.round(Number(n) * 100);
                   const insertItem: Record<string, any> = {
                     campaign_id: campaignId,
                     name: currentItemDraft.name,
-                    cost: dollarsToCents(currentItemDraft.cost),
+                    cost: Number(currentItemDraft.cost),
                     quantity_offered: Number(currentItemDraft.quantity_offered),
                     quantity_available: Number(currentItemDraft.quantity_offered),
                   };
