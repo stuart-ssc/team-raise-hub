@@ -233,8 +233,16 @@ const Dashboard = () => {
     }
   }, [organizationUser?.organization_id, activeGroup?.id]);
 
+  // Helper: derive lifecycle state from end_date
+  const getCampaignState = (c: any): 'active' | 'expired' => {
+    if (!c.end_date) return 'active';
+    const today = new Date(new Date().toDateString());
+    return new Date(c.end_date) < today ? 'expired' : 'active';
+  };
+
   // Calculate stats from campaigns data
-  const activeCampaignsCount = campaigns.length;
+  const activeCampaigns = campaigns.filter((c) => getCampaignState(c) === 'active');
+  const activeCampaignsCount = activeCampaigns.length;
   const totalAmountRaised = campaigns.reduce((sum, campaign) => sum + (campaign.amount_raised || 0), 0);
   const totalGoalAmount = campaigns.reduce((sum, campaign) => sum + (campaign.goal_amount || 0), 0);
   const leftToRaise = totalGoalAmount - totalAmountRaised;
