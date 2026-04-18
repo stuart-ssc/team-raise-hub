@@ -463,7 +463,7 @@ export default function AICampaignBuilder() {
             onImageSkipped={handleImageSkipped}
             onItemImageUploaded={handleItemImageUploaded}
             onItemImageSkipped={handleItemImageSkipped}
-            placeholder={getChatPlaceholder(phase, currentItemDraft, itemNoun)}
+            placeholder={getChatPlaceholder(phase, currentItemDraft, itemNoun, messages)}
           />
         </div>
       </div>
