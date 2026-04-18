@@ -338,6 +338,7 @@ const FIELD_DEFS: FieldDef[] = [
   { key: "start_date", label: "Start Date", type: "date", required: true, aiDescription: "Start date in YYYY-MM-DD format." },
   { key: "end_date", label: "End Date", type: "date", required: true, aiDescription: "End date in YYYY-MM-DD format." },
   { key: "requires_business_info", label: "Sponsors Provide Info/Assets", type: "boolean", required: true, aiDescription: "Whether sponsors must provide information or assets to participate (e.g. a logo for a banner/shirt, a website link for social media recognition)." },
+  { key: "fee_model", label: "Platform Fee Model", type: "select", required: true, aiDescription: "Who pays the 10% Sponsorly platform fee. Must be exactly 'donor_covers' (donor pays the fee on top of the item price) or 'org_absorbs' (organization absorbs the fee out of the item price the donor sees)." },
 ];
 
 function buildItemsSystemPrompt(
