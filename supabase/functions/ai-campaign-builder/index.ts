@@ -810,6 +810,36 @@ Deno.serve(async (req) => {
       rosters = rData || [];
     }
 
+    // SYNTHETIC IMAGE MESSAGES — always honor regardless of last assistant text.
+    // The frontend sends these when the user interacts with the upload widget:
+    //   "Image uploaded: <url>"     → set image_url + persist
+    //   "Skip image for now"        → set image_skipped + persist
+    //   "Item image uploaded: <url>" → set currentItemDraft.image (handled later in items phase)
+    //   "Skip item image"            → set currentItemDraft.image_skipped (handled later)
+    // Without this, the post-draft fallback only fires when the last assistant text
+    // matched the image-question regex — meaning a synthetic skip could be silently
+    // dropped and the next phase would advance without resolution.
+    if (campaignId) {
+      const lastUserContent = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "user")
+        ?.content as string | undefined;
+      if (lastUserContent) {
+        const m = lastUserContent.match(/^Image uploaded:\s*(\S+)/i);
+        if (m && !updatedFields.image_url) {
+          updatedFields.image_url = m[1];
+          updatedFields.image_skipped = false;
+          postDraftFallbackApplied = true;
+          await adminSb.from("campaigns").update({ image_url: m[1] }).eq("id", campaignId);
+          console.log("[ai-campaign-builder] synthetic image_url captured", m[1]);
+        } else if (/^Skip image for now$/i.test(lastUserContent.trim()) && !updatedFields.image_url) {
+          updatedFields.image_skipped = true;
+          postDraftFallbackApplied = true;
+          console.log("[ai-campaign-builder] synthetic image_skipped captured");
+        }
+      }
+    }
+
     // POST-DRAFT FALLBACK: figure out which post-draft field the previous assistant
     // message was asking about, and capture the user's reply server-side so the model
     // can't get stuck in a loop by forgetting the tool call.
