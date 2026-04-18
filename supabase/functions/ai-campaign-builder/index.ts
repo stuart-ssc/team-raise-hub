@@ -1113,6 +1113,7 @@ Deno.serve(async (req) => {
               start_date: { type: "string" },
               end_date: { type: "string" },
               requires_business_info: { type: "boolean" },
+              fee_model: { type: "string", enum: ["donor_covers", "org_absorbs"], description: "Who pays the 10% platform fee. 'donor_covers' = donor pays it on top; 'org_absorbs' = organization absorbs it out of the item price." },
               // Post-draft fields:
               image_url: { type: "string", description: "URL of uploaded campaign image" },
               image_skipped: { type: "boolean", description: "True if user chose to skip image upload" },
