@@ -506,7 +506,7 @@ function buildSystemPrompt(
     } else if (!directionsAddressed) {
       nextStep = `**Next step: participant directions.** Ask if they'd like to add internal-only instructions for their team (e.g., "Each player should sell 10 items by Nov 15"). One short sentence. They can type directions or say "skip". When they reply, call the update_campaign_fields tool with group_directions (or set group_directions_addressed=true if skipped).`;
     } else {
-      nextStep = `**All done!** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (celebratory): "Your campaign is ready. 🎉"\n  Paragraph 2 (the choice): "Would you like to **publish** it now, or **open the editor** to fine-tune?"\n\nDo NOT call any tool. Do NOT list other options. The UI shows two buttons (Publish Campaign / Open in Editor) below your message.`;
+      nextStep = `**Setup is done — transition to items collection.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (transition + first item question): "Now let's add your first item. What's the name?"\n\nDo NOT ask about publishing or the editor — that comes later, after items are added. Do NOT call any tool.`;
     }
 
     return `You are a campaign creation assistant for Sponsorly. The user just created a draft campaign and you're now helping them fill in a few more details.
@@ -1013,20 +1013,25 @@ Deno.serve(async (req) => {
       campaignNameForItems = c?.name || "your campaign";
     }
 
-    // Deterministic add-another / done detection while awaiting that choice
+    // Deterministic add-another / done detection while awaiting that choice.
+    // When user picks "add another", we reset the draft and MUST skip the rest
+    // of the per-turn capture/extraction logic, otherwise the literal string
+    // "add another" gets captured as the new item's name (Bug 1).
+    let justStartedNewItem = false;
     if (inItemsPhase && awaitingAddAnother && lastUserMsg) {
       const t = lastUserMsg.replace(/[.!?]+$/, "").trim();
-      if (/^(add another|another|yes|yep|sure|1)$/.test(t) || /\badd another\b/.test(t)) {
+      if (/^(add another|another|yes|yep|sure|1)$/i.test(t) || /\badd another\b/i.test(t) || /\bone more\b/i.test(t)) {
         awaitingAddAnother = false;
         currentItemDraft = {};
-      } else if (/^(i'?m done|done|no|nope|finish|finished|that'?s it|2)$/.test(t) || /\bdone\b/.test(t)) {
+        justStartedNewItem = true;
+      } else if (/^(i'?m done|done|no|nope|finish|finished|that'?s it|2|publish|open editor)$/i.test(t) || /\bdone\b/i.test(t)) {
         awaitingAddAnother = false;
         exitItemsCollection = true;
       }
     }
 
     // Deterministic skip on optional item field while collecting
-    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && lastUserMsg && isSkipMessage(lastUserMsg)) {
+    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && !justStartedNewItem && lastUserMsg && isSkipMessage(lastUserMsg)) {
       const next = getNextItemField(currentItemDraft);
       if (next && !next.required) {
         currentItemDraft[`${next.key}_skipped`] = true;
@@ -1037,7 +1042,7 @@ Deno.serve(async (req) => {
     // (the model sometimes acknowledges without calling update_item_field, leaving the
     // conversation stuck — capture server-side so the follow-up can ask the next field).
     let deterministicItemCaptured = false;
-    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && lastUserMsg && !isSkipMessage(lastUserMsg)) {
+    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && !justStartedNewItem && lastUserMsg && !isSkipMessage(lastUserMsg)) {
       try {
         const next = getNextItemField(currentItemDraft);
         if (next) {
@@ -1736,6 +1741,15 @@ Deno.serve(async (req) => {
       if (justEnteringItemsPhase) {
         assistantMessage = `Awesome — setup is done! 🎉\n\nNow let's add your first ${itemNoun}. **What's the name?** (${itemExamples})`;
       }
+    }
+
+    // Bug 1 fix: when user just clicked "Add another", emit a deterministic
+    // "what's the name?" prompt so we never re-use whatever the LLM produced
+    // (which often mistakenly captures the literal "add another" string as
+    // the new item's name and skips the name question).
+    if (justStartedNewItem) {
+      const ordinal = itemsAdded === 0 ? "first" : "next";
+      assistantMessage = `Saved.\n\nGreat — what's the name of the ${ordinal} ${itemNoun}? (${itemExamples})`;
     }
 
     // If a draft was just created in this turn, treat it as the active campaign for phase/suggestions
