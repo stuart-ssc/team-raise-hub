@@ -1677,11 +1677,10 @@ Deno.serve(async (req) => {
             if (fChoice?.message?.tool_calls?.length) {
               for (const tc of fChoice.message.tool_calls) {
                 if (tc.function?.name === "save_campaign_item" && campaignId && isItemReadyToSave(currentItemDraft)) {
-                  const dollarsToCents = (n: any) => Math.round(Number(n) * 100);
                   const insertItem: Record<string, any> = {
                     campaign_id: campaignId,
                     name: currentItemDraft.name,
-                    cost: dollarsToCents(currentItemDraft.cost),
+                    cost: Number(currentItemDraft.cost),
                     quantity_offered: Number(currentItemDraft.quantity_offered),
                     quantity_available: Number(currentItemDraft.quantity_offered),
                   };
