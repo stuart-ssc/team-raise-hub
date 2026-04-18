@@ -1958,6 +1958,16 @@ Deno.serve(async (req) => {
             { label: "No, not required", value: "false" },
           ],
         };
+      } else if (nextField === "fee_model") {
+        suggestions = {
+          type: "choice",
+          field: "fee_model",
+          label: "Who covers the 10% platform fee?",
+          options: [
+            { label: "Donor covers the fee (recommended)", value: "donor_covers" },
+            { label: "Our organization absorbs the fee", value: "org_absorbs" },
+          ],
+        };
       }
     }
 
