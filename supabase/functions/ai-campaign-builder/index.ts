@@ -810,6 +810,36 @@ Deno.serve(async (req) => {
       rosters = rData || [];
     }
 
+    // SYNTHETIC IMAGE MESSAGES — always honor regardless of last assistant text.
+    // The frontend sends these when the user interacts with the upload widget:
+    //   "Image uploaded: <url>"     → set image_url + persist
+    //   "Skip image for now"        → set image_skipped + persist
+    //   "Item image uploaded: <url>" → set currentItemDraft.image (handled later in items phase)
+    //   "Skip item image"            → set currentItemDraft.image_skipped (handled later)
+    // Without this, the post-draft fallback only fires when the last assistant text
+    // matched the image-question regex — meaning a synthetic skip could be silently
+    // dropped and the next phase would advance without resolution.
+    if (campaignId) {
+      const lastUserContent = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "user")
+        ?.content as string | undefined;
+      if (lastUserContent) {
+        const m = lastUserContent.match(/^Image uploaded:\s*(\S+)/i);
+        if (m && !updatedFields.image_url) {
+          updatedFields.image_url = m[1];
+          updatedFields.image_skipped = false;
+          postDraftFallbackApplied = true;
+          await adminSb.from("campaigns").update({ image_url: m[1] }).eq("id", campaignId);
+          console.log("[ai-campaign-builder] synthetic image_url captured", m[1]);
+        } else if (/^Skip image for now$/i.test(lastUserContent.trim()) && !updatedFields.image_url) {
+          updatedFields.image_skipped = true;
+          postDraftFallbackApplied = true;
+          console.log("[ai-campaign-builder] synthetic image_skipped captured");
+        }
+      }
+    }
+
     // POST-DRAFT FALLBACK: figure out which post-draft field the previous assistant
     // message was asking about, and capture the user's reply server-side so the model
     // can't get stuck in a loop by forgetting the tool call.
@@ -1030,6 +1060,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    // SYNTHETIC ITEM IMAGE MESSAGES — always honor regardless of last assistant text.
+    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && !justStartedNewItem) {
+      const lastUserContent = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "user")
+        ?.content as string | undefined;
+      if (lastUserContent) {
+        const m = lastUserContent.match(/^Item image uploaded:\s*(\S+)/i);
+        if (m && !currentItemDraft.image) {
+          currentItemDraft.image = m[1];
+          currentItemDraft.image_skipped = false;
+          console.log("[ai-campaign-builder] synthetic item image captured", m[1]);
+        } else if (/^Skip item image$/i.test(lastUserContent.trim()) && !currentItemDraft.image) {
+          currentItemDraft.image_skipped = true;
+          console.log("[ai-campaign-builder] synthetic item image skipped");
+        }
+      }
+    }
+
     // Deterministic skip on optional item field while collecting
     if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && !justStartedNewItem && lastUserMsg && isSkipMessage(lastUserMsg)) {
       const next = getNextItemField(currentItemDraft);
@@ -1095,6 +1144,118 @@ Deno.serve(async (req) => {
         }
       } catch (e) {
         console.error("Deterministic item capture failed:", e);
+      }
+    }
+
+    // PENDING-QUESTION LOCK for image upload. If the previous assistant turn ended with
+    // an image-upload prompt and the user replied with neither an image upload nor a
+    // skip (i.e. unrelated typed text), refuse to advance: return a short clarifier
+    // and re-emit the same image_upload suggestion. This guarantees no field is silently
+    // skipped just because the user typed "next" or anything else instead of clicking
+    // Upload/Skip.
+    {
+      const lastAssistantContent = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "assistant")
+        ?.content as string | undefined;
+      const lastUserContent = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "user")
+        ?.content as string | undefined;
+
+      const isSyntheticImage = (s: string) =>
+        /^Image uploaded:\s*\S+/i.test(s) ||
+        /^Skip image for now$/i.test(s.trim()) ||
+        /^Item image uploaded:\s*\S+/i.test(s) ||
+        /^Skip item image$/i.test(s.trim());
+
+      // Campaign cover image lock (post-draft, before items phase)
+      if (
+        campaignId &&
+        !inItemsPhase &&
+        lastAssistantContent &&
+        lastUserContent &&
+        !updatedFields.image_url &&
+        !updatedFields.image_skipped
+      ) {
+        const askedImage = /upload .*(image|photo|hero)|campaign image|hero photo|want to upload/i.test(lastAssistantContent) &&
+          !/roster|direction|instruction|sponsor|asset/i.test(lastAssistantContent);
+        if (askedImage && !isSyntheticImage(lastUserContent) && !isSkipMessage(lastUserContent)) {
+          console.log("[ai-campaign-builder] image-question lock tripped — re-asking");
+          return new Response(
+            JSON.stringify({
+              assistantMessage: "I still need an answer for the campaign image — please upload one or click Skip.",
+              assistantMessages: ["I still need an answer for the campaign image — please upload one or click Skip."],
+              updatedFields,
+              missingRequired: REQUIRED_KEYS.filter((k) => !updatedFields[k] || updatedFields[k] === ""),
+              readyToCreate: false,
+              phase: "post_draft",
+              suggestions: {
+                type: "image_upload",
+                field: "image_url",
+                label: "Campaign image",
+                options: [],
+              },
+              createdCampaignId: null,
+              createDraftError: null,
+              finalAction: null,
+              currentItemDraft,
+              itemsAdded,
+              awaitingAddAnother,
+              savedItemId: null,
+              itemNoun,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
+      // Item image lock (during item collection, when image is the next field)
+      if (
+        inItemsPhase &&
+        !awaitingAddAnother &&
+        !exitItemsCollection &&
+        !justStartedNewItem &&
+        lastAssistantContent &&
+        lastUserContent
+      ) {
+        const nextItemField = getNextItemField(currentItemDraft);
+        const askedItemImage = nextItemField?.key === "image" &&
+          /upload .*(image|photo)|item.*image|image for this/i.test(lastAssistantContent);
+        if (
+          askedItemImage &&
+          !currentItemDraft.image &&
+          !currentItemDraft.image_skipped &&
+          !isSyntheticImage(lastUserContent) &&
+          !isSkipMessage(lastUserContent)
+        ) {
+          console.log("[ai-campaign-builder] item-image-question lock tripped — re-asking");
+          return new Response(
+            JSON.stringify({
+              assistantMessage: `I still need an answer for the ${itemNoun} image — please upload one or click Skip.`,
+              assistantMessages: [`I still need an answer for the ${itemNoun} image — please upload one or click Skip.`],
+              updatedFields,
+              missingRequired: [],
+              readyToCreate: false,
+              phase: "collecting_items",
+              suggestions: {
+                type: "image_upload",
+                field: "item_image",
+                label: "Item image",
+                options: [],
+              },
+              createdCampaignId: null,
+              createDraftError: null,
+              finalAction: null,
+              currentItemDraft,
+              itemsAdded,
+              awaitingAddAnother,
+              savedItemId: null,
+              itemNoun,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
     }
 
