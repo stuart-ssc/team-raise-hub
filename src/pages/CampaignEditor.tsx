@@ -118,6 +118,7 @@ export default function CampaignEditor() {
     enableRosterAttribution: false,
     rosterId: "",
     publicationStatus: "draft",
+    feeModel: 'donor_covers',
   });
   const [requiredAssets, setRequiredAssets] = useState<RequiredAsset[]>([]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -164,6 +165,7 @@ export default function CampaignEditor() {
           enableRosterAttribution: data.enable_roster_attribution || false,
           rosterId: data.roster_id?.toString() || "",
           publicationStatus: data.publication_status || "draft",
+          feeModel: (data.fee_model as 'donor_covers' | 'org_absorbs') || 'donor_covers',
         });
 
         // Fetch pitch data
@@ -325,6 +327,7 @@ export default function CampaignEditor() {
         roster_id: campaignData.rosterId ? parseInt(campaignData.rosterId) : null,
         status: true,
         publication_status: isEditing ? undefined : 'draft',
+        fee_model: campaignData.feeModel || 'donor_covers',
       };
 
       let campaignId = id;
