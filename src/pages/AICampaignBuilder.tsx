@@ -240,13 +240,19 @@ export default function AICampaignBuilder() {
         setMessages((prev) => [...prev, transition]);
       }
 
-      // Honor a typed/clicked final action when the builder is complete
-      if (data.finalAction === "publish") {
-        setTimeout(() => setShowPublishDialog(true), 150);
-      } else if (data.finalAction === "open_editor") {
-        const targetId = data.createdCampaignId || campaignId;
-        if (targetId) {
-          setTimeout(() => navigate(`/dashboard/campaigns/${targetId}/edit`), 300);
+      // Honor a typed/clicked final action ONLY when the builder is truly complete
+      // (defense-in-depth: the server should only emit finalAction in the "complete"
+      // phase, but we guard here too so a stale early signal can't trigger publish
+      // before items have been added).
+      const serverPhase = (data.phase as Phase) || "collecting";
+      if (serverPhase === "complete") {
+        if (data.finalAction === "publish") {
+          setTimeout(() => setShowPublishDialog(true), 150);
+        } else if (data.finalAction === "open_editor") {
+          const targetId = data.createdCampaignId || campaignId;
+          if (targetId) {
+            setTimeout(() => navigate(`/dashboard/campaigns/${targetId}/edit`), 300);
+          }
         }
       }
     } catch (err: any) {
