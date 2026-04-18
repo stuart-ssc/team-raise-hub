@@ -1060,6 +1060,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    // SYNTHETIC ITEM IMAGE MESSAGES — always honor regardless of last assistant text.
+    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && !justStartedNewItem) {
+      const lastUserContent = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "user")
+        ?.content as string | undefined;
+      if (lastUserContent) {
+        const m = lastUserContent.match(/^Item image uploaded:\s*(\S+)/i);
+        if (m && !currentItemDraft.image) {
+          currentItemDraft.image = m[1];
+          currentItemDraft.image_skipped = false;
+          console.log("[ai-campaign-builder] synthetic item image captured", m[1]);
+        } else if (/^Skip item image$/i.test(lastUserContent.trim()) && !currentItemDraft.image) {
+          currentItemDraft.image_skipped = true;
+          console.log("[ai-campaign-builder] synthetic item image skipped");
+        }
+      }
+    }
+
     // Deterministic skip on optional item field while collecting
     if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && !justStartedNewItem && lastUserMsg && isSkipMessage(lastUserMsg)) {
       const next = getNextItemField(currentItemDraft);
