@@ -185,31 +185,45 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Calculate platform fee (10% of total)
+    // Determine fee model (snapshot from campaign at time of checkout)
+    const feeModel: 'donor_covers' | 'org_absorbs' =
+      (campaign as any).fee_model === 'org_absorbs' ? 'org_absorbs' : 'donor_covers';
+    console.log('Fee model:', feeModel);
+
+    // Calculate platform fee (10% of items total — always the headline fee in dollars)
     const platformFeeAmount = Math.round(totalAmount * (PLATFORM_FEE_PERCENT / 100));
-    const finalTotal = totalAmount + platformFeeAmount;
 
-    // Add platform fee as line item
-    const platformFeeLineItem: any = {
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: 'Platform Fee',
-          description: 'Sponsorly processing and platform fee',
+    // finalTotal = what donor actually pays
+    // - donor_covers: items + fee
+    // - org_absorbs:  items only (fee silently deducted from payout)
+    const finalTotal = feeModel === 'donor_covers'
+      ? totalAmount + platformFeeAmount
+      : totalAmount;
+
+    if (feeModel === 'donor_covers') {
+      // Add platform fee as line item so the donor sees it
+      const platformFeeLineItem: any = {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Platform Fee',
+            description: 'Sponsorly processing and platform fee',
+          },
+          unit_amount: Math.round(platformFeeAmount * 100), // Convert dollars to cents for Stripe
         },
-        unit_amount: Math.round(platformFeeAmount * 100), // Convert dollars to cents for Stripe
-      },
-      quantity: 1,
-    };
-
-    // For subscriptions, platform fee must also be recurring
-    if (hasRecurringItems && recurringInterval) {
-      platformFeeLineItem.price_data.recurring = {
-        interval: recurringInterval,
+        quantity: 1,
       };
-    }
 
-    lineItems.push(platformFeeLineItem);
+      // For subscriptions, platform fee must also be recurring
+      if (hasRecurringItems && recurringInterval) {
+        platformFeeLineItem.price_data.recurring = {
+          interval: recurringInterval,
+        };
+      }
+
+      lineItems.push(platformFeeLineItem);
+    }
+    // org_absorbs: no platform-fee line item — donor only sees the items.
 
     // Create order record using admin client
     const { data: order, error: orderError } = await supabaseAdmin
@@ -219,6 +233,7 @@ Deno.serve(async (req) => {
         total_amount: finalTotal,
         items_total: totalAmount, // Just the items, excluding platform fee
         platform_fee_amount: platformFeeAmount,
+        fee_model: feeModel,
         status: 'pending',
         customer_email: customerInfo?.email || 'pending@example.com',
         customer_name: customerInfo?.name || 'Pending',
