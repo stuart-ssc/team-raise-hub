@@ -1,44 +1,45 @@
 
 
 ## Goal
-Single-row toolbar (Search + Filter + Add Campaign) on desktop. Drop the redundant Sort dropdown since column headers already sort.
+Fix Dashboard stats and campaign list to match real lifecycle states.
 
-## Changes — `src/pages/Campaigns.tsx`
+## Changes — `src/pages/Dashboard.tsx`
 
-### 1. Toolbar layout (replace current two-row block ~lines 360-423)
-One flex row on `sm+`, stacked on mobile:
+### 1. Campaign query — fetch published + recently expired
+Replace the `.eq("status", true)` filter with `.eq("publication_status", "published")`. Then in JS, keep campaigns where:
+- `end_date` is null/future (Active), OR
+- `end_date` is within the last **30 days** (Recently Expired)
+
+Sort: Active first (by `end_date` ascending), then Recently Expired (by `end_date` descending — most recently ended first).
+
+### 2. "Active Campaigns" stat (line 211)
+Count only the **Active** subset (published + in date range), not the combined list. Recently expired don't count as active.
+
+### 3. "Left to Raise" stat (lines 213-214)
+Sum `goal_amount` and `amount_raised` only from **published** campaigns (the new query already returns only published, so this is automatic once the query change is in). Recently-expired published campaigns still count toward Left to Raise — they're real goals. (If you'd rather exclude expired from Left to Raise too, say so.)
+
+### 4. Visual indicator for Active vs Expired
+Add a small status badge per row/card:
+- **Active** → green badge (`bg-green-500/10 text-green-700 border-green-500/20`)
+- **Expired** → muted/secondary badge
+
+Desktop: new "Status" column between Campaign and Group.
+Mobile: badge inline next to campaign name.
+
+Helper:
+```ts
+const getCampaignState = (c) => {
+  if (!c.end_date) return 'active';
+  const today = new Date(new Date().toDateString());
+  return new Date(c.end_date) < today ? 'expired' : 'active';
+};
 ```
-[ 🔍 Search (flex-1) ] [ Filter ▾ ] [ + Add Campaign ▾ ]
-```
-- `flex flex-col sm:flex-row gap-3 items-stretch sm:items-center`
-- Search: `flex-1` (fills remaining width)
-- Filter: fixed `sm:w-48`
-- Add Campaign button: stays on right
 
-### 2. Drop Sort dropdown
-Remove the entire `<Select>` for `sortBy` (lines 374-386). Desktop column headers already handle sorting (verified lines 558-608).
-
-### 3. Mobile sort fallback
-On mobile (card view) there are no clickable headers, so without the dropdown users lose sort control. Add a small inline sort control **above the cards, mobile-only**: a compact `<Select>` showing "Sort: Name ▾" — same options as the removed dropdown, plus an asc/desc toggle button next to it. Wrapped in `md:hidden`.
-
-### Final desktop view
-```
-Campaigns
-Manage fundraising campaigns for your groups.
-
-[ 🔍 Search campaigns...                    ] [ Drafts ▾ ] [ + Add Campaign ▾ ]
-```
-
-### Final mobile view
-```
-Campaigns
-[ 🔍 Search... ]
-[ Drafts ▾ ]  [ + Add ▾ ]
-[ Sort: Name ▾ ] [ ↑ ]
-<cards>
-```
+### 5. Empty state copy (line 394)
+Update to: "No active or recently expired campaigns" — keeps it honest given the wider filter.
 
 ## Out of scope
-- Changing filter options or sort logic
-- Touching the desktop sortable headers (already working)
+- Changing what the Campaigns page (`/dashboard/campaigns`) shows
+- Donor stats, pending requests, player dashboard
+- Removing the legacy `status` boolean
 
