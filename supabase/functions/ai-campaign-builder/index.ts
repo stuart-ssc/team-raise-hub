@@ -1048,9 +1048,11 @@ Deno.serve(async (req) => {
         if (next) {
           const raw = lastUserMsg.trim();
           if (next.key === "cost") {
-            const m = raw.match(/-?\d+(?:\.\d+)?/);
-            if (m) {
-              currentItemDraft.cost = Number(m[0]);
+            const cleaned = raw.replace(/[$,]/g, "");
+            const m = cleaned.match(/\d+(?:\.\d+)?/);
+            const val = m ? Number(m[0]) : NaN;
+            if (!isNaN(val) && val > 0) {
+              currentItemDraft.cost = val;
               deterministicItemCaptured = true;
             }
           } else if (next.key === "quantity_offered" || next.key === "max_items_purchased") {
