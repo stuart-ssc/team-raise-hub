@@ -76,6 +76,15 @@ export const sharedFields: CampaignFieldDef[] = [
     aiDescription:
       "Whether purchasers should provide business information at checkout. Typically true for sponsorship campaigns.",
   },
+  {
+    key: "fee_model",
+    label: "Platform Fee Model",
+    type: "select",
+    required: true,
+    options: ["donor_covers", "org_absorbs"],
+    aiDescription:
+      "Who covers the 10% Sponsorly platform fee. 'donor_covers' adds the fee on top of the item price at checkout. 'org_absorbs' deducts the fee from the item price the donor sees.",
+  },
 ];
 
 // All fields combined for easy lookup
@@ -255,6 +264,10 @@ export function formatFieldValue(key: string, value: any): string {
     } catch {
       return String(value);
     }
+  }
+  if (key === "fee_model") {
+    if (value === "donor_covers") return "Donor covers fee";
+    if (value === "org_absorbs") return "Organization absorbs fee";
   }
   return String(value);
 }
