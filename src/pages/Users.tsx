@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
+import DashboardBreadcrumbs from "@/components/DashboardBreadcrumbs";
 import { MembershipRequestsTab } from "@/components/MembershipRequestsTab";
 import { MembershipRequestHistory } from "@/components/MembershipRequestHistory";
 import { ReinviteUserDialog } from "@/components/ReinviteUserDialog";
@@ -350,6 +351,12 @@ const Users = () => {
         <DashboardHeader 
           activeGroup={selectedGroup}
           onGroupClick={handleGroupClick}
+        />
+        <DashboardBreadcrumbs
+          segments={[
+            { label: "Settings", path: "/dashboard/settings" },
+            { label: "Users" },
+          ]}
         />
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">

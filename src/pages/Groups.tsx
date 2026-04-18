@@ -241,7 +241,10 @@ const Groups = () => {
 
   return (
     <DashboardPageLayout 
-      segments={[{ label: "Groups" }]}
+      segments={[
+        { label: "Settings", path: "/dashboard/settings" },
+        { label: "Groups" },
+      ]}
       showRosters={showRosters}
     >
       <div className="space-y-6">
