@@ -1,53 +1,47 @@
 
 
-## What the user wants
+## Two bugs from the screenshots
 
-Looking at the screenshot, two issues with the current fee_model prompt:
-1. The fee explanation is rendered as **one mashed-together bubble** (options run together) — should be **separate chat responses**.
-2. The disclosure should mention the 10% covers **both platform AND credit card processing fees**.
-3. Currently the input is a free-text box ("Describe your campaign...") — should be a **chip/button prompt** so users click instead of type.
+### Bug 1 (this turn): Adding second item skipped the name question
+Screenshot shows: after first item saved, user clicked "Add another", AI replied *"Got it — 'add another'. How much does it cost?"* — jumped straight to **cost**, skipping **name**.
 
-## Investigation findings
+**Root cause hypothesis:** When `awaitingAddAnother === true` and user replies "add another", the edge function isn't properly resetting `currentItemDraft` AND/OR is treating the literal string "add another" as the answer to the next field. Need to inspect `supabase/functions/ai-campaign-builder/index.ts` to confirm.
 
-- Edge function `supabase/functions/ai-campaign-builder/index.ts` already returns `assistantMessages: string[]` (array support exists in `AICampaignBuilder.tsx` lines ~166-180), so multi-bubble works today — we just need to emit an array for fee_model.
-- `suggestions` block with `type: "choice"` already renders as clickable chips via `SuggestionPrompt.tsx` — confirmed working for campaign type and other fields.
-- The screenshot shows the chip prompt is missing — likely because the suggestions block isn't being attached when fee_model is the next field, OR it's being attached but the UI is showing the input fallback.
+### Bug 2 (previous screenshot, "Also this happened"): Order of operations is wrong
+Screenshot shows: AI says *"Would you like to publish it now, or open the editor?"* → user clicks **Open in editor** → AI then says *"Awesome — setup is done! 🎉 Now let's add your first sponsorship item. What's the name?"*
+
+The publish/open-editor prompt fired **before** items were collected. Items collection should happen between draft creation and the final publish prompt — not after.
+
+## Investigation plan
+
+Read `supabase/functions/ai-campaign-builder/index.ts` to confirm:
+1. The `awaitingAddAnother` branch — how `currentItemDraft` is reset and how the "add another" string is handled.
+2. The phase transitions — when does `phase` move to `complete` and trigger the publish/editor prompt? It should only fire after items collection (or after user explicitly says "no more items"), not in the post_draft phase.
 
 ## Plan
 
-### 1. Edge function: emit fee explanation as 3 separate bubbles + add processing fee note
+### Fix 1: "Add another" must reset draft cleanly and ask for name
 **File:** `supabase/functions/ai-campaign-builder/index.ts`
 
-When `nextField === "fee_model"`, return `assistantMessages` as an array of 3 strings:
+In the `awaitingAddAnother === true` handler:
+- If user input matches add-another intent (`/add another|another|yes|one more/i`): reset `currentItemDraft = {}`, set `awaitingAddAnother = false`, and emit a fresh prompt: *"Great — what's the name of the next {itemNoun}?"* Do NOT pass the user's "add another" string into the field-extraction logic.
+- If user input matches done intent (`/done|no|finish|that's it|publish/i`): set `awaitingAddAnother = false`, transition to the publish/open-editor prompt.
+- Add a guard at the top of the field-extraction code path: if `awaitingAddAnother === true`, skip field extraction entirely.
 
-**Bubble 1 (intro + fee composition):**
-> One last thing — who covers Sponsorly's 10% fee?
->
-> Heads up: that 10% covers **both** our platform fee **and** the credit card processing fees from Stripe. There are no other charges on top.
-
-**Bubble 2 (donor covers option):**
-> **Donor covers the fee (recommended)** — On a $100 donation, the donor pays **$110** at checkout. Your organization receives the full **$100**. The fee appears as a separate line item so supporters see exactly where it goes.
-
-**Bubble 3 (org absorbs option + question):**
-> **Your organization absorbs the fee** — On a $100 donation, the donor pays **$100** and your organization receives roughly **$90** after the 10% fee. Lower friction for donors, but reduces your net.
->
-> Most teams pick "Donor covers." Which would you prefer?
-
-### 2. Ensure chip prompt always renders (not text input)
+### Fix 2: Publish/open-editor prompt only fires after items phase
 **File:** `supabase/functions/ai-campaign-builder/index.ts`
 
-- Verify the `choice` suggestions block for `fee_model` is **always** attached to the last bubble whenever `nextField === "fee_model"`, regardless of which code path produced the messages (deterministic helper vs LLM tool path).
-- Options stay: `Donor covers the fee (recommended)` → `donor_covers`, `Our organization absorbs the fee` → `org_absorbs`.
+- Phase ordering: `collecting` → `post_draft` (image / roster / directions) → `collecting_items` → `complete` (publish/open-editor prompt).
+- Audit the transitions so `complete` is only reached when `awaitingAddAnother === true` AND user picks "I'm done" — not at the end of `post_draft`.
+- After the post_draft questions resolve, the next assistant message must be the items kickoff (*"Now let's add your first sponsorship item — what's the name?"*) with `phase = "collecting_items"`. The publish/open-editor prompt must NOT appear here.
 
+### Fix 3: Frontend safety
 **File:** `src/pages/AICampaignBuilder.tsx`
 
-- Update `getChatPlaceholder` so when the last assistant message has a `choice` suggestion, the placeholder reads "Pick an option above..." (visual cue that typing isn't needed). No behavior change — chips already render via `SuggestionPrompt`.
-
-### 3. Verify enum mapping
-- Confirm clicked label → enum value mapping in `FIELD_DEFS` parsing still works (unchanged from prior turn).
+- Confirm the `finalAction === "publish"` / `"open_editor"` handlers only run when `phase === "complete"`. Add a guard so a stale/early `finalAction` from the edge function is ignored if items haven't been added yet (defense-in-depth — the real fix is server-side).
 
 ### Out of scope
-- Changing fee math.
-- Other fields' explanation copy.
-- Marketing/legal copy.
+- Fee model copy (already shipped).
+- Item field order itself.
+- Item image upload flow.
 
