@@ -398,7 +398,7 @@ ${nextStep}
 
 ## Rules
 - Ask ONE field at a time. Keep messages to 1 short sentence per question.
-- For \`cost\`: the user types dollars (e.g. "25" or "$25"). Pass the dollar number (decimals OK) — the server converts to cents.
+- For \`cost\`: the user types dollars (e.g. "25" or "$25"). Pass the dollar number (decimals OK) — stored as-is in dollars.
 - For \`is_recurring\`: the UI shows Yes/No buttons. Pass true/false.
 - Never make up values; only record what the user explicitly says.
 - **Response format — every turn after user input MUST be TWO paragraphs separated by a blank line:**
