@@ -842,6 +842,7 @@ const OrganizationSettings = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        )}
       </div>
     </DashboardPageLayout>
   );
