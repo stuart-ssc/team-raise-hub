@@ -503,10 +503,12 @@ export default function Campaigns() {
                         <div className="flex flex-wrap gap-2 mt-2">
                           <Badge variant="outline">{campaign.campaign_type_name || "—"}</Badge>
                           <Badge 
-                            variant={campaign.publication_status === 'published' ? 'default' : 'outline'}
+                            variant={isExpired(campaign) ? 'secondary' : campaign.publication_status === 'published' ? 'default' : 'outline'}
                             className="gap-1"
                           >
-                            {campaign.publication_status === 'published' ? (
+                            {isExpired(campaign) ? (
+                              <><AlertCircle className="h-3 w-3" /> Expired</>
+                            ) : campaign.publication_status === 'published' ? (
                               <><Globe className="h-3 w-3" /> Published</>
                             ) : campaign.publication_status === 'pending_verification' ? (
                               <><AlertCircle className="h-3 w-3" /> Pending</>
@@ -663,10 +665,12 @@ export default function Campaigns() {
                         </TableCell>
                         <TableCell>
                           <Badge 
-                            variant={campaign.publication_status === 'published' ? 'default' : 'outline'}
+                            variant={isExpired(campaign) ? 'secondary' : campaign.publication_status === 'published' ? 'default' : 'outline'}
                             className="gap-1"
                           >
-                            {campaign.publication_status === 'published' ? (
+                            {isExpired(campaign) ? (
+                              <><AlertCircle className="h-3 w-3" /> Expired</>
+                            ) : campaign.publication_status === 'published' ? (
                               <><Globe className="h-3 w-3" /> Published</>
                             ) : campaign.publication_status === 'pending_verification' ? (
                               <><AlertCircle className="h-3 w-3" /> Pending</>
