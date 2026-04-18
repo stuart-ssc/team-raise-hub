@@ -190,7 +190,7 @@ const Features = () => {
                 </div>
                 <CardTitle className="text-3xl">Free for Organizations</CardTitle>
                 <CardDescription className="text-lg">
-                  Zero fees for your organization—100% of donations to your cause
+                  Zero monthly fees—keep your fundraising overhead low
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -234,9 +234,9 @@ const Features = () => {
                         <span className="text-primary text-sm">✓</span>
                       </div>
                       <div>
-                        <h4 className="font-semibold mb-1">100% to Your Organization</h4>
+                        <h4 className="font-semibold mb-1">Flexible Fee Model</h4>
                         <p className="text-sm text-muted-foreground">
-                          Receive the full donation amount every time
+                          Donors cover the platform fee by default, or choose to absorb it per campaign
                         </p>
                       </div>
                     </div>
@@ -247,7 +247,7 @@ const Features = () => {
                       How It Works
                     </h4>
                     <p className="text-sm text-muted-foreground">
-                      Donors cover a small 10% platform fee (which includes all payment processing). This means your organization receives 100% of every donation, and we can keep the platform completely free for you.
+                      A 10% platform fee (which includes all payment processing) is added to every donation by default, so your organization receives 100% of the intended amount. You can also choose, per campaign, to absorb the fee yourself — in which case donors pay only the headline price.
                     </p>
                   </div>
                 </div>

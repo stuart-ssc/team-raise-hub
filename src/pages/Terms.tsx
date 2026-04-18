@@ -39,7 +39,8 @@ const Terms = () => {
               <p className="text-muted-foreground">
                 Sponsorly is a fundraising platform that connects schools, non-profit organizations, businesses, and supporters 
                 to facilitate charitable donations and sponsorships. The Platform enables organizations to create campaigns, 
-                manage rosters for peer-to-peer fundraising, process donations with an automatic 10% platform fee, and engage 
+                manage rosters for peer-to-peer fundraising, process donations with a 10% platform fee (which by default is added 
+                on top of the donation, or, at the organization's option per campaign, absorbed by the organization), and engage 
                 with their donor community. Businesses can join our advertising network to discover and participate in campaigns 
                 aligned with their corporate social responsibility goals.
               </p>
@@ -91,10 +92,12 @@ const Terms = () => {
             <Card className="p-6 md:p-8">
               <h2 className="text-2xl font-bold mb-4">6. Donations, Payments, and Fees</h2>
               <p className="text-muted-foreground mb-4">
-                <strong>Platform Fee:</strong> All donations processed through Sponsorly include an automatic 10% platform fee 
-                added to the donation amount. For example, a $100 donation results in a total charge of $110 to the donor. The 
-                organization receives the full intended donation amount ($100), while Sponsorly retains the 10% fee to cover 
-                payment processing costs and platform infrastructure.
+                <strong>Platform Fee:</strong> All donations processed through Sponsorly are subject to a 10% platform fee. 
+                By default, this fee is added on top of the donation amount — for example, a $100 donation results in a total 
+                charge of $110 to the donor, and the organization receives the full intended donation amount ($100). 
+                Organizations may, on a per-campaign basis, elect to absorb the platform fee instead. In absorbed-fee campaigns, 
+                the donor is charged only the headline donation amount and the 10% fee is deducted from the organization's payout. 
+                In either case, Sponsorly retains the 10% fee to cover payment processing costs and platform infrastructure.
               </p>
               <p className="text-muted-foreground mb-4">
                 <strong>No Refunds Policy:</strong> Donations are final and non-refundable except in cases of proven fraud or 
