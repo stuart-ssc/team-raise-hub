@@ -1,39 +1,44 @@
 
 
-## The mystery of `status` solved
+## Goal
+Single-row toolbar (Search + Filter + Add Campaign) on desktop. Drop the redundant Sort dropdown since column headers already sort.
 
-Looked at the code: `status` (boolean) is a **manual on/off toggle** with zero UI to actually toggle it. It defaults to `true` on every campaign and nothing in the app ever flips it to `false`. So "Active/Inactive" is a ghost field — confusing because it doesn't mean what users assume (live, in date range, accepting donations).
+## Changes — `src/pages/Campaigns.tsx`
 
-Date-based logic is also not currently used for filtering. Campaigns have `start_date` / `end_date` but the filter doesn't check them.
+### 1. Toolbar layout (replace current two-row block ~lines 360-423)
+One flex row on `sm+`, stacked on mobile:
+```
+[ 🔍 Search (flex-1) ] [ Filter ▾ ] [ + Add Campaign ▾ ]
+```
+- `flex flex-col sm:flex-row gap-3 items-stretch sm:items-center`
+- Search: `flex-1` (fills remaining width)
+- Filter: fixed `sm:w-48`
+- Add Campaign button: stays on right
 
-## Proposed filter model (matches your mental model)
+### 2. Drop Sort dropdown
+Remove the entire `<Select>` for `sortBy` (lines 374-386). Desktop column headers already handle sorting (verified lines 558-608).
 
-Replace the current dropdown with lifecycle-based filters that mean what they say:
+### 3. Mobile sort fallback
+On mobile (card view) there are no clickable headers, so without the dropdown users lose sort control. Add a small inline sort control **above the cards, mobile-only**: a compact `<Select>` showing "Sort: Name ▾" — same options as the removed dropdown, plus an asc/desc toggle button next to it. Wrapped in `md:hidden`.
 
-| Filter | Logic |
-|---|---|
-| **All** | Everything except deleted |
-| **Active** | `publication_status = 'published'` AND today is between `start_date` and `end_date` (or dates are null) |
-| **Published** (all) | `publication_status = 'published'` regardless of dates |
-| **Draft** | `publication_status = 'draft'` |
-| **Pending Verification** | `publication_status = 'pending_verification'` |
-| **Expired** | `publication_status = 'published'` AND `end_date < today` |
-| **Deleted** | soft-deleted campaigns (existing) |
+### Final desktop view
+```
+Campaigns
+Manage fundraising campaigns for your groups.
 
-Default view: **Active**.
+[ 🔍 Search campaigns...                    ] [ Drafts ▾ ] [ + Add Campaign ▾ ]
+```
 
-The status badge column will also be updated so an expired published campaign shows "Expired" instead of "Published" — keeps the table truthful.
-
-## What goes away
-
-- "Active" / "Inactive" filter options based on the boolean `status` field
-- The `status` boolean is left in the DB (no schema change) but stops being referenced by filter logic. Safe to deprecate later.
-
-## Files to change
-- `src/pages/Campaigns.tsx` — filter dropdown options + filter logic + badge rendering for expired
+### Final mobile view
+```
+Campaigns
+[ 🔍 Search... ]
+[ Drafts ▾ ]  [ + Add ▾ ]
+[ Sort: Name ▾ ] [ ↑ ]
+<cards>
+```
 
 ## Out of scope
-- Removing the `status` column (separate cleanup)
-- Adding manual pause/resume controls (can add later if you want a true on/off)
-- Auto-transitioning `publication_status` to `ended` on date expiry (we derive Expired at read-time instead — no cron needed)
+- Changing filter options or sort logic
+- Touching the desktop sortable headers (already working)
 
