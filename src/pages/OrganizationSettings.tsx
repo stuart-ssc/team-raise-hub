@@ -19,8 +19,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, FileText, Upload, CheckCircle2, XCircle, AlertCircle, Pencil, Banknote } from "lucide-react";
+import { Loader2, FileText, Upload, CheckCircle2, XCircle, AlertCircle, Pencil, Banknote, Users as UsersIcon, Users2, ArrowRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { getLabel } from "@/lib/terminology";
 
 const US_STATES = [
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
@@ -85,18 +86,32 @@ const OrganizationSettings = () => {
   // Check permission
   const permissionLevel = organizationUser?.user_type.permission_level;
   const isOrgAdmin = permissionLevel === 'organization_admin';
+  const isProgramManager = permissionLevel === 'program_manager';
+  const canAccessSettings = isOrgAdmin || isProgramManager;
+  const [pendingCount, setPendingCount] = useState(0);
 
-  // Redirect non-admins
+  // Redirect users without any settings access
   useEffect(() => {
-    if (organizationUser && !isOrgAdmin) {
+    if (organizationUser && !canAccessSettings) {
       navigate('/dashboard');
       toast({
         title: "Access Denied",
-        description: "You don't have permission to access organization settings",
+        description: "You don't have permission to access settings",
         variant: "destructive",
       });
     }
-  }, [organizationUser, isOrgAdmin, navigate, toast]);
+  }, [organizationUser, canAccessSettings, navigate, toast]);
+
+  // Fetch pending membership requests count
+  useEffect(() => {
+    if (!organizationUser?.organization_id || !canAccessSettings) return;
+    supabase
+      .from('membership_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationUser.organization_id)
+      .eq('status', 'pending')
+      .then(({ count }) => setPendingCount(count || 0));
+  }, [organizationUser?.organization_id, canAccessSettings]);
 
   // Fetch organization data
   useEffect(() => {
@@ -252,9 +267,13 @@ const OrganizationSettings = () => {
     );
   };
 
-  if (!isOrgAdmin) {
+  if (!canAccessSettings) {
     return null;
   }
+
+  const groupsLabel = organizationUser?.organization
+    ? getLabel(organizationUser.organization.organization_type, 'programs')
+    : 'Groups';
 
   return (
     <DashboardPageLayout
@@ -264,7 +283,7 @@ const OrganizationSettings = () => {
     >
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Organization Settings</h1>
+          <h1 className="text-3xl font-bold">Settings</h1>
           {organizationUser?.organization && (
             <Badge variant="outline">
               {organizationUser.organization.organization_type === "school" ? "School" : "Non-Profit"}
@@ -272,6 +291,58 @@ const OrganizationSettings = () => {
           )}
         </div>
 
+        {/* Manage section - jump points to Users and Groups */}
+        <div className="grid gap-4 md:grid-cols-2 mb-8">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/dashboard/users')}>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-md bg-primary/10 text-primary">
+                    <UsersIcon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      Users
+                      {pendingCount > 0 && (
+                        <Badge variant="destructive" className="text-xs h-5 min-w-5 flex items-center justify-center">
+                          {pendingCount}
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription>Manage members, invitations, and roles</CardDescription>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardHeader>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/dashboard/groups')}>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-md bg-primary/10 text-primary">
+                    <Users2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <CardTitle>{groupsLabel}</CardTitle>
+                    <CardDescription>Manage {groupsLabel.toLowerCase()} and payment setup</CardDescription>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardHeader>
+          </Card>
+        </div>
+
+        {isOrgAdmin && (
+        <div className="mb-2">
+          <h2 className="text-xl font-semibold mb-1">Organization Settings</h2>
+          <p className="text-sm text-muted-foreground mb-4">Manage organization-level details, branding, and configuration.</p>
+        </div>
+        )}
+
+        {isOrgAdmin && (
         <Tabs defaultValue="general" className="space-y-6">
           {/* Schools: 4 tabs (no Payment - that's at group level). Nonprofits: 5 tabs */}
           {organizationUser?.organization?.organization_type === 'nonprofit' ? (
@@ -771,6 +842,7 @@ const OrganizationSettings = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        )}
       </div>
     </DashboardPageLayout>
   );
