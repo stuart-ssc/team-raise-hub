@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ interface DonorExperienceData {
   requiresBusinessInfo: boolean;
   fileUploadDeadlineDays: string;
   assetUploadDeadline?: string;
+  feeModel?: 'donor_covers' | 'org_absorbs';
 }
 
 interface DonorExperienceSectionProps {
