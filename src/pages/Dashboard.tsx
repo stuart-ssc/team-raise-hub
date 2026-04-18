@@ -92,8 +92,8 @@ const Dashboard = () => {
 
       setTotalCampaigns(totalData?.length || 0);
 
-      // Then get active campaigns only
-      let activeQuery = supabase
+      // Then get published campaigns (active + recently expired within 30 days)
+      let publishedQuery = supabase
         .from("campaigns")
         .select(`
           *,
@@ -101,22 +101,48 @@ const Dashboard = () => {
           campaign_type(id, name)
         `)
         .eq("groups.organization_id", organizationUser.organization_id)
-        .eq("status", true) // Only active campaigns
-        .order("end_date", { ascending: true }); // Sort by end date, soonest first
+        .eq("publication_status", "published");
 
       // Filter by selected group if one is selected
       if (activeGroup) {
-        activeQuery = activeQuery.eq("group_id", activeGroup.id);
+        publishedQuery = publishedQuery.eq("group_id", activeGroup.id);
       }
 
-      const { data: activeData, error: activeError } = await activeQuery;
+      const { data: publishedData, error: publishedError } = await publishedQuery;
 
-      if (activeError) {
-        console.error("Error fetching active campaigns:", activeError);
+      if (publishedError) {
+        console.error("Error fetching published campaigns:", publishedError);
         return;
       }
 
-      setCampaigns(activeData || []);
+      // Filter to active or recently expired (within last 30 days)
+      const today = new Date(new Date().toDateString());
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const filtered = (publishedData || []).filter((c) => {
+        if (!c.end_date) return true;
+        const end = new Date(c.end_date);
+        return end >= thirtyDaysAgo;
+      });
+
+      // Sort: active first (by end_date asc), then expired (most recently ended first)
+      filtered.sort((a, b) => {
+        const aActive = !a.end_date || new Date(a.end_date) >= today;
+        const bActive = !b.end_date || new Date(b.end_date) >= today;
+        if (aActive && !bActive) return -1;
+        if (!aActive && bActive) return 1;
+        if (aActive) {
+          // both active: nulls last, then earliest end first
+          if (!a.end_date) return 1;
+          if (!b.end_date) return -1;
+          return new Date(a.end_date).getTime() - new Date(b.end_date).getTime();
+        }
+        // both expired: most recent first
+        return new Date(b.end_date!).getTime() - new Date(a.end_date!).getTime();
+      });
+
+      setCampaigns(filtered);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
     }
@@ -207,8 +233,16 @@ const Dashboard = () => {
     }
   }, [organizationUser?.organization_id, activeGroup?.id]);
 
+  // Helper: derive lifecycle state from end_date
+  const getCampaignState = (c: any): 'active' | 'expired' => {
+    if (!c.end_date) return 'active';
+    const today = new Date(new Date().toDateString());
+    return new Date(c.end_date) < today ? 'expired' : 'active';
+  };
+
   // Calculate stats from campaigns data
-  const activeCampaignsCount = campaigns.length;
+  const activeCampaigns = campaigns.filter((c) => getCampaignState(c) === 'active');
+  const activeCampaignsCount = activeCampaigns.length;
   const totalAmountRaised = campaigns.reduce((sum, campaign) => sum + (campaign.amount_raised || 0), 0);
   const totalGoalAmount = campaigns.reduce((sum, campaign) => sum + (campaign.goal_amount || 0), 0);
   const leftToRaise = totalGoalAmount - totalAmountRaised;
@@ -391,8 +425,8 @@ const Dashboard = () => {
                 </div>
               ) : campaigns.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="text-lg font-medium mb-2">You currently have no active campaigns</div>
-                  <div className="text-muted-foreground">All your campaigns are inactive or ended</div>
+                  <div className="text-lg font-medium mb-2">No active or recently expired campaigns</div>
+                  <div className="text-muted-foreground">All your campaigns are draft or ended over 30 days ago</div>
                 </div>
               ) : isMobile ? (
                 // Mobile Card View for Campaigns
@@ -400,9 +434,16 @@ const Dashboard = () => {
                   {campaigns.map((campaign) => (
                     <Card key={campaign.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
-                        <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-start justify-between mb-2 gap-2">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold truncate">{campaign.name}</h4>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-semibold truncate">{campaign.name}</h4>
+                              {getCampaignState(campaign) === 'active' ? (
+                                <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/20 dark:text-green-400">Active</Badge>
+                              ) : (
+                                <Badge variant="secondary">Expired</Badge>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground">{campaign.groups?.group_name}</p>
                           </div>
                           <Button
@@ -442,6 +483,7 @@ const Dashboard = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="min-w-[150px]">Campaign</TableHead>
+                        <TableHead className="min-w-[100px]">Status</TableHead>
                         <TableHead className="min-w-[100px]">Group</TableHead>
                         <TableHead className="min-w-[120px]">Amount Raised</TableHead>
                         <TableHead className="min-w-[120px]">Dates</TableHead>
@@ -451,6 +493,13 @@ const Dashboard = () => {
                   <TableBody>
                     {campaigns.map((campaign, index) => <TableRow key={index}>
                         <TableCell className="font-medium">{campaign.name}</TableCell>
+                        <TableCell>
+                          {getCampaignState(campaign) === 'active' ? (
+                            <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/20 dark:text-green-400">Active</Badge>
+                          ) : (
+                            <Badge variant="secondary">Expired</Badge>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <div className="text-xs text-muted-foreground">{campaign.groups?.group_name}</div>
                         </TableCell>
