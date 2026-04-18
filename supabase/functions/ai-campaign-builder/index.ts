@@ -1433,11 +1433,10 @@ Deno.serve(async (req) => {
             const missing = ITEM_FIELDS.filter((f) => f.required && !isItemFieldAnswered(f.key, currentItemDraft)).map((f) => f.key);
             toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: `Missing required fields: ${missing.join(", ")}` }) });
           } else {
-            const dollarsToCents = (n: any) => Math.round(Number(n) * 100);
             const insertItem: Record<string, any> = {
               campaign_id: campaignId,
               name: currentItemDraft.name,
-              cost: dollarsToCents(currentItemDraft.cost),
+              cost: Number(currentItemDraft.cost),
               quantity_offered: Number(currentItemDraft.quantity_offered),
               quantity_available: Number(currentItemDraft.quantity_offered),
             };
