@@ -398,11 +398,11 @@ export default function CampaignEditor() {
       if (!isEditing && campaignId) {
         navigate(`/dashboard/campaigns/${campaignId}/edit`, { replace: true });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving campaign:", error);
       toast({
-        title: "Error",
-        description: "Failed to save campaign",
+        title: "Failed to save campaign",
+        description: error?.message || "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
