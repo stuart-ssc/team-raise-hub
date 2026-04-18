@@ -1,43 +1,39 @@
 import { useEffect, useState } from "react";
-import { Home, Users, Heart, Target, BarChart3, Building2, Settings, Trophy, UserCircle, HelpCircle } from "lucide-react";
+import { Home, Heart, Target, BarChart3, Building2, Settings, Trophy, UserCircle, HelpCircle } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useDonorPortal } from "@/hooks/useDonorPortal";
-import { getLabel } from "@/lib/terminology";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import RoleSwitcher from "@/components/RoleSwitcher";
 
-// Base items - Home URL will be dynamic based on user type
+// Base items - Home URL is dynamic based on user type
 const getSidebarItems = (isParent: boolean) => [
   { title: "Home", icon: Home, url: isParent ? "/dashboard/family" : "/dashboard", end: true },
   { title: "My Fundraising", icon: Trophy, url: "/dashboard/my-fundraising", participantOnly: true },
-  { title: "Groups", icon: Users, url: "/dashboard/groups" },
-  { title: "Campaigns", icon: Target, url: "/dashboard/campaigns" },
+  { title: "Campaigns", icon: Target, url: "/dashboard/campaigns", managerOnly: true },
   { title: "Donors", icon: Heart, url: "/dashboard/donors" },
   { title: "Businesses", icon: Building2, url: "/dashboard/businesses" },
-  { title: "Users", icon: Users, url: "/dashboard/users" },
-  { title: "Reports", icon: BarChart3, url: "/dashboard/reports" },
-  { title: "Settings", icon: Settings, url: "/dashboard/settings", adminOnly: true },
+  { title: "Reports", icon: BarChart3, url: "/dashboard/reports", managerOnly: true },
+  { title: "Settings", icon: Settings, url: "/dashboard/settings", settingsAccess: true },
 ];
 
 const DashboardSidebar = () => {
   const location = useLocation();
-  const { organizationUser, allRoles } = useOrganizationUser();
+  const { organizationUser } = useOrganizationUser();
   const { donorProfiles } = useDonorPortal();
   const [pendingCount, setPendingCount] = useState(0);
-  
+
   const hasDonorAccess = donorProfiles.length > 0;
 
-  // Check if user has permission to see Users menu item
   const permissionLevel = organizationUser?.user_type?.permission_level;
   const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
+  const canAccessSettings = canSeeUsers; // admins + program managers
 
   // Check if current role is a parent role (linked to a child)
   const isParent = organizationUser?.linked_organization_user_id !== null && organizationUser?.linked_organization_user_id !== undefined;
 
-  // Fetch pending membership requests count
   const fetchPendingCount = () => {
     if (organizationUser?.organization_id && canSeeUsers) {
       supabase
@@ -53,7 +49,6 @@ const DashboardSidebar = () => {
     fetchPendingCount();
   }, [organizationUser?.organization_id, canSeeUsers]);
 
-  // Real-time subscription for pending requests
   useEffect(() => {
     if (!organizationUser?.organization_id || !canSeeUsers) return;
 
@@ -82,14 +77,19 @@ const DashboardSidebar = () => {
     if (end) {
       return location.pathname === path;
     }
-    // Special handling for nested routes
     if (path === '/dashboard/businesses') {
-      return location.pathname === '/dashboard/businesses' || 
+      return location.pathname === '/dashboard/businesses' ||
              location.pathname.startsWith('/dashboard/businesses/');
     }
     if (path === '/dashboard/donors') {
-      return location.pathname === '/dashboard/donors' || 
+      return location.pathname === '/dashboard/donors' ||
              location.pathname.startsWith('/dashboard/donors/');
+    }
+    if (path === '/dashboard/settings') {
+      return location.pathname === '/dashboard/settings' ||
+             location.pathname.startsWith('/dashboard/settings') ||
+             location.pathname.startsWith('/dashboard/users') ||
+             location.pathname.startsWith('/dashboard/groups');
     }
     return location.pathname.startsWith(path);
   };
@@ -108,27 +108,27 @@ const DashboardSidebar = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-2 lg:p-4">
+      <nav className="flex-1 p-2 lg:p-4 flex flex-col">
         <ul className="space-y-2">
           {getSidebarItems(isParent).map((item) => {
             const Icon = item.icon;
             const active = isActive(item.url, item.end);
-            
-            // Hide admin/manager items from participants
-            if ((item.title === "Users" || item.title === "Campaigns" || item.title === "Groups" || item.title === "Reports") && !canSeeUsers) {
+
+            // Hide manager-only items from participants
+            if (item.managerOnly && !canSeeUsers) {
               return null;
             }
-            
+
             // Show participant-only items only for participants/supporters
             if (item.participantOnly && canSeeUsers) {
               return null;
             }
-            
-            // Hide Settings menu item for non-admins
-            if (item.adminOnly && permissionLevel !== 'organization_admin') {
+
+            // Settings visible only to admins + program managers
+            if (item.settingsAccess && !canAccessSettings) {
               return null;
             }
-            
+
             return (
               <li key={item.title}>
                 <NavLink
@@ -138,19 +138,15 @@ const DashboardSidebar = () => {
                       ? 'bg-sidebar-primary text-sidebar-primary-foreground'
                       : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                   }`}
-                  title={organizationUser?.organization && item.title === 'Groups' 
-                    ? getLabel(organizationUser.organization.organization_type, 'programs')
-                    : item.title}
+                  title={item.title}
                 >
                   <div className="flex items-center">
                     <Icon className="h-5 w-5 flex-shrink-0" />
                     <span className="font-medium ml-3 hidden lg:inline">
-                      {organizationUser?.organization && item.title === 'Groups'
-                        ? getLabel(organizationUser.organization.organization_type, 'programs')
-                        : item.title}
+                      {item.title}
                     </span>
                   </div>
-                  {item.title === "Users" && pendingCount > 0 && (
+                  {item.title === "Settings" && pendingCount > 0 && (
                     <Badge variant="destructive" className="ml-auto text-xs h-5 min-w-5 flex items-center justify-center">
                       {pendingCount}
                     </Badge>
@@ -159,10 +155,12 @@ const DashboardSidebar = () => {
               </li>
             );
           })}
-          
-          {/* Donor Portal link for dual-role users */}
+        </ul>
+
+        {/* Bottom group - Donor Portal + Help & Support pinned to bottom */}
+        <ul className="space-y-2 mt-auto pt-4">
           {hasDonorAccess && (
-            <li className="pt-4 border-t border-sidebar-border mt-4">
+            <li className="border-t border-sidebar-border pt-4">
               <NavLink
                 to="/portal"
                 className="flex items-center transition-colors rounded-md px-3 py-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -173,9 +171,8 @@ const DashboardSidebar = () => {
               </NavLink>
             </li>
           )}
-          
-          {/* Help & Support link at bottom */}
-          <li className={hasDonorAccess ? "" : "pt-4 border-t border-sidebar-border mt-4"}>
+
+          <li className={hasDonorAccess ? "" : "border-t border-sidebar-border pt-4"}>
             <NavLink
               to="/dashboard/help"
               className={`flex items-center transition-colors rounded-md px-3 py-2 ${
