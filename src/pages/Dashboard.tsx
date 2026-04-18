@@ -419,7 +419,7 @@ const Dashboard = () => {
                 <div className="text-center py-12">
                   <div className="text-lg font-medium mb-2">Let's get started - Create a Campaign Now</div>
                   <div className="text-muted-foreground mb-4">Start fundraising by creating your first campaign</div>
-                  <Button onClick={() => setShowAddCampaignForm(true)}>
+                  <Button onClick={() => navigate('/dashboard/campaigns/ai-builder')}>
                     Create Campaign
                   </Button>
                 </div>
