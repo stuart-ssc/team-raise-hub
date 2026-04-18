@@ -2066,6 +2066,25 @@ Deno.serve(async (req) => {
       console.log("[ai-campaign-builder][debug] FIELDS_DIFF", JSON.stringify(diff));
     }
 
+    // Force a deterministic 3-bubble fee explanation whenever the next pre-draft
+    // question is fee_model. This guarantees the user sees the full breakdown
+    // (intro + processing-fee disclosure, donor-covers option, org-absorbs option +
+    // question) as separate chat bubbles regardless of what the LLM produced.
+    // The choice chips are attached via the `suggestions` block above.
+    if (
+      !effectiveCampaignId &&
+      phase === "collecting" &&
+      stillToAskNow[0] === "fee_model" &&
+      suggestions?.field === "fee_model"
+    ) {
+      assistantMessages = [
+        "One last thing — who covers Sponsorly's 10% fee?\n\nHeads up: that 10% covers **both** our platform fee **and** the credit card processing fees from Stripe. There are no other charges on top.",
+        "**Donor covers the fee (recommended)** — On a $100 donation, the donor pays **$110** at checkout. Your organization receives the full **$100**. The fee appears as a separate line item so supporters see exactly where it goes.",
+        "**Your organization absorbs the fee** — On a $100 donation, the donor pays **$100** and your organization receives roughly **$90** after the 10% fee. Lower friction for donors, but reduces your net.\n\nMost teams pick \"Donor covers.\" Which would you prefer?",
+      ];
+      assistantMessage = assistantMessages.join("\n\n");
+    }
+
     return new Response(
       JSON.stringify({
         assistantMessage,
