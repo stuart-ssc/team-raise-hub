@@ -357,22 +357,57 @@ export default function Campaigns() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-4">
-              <div className="w-full">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search campaigns..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-full"
-                  />
-                </div>
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search campaigns..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full"
+                />
               </div>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+
+              <Select value={filterBy} onValueChange={setFilterBy}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="published">Published (all)</SelectItem>
+                  <SelectItem value="draft">Drafts</SelectItem>
+                  <SelectItem value="pending_verification">Pending Verification</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="deleted">Deleted</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="flex items-center gap-2 w-full sm:w-auto">
+                    <Plus className="h-4 w-4" />
+                    Add Campaign
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate("/dashboard/campaigns/new")}>
+                    <PenLine className="h-4 w-4 mr-2" />
+                    Create manually
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/dashboard/campaigns/ai-builder")}>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Create with AI
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {isMobile && (
+              <div className="flex items-center gap-2">
                 <Select value={sortBy} onValueChange={(value) => setSortBy(value as keyof Campaign)}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
@@ -384,43 +419,16 @@ export default function Campaigns() {
                     <SelectItem value="end_date">End Date</SelectItem>
                   </SelectContent>
                 </Select>
-
-                <Select value={filterBy} onValueChange={setFilterBy}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Filter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="published">Published (all)</SelectItem>
-                    <SelectItem value="draft">Drafts</SelectItem>
-                    <SelectItem value="pending_verification">Pending Verification</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="deleted">Deleted</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button className="flex items-center gap-2 col-span-2 sm:col-span-1 lg:col-start-4 w-full sm:w-auto sm:justify-self-end">
-                      <Plus className="h-4 w-4" />
-                      Add Campaign
-                      <ChevronDown className="h-3 w-3 ml-1" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => navigate("/dashboard/campaigns/new")}>
-                      <PenLine className="h-4 w-4 mr-2" />
-                      Create manually
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/dashboard/campaigns/ai-builder")}>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Create with AI
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+                  title={sortDirection === "asc" ? "Ascending" : "Descending"}
+                >
+                  {sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
               </div>
-            </div>
+            )}
 
             {isMobile ? (
               // Mobile Card View
