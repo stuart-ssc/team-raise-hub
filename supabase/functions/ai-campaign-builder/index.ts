@@ -506,7 +506,7 @@ function buildSystemPrompt(
     } else if (!directionsAddressed) {
       nextStep = `**Next step: participant directions.** Ask if they'd like to add internal-only instructions for their team (e.g., "Each player should sell 10 items by Nov 15"). One short sentence. They can type directions or say "skip". When they reply, call the update_campaign_fields tool with group_directions (or set group_directions_addressed=true if skipped).`;
     } else {
-      nextStep = `**All done!** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (celebratory): "Your campaign is ready. 🎉"\n  Paragraph 2 (the choice): "Would you like to **publish** it now, or **open the editor** to fine-tune?"\n\nDo NOT call any tool. Do NOT list other options. The UI shows two buttons (Publish Campaign / Open in Editor) below your message.`;
+      nextStep = `**Setup is done — transition to items collection.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (transition + first item question): "Now let's add your first item. What's the name?"\n\nDo NOT ask about publishing or the editor — that comes later, after items are added. Do NOT call any tool.`;
     }
 
     return `You are a campaign creation assistant for Sponsorly. The user just created a draft campaign and you're now helping them fill in a few more details.
