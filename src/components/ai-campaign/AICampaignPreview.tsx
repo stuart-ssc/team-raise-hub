@@ -362,47 +362,6 @@ export default function AICampaignPreview({
           );
         })()}
 
-        {(isPostDraft || isCollectingItems) && (
-          <Card>
-            <CardHeader className="pb-2 pt-3 px-4">
-              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                <Package className="h-3.5 w-3.5" />
-                Campaign {itemNoun}s
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-3">
-              {items.length === 0 ? (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    No {itemNoun}s added yet
-                  </span>
-                  <Badge variant="outline">0</Badge>
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between gap-2 py-1 border-b last:border-0 border-border/40"
-                    >
-                      <span className="text-sm font-medium truncate flex-1">
-                        {item.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {item.cost != null ? `$${(Number(item.cost) / 100).toFixed(2)}` : "—"}
-                        {" · "}
-                        {item.has_variants
-                          ? "Sized"
-                          : `Qty ${item.quantity_offered ?? "∞"}`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
         {(isPostDraft || isCollectingItems) && collectedFields.requires_business_info === true && (
           <Card>
             <CardHeader className="pb-2 pt-3 px-4">
@@ -452,6 +411,47 @@ export default function AICampaignPreview({
                       {asset.is_required && (
                         <Badge variant="outline" className="text-[10px]">Required</Badge>
                       )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {(isPostDraft || isCollectingItems) && (
+          <Card>
+            <CardHeader className="pb-2 pt-3 px-4">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                <Package className="h-3.5 w-3.5" />
+                Campaign {itemNoun}s
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-3">
+              {items.length === 0 ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    No {itemNoun}s added yet
+                  </span>
+                  <Badge variant="outline">0</Badge>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between gap-2 py-1 border-b last:border-0 border-border/40"
+                    >
+                      <span className="text-sm font-medium truncate flex-1">
+                        {item.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {item.cost != null ? `$${(Number(item.cost) / 100).toFixed(2)}` : "—"}
+                        {" · "}
+                        {item.has_variants
+                          ? "Sized"
+                          : `Qty ${item.quantity_offered ?? "∞"}`}
+                      </span>
                     </div>
                   ))}
                 </div>
