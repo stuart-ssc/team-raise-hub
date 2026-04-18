@@ -1743,6 +1743,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Bug 1 fix: when user just clicked "Add another", emit a deterministic
+    // "what's the name?" prompt so we never re-use whatever the LLM produced
+    // (which often mistakenly captures the literal "add another" string as
+    // the new item's name and skips the name question).
+    if (justStartedNewItem) {
+      const ordinal = itemsAdded === 0 ? "first" : "next";
+      assistantMessage = `Saved.\n\nGreat — what's the name of the ${ordinal} ${itemNoun}? (${itemExamples})`;
+    }
+
     // If a draft was just created in this turn, treat it as the active campaign for phase/suggestions
     const effectiveCampaignId = campaignId || createdCampaignId;
 
