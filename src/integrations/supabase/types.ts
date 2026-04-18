@@ -979,6 +979,7 @@ export type Database = {
           description: string | null
           enable_roster_attribution: boolean | null
           end_date: string | null
+          fee_model: string
           file_upload_deadline_days: number | null
           goal_amount: number | null
           group_directions: string | null
@@ -1008,6 +1009,7 @@ export type Database = {
           description?: string | null
           enable_roster_attribution?: boolean | null
           end_date?: string | null
+          fee_model?: string
           file_upload_deadline_days?: number | null
           goal_amount?: number | null
           group_directions?: string | null
@@ -1037,6 +1039,7 @@ export type Database = {
           description?: string | null
           enable_roster_attribution?: boolean | null
           end_date?: string | null
+          fee_model?: string
           file_upload_deadline_days?: number | null
           goal_amount?: number | null
           group_directions?: string | null
@@ -3173,6 +3176,7 @@ export type Database = {
           customer_name: string | null
           customer_phone: string | null
           entered_by: string | null
+          fee_model: string
           files_complete: boolean | null
           id: string
           items: Json
@@ -3212,6 +3216,7 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           entered_by?: string | null
+          fee_model?: string
           files_complete?: boolean | null
           id?: string
           items: Json
@@ -3251,6 +3256,7 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           entered_by?: string | null
+          fee_model?: string
           files_complete?: boolean | null
           id?: string
           items?: Json
