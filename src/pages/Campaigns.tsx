@@ -52,7 +52,7 @@ export default function Campaigns() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<keyof Campaign>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [filterBy, setFilterBy] = useState("all");
+  const [filterBy, setFilterBy] = useState("active");
   const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(null);
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup, groups } = useActiveGroup();
@@ -255,17 +255,36 @@ export default function Campaigns() {
     }
   };
 
+  const isExpired = (c: Campaign) => {
+    if (c.publication_status !== 'published') return false;
+    if (!c.end_date) return false;
+    return new Date(c.end_date) < new Date(new Date().toDateString());
+  };
+
+  const isInDateRange = (c: Campaign) => {
+    const now = new Date();
+    const today = new Date(now.toDateString());
+    if (c.start_date && new Date(c.start_date) > now) return false;
+    if (c.end_date && new Date(c.end_date) < today) return false;
+    return true;
+  };
+
   const filteredCampaigns = campaigns.filter(campaign => {
     const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          campaign.group_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          campaign.campaign_type_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterBy === "all" || 
-                         filterBy === "deleted" ||
-                         (filterBy === "active" && campaign.status) ||
-                         (filterBy === "inactive" && !campaign.status && campaign.publication_status !== 'draft') ||
-                         (filterBy === "draft" && campaign.publication_status === 'draft');
-    
+
+    const isPublished = campaign.publication_status === 'published';
+
+    const matchesFilter =
+      filterBy === "all" ||
+      filterBy === "deleted" ||
+      (filterBy === "active" && isPublished && isInDateRange(campaign)) ||
+      (filterBy === "published" && isPublished) ||
+      (filterBy === "expired" && isExpired(campaign)) ||
+      (filterBy === "draft" && campaign.publication_status === 'draft') ||
+      (filterBy === "pending_verification" && campaign.publication_status === 'pending_verification');
+
     return matchesSearch && matchesFilter;
   });
 
@@ -371,10 +390,12 @@ export default function Campaigns() {
                     <SelectValue placeholder="Filter" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="published">Published (all)</SelectItem>
                     <SelectItem value="draft">Drafts</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="pending_verification">Pending Verification</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
                     <SelectItem value="deleted">Deleted</SelectItem>
                   </SelectContent>
                 </Select>
