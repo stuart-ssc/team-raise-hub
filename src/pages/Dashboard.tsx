@@ -434,9 +434,16 @@ const Dashboard = () => {
                   {campaigns.map((campaign) => (
                     <Card key={campaign.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
-                        <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-start justify-between mb-2 gap-2">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold truncate">{campaign.name}</h4>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-semibold truncate">{campaign.name}</h4>
+                              {getCampaignState(campaign) === 'active' ? (
+                                <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/20 dark:text-green-400">Active</Badge>
+                              ) : (
+                                <Badge variant="secondary">Expired</Badge>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground">{campaign.groups?.group_name}</p>
                           </div>
                           <Button
