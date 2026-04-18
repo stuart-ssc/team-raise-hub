@@ -267,9 +267,13 @@ const OrganizationSettings = () => {
     );
   };
 
-  if (!isOrgAdmin) {
+  if (!canAccessSettings) {
     return null;
   }
+
+  const groupsLabel = organizationUser?.organization
+    ? getLabel(organizationUser.organization.organization_type, 'programs')
+    : 'Groups';
 
   return (
     <DashboardPageLayout
@@ -279,7 +283,7 @@ const OrganizationSettings = () => {
     >
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Organization Settings</h1>
+          <h1 className="text-3xl font-bold">Settings</h1>
           {organizationUser?.organization && (
             <Badge variant="outline">
               {organizationUser.organization.organization_type === "school" ? "School" : "Non-Profit"}
@@ -287,6 +291,58 @@ const OrganizationSettings = () => {
           )}
         </div>
 
+        {/* Manage section - jump points to Users and Groups */}
+        <div className="grid gap-4 md:grid-cols-2 mb-8">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/dashboard/users')}>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-md bg-primary/10 text-primary">
+                    <UsersIcon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      Users
+                      {pendingCount > 0 && (
+                        <Badge variant="destructive" className="text-xs h-5 min-w-5 flex items-center justify-center">
+                          {pendingCount}
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription>Manage members, invitations, and roles</CardDescription>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardHeader>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/dashboard/groups')}>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-md bg-primary/10 text-primary">
+                    <Users2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <CardTitle>{groupsLabel}</CardTitle>
+                    <CardDescription>Manage {groupsLabel.toLowerCase()} and payment setup</CardDescription>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardHeader>
+          </Card>
+        </div>
+
+        {isOrgAdmin && (
+        <div className="mb-2">
+          <h2 className="text-xl font-semibold mb-1">Organization Settings</h2>
+          <p className="text-sm text-muted-foreground mb-4">Manage organization-level details, branding, and configuration.</p>
+        </div>
+        )}
+
+        {isOrgAdmin && (
         <Tabs defaultValue="general" className="space-y-6">
           {/* Schools: 4 tabs (no Payment - that's at group level). Nonprofits: 5 tabs */}
           {organizationUser?.organization?.organization_type === 'nonprofit' ? (
