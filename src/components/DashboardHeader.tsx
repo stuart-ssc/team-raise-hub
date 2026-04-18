@@ -31,6 +31,58 @@ const DashboardHeader = ({ activeGroup, onGroupClick, showRosters, hideGroupsFil
   const [groups, setGroups] = useState<Array<{id: string, group_name: string}>>([]);
   const [userInitials, setUserInitials] = useState("U");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+
+  // Fetch unread message count + subscribe to new messages
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchUnreadMessages = async () => {
+      const { data: participations } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id, last_read_at')
+        .eq('user_id', user.id)
+        .is('left_at', null);
+
+      if (!participations || participations.length === 0) {
+        setUnreadMessageCount(0);
+        return;
+      }
+
+      let totalUnread = 0;
+      for (const p of participations) {
+        const { count } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('conversation_id', p.conversation_id)
+          .neq('sender_user_id', user.id)
+          .is('deleted_at', null)
+          .gt('sent_at', p.last_read_at || '1970-01-01');
+        totalUnread += count || 0;
+      }
+      setUnreadMessageCount(totalUnread);
+    };
+
+    fetchUnreadMessages();
+
+    const channel = supabase
+      .channel('header-messages-changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        () => fetchUnreadMessages()
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'conversation_participants', filter: `user_id=eq.${user.id}` },
+        () => fetchUnreadMessages()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // Fetch user profile for initials and avatar
   useEffect(() => {
