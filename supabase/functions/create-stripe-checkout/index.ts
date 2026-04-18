@@ -7,6 +7,8 @@ const corsHeaders = {
 };
 
 const PLATFORM_FEE_PERCENT = 10; // 10% platform fee
+const STRIPE_PERCENT = 0.029; // 2.9% Stripe processing
+const STRIPE_FIXED_CENTS = 30; // $0.30 fixed Stripe fee per transaction
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -49,6 +51,7 @@ Deno.serve(async (req) => {
         id,
         name,
         group_id,
+        fee_model,
         groups(
           id,
           organization_id,
@@ -182,31 +185,45 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Calculate platform fee (10% of total)
+    // Determine fee model (snapshot from campaign at time of checkout)
+    const feeModel: 'donor_covers' | 'org_absorbs' =
+      (campaign as any).fee_model === 'org_absorbs' ? 'org_absorbs' : 'donor_covers';
+    console.log('Fee model:', feeModel);
+
+    // Calculate platform fee (10% of items total — always the headline fee in dollars)
     const platformFeeAmount = Math.round(totalAmount * (PLATFORM_FEE_PERCENT / 100));
-    const finalTotal = totalAmount + platformFeeAmount;
 
-    // Add platform fee as line item
-    const platformFeeLineItem: any = {
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: 'Platform Fee',
-          description: 'Sponsorly processing and platform fee',
+    // finalTotal = what donor actually pays
+    // - donor_covers: items + fee
+    // - org_absorbs:  items only (fee silently deducted from payout)
+    const finalTotal = feeModel === 'donor_covers'
+      ? totalAmount + platformFeeAmount
+      : totalAmount;
+
+    if (feeModel === 'donor_covers') {
+      // Add platform fee as line item so the donor sees it
+      const platformFeeLineItem: any = {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Platform Fee',
+            description: 'Sponsorly processing and platform fee',
+          },
+          unit_amount: Math.round(platformFeeAmount * 100), // Convert dollars to cents for Stripe
         },
-        unit_amount: Math.round(platformFeeAmount * 100), // Convert dollars to cents for Stripe
-      },
-      quantity: 1,
-    };
-
-    // For subscriptions, platform fee must also be recurring
-    if (hasRecurringItems && recurringInterval) {
-      platformFeeLineItem.price_data.recurring = {
-        interval: recurringInterval,
+        quantity: 1,
       };
-    }
 
-    lineItems.push(platformFeeLineItem);
+      // For subscriptions, platform fee must also be recurring
+      if (hasRecurringItems && recurringInterval) {
+        platformFeeLineItem.price_data.recurring = {
+          interval: recurringInterval,
+        };
+      }
+
+      lineItems.push(platformFeeLineItem);
+    }
+    // org_absorbs: no platform-fee line item — donor only sees the items.
 
     // Create order record using admin client
     const { data: order, error: orderError } = await supabaseAdmin
@@ -216,6 +233,7 @@ Deno.serve(async (req) => {
         total_amount: finalTotal,
         items_total: totalAmount, // Just the items, excluding platform fee
         platform_fee_amount: platformFeeAmount,
+        fee_model: feeModel,
         status: 'pending',
         customer_email: customerInfo?.email || 'pending@example.com',
         customer_name: customerInfo?.name || 'Pending',
@@ -290,6 +308,7 @@ Deno.serve(async (req) => {
             organization_id: organizationData?.id || '',
             group_id: groupData?.id || '',
             attributed_roster_member_id: attributedRosterMemberId || '',
+            fee_model: feeModel,
           },
         },
         metadata: {
@@ -297,6 +316,7 @@ Deno.serve(async (req) => {
           campaign_id: campaign.id,
           attributed_roster_member_id: attributedRosterMemberId || '',
           is_subscription: 'true',
+          fee_model: feeModel,
         },
         payment_method_types: ['card'],
       });
@@ -323,35 +343,64 @@ Deno.serve(async (req) => {
       // ONE-TIME PAYMENT MODE
       console.log('Creating one-time payment checkout session');
 
+      // Build payment_intent_data based on fee model.
+      // donor_covers: explicit transfer_data.amount = item total → org gets exactly items, Sponsorly absorbs Stripe fees from the fee line item.
+      // org_absorbs:  use application_fee_amount = headlineFee − estimated Stripe fees → org nets ~items − fee, donor pays only items.
+      const paymentIntentData: any = {
+        transfer_group: `order_${order.id}`,
+        statement_descriptor_suffix: campaign.name.substring(0, 22).replace(/[<>"']/g, ''),
+        metadata: {
+          order_id: order.id,
+          campaign_id: campaign.id,
+          campaign_name: campaign.name,
+          organization_id: organizationData?.id || '',
+          group_id: groupData?.id || '',
+          platform_fee_cents: Math.round(platformFeeAmount * 100),
+          item_total_cents: Math.round(totalAmount * 100),
+          fee_model: feeModel,
+        },
+      };
+
+      if (feeModel === 'donor_covers') {
+        // Org receives exactly the item price; Sponsorly absorbs Stripe fees from the platform fee line item.
+        paymentIntentData.transfer_data = {
+          destination: stripeAccountId,
+          amount: Math.round(totalAmount * 100),
+        };
+      } else {
+        // org_absorbs: charge donor finalTotal (= items only).
+        // Application fee = headline 10% minus estimated Stripe processing on the donor charge.
+        const finalTotalCents = Math.round(finalTotal * 100);
+        const headlineFeeCents = Math.round(platformFeeAmount * 100);
+        const estimatedStripeFeeCents = Math.ceil(finalTotalCents * STRIPE_PERCENT) + STRIPE_FIXED_CENTS;
+        const applicationFeeCents = Math.max(0, headlineFeeCents - estimatedStripeFeeCents);
+
+        console.log('org_absorbs fee math (cents):', {
+          finalTotalCents,
+          headlineFeeCents,
+          estimatedStripeFeeCents,
+          applicationFeeCents,
+        });
+
+        paymentIntentData.application_fee_amount = applicationFeeCents;
+        paymentIntentData.transfer_data = {
+          destination: stripeAccountId,
+        };
+      }
+
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
         line_items: lineItems,
         customer_email: customerInfo?.email || undefined,
         success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/c/${campaignSlug}?canceled=true`,
-        payment_intent_data: {
-          // Using transfer_data.amount to specify exact org payout (mutually exclusive with application_fee_amount)
-          transfer_data: {
-            destination: stripeAccountId,
-            amount: Math.round(totalAmount * 100), // Org receives exactly the item price, Sponsorly absorbs Stripe fees from platform fee
-          },
-          transfer_group: `order_${order.id}`, // For refund/dispute correlation
-          statement_descriptor_suffix: campaign.name.substring(0, 22).replace(/[<>"']/g, ''), // Max 22 chars, no special chars
-          metadata: {
-            order_id: order.id,
-            campaign_id: campaign.id,
-            campaign_name: campaign.name,
-            organization_id: organizationData?.id || '',
-            group_id: groupData?.id || '',
-            platform_fee_cents: Math.round(platformFeeAmount * 100),
-            item_total_cents: Math.round(totalAmount * 100),
-          },
-        },
+        payment_intent_data: paymentIntentData,
         metadata: {
           order_id: order.id,
           campaign_id: campaign.id,
           attributed_roster_member_id: attributedRosterMemberId || '',
           is_subscription: 'false',
+          fee_model: feeModel,
         },
         payment_method_types: ['card', 'us_bank_account'],
       });

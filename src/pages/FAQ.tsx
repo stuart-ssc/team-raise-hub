@@ -111,7 +111,7 @@ const faqCategories: FAQCategory[] = [
       {
         question: 'Does Sponsorly take a cut of donations?',
         answer:
-          'Sponsorly passes 100% of donations to your organization. Standard payment processing fees from Stripe apply, but Sponsorly does not add any additional platform fees on top.',
+          'Sponsorly charges a 10% platform fee on donations. By default, this fee is added on top of the donation so your organization receives 100% of the intended amount. Organizations may also choose, on a per-campaign basis, to absorb the 10% fee themselves — in which case donors pay only the headline price and the fee is deducted from the payout.',
       },
     ],
   },

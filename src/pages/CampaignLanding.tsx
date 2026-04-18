@@ -30,6 +30,7 @@ interface CampaignData {
   requires_business_info: boolean | null;
   file_upload_deadline_days: number | null;
   roster_id: number | null;
+  fee_model: 'donor_covers' | 'org_absorbs' | null;
   // Campaign-level pitch fields
   pitch_message: string | null;
   pitch_image_url: string | null;
@@ -316,6 +317,7 @@ const CampaignLanding = () => {
   };
 
   const getPlatformFee = () => {
+    if (campaign?.fee_model === 'org_absorbs') return 0;
     return getSubtotal() * 0.1; // 10% platform fee
   };
 
@@ -1016,24 +1018,26 @@ const CampaignLanding = () => {
                       <span>Subtotal</span>
                       <span>${getSubtotal().toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <div className="flex items-center gap-1">
-                        <span>Platform Fee</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="h-3 w-3 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="max-w-xs">
-                                The platform fee is your way to further support the group by covering their fees so they can receive your full donation.
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                    {campaign?.fee_model !== 'org_absorbs' && (
+                      <div className="flex justify-between text-sm">
+                        <div className="flex items-center gap-1">
+                          <span>Platform Fee</span>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Info className="h-3 w-3 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">
+                                  The platform fee is your way to further support the group by covering their fees so they can receive your full donation.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <span>${getPlatformFee().toFixed(2)}</span>
                       </div>
-                      <span>${getPlatformFee().toFixed(2)}</span>
-                    </div>
+                    )}
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
                       <span>Total</span>
                       <span>
@@ -1045,6 +1049,11 @@ const CampaignLanding = () => {
                         )}
                       </span>
                     </div>
+                    {campaign?.fee_model === 'org_absorbs' && getSubtotal() > 0 && (
+                      <p className="text-xs text-muted-foreground text-right">
+                        Includes Sponsorly's 10% platform fee
+                      </p>
+                    )}
                   </div>
 
                   <Button 
@@ -1266,14 +1275,21 @@ const CampaignLanding = () => {
                     <span>Subtotal</span>
                     <span>${getSubtotal().toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Platform Fee</span>
-                    <span>${getPlatformFee().toFixed(2)}</span>
-                  </div>
+                  {campaign?.fee_model !== 'org_absorbs' && (
+                    <div className="flex justify-between text-sm">
+                      <span>Platform Fee</span>
+                      <span>${getPlatformFee().toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-bold text-lg border-t pt-2">
                     <span>Total</span>
                     <span>${getTotalAmount().toFixed(2)}</span>
                   </div>
+                  {campaign?.fee_model === 'org_absorbs' && (
+                    <p className="text-xs text-muted-foreground text-right">
+                      Includes Sponsorly's 10% platform fee
+                    </p>
+                  )}
                 </div>
               </div>
               
