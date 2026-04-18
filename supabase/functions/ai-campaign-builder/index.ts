@@ -1042,7 +1042,7 @@ Deno.serve(async (req) => {
     // (the model sometimes acknowledges without calling update_item_field, leaving the
     // conversation stuck — capture server-side so the follow-up can ask the next field).
     let deterministicItemCaptured = false;
-    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && lastUserMsg && !isSkipMessage(lastUserMsg)) {
+    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && !justStartedNewItem && lastUserMsg && !isSkipMessage(lastUserMsg)) {
       try {
         const next = getNextItemField(currentItemDraft);
         if (next) {
