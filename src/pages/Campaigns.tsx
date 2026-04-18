@@ -422,10 +422,10 @@ export default function Campaigns() {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                  title={sortOrder === "asc" ? "Ascending" : "Descending"}
+                  onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+                  title={sortDirection === "asc" ? "Ascending" : "Descending"}
                 >
-                  {sortOrder === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </Button>
               </div>
             )}
