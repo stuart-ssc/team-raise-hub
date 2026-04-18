@@ -86,6 +86,7 @@ const ASK_ORDER = [
   "end_date",
   "description",
   "requires_business_info",
+  "fee_model",
 ];
 
 function isFieldAnswered(key: string, collected: Record<string, any>): boolean {
@@ -160,8 +161,10 @@ function isSkipMessage(text: string): boolean {
 // so we can apply skips OR free-text answers deterministically.
 function detectFieldFromAssistantText(text: string): string | null {
   const t = text.toLowerCase();
-  // Order matters: business-info patterns are more specific than the generic
-  // "description" keyword, so check them first.
+  // Order matters: more-specific patterns first.
+  if (/fee model|platform fee|who covers .*fee|donor.*cover.*fee|absorb.*fee|cover the fee|fee_model/.test(t)) {
+    return "fee_model";
+  }
   if (/sponsor.*(info|asset|provide)|requires_business_info|business info|provide information or assets/.test(t)) {
     return "requires_business_info";
   }
@@ -335,6 +338,7 @@ const FIELD_DEFS: FieldDef[] = [
   { key: "start_date", label: "Start Date", type: "date", required: true, aiDescription: "Start date in YYYY-MM-DD format." },
   { key: "end_date", label: "End Date", type: "date", required: true, aiDescription: "End date in YYYY-MM-DD format." },
   { key: "requires_business_info", label: "Sponsors Provide Info/Assets", type: "boolean", required: true, aiDescription: "Whether sponsors must provide information or assets to participate (e.g. a logo for a banner/shirt, a website link for social media recognition)." },
+  { key: "fee_model", label: "Platform Fee Model", type: "select", required: true, aiDescription: "Who pays the 10% Sponsorly platform fee. Must be exactly 'donor_covers' (donor pays the fee on top of the item price) or 'org_absorbs' (organization absorbs the fee out of the item price the donor sees)." },
 ];
 
 function buildItemsSystemPrompt(
@@ -1109,6 +1113,7 @@ Deno.serve(async (req) => {
               start_date: { type: "string" },
               end_date: { type: "string" },
               requires_business_info: { type: "boolean" },
+              fee_model: { type: "string", enum: ["donor_covers", "org_absorbs"], description: "Who pays the 10% platform fee. 'donor_covers' = donor pays it on top; 'org_absorbs' = organization absorbs it out of the item price." },
               // Post-draft fields:
               image_url: { type: "string", description: "URL of uploaded campaign image" },
               image_skipped: { type: "boolean", description: "True if user chose to skip image upload" },
@@ -1364,6 +1369,9 @@ Deno.serve(async (req) => {
             if (updatedFields.description) insertData.description = updatedFields.description;
             if (updatedFields.requires_business_info !== undefined) {
               insertData.requires_business_info = updatedFields.requires_business_info;
+            }
+            if (updatedFields.fee_model === "donor_covers" || updatedFields.fee_model === "org_absorbs") {
+              insertData.fee_model = updatedFields.fee_model;
             }
 
             const { data: newCampaign, error: insertErr } = await adminSb
@@ -1948,6 +1956,16 @@ Deno.serve(async (req) => {
           options: [
             { label: "Yes, sponsors must provide info", value: "true" },
             { label: "No, not required", value: "false" },
+          ],
+        };
+      } else if (nextField === "fee_model") {
+        suggestions = {
+          type: "choice",
+          field: "fee_model",
+          label: "Who covers the 10% platform fee?",
+          options: [
+            { label: "Donor covers the fee (recommended)", value: "donor_covers" },
+            { label: "Our organization absorbs the fee", value: "org_absorbs" },
           ],
         };
       }
