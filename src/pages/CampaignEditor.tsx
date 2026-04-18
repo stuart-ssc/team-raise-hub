@@ -57,6 +57,7 @@ interface CampaignData {
   enableRosterAttribution: boolean;
   rosterId: string;
   publicationStatus: string;
+  feeModel: 'donor_covers' | 'org_absorbs';
 }
 
 interface RequiredAsset {
