@@ -1370,6 +1370,9 @@ Deno.serve(async (req) => {
             if (updatedFields.requires_business_info !== undefined) {
               insertData.requires_business_info = updatedFields.requires_business_info;
             }
+            if (updatedFields.fee_model === "donor_covers" || updatedFields.fee_model === "org_absorbs") {
+              insertData.fee_model = updatedFields.fee_model;
+            }
 
             const { data: newCampaign, error: insertErr } = await adminSb
               .from("campaigns")
