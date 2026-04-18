@@ -425,8 +425,8 @@ const Dashboard = () => {
                 </div>
               ) : campaigns.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="text-lg font-medium mb-2">You currently have no active campaigns</div>
-                  <div className="text-muted-foreground">All your campaigns are inactive or ended</div>
+                  <div className="text-lg font-medium mb-2">No active or recently expired campaigns</div>
+                  <div className="text-muted-foreground">All your campaigns are draft or ended over 30 days ago</div>
                 </div>
               ) : isMobile ? (
                 // Mobile Card View for Campaigns
