@@ -592,20 +592,7 @@ ${autoFillNote}
    - If it's optional, tell them they can say "skip" if they don't want to provide it.
    - For **description**, ask something like: "Want to add a short description of the campaign? You can say skip." (free text — no buttons). When the user types ANY free-text answer (e.g. "Let's cover the gym", "Raising money for new uniforms"), you MUST call **update_campaign_fields** with \`description: "<their exact text>"\` in the SAME turn. Never just say "Got it" — the tool call is required.
   - For **requires_business_info**, ask: "Will sponsors need to provide information or assets to participate? (e.g. a logo for a banner/shirt, a website link for social media recognition)" — the UI will show Yes/No buttons. When the user answers yes/no (or true/false), you MUST call **update_campaign_fields** with \`requires_business_info: true\` or \`requires_business_info: false\` in the SAME turn. **Do NOT combine this question with the "save as draft" confirmation.**
-   - For **fee_model**, you MUST first explain the fee model with sample math, THEN ask the question — all in a single message. Use this EXACT copy (markdown is rendered in chat):
-
-     \`\`\`
-     One last thing — who covers the 10% Sponsorly platform fee?
-
-     Here's how it works on a **$100 donation**:
-
-     - **Donor covers the fee (recommended)** — Donor pays **$110** at checkout. Your organization receives the full **$100**. The $10 platform fee is shown as a separate line item, so supporters see exactly where it goes.
-     - **Your organization absorbs the fee** — Donor pays **$100** at checkout. Your organization receives roughly **$90** after Sponsorly's 10% fee. Lower friction for donors, but reduces your net.
-
-     Most teams pick "Donor covers" because supporters expect a small platform fee and it maximizes what reaches your cause. Which would you like?
-     \`\`\`
-
-     The UI will show two buttons (Donor covers / Organization absorbs). When the user answers, you MUST call **update_campaign_fields** with \`fee_model: "donor_covers"\` or \`fee_model: "org_absorbs"\` in the SAME turn. This question is an exception to the "always 2 paragraphs" rule — the explainer + question is fine as one multi-paragraph message.
+   - For **fee_model**, the server will emit a fixed 3-bubble explanation followed by Yes/No buttons. You only need to ensure that **when the user answers**, you MUST call **update_campaign_fields** with \`fee_model: "donor_covers"\` or \`fee_model: "org_absorbs"\` in the SAME turn. Do NOT write your own fee explanation — the server handles it.
    - **POST-DRAFT FIELDS — CRITICAL:** When the user answers any post-draft question (image upload/skip, roster attribution yes/no, roster pick, participant directions), you MUST call **update_campaign_fields** in the SAME turn BEFORE writing your acknowledgment. Saying "saved" or "got it" without calling the tool is a bug — the field will not be saved and the user will be stuck in a loop.
 10. **The "## Still To Ask About" list above is the source of truth for what to ask next.** Do NOT ask "Ready to save this as a draft?" — and do NOT call **create_campaign_draft** — until that list is COMPLETELY EMPTY. If even one field appears in the list, your next question MUST be about that field, in the order listed. Skipping ahead to the save confirmation is forbidden. Once the list is finally empty, in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft.
 11. Keep responses short and focused — no more than 2-3 sentences.
@@ -2077,6 +2064,25 @@ Deno.serve(async (req) => {
         }
       }
       console.log("[ai-campaign-builder][debug] FIELDS_DIFF", JSON.stringify(diff));
+    }
+
+    // Force a deterministic 3-bubble fee explanation whenever the next pre-draft
+    // question is fee_model. This guarantees the user sees the full breakdown
+    // (intro + processing-fee disclosure, donor-covers option, org-absorbs option +
+    // question) as separate chat bubbles regardless of what the LLM produced.
+    // The choice chips are attached via the `suggestions` block above.
+    if (
+      !effectiveCampaignId &&
+      phase === "collecting" &&
+      stillToAskNow[0] === "fee_model" &&
+      suggestions?.field === "fee_model"
+    ) {
+      assistantMessages = [
+        "One last thing — who covers Sponsorly's 10% fee?\n\nHeads up: that 10% covers **both** our platform fee **and** the credit card processing fees from Stripe. There are no other charges on top.",
+        "**Donor covers the fee (recommended)** — On a $100 donation, the donor pays **$110** at checkout. Your organization receives the full **$100**. The fee appears as a separate line item so supporters see exactly where it goes.",
+        "**Your organization absorbs the fee** — On a $100 donation, the donor pays **$100** and your organization receives roughly **$90** after the 10% fee. Lower friction for donors, but reduces your net.\n\nMost teams pick \"Donor covers.\" Which would you prefer?",
+      ];
+      assistantMessage = assistantMessages.join("\n\n");
     }
 
     return new Response(

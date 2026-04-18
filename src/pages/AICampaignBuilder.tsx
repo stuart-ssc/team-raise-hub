@@ -27,7 +27,18 @@ function getChatPlaceholder(
   phase: Phase,
   currentItemDraft: Record<string, any>,
   itemNoun: string,
+  messages: ChatMessage[],
 ): string {
+  // If the last assistant turn surfaced clickable choice chips, nudge the user
+  // to pick one rather than implying they need to type a free-text reply.
+  const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+  if (
+    lastAssistant?.suggestions?.type === "choice" &&
+    (lastAssistant.suggestions.options?.length ?? 0) > 0
+  ) {
+    return "Pick an option above, or type your own answer...";
+  }
+
   if (phase === "complete") return "Anything else?";
   if (phase === "post_draft") return "Answer the question above...";
   if (phase === "collecting_items") {
@@ -452,7 +463,7 @@ export default function AICampaignBuilder() {
             onImageSkipped={handleImageSkipped}
             onItemImageUploaded={handleItemImageUploaded}
             onItemImageSkipped={handleItemImageSkipped}
-            placeholder={getChatPlaceholder(phase, currentItemDraft, itemNoun)}
+            placeholder={getChatPlaceholder(phase, currentItemDraft, itemNoun, messages)}
           />
         </div>
       </div>
