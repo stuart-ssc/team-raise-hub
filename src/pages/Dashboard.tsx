@@ -26,7 +26,7 @@ const Dashboard = () => {
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [totalCampaigns, setTotalCampaigns] = useState(0);
-  const [showAddCampaignForm, setShowAddCampaignForm] = useState(false);
+  
   const [donors, setDonors] = useState<any[]>([]);
   const [donorCount, setDonorCount] = useState(0);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
@@ -617,15 +617,6 @@ const Dashboard = () => {
             userId={user.id}
           />
         )}
-
-        {/* Add Campaign Form */}
-        <AddCampaignForm 
-          open={showAddCampaignForm}
-          onOpenChange={setShowAddCampaignForm}
-          onCampaignAdded={() => {
-            fetchCampaigns();
-          }}
-        />
       </div>
       </DashboardPageLayout>
     );
