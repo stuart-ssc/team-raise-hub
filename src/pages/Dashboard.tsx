@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { UserPlus, MoreHorizontal } from "lucide-react";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
-import { AddCampaignForm } from "@/components/AddCampaignForm";
+
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,7 +26,7 @@ const Dashboard = () => {
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [totalCampaigns, setTotalCampaigns] = useState(0);
-  const [showAddCampaignForm, setShowAddCampaignForm] = useState(false);
+  
   const [donors, setDonors] = useState<any[]>([]);
   const [donorCount, setDonorCount] = useState(0);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
@@ -411,7 +411,7 @@ const Dashboard = () => {
                 >
                   Manage All Campaigns
                 </Button>
-                <Button onClick={() => setShowAddCampaignForm(true)} size="sm" className="w-full sm:w-auto">Add Campaign</Button>
+                <Button onClick={() => navigate('/dashboard/campaigns/ai-builder')} size="sm" className="w-full sm:w-auto">Add Campaign</Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -419,7 +419,7 @@ const Dashboard = () => {
                 <div className="text-center py-12">
                   <div className="text-lg font-medium mb-2">Let's get started - Create a Campaign Now</div>
                   <div className="text-muted-foreground mb-4">Start fundraising by creating your first campaign</div>
-                  <Button onClick={() => setShowAddCampaignForm(true)}>
+                  <Button onClick={() => navigate('/dashboard/campaigns/ai-builder')}>
                     Create Campaign
                   </Button>
                 </div>
@@ -617,15 +617,6 @@ const Dashboard = () => {
             userId={user.id}
           />
         )}
-
-        {/* Add Campaign Form */}
-        <AddCampaignForm 
-          open={showAddCampaignForm}
-          onOpenChange={setShowAddCampaignForm}
-          onCampaignAdded={() => {
-            fetchCampaigns();
-          }}
-        />
       </div>
       </DashboardPageLayout>
     );
