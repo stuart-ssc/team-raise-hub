@@ -86,18 +86,32 @@ const OrganizationSettings = () => {
   // Check permission
   const permissionLevel = organizationUser?.user_type.permission_level;
   const isOrgAdmin = permissionLevel === 'organization_admin';
+  const isProgramManager = permissionLevel === 'program_manager';
+  const canAccessSettings = isOrgAdmin || isProgramManager;
+  const [pendingCount, setPendingCount] = useState(0);
 
-  // Redirect non-admins
+  // Redirect users without any settings access
   useEffect(() => {
-    if (organizationUser && !isOrgAdmin) {
+    if (organizationUser && !canAccessSettings) {
       navigate('/dashboard');
       toast({
         title: "Access Denied",
-        description: "You don't have permission to access organization settings",
+        description: "You don't have permission to access settings",
         variant: "destructive",
       });
     }
-  }, [organizationUser, isOrgAdmin, navigate, toast]);
+  }, [organizationUser, canAccessSettings, navigate, toast]);
+
+  // Fetch pending membership requests count
+  useEffect(() => {
+    if (!organizationUser?.organization_id || !canAccessSettings) return;
+    supabase
+      .from('membership_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationUser.organization_id)
+      .eq('status', 'pending')
+      .then(({ count }) => setPendingCount(count || 0));
+  }, [organizationUser?.organization_id, canAccessSettings]);
 
   // Fetch organization data
   useEffect(() => {
