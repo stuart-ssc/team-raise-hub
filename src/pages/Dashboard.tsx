@@ -483,6 +483,7 @@ const Dashboard = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="min-w-[150px]">Campaign</TableHead>
+                        <TableHead className="min-w-[100px]">Status</TableHead>
                         <TableHead className="min-w-[100px]">Group</TableHead>
                         <TableHead className="min-w-[120px]">Amount Raised</TableHead>
                         <TableHead className="min-w-[120px]">Dates</TableHead>
@@ -492,6 +493,13 @@ const Dashboard = () => {
                   <TableBody>
                     {campaigns.map((campaign, index) => <TableRow key={index}>
                         <TableCell className="font-medium">{campaign.name}</TableCell>
+                        <TableCell>
+                          {getCampaignState(campaign) === 'active' ? (
+                            <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/20 dark:text-green-400">Active</Badge>
+                          ) : (
+                            <Badge variant="secondary">Expired</Badge>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <div className="text-xs text-muted-foreground">{campaign.groups?.group_name}</div>
                         </TableCell>
