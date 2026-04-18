@@ -170,7 +170,7 @@ export default function AIChatPanel({
                       label="Upload item image"
                       onUploaded={(url) => onItemImageUploaded?.(url)}
                       onSkip={() => onItemImageSkipped?.()}
-                      onDismiss={() => setDismissedTurnStart(latestTurnStart)}
+                      onDismiss={() => {/* image prompts cannot be dismissed — they must be resolved via Upload or Skip */}}
                     />
                   ) : (
                     <ImageUploadPrompt
@@ -178,7 +178,7 @@ export default function AIChatPanel({
                       disabled={isLoading}
                       onUploaded={(url) => onImageUploaded?.(url)}
                       onSkip={() => onImageSkipped?.()}
-                      onDismiss={() => setDismissedTurnStart(latestTurnStart)}
+                      onDismiss={() => {/* image prompts cannot be dismissed — they must be resolved via Upload or Skip */}}
                     />
                   )}
                 </div>
