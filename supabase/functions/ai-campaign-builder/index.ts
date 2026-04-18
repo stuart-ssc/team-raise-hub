@@ -161,8 +161,10 @@ function isSkipMessage(text: string): boolean {
 // so we can apply skips OR free-text answers deterministically.
 function detectFieldFromAssistantText(text: string): string | null {
   const t = text.toLowerCase();
-  // Order matters: business-info patterns are more specific than the generic
-  // "description" keyword, so check them first.
+  // Order matters: more-specific patterns first.
+  if (/fee model|platform fee|who covers .*fee|donor.*cover.*fee|absorb.*fee|cover the fee|fee_model/.test(t)) {
+    return "fee_model";
+  }
   if (/sponsor.*(info|asset|provide)|requires_business_info|business info|provide information or assets/.test(t)) {
     return "requires_business_info";
   }
