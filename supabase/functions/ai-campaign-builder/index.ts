@@ -1013,20 +1013,25 @@ Deno.serve(async (req) => {
       campaignNameForItems = c?.name || "your campaign";
     }
 
-    // Deterministic add-another / done detection while awaiting that choice
+    // Deterministic add-another / done detection while awaiting that choice.
+    // When user picks "add another", we reset the draft and MUST skip the rest
+    // of the per-turn capture/extraction logic, otherwise the literal string
+    // "add another" gets captured as the new item's name (Bug 1).
+    let justStartedNewItem = false;
     if (inItemsPhase && awaitingAddAnother && lastUserMsg) {
       const t = lastUserMsg.replace(/[.!?]+$/, "").trim();
-      if (/^(add another|another|yes|yep|sure|1)$/.test(t) || /\badd another\b/.test(t)) {
+      if (/^(add another|another|yes|yep|sure|1)$/i.test(t) || /\badd another\b/i.test(t) || /\bone more\b/i.test(t)) {
         awaitingAddAnother = false;
         currentItemDraft = {};
-      } else if (/^(i'?m done|done|no|nope|finish|finished|that'?s it|2)$/.test(t) || /\bdone\b/.test(t)) {
+        justStartedNewItem = true;
+      } else if (/^(i'?m done|done|no|nope|finish|finished|that'?s it|2|publish|open editor)$/i.test(t) || /\bdone\b/i.test(t)) {
         awaitingAddAnother = false;
         exitItemsCollection = true;
       }
     }
 
     // Deterministic skip on optional item field while collecting
-    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && lastUserMsg && isSkipMessage(lastUserMsg)) {
+    if (inItemsPhase && !awaitingAddAnother && !exitItemsCollection && !justStartedNewItem && lastUserMsg && isSkipMessage(lastUserMsg)) {
       const next = getNextItemField(currentItemDraft);
       if (next && !next.required) {
         currentItemDraft[`${next.key}_skipped`] = true;
