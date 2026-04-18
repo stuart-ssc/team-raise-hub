@@ -1,50 +1,53 @@
 
 
-## Answer to your question
+## What the user wants
 
-**No, the AI Campaign Assistant does not currently ask about the Fee Model.** The previous turn started adding it but was interrupted before completion. Here's what I found:
+Looking at the screenshot, two issues with the current fee_model prompt:
+1. The fee explanation is rendered as **one mashed-together bubble** (options run together) — should be **separate chat responses**.
+2. The disclosure should mention the 10% covers **both platform AND credit card processing fees**.
+3. Currently the input is a free-text box ("Describe your campaign...") — should be a **chip/button prompt** so users click instead of type.
 
-- `src/lib/ai/campaignSchema.ts` — `fee_model` is **not** in `sharedFields`, so it's never collected.
-- `supabase/functions/ai-campaign-builder/index.ts` — partial edits were made last turn (added to `ASK_ORDER`, `FIELD_DEFS`, tool schemas, suggestions branch) but the explanatory copy with sample math was never added, and the schema file was never updated.
+## Investigation findings
 
-The result: the edge function references `fee_model` but the frontend schema doesn't know about it, so the flow is inconsistent.
+- Edge function `supabase/functions/ai-campaign-builder/index.ts` already returns `assistantMessages: string[]` (array support exists in `AICampaignBuilder.tsx` lines ~166-180), so multi-bubble works today — we just need to emit an array for fee_model.
+- `suggestions` block with `type: "choice"` already renders as clickable chips via `SuggestionPrompt.tsx` — confirmed working for campaign type and other fields.
+- The screenshot shows the chip prompt is missing — likely because the suggestions block isn't being attached when fee_model is the next field, OR it's being attached but the UI is showing the input fallback.
 
-## Plan to finish this properly
+## Plan
 
-### 1. Add `fee_model` to the frontend schema
-**File:** `src/lib/ai/campaignSchema.ts`
-- Add `fee_model` to `sharedFields` as a `select` field, required, with options `donor_covers` / `org_absorbs`.
-- Default value handled in the edge function (defaults to `donor_covers` if user picks recommended).
-- Add `formatFieldValue` handling so the summary shows "Donor covers fee" vs "Organization absorbs fee" instead of the raw enum.
-
-### 2. Make the AI explain fees with sample math BEFORE asking
+### 1. Edge function: emit fee explanation as 3 separate bubbles + add processing fee note
 **File:** `supabase/functions/ai-campaign-builder/index.ts`
 
-Update the system prompt so when it's time to ask about `fee_model`, the assistant first sends an explanatory message, then the choice prompt. Required copy (markdown — chat already renders markdown):
+When `nextField === "fee_model"`, return `assistantMessages` as an array of 3 strings:
 
-> **One last thing — who covers the 10% Sponsorly platform fee?**
+**Bubble 1 (intro + fee composition):**
+> One last thing — who covers Sponsorly's 10% fee?
 >
-> Here's how it works on a **$100 donation**:
+> Heads up: that 10% covers **both** our platform fee **and** the credit card processing fees from Stripe. There are no other charges on top.
+
+**Bubble 2 (donor covers option):**
+> **Donor covers the fee (recommended)** — On a $100 donation, the donor pays **$110** at checkout. Your organization receives the full **$100**. The fee appears as a separate line item so supporters see exactly where it goes.
+
+**Bubble 3 (org absorbs option + question):**
+> **Your organization absorbs the fee** — On a $100 donation, the donor pays **$100** and your organization receives roughly **$90** after the 10% fee. Lower friction for donors, but reduces your net.
 >
-> - **Donor covers the fee (recommended)** — Donor pays **$110** at checkout. Your organization receives the full **$100**. The $10 platform fee is shown as a separate line item, so supporters see exactly where it goes.
-> - **Your organization absorbs the fee** — Donor pays **$100** at checkout. Your organization receives roughly **$90** after Sponsorly's 10% fee. Lower friction for donors, but reduces your net.
->
-> Most teams pick "Donor covers" because supporters expect a small platform fee and it maximizes what reaches your cause. Which would you like?
+> Most teams pick "Donor covers." Which would you prefer?
 
-Then surface the existing `choice` suggestion block with the two options.
+### 2. Ensure chip prompt always renders (not text input)
+**File:** `supabase/functions/ai-campaign-builder/index.ts`
 
-### 3. Verify the suggestions/choice plumbing
-- Confirm the `suggestions` block for `fee_model` matches the `ChatSuggestions` shape consumed by `AIChatPanel.tsx` / `SuggestionPrompt.tsx` (it does — `type: "choice"`, `field`, `label`, `options[]`).
-- Confirm the user's selected label maps back to the enum value in `FIELD_DEFS` parsing.
+- Verify the `choice` suggestions block for `fee_model` is **always** attached to the last bubble whenever `nextField === "fee_model"`, regardless of which code path produced the messages (deterministic helper vs LLM tool path).
+- Options stay: `Donor covers the fee (recommended)` → `donor_covers`, `Our organization absorbs the fee` → `org_absorbs`.
 
-### 4. Make sure the field is included in the final `create_campaign_draft` payload
-- Already added to the tool schema last turn — just verify it flows through to the Supabase insert and is saved on the new campaign row.
+**File:** `src/pages/AICampaignBuilder.tsx`
 
-### 5. Position in the flow
-Ask `fee_model` **after** all required basics (name, type, group, goal, dates, description, business info) and **before** moving on to item collection. This matches `ASK_ORDER` from the partial edit.
+- Update `getChatPlaceholder` so when the last assistant message has a `choice` suggestion, the placeholder reads "Pick an option above..." (visual cue that typing isn't needed). No behavior change — chips already render via `SuggestionPrompt`.
+
+### 3. Verify enum mapping
+- Confirm clicked label → enum value mapping in `FIELD_DEFS` parsing still works (unchanged from prior turn).
 
 ### Out of scope
-- Per-item fee overrides (fee model is campaign-level only, per existing schema).
-- Changing fee model on the Campaign Editor — already shipped in a prior turn.
-- Marketing copy — already updated.
+- Changing fee math.
+- Other fields' explanation copy.
+- Marketing/legal copy.
 
