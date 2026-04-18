@@ -1147,6 +1147,118 @@ Deno.serve(async (req) => {
       }
     }
 
+    // PENDING-QUESTION LOCK for image upload. If the previous assistant turn ended with
+    // an image-upload prompt and the user replied with neither an image upload nor a
+    // skip (i.e. unrelated typed text), refuse to advance: return a short clarifier
+    // and re-emit the same image_upload suggestion. This guarantees no field is silently
+    // skipped just because the user typed "next" or anything else instead of clicking
+    // Upload/Skip.
+    {
+      const lastAssistantContent = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "assistant")
+        ?.content as string | undefined;
+      const lastUserContent = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "user")
+        ?.content as string | undefined;
+
+      const isSyntheticImage = (s: string) =>
+        /^Image uploaded:\s*\S+/i.test(s) ||
+        /^Skip image for now$/i.test(s.trim()) ||
+        /^Item image uploaded:\s*\S+/i.test(s) ||
+        /^Skip item image$/i.test(s.trim());
+
+      // Campaign cover image lock (post-draft, before items phase)
+      if (
+        campaignId &&
+        !inItemsPhase &&
+        lastAssistantContent &&
+        lastUserContent &&
+        !updatedFields.image_url &&
+        !updatedFields.image_skipped
+      ) {
+        const askedImage = /upload .*(image|photo|hero)|campaign image|hero photo|want to upload/i.test(lastAssistantContent) &&
+          !/roster|direction|instruction|sponsor|asset/i.test(lastAssistantContent);
+        if (askedImage && !isSyntheticImage(lastUserContent) && !isSkipMessage(lastUserContent)) {
+          console.log("[ai-campaign-builder] image-question lock tripped — re-asking");
+          return new Response(
+            JSON.stringify({
+              assistantMessage: "I still need an answer for the campaign image — please upload one or click Skip.",
+              assistantMessages: ["I still need an answer for the campaign image — please upload one or click Skip."],
+              updatedFields,
+              missingRequired: REQUIRED_KEYS.filter((k) => !updatedFields[k] || updatedFields[k] === ""),
+              readyToCreate: false,
+              phase: "post_draft",
+              suggestions: {
+                type: "image_upload",
+                field: "image_url",
+                label: "Campaign image",
+                options: [],
+              },
+              createdCampaignId: null,
+              createDraftError: null,
+              finalAction: null,
+              currentItemDraft,
+              itemsAdded,
+              awaitingAddAnother,
+              savedItemId: null,
+              itemNoun,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
+      // Item image lock (during item collection, when image is the next field)
+      if (
+        inItemsPhase &&
+        !awaitingAddAnother &&
+        !exitItemsCollection &&
+        !justStartedNewItem &&
+        lastAssistantContent &&
+        lastUserContent
+      ) {
+        const nextItemField = getNextItemField(currentItemDraft);
+        const askedItemImage = nextItemField?.key === "image" &&
+          /upload .*(image|photo)|item.*image|image for this/i.test(lastAssistantContent);
+        if (
+          askedItemImage &&
+          !currentItemDraft.image &&
+          !currentItemDraft.image_skipped &&
+          !isSyntheticImage(lastUserContent) &&
+          !isSkipMessage(lastUserContent)
+        ) {
+          console.log("[ai-campaign-builder] item-image-question lock tripped — re-asking");
+          return new Response(
+            JSON.stringify({
+              assistantMessage: `I still need an answer for the ${itemNoun} image — please upload one or click Skip.`,
+              assistantMessages: [`I still need an answer for the ${itemNoun} image — please upload one or click Skip.`],
+              updatedFields,
+              missingRequired: [],
+              readyToCreate: false,
+              phase: "collecting_items",
+              suggestions: {
+                type: "image_upload",
+                field: "item_image",
+                label: "Item image",
+                options: [],
+              },
+              createdCampaignId: null,
+              createDraftError: null,
+              finalAction: null,
+              currentItemDraft,
+              itemsAdded,
+              awaitingAddAnother,
+              savedItemId: null,
+              itemNoun,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
     let systemPrompt: string;
     if (inItemsPhase && !exitItemsCollection) {
       systemPrompt = buildItemsSystemPrompt(
