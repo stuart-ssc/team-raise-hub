@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { UserPlus, MoreHorizontal } from "lucide-react";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
-import { AddCampaignForm } from "@/components/AddCampaignForm";
+
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
