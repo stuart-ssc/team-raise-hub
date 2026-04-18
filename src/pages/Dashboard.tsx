@@ -411,7 +411,7 @@ const Dashboard = () => {
                 >
                   Manage All Campaigns
                 </Button>
-                <Button onClick={() => setShowAddCampaignForm(true)} size="sm" className="w-full sm:w-auto">Add Campaign</Button>
+                <Button onClick={() => navigate('/dashboard/campaigns/ai-builder')} size="sm" className="w-full sm:w-auto">Add Campaign</Button>
               </div>
             </CardHeader>
             <CardContent>
