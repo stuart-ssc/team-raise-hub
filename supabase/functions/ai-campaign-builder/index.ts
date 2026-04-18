@@ -1172,7 +1172,7 @@ Deno.serve(async (req) => {
               name: { type: "string" },
               image: { type: "string", description: "URL of uploaded item image" },
               description: { type: "string" },
-              cost: { type: "number", description: "Price in dollars (server converts to cents)" },
+              cost: { type: "number", description: "Price in dollars (stored as decimal dollars)" },
               quantity_offered: { type: "number" },
               max_items_purchased: { type: "number" },
               size: { type: "string" },
