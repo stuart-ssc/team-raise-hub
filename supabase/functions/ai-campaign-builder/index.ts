@@ -768,6 +768,16 @@ Deno.serve(async (req) => {
             updatedFields.requires_business_info = yn;
           }
         } else if (
+          askedField === "fee_model" &&
+          !isFieldAnswered("fee_model", updatedFields)
+        ) {
+          const t = lastUserMsgRaw.trim().toLowerCase();
+          if (/donor.*cover|cover.*on top|\bon top\b|donor_covers|donor covers|covers? the fee|donor pays|recommended|option 1|^1$/.test(t)) {
+            updatedFields.fee_model = "donor_covers";
+          } else if (/org.*absorb|absorb|we'?ll pay|we pay|org_absorbs|organization absorbs|out of (the )?(item )?price|option 2|^2$/.test(t)) {
+            updatedFields.fee_model = "org_absorbs";
+          }
+        } else if (
           (askedField === "start_date" || askedField === "end_date") &&
           !isFieldAnswered(askedField, updatedFields)
         ) {
