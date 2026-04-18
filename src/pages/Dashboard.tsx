@@ -92,8 +92,8 @@ const Dashboard = () => {
 
       setTotalCampaigns(totalData?.length || 0);
 
-      // Then get active campaigns only
-      let activeQuery = supabase
+      // Then get published campaigns (active + recently expired within 30 days)
+      let publishedQuery = supabase
         .from("campaigns")
         .select(`
           *,
@@ -101,22 +101,48 @@ const Dashboard = () => {
           campaign_type(id, name)
         `)
         .eq("groups.organization_id", organizationUser.organization_id)
-        .eq("status", true) // Only active campaigns
-        .order("end_date", { ascending: true }); // Sort by end date, soonest first
+        .eq("publication_status", "published");
 
       // Filter by selected group if one is selected
       if (activeGroup) {
-        activeQuery = activeQuery.eq("group_id", activeGroup.id);
+        publishedQuery = publishedQuery.eq("group_id", activeGroup.id);
       }
 
-      const { data: activeData, error: activeError } = await activeQuery;
+      const { data: publishedData, error: publishedError } = await publishedQuery;
 
-      if (activeError) {
-        console.error("Error fetching active campaigns:", activeError);
+      if (publishedError) {
+        console.error("Error fetching published campaigns:", publishedError);
         return;
       }
 
-      setCampaigns(activeData || []);
+      // Filter to active or recently expired (within last 30 days)
+      const today = new Date(new Date().toDateString());
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const filtered = (publishedData || []).filter((c) => {
+        if (!c.end_date) return true;
+        const end = new Date(c.end_date);
+        return end >= thirtyDaysAgo;
+      });
+
+      // Sort: active first (by end_date asc), then expired (most recently ended first)
+      filtered.sort((a, b) => {
+        const aActive = !a.end_date || new Date(a.end_date) >= today;
+        const bActive = !b.end_date || new Date(b.end_date) >= today;
+        if (aActive && !bActive) return -1;
+        if (!aActive && bActive) return 1;
+        if (aActive) {
+          // both active: nulls last, then earliest end first
+          if (!a.end_date) return 1;
+          if (!b.end_date) return -1;
+          return new Date(a.end_date).getTime() - new Date(b.end_date).getTime();
+        }
+        // both expired: most recent first
+        return new Date(b.end_date!).getTime() - new Date(a.end_date!).getTime();
+      });
+
+      setCampaigns(filtered);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
     }
