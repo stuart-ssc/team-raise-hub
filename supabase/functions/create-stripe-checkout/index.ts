@@ -7,6 +7,8 @@ const corsHeaders = {
 };
 
 const PLATFORM_FEE_PERCENT = 10; // 10% platform fee
+const STRIPE_PERCENT = 0.029; // 2.9% Stripe processing
+const STRIPE_FIXED_CENTS = 30; // $0.30 fixed Stripe fee per transaction
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -49,6 +51,7 @@ Deno.serve(async (req) => {
         id,
         name,
         group_id,
+        fee_model,
         groups(
           id,
           organization_id,
