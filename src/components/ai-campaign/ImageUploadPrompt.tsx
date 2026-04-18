@@ -107,15 +107,6 @@ export default function ImageUploadPrompt({
           <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs font-medium text-muted-foreground">{label}</span>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
-          onClick={onDismiss}
-          aria-label="Dismiss"
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
       </div>
 
       <div
