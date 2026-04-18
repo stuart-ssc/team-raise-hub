@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, MessageCircle } from "lucide-react";
+import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,15 +31,12 @@ const NotificationDropdown = () => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
 
     fetchNotifications();
-    fetchUnreadMessages();
 
-    // Subscribe to real-time notifications
     const channel = supabase
       .channel('notifications-changes')
       .on(
@@ -52,17 +49,6 @@ const NotificationDropdown = () => {
         },
         () => {
           fetchNotifications();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-        },
-        () => {
-          fetchUnreadMessages();
         }
       )
       .subscribe();
@@ -89,37 +75,6 @@ const NotificationDropdown = () => {
 
     setNotifications(data || []);
     setUnreadCount(data?.filter((n) => !n.read).length || 0);
-  };
-
-  const fetchUnreadMessages = async () => {
-    if (!user) return;
-
-    // Get user's conversations
-    const { data: participations } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id, last_read_at')
-      .eq('user_id', user.id)
-      .is('left_at', null);
-
-    if (!participations || participations.length === 0) {
-      setUnreadMessageCount(0);
-      return;
-    }
-
-    // Count unread messages across all conversations
-    let totalUnread = 0;
-    for (const p of participations) {
-      const { count } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('conversation_id', p.conversation_id)
-        .neq('sender_user_id', user.id)
-        .is('deleted_at', null)
-        .gt('sent_at', p.last_read_at || '1970-01-01');
-
-      totalUnread += count || 0;
-    }
-    setUnreadMessageCount(totalUnread);
   };
 
   const markAsRead = async (notificationId: string) => {
@@ -204,20 +159,6 @@ const NotificationDropdown = () => {
           )}
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem 
-          className="cursor-pointer justify-between font-medium"
-          onClick={() => navigate("/dashboard/messages")}
-        >
-          <span className="flex items-center gap-2">
-            <MessageCircle className="h-4 w-4" />
-            Messages
-          </span>
-          {unreadMessageCount > 0 && (
-            <Badge variant="default" className="h-5 min-w-5 flex items-center justify-center text-xs">
-              {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
-            </Badge>
-          )}
-        </DropdownMenuItem>
         <DropdownMenuItem 
           className="cursor-pointer justify-center font-medium"
           onClick={() => navigate("/dashboard/notifications")}
