@@ -86,6 +86,7 @@ const ASK_ORDER = [
   "end_date",
   "description",
   "requires_business_info",
+  "fee_model",
 ];
 
 function isFieldAnswered(key: string, collected: Record<string, any>): boolean {
