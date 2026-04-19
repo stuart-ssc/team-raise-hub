@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserPlus, MoreHorizontal } from "lucide-react";
+import { UserPlus, MoreHorizontal, AlertCircle } from "lucide-react";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
+import { GroupPaymentSetupDialog } from "@/components/GroupPaymentSetupDialog";
 
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,6 +31,9 @@ const Dashboard = () => {
   const [donors, setDonors] = useState<any[]>([]);
   const [donorCount, setDonorCount] = useState(0);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [unconnectedGroups, setUnconnectedGroups] = useState<Array<{ id: string; group_name: string }>>([]);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentDialogGroup, setPaymentDialogGroup] = useState<{ id: string; group_name: string } | null>(null);
 
   // Check if user needs to complete organization setup
   useEffect(() => {
@@ -336,6 +340,49 @@ const Dashboard = () => {
     };
   }, [organizationUser?.organization_id, canManageUsers]);
 
+  // Fetch groups missing a connected payment account
+  const fetchUnconnectedGroups = async () => {
+    if (!organizationUser?.organization_id || !canManageUsers) return;
+
+    let query = supabase
+      .from('groups')
+      .select('id, group_name, payment_processor_config, use_org_payment_account, organizations(payment_processor_config)')
+      .eq('organization_id', organizationUser.organization_id)
+      .eq('status', true);
+
+    if (activeGroup) {
+      query = query.eq('id', activeGroup.id);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error('Error fetching groups for payment status:', error);
+      return;
+    }
+
+    const unconnected = (data || []).filter((g: any) => {
+      const groupEnabled = g.payment_processor_config?.account_enabled === true;
+      const orgEnabled = g.use_org_payment_account === true
+        && g.organizations?.payment_processor_config?.account_enabled === true;
+      return !(groupEnabled || orgEnabled);
+    }).map((g: any) => ({ id: g.id, group_name: g.group_name }));
+
+    setUnconnectedGroups(unconnected);
+  };
+
+  useEffect(() => {
+    if (organizationUser?.organization_id && canManageUsers) {
+      fetchUnconnectedGroups();
+    }
+  }, [organizationUser?.organization_id, canManageUsers, activeGroup?.id]);
+
+  // Refresh after the payment dialog closes
+  useEffect(() => {
+    if (!paymentDialogOpen && organizationUser?.organization_id && canManageUsers) {
+      fetchUnconnectedGroups();
+    }
+  }, [paymentDialogOpen]);
+
   return (
     <DashboardPageLayout
       showBreadcrumbs={false}
@@ -366,6 +413,34 @@ const Dashboard = () => {
               </CardHeader>
             </Card>
           )}
+
+          {/* Payment Account Not Connected Alerts */}
+          {canManageUsers && unconnectedGroups.map((group) => (
+            <Card key={group.id} className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4 md:px-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900">
+                    <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Connect payment account</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {group.group_name} isn't connected to Stripe yet. Connect your account to start accepting donations.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setPaymentDialogGroup(group);
+                    setPaymentDialogOpen(true);
+                  }}
+                >
+                  Connect Account
+                </Button>
+              </CardHeader>
+            </Card>
+          ))}
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -615,6 +690,16 @@ const Dashboard = () => {
             open={showSetupModal}
             onComplete={handleSetupComplete}
             userId={user.id}
+          />
+        )}
+
+        {/* Payment Setup Dialog */}
+        {paymentDialogGroup && (
+          <GroupPaymentSetupDialog
+            open={paymentDialogOpen}
+            onOpenChange={setPaymentDialogOpen}
+            groupId={paymentDialogGroup.id}
+            groupName={paymentDialogGroup.group_name}
           />
         )}
       </div>
