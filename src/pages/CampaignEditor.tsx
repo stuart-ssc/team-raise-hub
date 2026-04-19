@@ -533,11 +533,12 @@ export default function CampaignEditor() {
               {isEditing && id && (campaignData.publicationStatus === "draft" || campaignData.publicationStatus === "pending_verification") && (
                 <Button
                   variant="outline"
+                  size="icon"
                   onClick={() => setDeleteDialogOpen(true)}
-                  className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  aria-label="Delete campaign"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Delete
                 </Button>
               )}
             </div>
@@ -705,14 +706,24 @@ export default function CampaignEditor() {
                 campaignId={id}
                 goalAmount={parseFloat(campaignData.goalAmount) || 0}
                 endDate={campaignData.endDate}
+                publicationStatus={campaignData.publicationStatus}
+                name={campaignData.name}
+                description={campaignData.description}
+                imageUrl={campaignData.imageUrl}
+                startDate={campaignData.startDate}
+                pitch={campaignPitch}
+                itemsCount={itemsCount}
               />
-              <CampaignRecentOrdersCard
-                campaignId={id}
-                onViewAll={() => setActiveSection("orders")}
-              />
+              {campaignData.publicationStatus === "published" && (
+                <CampaignRecentOrdersCard
+                  campaignId={id}
+                  onViewAll={() => setActiveSection("orders")}
+                />
+              )}
               <CampaignShareCard
                 slug={campaignData.slug || null}
                 campaignName={campaignData.name}
+                isPublished={campaignData.publicationStatus === "published"}
               />
             </aside>
           )}

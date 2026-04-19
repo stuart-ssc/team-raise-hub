@@ -6,9 +6,10 @@ import { useToast } from "@/hooks/use-toast";
 interface CampaignShareCardProps {
   slug: string | null;
   campaignName: string;
+  isPublished?: boolean;
 }
 
-export function CampaignShareCard({ slug, campaignName }: CampaignShareCardProps) {
+export function CampaignShareCard({ slug, campaignName, isPublished = true }: CampaignShareCardProps) {
   const { toast } = useToast();
 
   const url = slug
@@ -77,6 +78,11 @@ export function CampaignShareCard({ slug, campaignName }: CampaignShareCardProps
                 Share
               </Button>
             </div>
+            {!isPublished && (
+              <p className="text-xs text-muted-foreground">
+                Link will activate when published.
+              </p>
+            )}
           </>
         ) : (
           <p className="text-sm text-muted-foreground">

@@ -75,7 +75,7 @@ export function CampaignQuickActions({
         <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setPublishDialogOpen(true); }}>
           {isPublished ? "Unpublish" : "Publish"}
         </DropdownMenuItem>
-        {slug && (
+        {isPublished && slug && (
           <>
             <DropdownMenuItem onSelect={handlePreview}>
               <ExternalLink className="h-4 w-4" />
@@ -95,13 +95,13 @@ export function CampaignQuickActions({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Button
-        variant="outline"
+        variant={isPublished ? "outline" : "default"}
         onClick={() => setPublishDialogOpen(true)}
       >
         {isPublished ? "Unpublish" : "Publish"}
       </Button>
 
-      {slug && (
+      {isPublished && slug && (
         <>
           <Button
             variant="outline"
