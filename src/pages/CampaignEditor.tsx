@@ -719,6 +719,7 @@ export default function CampaignEditor() {
                 </Button>
               </div>
             )}
+            </div>
           </main>
 
           {/* Right sidebar: only when editing, desktop only */}
