@@ -692,6 +692,16 @@ const Dashboard = () => {
             userId={user.id}
           />
         )}
+
+        {/* Payment Setup Dialog */}
+        {paymentDialogGroup && (
+          <GroupPaymentSetupDialog
+            open={paymentDialogOpen}
+            onOpenChange={setPaymentDialogOpen}
+            groupId={paymentDialogGroup.id}
+            groupName={paymentDialogGroup.group_name}
+          />
+        )}
       </div>
       </DashboardPageLayout>
     );
