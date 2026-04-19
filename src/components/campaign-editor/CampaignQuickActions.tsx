@@ -96,7 +96,6 @@ export function CampaignQuickActions({
     <div className="flex flex-wrap items-center gap-2">
       <Button
         variant="outline"
-        size="sm"
         onClick={() => setPublishDialogOpen(true)}
       >
         {isPublished ? "Unpublish" : "Publish"}
@@ -106,7 +105,6 @@ export function CampaignQuickActions({
         <>
           <Button
             variant="outline"
-            size="sm"
             onClick={handlePreview}
             className="gap-2"
           >
@@ -116,7 +114,6 @@ export function CampaignQuickActions({
 
           <Button
             variant="outline"
-            size="sm"
             onClick={handleCopyLink}
             className="gap-2"
           >
