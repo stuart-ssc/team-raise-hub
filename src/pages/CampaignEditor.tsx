@@ -21,7 +21,9 @@ import {
   MoreVertical,
   Package,
   Image as ImageIcon,
+  ChevronDown,
 } from "lucide-react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
