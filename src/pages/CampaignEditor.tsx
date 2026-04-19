@@ -518,6 +518,17 @@ export default function CampaignEditor() {
           <div className="flex flex-wrap items-center gap-2">
             {/* Desktop: full button row */}
             <div className="hidden lg:flex items-center gap-2">
+              {isEditing && id && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  aria-label="Delete campaign"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
               {isEditing && id && campaignData.groupId && (
                 <CampaignQuickActions
                   campaignId={id}
@@ -529,17 +540,6 @@ export default function CampaignEditor() {
                     window.location.reload();
                   }}
                 />
-              )}
-              {isEditing && id && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setDeleteDialogOpen(true)}
-                  aria-label="Delete campaign"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               )}
             </div>
 
@@ -581,7 +581,7 @@ export default function CampaignEditor() {
               </div>
             )}
 
-            <Button onClick={handleSave} disabled={saving} className="gap-2">
+            <Button onClick={handleSave} disabled={saving} className="gap-2 bg-foreground text-background hover:bg-foreground/90">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {saving ? "Saving..." : "Save Campaign"}
             </Button>
