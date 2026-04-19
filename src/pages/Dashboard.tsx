@@ -31,6 +31,9 @@ const Dashboard = () => {
   const [donors, setDonors] = useState<any[]>([]);
   const [donorCount, setDonorCount] = useState(0);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [unconnectedGroups, setUnconnectedGroups] = useState<Array<{ id: string; group_name: string }>>([]);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentDialogGroup, setPaymentDialogGroup] = useState<{ id: string; group_name: string } | null>(null);
 
   // Check if user needs to complete organization setup
   useEffect(() => {
