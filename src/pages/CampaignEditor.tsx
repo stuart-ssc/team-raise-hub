@@ -530,7 +530,7 @@ export default function CampaignEditor() {
                   }}
                 />
               )}
-              {isEditing && id && (campaignData.publicationStatus === "draft" || campaignData.publicationStatus === "pending_verification") && (
+              {isEditing && id && (
                 <Button
                   variant="outline"
                   size="icon"
