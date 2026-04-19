@@ -615,9 +615,9 @@ export default function CampaignEditor() {
           </aside>
 
           {/* Middle: active section */}
-          <main className="lg:col-span-6 space-y-4">
+          <main className="lg:col-span-6">
             {/* Mobile/tablet section nav trigger */}
-            <div className="lg:hidden">
+            <div className="lg:hidden mb-4">
               <Button
                 variant="outline"
                 className="w-full justify-between"
@@ -634,6 +634,7 @@ export default function CampaignEditor() {
               </Button>
             </div>
 
+            <div className="space-y-4">
             <Card>
               <CardContent className="pt-6 space-y-4">
                 {(() => {
