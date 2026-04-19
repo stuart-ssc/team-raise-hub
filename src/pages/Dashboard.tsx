@@ -414,6 +414,34 @@ const Dashboard = () => {
             </Card>
           )}
 
+          {/* Payment Account Not Connected Alerts */}
+          {canManageUsers && unconnectedGroups.map((group) => (
+            <Card key={group.id} className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4 md:px-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900">
+                    <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Connect payment account</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {group.group_name} isn't connected to Stripe yet. Connect your account to start accepting donations.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setPaymentDialogGroup(group);
+                    setPaymentDialogOpen(true);
+                  }}
+                >
+                  Connect Account
+                </Button>
+              </CardHeader>
+            </Card>
+          ))}
+
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             <Card>
