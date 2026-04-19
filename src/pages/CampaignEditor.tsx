@@ -593,8 +593,8 @@ export default function CampaignEditor() {
 
         {/* 3-column layout: nav | content | sidebar */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left nav */}
-          <aside className="lg:col-span-3">
+          {/* Left nav - desktop only */}
+          <aside className="hidden lg:block lg:col-span-3">
             <Card>
               <CardContent className="p-3">
                 <CampaignSectionNav
@@ -616,6 +616,24 @@ export default function CampaignEditor() {
 
           {/* Middle: active section */}
           <main className="lg:col-span-6 space-y-4">
+            {/* Mobile/tablet section nav trigger */}
+            <div className="lg:hidden">
+              <Button
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => setNavSheetOpen(true)}
+              >
+                <span className="flex items-center gap-2">
+                  {(() => {
+                    const Icon = SECTION_META[activeSection].icon;
+                    return <Icon className="h-4 w-4" />;
+                  })()}
+                  <span>{SECTION_META[activeSection].title}</span>
+                </span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
+
             <Card>
               <CardContent className="pt-6 space-y-4">
                 {(() => {
@@ -702,9 +720,9 @@ export default function CampaignEditor() {
             )}
           </main>
 
-          {/* Right sidebar: only when editing */}
+          {/* Right sidebar: only when editing, desktop only */}
           {isEditing && id && (
-            <aside className="lg:col-span-3 space-y-4">
+            <aside className="hidden lg:block lg:col-span-3 space-y-4">
               <CampaignAtAGlanceCard
                 campaignId={id}
                 goalAmount={parseFloat(campaignData.goalAmount) || 0}
@@ -731,6 +749,30 @@ export default function CampaignEditor() {
             </aside>
           )}
         </div>
+
+        {/* Mobile/tablet section nav sheet */}
+        <Sheet open={navSheetOpen} onOpenChange={setNavSheetOpen}>
+          <SheetContent side="left" className="w-72 p-4">
+            <div className="mt-6">
+              <CampaignSectionNav
+                active={activeSection}
+                onChange={(s) => {
+                  setActiveSection(s);
+                  setNavSheetOpen(false);
+                }}
+                counts={{
+                  items: itemsCount,
+                  fields: customFields.length,
+                  orders: ordersCounts.total,
+                  assets: ordersCounts.pending,
+                }}
+                showManage={!!(isEditing && id)}
+                showPitch={!!(isEditing && id)}
+                showItems={!!(isEditing && id)}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
