@@ -1,14 +1,27 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
-import { Save, FileText, Calendar, Users, Heart, ListPlus, Megaphone, Loader2, ShoppingCart, Trash2, MoreVertical } from "lucide-react";
+import {
+  Save,
+  FileText,
+  Calendar,
+  Users,
+  Heart,
+  ListPlus,
+  Megaphone,
+  Loader2,
+  ShoppingCart,
+  Trash2,
+  MoreVertical,
+  Package,
+  Image as ImageIcon,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,9 +47,25 @@ import { DonorExperienceSection } from "@/components/campaign-editor/DonorExperi
 import { CustomFieldsSection } from "@/components/campaign-editor/CustomFieldsSection";
 import { CampaignPitchSection } from "@/components/campaign-editor/CampaignPitchSection";
 import { CampaignItemsSection } from "@/components/campaign-editor/CampaignItemsSection";
-import { CampaignStatsCard } from "@/components/campaign-editor/CampaignStatsCard";
 import { CampaignQuickActions } from "@/components/campaign-editor/CampaignQuickActions";
 import { CampaignOrdersSection } from "@/components/campaign-editor/CampaignOrdersSection";
+import { CampaignAssetsSection } from "@/components/campaign-editor/CampaignAssetsSection";
+import { CampaignSectionNav, type SectionKey } from "@/components/campaign-editor/CampaignSectionNav";
+import { CampaignAtAGlanceCard } from "@/components/campaign-editor/CampaignAtAGlanceCard";
+import { CampaignRecentOrdersCard } from "@/components/campaign-editor/CampaignRecentOrdersCard";
+import { CampaignShareCard } from "@/components/campaign-editor/CampaignShareCard";
+
+const SECTION_META: Record<SectionKey, { icon: React.ComponentType<{ className?: string }>; title: string; subtitle: string; showSave: boolean }> = {
+  details: { icon: FileText, title: "Basic Details", subtitle: "Campaign name, URL, and description", showSave: true },
+  schedule: { icon: Calendar, title: "Schedule & Goals", subtitle: "Set your campaign timeline and fundraising goal", showSave: true },
+  items: { icon: Package, title: "Campaign Items", subtitle: "Manage what supporters can purchase", showSave: false },
+  experience: { icon: Heart, title: "Donor Experience", subtitle: "Thank you message and checkout options", showSave: true },
+  team: { icon: Users, title: "Team Settings", subtitle: "Participant directions and roster attribution", showSave: true },
+  fields: { icon: ListPlus, title: "Custom Fields", subtitle: "Add custom questions for donors at checkout", showSave: true },
+  pitch: { icon: Megaphone, title: "Campaign Pitch", subtitle: "Add a message, photo, or video for your campaign", showSave: false },
+  orders: { icon: ShoppingCart, title: "Orders", subtitle: "View purchases and track pending file uploads", showSave: false },
+  assets: { icon: ImageIcon, title: "Assets", subtitle: "Track required asset uploads from supporters", showSave: false },
+};
 
 interface CampaignData {
   id?: string;
