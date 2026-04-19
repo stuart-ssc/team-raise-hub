@@ -154,6 +154,35 @@ export default function CampaignEditor() {
   const [campaignPitch, setCampaignPitch] = useState<CampaignPitch | null>(null);
   const [campaignImageFile, setCampaignImageFile] = useState<File | null>(null);
   const [slugExists, setSlugExists] = useState(false);
+  const [activeSection, setActiveSection] = useState<SectionKey>("details");
+
+  // Counts for nav badges
+  const { data: itemsCount = 0 } = useQuery({
+    queryKey: ["campaign-items-count", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("campaign_items")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", id!);
+      return count || 0;
+    },
+  });
+
+  const { data: ordersCounts = { total: 0, pending: 0 } } = useQuery({
+    queryKey: ["campaign-orders-counts", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("files_complete")
+        .eq("campaign_id", id!)
+        .eq("status", "succeeded");
+      const total = data?.length || 0;
+      const pending = data?.filter((o) => o.files_complete === false).length || 0;
+      return { total, pending };
+    },
+  });
 
   // Fetch campaign data if editing
   useEffect(() => {
