@@ -340,6 +340,49 @@ const Dashboard = () => {
     };
   }, [organizationUser?.organization_id, canManageUsers]);
 
+  // Fetch groups missing a connected payment account
+  const fetchUnconnectedGroups = async () => {
+    if (!organizationUser?.organization_id || !canManageUsers) return;
+
+    let query = supabase
+      .from('groups')
+      .select('id, group_name, payment_processor_config, use_org_payment_account, organizations(payment_processor_config)')
+      .eq('organization_id', organizationUser.organization_id)
+      .eq('status', true);
+
+    if (activeGroup) {
+      query = query.eq('id', activeGroup.id);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error('Error fetching groups for payment status:', error);
+      return;
+    }
+
+    const unconnected = (data || []).filter((g: any) => {
+      const groupEnabled = g.payment_processor_config?.account_enabled === true;
+      const orgEnabled = g.use_org_payment_account === true
+        && g.organizations?.payment_processor_config?.account_enabled === true;
+      return !(groupEnabled || orgEnabled);
+    }).map((g: any) => ({ id: g.id, group_name: g.group_name }));
+
+    setUnconnectedGroups(unconnected);
+  };
+
+  useEffect(() => {
+    if (organizationUser?.organization_id && canManageUsers) {
+      fetchUnconnectedGroups();
+    }
+  }, [organizationUser?.organization_id, canManageUsers, activeGroup?.id]);
+
+  // Refresh after the payment dialog closes
+  useEffect(() => {
+    if (!paymentDialogOpen && organizationUser?.organization_id && canManageUsers) {
+      fetchUnconnectedGroups();
+    }
+  }, [paymentDialogOpen]);
+
   return (
     <DashboardPageLayout
       showBreadcrumbs={false}
