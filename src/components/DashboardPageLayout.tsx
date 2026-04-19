@@ -93,12 +93,10 @@ const DashboardPageLayout = ({
         />
         {showBreadcrumbs && (
           loading ? (
-            <div className="border-b border-primary/20 bg-primary/10 px-6 py-2">
-              <div className="max-w-7xl mx-auto flex items-center gap-2">
-                <Skeleton className="h-3.5 w-16" />
-                <Skeleton className="h-3.5 w-3.5 rounded-full" />
-                <Skeleton className="h-3.5 w-24" />
-              </div>
+            <div className="border-b border-primary/20 bg-primary/10 px-6 py-2 flex items-center gap-2">
+              <Skeleton className="h-3.5 w-16" />
+              <Skeleton className="h-3.5 w-3.5 rounded-full" />
+              <Skeleton className="h-3.5 w-24" />
             </div>
           ) : (
             segments && <DashboardBreadcrumbs segments={segments} />
