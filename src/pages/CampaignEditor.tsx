@@ -712,7 +712,7 @@ export default function CampaignEditor() {
             {/* Section-level Save (only for campaign-level editable sections) */}
             {SECTION_META[activeSection].showSave && (
               <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={saving} className="gap-2">
+                <Button onClick={handleSave} disabled={saving} className="gap-2 bg-foreground text-background hover:bg-foreground/90">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   {saving ? "Saving..." : "Save Campaign"}
                 </Button>
