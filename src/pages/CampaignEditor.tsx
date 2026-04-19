@@ -1,14 +1,27 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useToast } from "@/hooks/use-toast";
-import { Save, FileText, Calendar, Users, Heart, ListPlus, Megaphone, Loader2, ShoppingCart, Trash2, MoreVertical } from "lucide-react";
+import {
+  Save,
+  FileText,
+  Calendar,
+  Users,
+  Heart,
+  ListPlus,
+  Megaphone,
+  Loader2,
+  ShoppingCart,
+  Trash2,
+  MoreVertical,
+  Package,
+  Image as ImageIcon,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,9 +47,25 @@ import { DonorExperienceSection } from "@/components/campaign-editor/DonorExperi
 import { CustomFieldsSection } from "@/components/campaign-editor/CustomFieldsSection";
 import { CampaignPitchSection } from "@/components/campaign-editor/CampaignPitchSection";
 import { CampaignItemsSection } from "@/components/campaign-editor/CampaignItemsSection";
-import { CampaignStatsCard } from "@/components/campaign-editor/CampaignStatsCard";
 import { CampaignQuickActions } from "@/components/campaign-editor/CampaignQuickActions";
 import { CampaignOrdersSection } from "@/components/campaign-editor/CampaignOrdersSection";
+import { CampaignAssetsSection } from "@/components/campaign-editor/CampaignAssetsSection";
+import { CampaignSectionNav, type SectionKey } from "@/components/campaign-editor/CampaignSectionNav";
+import { CampaignAtAGlanceCard } from "@/components/campaign-editor/CampaignAtAGlanceCard";
+import { CampaignRecentOrdersCard } from "@/components/campaign-editor/CampaignRecentOrdersCard";
+import { CampaignShareCard } from "@/components/campaign-editor/CampaignShareCard";
+
+const SECTION_META: Record<SectionKey, { icon: React.ComponentType<{ className?: string }>; title: string; subtitle: string; showSave: boolean }> = {
+  details: { icon: FileText, title: "Basic Details", subtitle: "Campaign name, URL, and description", showSave: true },
+  schedule: { icon: Calendar, title: "Schedule & Goals", subtitle: "Set your campaign timeline and fundraising goal", showSave: true },
+  items: { icon: Package, title: "Campaign Items", subtitle: "Manage what supporters can purchase", showSave: false },
+  experience: { icon: Heart, title: "Donor Experience", subtitle: "Thank you message and checkout options", showSave: true },
+  team: { icon: Users, title: "Team Settings", subtitle: "Participant directions and roster attribution", showSave: true },
+  fields: { icon: ListPlus, title: "Custom Fields", subtitle: "Add custom questions for donors at checkout", showSave: true },
+  pitch: { icon: Megaphone, title: "Campaign Pitch", subtitle: "Add a message, photo, or video for your campaign", showSave: false },
+  orders: { icon: ShoppingCart, title: "Orders", subtitle: "View purchases and track pending file uploads", showSave: false },
+  assets: { icon: ImageIcon, title: "Assets", subtitle: "Track required asset uploads from supporters", showSave: false },
+};
 
 interface CampaignData {
   id?: string;
@@ -125,6 +154,35 @@ export default function CampaignEditor() {
   const [campaignPitch, setCampaignPitch] = useState<CampaignPitch | null>(null);
   const [campaignImageFile, setCampaignImageFile] = useState<File | null>(null);
   const [slugExists, setSlugExists] = useState(false);
+  const [activeSection, setActiveSection] = useState<SectionKey>("details");
+
+  // Counts for nav badges
+  const { data: itemsCount = 0 } = useQuery({
+    queryKey: ["campaign-items-count", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("campaign_items")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", id!);
+      return count || 0;
+    },
+  });
+
+  const { data: ordersCounts = { total: 0, pending: 0 } } = useQuery({
+    queryKey: ["campaign-orders-counts", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("files_complete")
+        .eq("campaign_id", id!)
+        .eq("status", "succeeded");
+      const total = data?.length || 0;
+      const pending = data?.filter((o) => o.files_complete === false).length || 0;
+      return { total, pending };
+    },
+  });
 
   // Fetch campaign data if editing
   useEffect(() => {
@@ -529,174 +587,135 @@ export default function CampaignEditor() {
           </div>
         </div>
 
-        <Separator />
-
-        {/* Stats Card - Only show when editing */}
-        {isEditing && id && (
-          <CampaignStatsCard
-            campaignId={id}
-            goalAmount={parseFloat(campaignData.goalAmount) || 0}
-          />
-        )}
-
-        {/* Form Sections - Tabbed Interface */}
-        <Card>
-          <CardContent className="pt-6">
-            <Tabs defaultValue="details" className="w-full">
-              <TabsList className={`grid w-full mb-6 ${isEditing && id ? 'grid-cols-6' : 'grid-cols-5'}`}>
-                <TabsTrigger value="details" className="gap-2">
-                  <FileText className="h-4 w-4" />
-                  <span className="hidden sm:inline">Details</span>
-                </TabsTrigger>
-                <TabsTrigger value="schedule" className="gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span className="hidden sm:inline">Schedule</span>
-                </TabsTrigger>
-                <TabsTrigger value="team" className="gap-2">
-                  <Users className="h-4 w-4" />
-                  <span className="hidden sm:inline">Team</span>
-                </TabsTrigger>
-                <TabsTrigger value="experience" className="gap-2">
-                  <Heart className="h-4 w-4" />
-                  <span className="hidden sm:inline">Experience</span>
-                </TabsTrigger>
-                <TabsTrigger value="fields" className="gap-2">
-                  <ListPlus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Fields</span>
-                </TabsTrigger>
-                {isEditing && id && (
-                  <TabsTrigger value="pitch" className="gap-2">
-                    <Megaphone className="h-4 w-4" />
-                    <span className="hidden sm:inline">Pitch</span>
-                  </TabsTrigger>
-                )}
-              </TabsList>
-
-              <TabsContent value="details" className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">Basic Details</h3>
-                    <p className="text-sm text-muted-foreground">Campaign name, URL, and description</p>
-                  </div>
-                </div>
-                <BasicDetailsSection
-                  data={campaignData}
-                  onUpdate={updateCampaignData}
-                  campaignImageFile={campaignImageFile}
-                  onImageFileChange={setCampaignImageFile}
-                  slugExists={slugExists}
-                  onSlugExistsChange={setSlugExists}
-                  isEditing={isEditing}
+        {/* 3-column layout: nav | content | sidebar */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          {/* Left nav */}
+          <aside className="lg:col-span-3">
+            <Card>
+              <CardContent className="p-3">
+                <CampaignSectionNav
+                  active={activeSection}
+                  onChange={setActiveSection}
+                  counts={{
+                    items: itemsCount,
+                    fields: customFields.length,
+                    orders: ordersCounts.total,
+                    assets: ordersCounts.pending,
+                  }}
+                  showManage={!!(isEditing && id)}
+                  showPitch={!!(isEditing && id)}
+                  showItems={!!(isEditing && id)}
                 />
-              </TabsContent>
+              </CardContent>
+            </Card>
+          </aside>
 
-              <TabsContent value="schedule" className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">Schedule & Goals</h3>
-                    <p className="text-sm text-muted-foreground">Set your campaign timeline and fundraising goal</p>
-                  </div>
-                </div>
-                <ScheduleSection
-                  data={campaignData}
-                  onUpdate={updateCampaignData}
-                />
-              </TabsContent>
-
-              <TabsContent value="team" className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Users className="h-5 w-5 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">Team Settings</h3>
-                    <p className="text-sm text-muted-foreground">Participant directions and roster attribution</p>
-                  </div>
-                </div>
-                <TeamSettingsSection
-                  data={campaignData}
-                  onUpdate={updateCampaignData}
-                  campaignId={id}
-                  isPublished={campaignData.publicationStatus === 'published'}
-                />
-              </TabsContent>
-
-              <TabsContent value="experience" className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Heart className="h-5 w-5 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">Donor Experience</h3>
-                    <p className="text-sm text-muted-foreground">Thank you message and checkout options</p>
-                  </div>
-                </div>
-                <DonorExperienceSection
-                  data={campaignData}
-                  onUpdate={updateCampaignData}
-                  requiredAssets={requiredAssets}
-                  onRequiredAssetsChange={setRequiredAssets}
-                />
-              </TabsContent>
-
-              <TabsContent value="fields" className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <ListPlus className="h-5 w-5 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">Custom Fields</h3>
-                    <p className="text-sm text-muted-foreground">Add custom questions for donors at checkout</p>
-                  </div>
-                </div>
-                <CustomFieldsSection
-                  fields={customFields}
-                  onFieldsChange={setCustomFields}
-                />
-              </TabsContent>
-
-              {isEditing && id && (
-                <TabsContent value="pitch" className="space-y-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Megaphone className="h-5 w-5 text-primary" />
-                    <div>
-                      <h3 className="font-semibold">Campaign Pitch</h3>
-                      <p className="text-sm text-muted-foreground">Add a message, photo, or video for your campaign</p>
+          {/* Middle: active section */}
+          <main className="lg:col-span-6 space-y-4">
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                {(() => {
+                  const meta = SECTION_META[activeSection];
+                  const Icon = meta.icon;
+                  return (
+                    <div className="flex items-center gap-2 mb-4">
+                      <Icon className="h-5 w-5 text-primary" />
+                      <div>
+                        <h3 className="font-semibold">{meta.title}</h3>
+                        <p className="text-sm text-muted-foreground">{meta.subtitle}</p>
+                      </div>
                     </div>
-                  </div>
-                  <CampaignPitchSection
-                    campaignId={id}
-                    initialPitch={campaignPitch || undefined}
+                  );
+                })()}
+
+                {activeSection === "details" && (
+                  <BasicDetailsSection
+                    data={campaignData}
+                    onUpdate={updateCampaignData}
+                    campaignImageFile={campaignImageFile}
+                    onImageFileChange={setCampaignImageFile}
+                    slugExists={slugExists}
+                    onSlugExistsChange={setSlugExists}
+                    isEditing={isEditing}
                   />
-                </TabsContent>
-              )}
-            </Tabs>
-          </CardContent>
-        </Card>
+                )}
 
-        {/* Campaign Items - Full width at bottom */}
-        {isEditing && id && (
-          <CampaignItemsSection campaignId={id} />
-        )}
+                {activeSection === "schedule" && (
+                  <ScheduleSection data={campaignData} onUpdate={updateCampaignData} />
+                )}
 
-        {/* Orders Section - Full width at bottom */}
-        {isEditing && id && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-primary" />
-                <CardTitle>Orders & File Uploads</CardTitle>
+                {activeSection === "items" && isEditing && id && (
+                  <CampaignItemsSection campaignId={id} />
+                )}
+
+                {activeSection === "experience" && (
+                  <DonorExperienceSection
+                    data={campaignData}
+                    onUpdate={updateCampaignData}
+                    requiredAssets={requiredAssets}
+                    onRequiredAssetsChange={setRequiredAssets}
+                  />
+                )}
+
+                {activeSection === "team" && (
+                  <TeamSettingsSection
+                    data={campaignData}
+                    onUpdate={updateCampaignData}
+                    campaignId={id}
+                    isPublished={campaignData.publicationStatus === "published"}
+                  />
+                )}
+
+                {activeSection === "fields" && (
+                  <CustomFieldsSection fields={customFields} onFieldsChange={setCustomFields} />
+                )}
+
+                {activeSection === "pitch" && isEditing && id && (
+                  <CampaignPitchSection campaignId={id} initialPitch={campaignPitch || undefined} />
+                )}
+
+                {activeSection === "orders" && isEditing && id && (
+                  <CampaignOrdersSection
+                    campaignId={id}
+                    organizationId={organizationUser?.organization_id}
+                  />
+                )}
+
+                {activeSection === "assets" && isEditing && id && (
+                  <CampaignAssetsSection campaignId={id} />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Section-level Save (only for campaign-level editable sections) */}
+            {SECTION_META[activeSection].showSave && (
+              <div className="flex justify-end">
+                <Button onClick={handleSave} disabled={saving} className="gap-2">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {saving ? "Saving..." : "Save Campaign"}
+                </Button>
               </div>
-              <CardDescription>View purchases and track pending asset uploads</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CampaignOrdersSection campaignId={id} organizationId={organizationUser?.organization_id} />
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </main>
 
-        {/* Bottom Save Button */}
-        <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving} size="lg" className="gap-2">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {saving ? "Saving..." : "Save Campaign"}
-          </Button>
+          {/* Right sidebar: only when editing */}
+          {isEditing && id && (
+            <aside className="lg:col-span-3 space-y-4">
+              <CampaignAtAGlanceCard
+                campaignId={id}
+                goalAmount={parseFloat(campaignData.goalAmount) || 0}
+                endDate={campaignData.endDate}
+              />
+              <CampaignRecentOrdersCard
+                campaignId={id}
+                onViewAll={() => setActiveSection("orders")}
+              />
+              <CampaignShareCard
+                slug={campaignData.slug || null}
+                campaignName={campaignData.name}
+              />
+            </aside>
+          )}
         </div>
       </div>
 
