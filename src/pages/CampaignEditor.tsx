@@ -157,6 +157,7 @@ export default function CampaignEditor() {
   const [campaignImageFile, setCampaignImageFile] = useState<File | null>(null);
   const [slugExists, setSlugExists] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionKey>("details");
+  const [navSheetOpen, setNavSheetOpen] = useState(false);
 
   // Counts for nav badges
   const { data: itemsCount = 0 } = useQuery({
