@@ -1,15 +1,46 @@
 
 
 ## Issue
-The floating/sticky "Save Campaign" button at the bottom of the editor uses default primary blue, but the matching button in the header is now black (`bg-foreground text-background`). They should match.
+The middle column's Card sits ~16px lower than the left/right cards on desktop.
 
-## Change
-Find the secondary Save Campaign button (likely a sticky/floating bottom bar in `src/pages/CampaignEditor.tsx`) and apply the same black styling: `className="gap-2 bg-foreground text-background hover:bg-foreground/90"`.
+**Cause**: `<main className="lg:col-span-6 space-y-4">` contains the mobile nav trigger (`<div className="lg:hidden">…</div>`) as its first child. Tailwind's `space-y-4` uses `> * + *` adjacent sibling selectors, which still apply margin even when the first sibling is `display:none`. So the Card gets a `margin-top` on desktop even though the trigger is hidden.
+
+## Fix
+In `src/pages/CampaignEditor.tsx`, move the mobile nav trigger OUTSIDE the `space-y-4` container, OR conditionally render it instead of using `lg:hidden`. Cleanest option: wrap the trigger so it doesn't participate as a `space-y-*` sibling on desktop.
+
+**Change** (line ~618):
+
+Replace:
+```tsx
+<main className="lg:col-span-6 space-y-4">
+  <div className="lg:hidden">
+    <Button ...>...</Button>
+  </div>
+  <Card>...</Card>
+  ...
+</main>
+```
+
+With:
+```tsx
+<main className="lg:col-span-6">
+  <div className="lg:hidden mb-4">
+    <Button ...>...</Button>
+  </div>
+  <div className="space-y-4">
+    <Card>...</Card>
+    {SECTION_META[activeSection].showSave && (
+      <div className="flex justify-end">...</div>
+    )}
+  </div>
+</main>
+```
+
+This keeps the mobile trigger as a standalone element with its own bottom margin (only when visible), and the inner wrapper handles vertical spacing for the Card + Save button without being affected by the hidden trigger.
 
 ## File touched
-- `src/pages/CampaignEditor.tsx` — update the bottom Save Campaign button's className to match the header button.
+- `src/pages/CampaignEditor.tsx`
 
 ## Out of scope
-- Header Save button (already black).
-- Any other buttons or layout.
+- Any other layout, styles, or content changes.
 
