@@ -155,17 +155,17 @@ export function CampaignAtAGlanceCard({
         <div className="grid grid-cols-3 gap-2 border-t pt-4">
           <div>
             <p className="text-xl font-bold">{orderCount}</p>
-            <p className="text-xs text-muted-foreground">Orders</p>
+            <p className="text-xs text-muted-foreground">orders</p>
           </div>
           <div>
             <p className="text-xl font-bold">{pendingFiles}</p>
-            <p className="text-xs text-muted-foreground">Pending</p>
+            <p className="text-xs text-muted-foreground">pending uploads</p>
           </div>
           <div>
             <p className="text-xl font-bold">
               {daysLeft === null ? "—" : daysLeft}
             </p>
-            <p className="text-xs text-muted-foreground">Days left</p>
+            <p className="text-xs text-muted-foreground">days left</p>
           </div>
         </div>
       </CardContent>
