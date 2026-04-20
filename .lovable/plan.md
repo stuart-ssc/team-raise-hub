@@ -1,43 +1,99 @@
 
 
 ## Goal
-Show a warning alert above the stats cards on the Dashboard (`/dashboard`) when the team's payment account is not connected to Stripe. Clicking the alert opens the same `GroupPaymentSetupDialog` used on the Manage Groups page so the admin can connect right away.
+Redesign the Player/Student view in `PlayerDashboard.tsx` to match the uploaded Sponsorly Player Dashboard mockup. Apply Sponsorly branding (white surfaces, primary blue `#1c6dbe`, no gradients, solid CTAs). Keep all existing data fetching unchanged.
 
-## Scope
-- Only show for users who manage the org/group: `organization_admin` or `program_manager` (not players/parents — `PlayerDashboard` branch is unaffected).
-- Show one alert per unconfigured group:
-  - If a single group is active (via `activeGroup` from context), check just that group.
-  - If "All" is selected (org admins), show one alert per group that isn't connected (or, if there are many, a single consolidated alert linking to `/dashboard/groups`). **Default: one row per unconfigured group**, since the action requires choosing which group to connect.
-- Skip entirely for nonprofits where payment is org-level (`use_org_payment_account = true` and org has it configured) — same logic the publish trigger uses.
+> Note on mockup: the mockup includes gamification elements (XP, level, streaks, badges, pitch video, daily quests, "next milestones") that aren't in our schema. I'll implement everything we can power with real data and stub the gamification visuals only where the calculation is trivial (e.g., "↑ up from #X" we can't compute without history — so it's omitted). Anything purely decorative without data is dropped to avoid fake numbers.
 
-## Detection logic
-Query `groups` filtered to the user's org (and to `activeGroup.id` if set) selecting `id, group_name, payment_processor_config, use_org_payment_account, organization_id, organizations(payment_processor_config)`. A group is considered **connected** when:
+## New layout (player branch only)
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│ HERO CARD — dark navy bg (sidebar color), white text                  │
+│ "Good morning, {FirstName}"                                            │
+│ Headline: "You're $X away from passing {NextPlayer}." (or generic)     │
+│ ┌─────────────┬─────────────┬─────────────┐  ┌──────────────────────┐ │
+│ │ MY RAISED   │ TEAM RANK   │ SUPPORTERS  │  │ PLAYER CARD          │ │
+│ │ $1,261      │ #3 / 18     │ 17          │  │ Initials avatar      │ │
+│ │ from N camp │ on {team}   │ unique      │  │ {Full Name}          │ │
+│ └─────────────┴─────────────┴─────────────┘  │ {ROLE} · {TEAM}      │ │
+│                                              └──────────────────────┘ │
+│ [Share my link] CTA (white button, navy text)                          │
+└────────────────────────────────────────────────────────────────────────┘
+
+YOUR HEADLINE CHALLENGE
+(highest-priority attributed campaign — first roster-attribution campaign)
+┌────────────────────────────────────────────────────────────────────────┐
+│ [Roster Challenge] [N days left] [Ends …]      TEAM POT $X / $Y       │
+│ {Campaign Name}                                  ▓▓▓▓▓▓▓░░░ progress  │
+│ {description / tagline}                                                │
+│ ┌─────────────────────────────────────┐ ┌──────────────────────────┐  │
+│ │ MY PERSONAL GOAL                    │ │ TEAM LEADERBOARD         │  │
+│ │ $280 of $1,000 — 28% bar            │ │ #1 Jordan Rivera $2,140  │  │
+│ │ axis: $0 $250 $500 $750 $1,000      │ │ #2 Casey Morgan  $1,620  │  │
+│ │                                     │ │ #3 Taylor Park YOU $1,285│  │
+│ │ YOUR PERSONAL LINK                  │ │ #4 Avery Chen   $1,140   │  │
+│ │ sponsorly.io/c/.../tp11  [Copy][Sh] │ │ #5 Riley Stokes $980     │  │
+│ │ [Text][Story][TikTok][FB][Email]    │ │ "$X separates you from #N│  │
+│ └─────────────────────────────────────┘ └──────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────┘
+
+OTHER CAMPAIGNS
+(grid of remaining campaigns — attributed first, then team-only)
+┌──────────────────────────────┐  ┌──────────────────────────────┐
+│ {Name}     [N days left]     │  │ {Name}     [N days left]     │
+│ ROSTER CHALLENGE / TEAM      │  │                              │
+│ MY PROGRESS or TEAM PROGRESS │  │                              │
+│ progress bar + amounts       │  │                              │
+│ personal link if attributed  │  │ [Copy team link] [Share]     │
+│ [QR] [Share]                 │  │                              │
+└──────────────────────────────┘  └──────────────────────────────┘
+
+ManageGuardiansCard (existing, kept at bottom)
 ```
-group.payment_processor_config.account_enabled === true
-|| (group.use_org_payment_account === true
-    && group.organizations.payment_processor_config.account_enabled === true)
-```
-Anything else → render an alert row for that group.
 
-## UI
-- Place new section directly above the Stats Cards grid (line ~370 in `Dashboard.tsx`), inside the existing `<div className="space-y-4 md:space-y-6">`, after the Pending Membership Requests alert.
-- Reuse the same amber alert Card style used by the Pending Requests block for visual consistency.
-- Each alert row contains:
-  - `AlertCircle` icon (amber)
-  - Title: "Connect payment account"
-  - Body: `"{Group Name} isn't connected to Stripe yet. Connect your account to start accepting donations."`
-  - Right-aligned button: **"Connect Account"** → opens `GroupPaymentSetupDialog` for that group (same component the Groups page uses).
+## Sections — what's powered by real data
 
-## Files to change
-- `src/pages/Dashboard.tsx`
-  - Add `unconnectedGroups` state + `paymentDialogOpen` / `paymentDialogGroup` state.
-  - Add fetch effect (runs when `organizationUser` / `activeGroup` change, and only for `canManageUsers`).
-  - Render alert(s) above the Stats Cards grid.
-  - Mount `<GroupPaymentSetupDialog>` at the bottom of the manager branch.
-  - Refresh the list after the dialog closes (so a successful connect dismisses the alert).
+| Section | Source |
+|---|---|
+| Greeting "Good morning/afternoon" + first name | `auth.user` profile |
+| MY RAISED | `totalRaisedAll` (sum of attributed) |
+| TEAM RANK | `bestRank / totalParticipants` from headline campaign |
+| SUPPORTERS | `totalSupportersAll` |
+| Headline challenge | First attributed campaign with `enable_roster_attribution` |
+| TEAM POT | Headline campaign `amount_raised / goal_amount` |
+| MY PERSONAL GOAL bar | `totalRaised / personalGoal` from headline |
+| Personal link + Copy/Share | `personalUrl` |
+| Social share buttons (Text/Story/TikTok/FB/Email) | Deep links: `sms:`, `mailto:`, FB sharer, X intent (replaces Story/TikTok which have no web share API), WhatsApp |
+| Team Leaderboard (top 5 + "See all") | Existing `leaderboard` array |
+| Gap line "$X separates you from #N" | Computed from leaderboard |
+| Other Campaigns | Remaining `attributedCampaigns` + `currentCampaigns` |
+
+## What I'm NOT building (no data source / keeps surface honest)
+- XP / Level rings, badges grid, streaks, "Climbed N spots this week", daily quests, pitch video recorder, "Next milestones" section, "Recent supporters" feed, QR code generation. Drop or stub as static placeholders **only** if you ask for them later.
+
+> If you want any of those, say which and I'll add a follow-up plan (badges + recent supporters are the easiest to power with existing data).
+
+## Styling
+- Hero: `bg-sidebar text-sidebar-foreground` (existing dark navy `210 24% 16%`), inner stat cards `bg-white/10` w/ subtle borders, primary CTA white.
+- Cards: white, `border`, `shadow-sm`, no gradients.
+- Progress: `bg-primary` for personal/team, no rainbow.
+- Leaderboard: current user row `bg-primary/5 border-primary/20`, "YOU" badge `bg-primary text-primary-foreground`.
+- Status pills (e.g. "Roster Challenge", "31 days left") — Title Case, brand-colored badges.
+- Icons 1rem (`h-4 w-4`).
+- Mobile: hero stat trio collapses to 1 column, headline challenge stacks personal-link card above leaderboard, other campaigns single column.
+
+## Sharing affordances added
+- Copy link, native `navigator.share`.
+- Deep links: SMS (`sms:?&body=`), Email (`mailto:`), Facebook sharer, X/Twitter intent, WhatsApp `wa.me`.
+- Pre-filled message: *"Help me reach my goal for {Campaign} — every donation counts! {url}"*.
+
+## Files touched
+- `src/components/PlayerDashboard.tsx` — replace **only** the player return JSX (lines ~595–866). Parent branch (`isParentView`), data-fetching, `ManageGuardiansCard`, `loading`, and `hasNoCampaigns` blocks remain unchanged. Optionally extract `PlayerHero`, `HeadlineChallenge`, `TeamLeaderboardList`, and `OtherCampaignCard` as inline subcomponents in the same file.
 
 ## Out of scope
-- Player/parent dashboard view.
-- Changing the Groups page or `GroupPaymentSetupDialog` itself.
-- Org-level (nonprofit) payment setup UI — only flagged via the same connected check; if org-level config is missing for a nonprofit, the same alert appears for the affected group(s).
+- Parent (`isParentView`) view restyle.
+- Sidebar / header / breadcrumbs.
+- New tables, edge functions, schema changes.
+- Gamification features without backing data (badges, XP, streaks, pitch video, milestones, recent supporters feed).
 
