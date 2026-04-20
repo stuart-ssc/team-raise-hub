@@ -1,99 +1,69 @@
 
 
 ## Goal
-Redesign the Player/Student view in `PlayerDashboard.tsx` to match the uploaded Sponsorly Player Dashboard mockup. Apply Sponsorly branding (white surfaces, primary blue `#1c6dbe`, no gradients, solid CTAs). Keep all existing data fetching unchanged.
+Make the player hero feel like the mockup: a **gradient navy hero**, a **dynamic, campaign-aware headline** that adapts based on whether the active campaign is roster-attribution or team-only, and a **bottom action bar** with **Record My Pitch**, **Show My QR**, and **Share Link** — replacing the bland flat card currently rendered.
 
-> Note on mockup: the mockup includes gamification elements (XP, level, streaks, badges, pitch video, daily quests, "next milestones") that aren't in our schema. I'll implement everything we can power with real data and stub the gamification visuals only where the calculation is trivial (e.g., "↑ up from #X" we can't compute without history — so it's omitted). Anything purely decorative without data is dropped to avoid fake numbers.
+## What changes
 
-## New layout (player branch only)
+### 1. Hero visuals (gradient + tighter layout)
+- Add a brand gradient: `bg-gradient-to-r from-sidebar via-sidebar to-primary/40` plus a subtle radial overlay (`bg-[radial-gradient(...)]`) for the glow seen in the mockup. Wrap content in a relative container so the gradient sits behind text.
+- Player Card on the right: keep dark glassmorphic tile (`bg-white/5 border-white/10`), add small "PLAYER CARD" eyebrow + jersey/role line, large initials watermark, role line `GUARD · VARSITY BASKETBALL` style — pulled from `rosterMembership` (group name + role label) when available, otherwise a generic "Player · {Team}".
+- Stat tiles: tighten to mockup style — small uppercase eyebrow, big number in white, supporting line in muted white. Three tiles (My Raised / Team Rank / Supporters). Add the `↑ up from #N` helper line **only** if we have the rank-history data — we don't, so omit it (no fake numbers).
 
-```text
-┌────────────────────────────────────────────────────────────────────────┐
-│ HERO CARD — dark navy bg (sidebar color), white text                  │
-│ "Good morning, {FirstName}"                                            │
-│ Headline: "You're $X away from passing {NextPlayer}." (or generic)     │
-│ ┌─────────────┬─────────────┬─────────────┐  ┌──────────────────────┐ │
-│ │ MY RAISED   │ TEAM RANK   │ SUPPORTERS  │  │ PLAYER CARD          │ │
-│ │ $1,261      │ #3 / 18     │ 17          │  │ Initials avatar      │ │
-│ │ from N camp │ on {team}   │ unique      │  │ {Full Name}          │ │
-│ └─────────────┴─────────────┴─────────────┘  │ {ROLE} · {TEAM}      │ │
-│                                              └──────────────────────┘ │
-│ [Share my link] CTA (white button, navy text)                          │
-└────────────────────────────────────────────────────────────────────────┘
+### 2. Intelligent, campaign-aware headline
+Replace the single static "passing X" sentence with logic based on the **headline campaign type**:
 
-YOUR HEADLINE CHALLENGE
-(highest-priority attributed campaign — first roster-attribution campaign)
-┌────────────────────────────────────────────────────────────────────────┐
-│ [Roster Challenge] [N days left] [Ends …]      TEAM POT $X / $Y       │
-│ {Campaign Name}                                  ▓▓▓▓▓▓▓░░░ progress  │
-│ {description / tagline}                                                │
-│ ┌─────────────────────────────────────┐ ┌──────────────────────────┐  │
-│ │ MY PERSONAL GOAL                    │ │ TEAM LEADERBOARD         │  │
-│ │ $280 of $1,000 — 28% bar            │ │ #1 Jordan Rivera $2,140  │  │
-│ │ axis: $0 $250 $500 $750 $1,000      │ │ #2 Casey Morgan  $1,620  │  │
-│ │                                     │ │ #3 Taylor Park YOU $1,285│  │
-│ │ YOUR PERSONAL LINK                  │ │ #4 Avery Chen   $1,140   │  │
-│ │ sponsorly.io/c/.../tp11  [Copy][Sh] │ │ #5 Riley Stokes $980     │  │
-│ │ [Text][Story][TikTok][FB][Email]    │ │ "$X separates you from #N│  │
-│ └─────────────────────────────────────┘ └──────────────────────────┘  │
-└────────────────────────────────────────────────────────────────────────┘
-
-OTHER CAMPAIGNS
-(grid of remaining campaigns — attributed first, then team-only)
-┌──────────────────────────────┐  ┌──────────────────────────────┐
-│ {Name}     [N days left]     │  │ {Name}     [N days left]     │
-│ ROSTER CHALLENGE / TEAM      │  │                              │
-│ MY PROGRESS or TEAM PROGRESS │  │                              │
-│ progress bar + amounts       │  │                              │
-│ personal link if attributed  │  │ [Copy team link] [Share]     │
-│ [QR] [Share]                 │  │                              │
-└──────────────────────────────┘  └──────────────────────────────┘
-
-ManageGuardiansCard (existing, kept at bottom)
-```
-
-## Sections — what's powered by real data
-
-| Section | Source |
+| Active headline campaign | Headline copy (italic + brand gradient text on the variable part) |
 |---|---|
-| Greeting "Good morning/afternoon" + first name | `auth.user` profile |
-| MY RAISED | `totalRaisedAll` (sum of attributed) |
-| TEAM RANK | `bestRank / totalParticipants` from headline campaign |
-| SUPPORTERS | `totalSupportersAll` |
-| Headline challenge | First attributed campaign with `enable_roster_attribution` |
-| TEAM POT | Headline campaign `amount_raised / goal_amount` |
-| MY PERSONAL GOAL bar | `totalRaised / personalGoal` from headline |
-| Personal link + Copy/Share | `personalUrl` |
-| Social share buttons (Text/Story/TikTok/FB/Email) | Deep links: `sms:`, `mailto:`, FB sharer, X intent (replaces Story/TikTok which have no web share API), WhatsApp |
-| Team Leaderboard (top 5 + "See all") | Existing `leaderboard` array |
-| Gap line "$X separates you from #N" | Computed from leaderboard |
-| Other Campaigns | Remaining `attributedCampaigns` + `currentCampaigns` |
+| Roster-attribution AND user has someone above on leaderboard | `You're $X away from passing {FirstName}.` |
+| Roster-attribution AND user is #1 | `You're #1 on the team — keep widening the lead.` |
+| Roster-attribution AND user has $0 raised | `Share your link to land your first donation.` |
+| Roster-attribution AND user has no personal goal yet | `Set a personal goal and start raising for {Campaign}.` |
+| Team-only campaign (no roster attribution) | `Your team is ${remaining} from the {Campaign} goal — every share helps.` |
+| No active campaign | `No active campaigns yet — check back soon.` |
 
-## What I'm NOT building (no data source / keeps surface honest)
-- XP / Level rings, badges grid, streaks, "Climbed N spots this week", daily quests, pitch video recorder, "Next milestones" section, "Recent supporters" feed, QR code generation. Drop or stub as static placeholders **only** if you ask for them later.
+The variable phrase ("$X away from passing Avery", "$2,400 from the goal", etc.) gets `text-primary-foreground/90 italic` styling like the green phrase in the mockup, but tinted with our brand blue light tone (no green — sticks to brand).
 
-> If you want any of those, say which and I'll add a follow-up plan (badges + recent supporters are the easiest to power with existing data).
+Greeting line above stays `GOOD MORNING, {FIRSTNAME}` (uppercased eyebrow), then the big sentence.
 
-## Styling
-- Hero: `bg-sidebar text-sidebar-foreground` (existing dark navy `210 24% 16%`), inner stat cards `bg-white/10` w/ subtle borders, primary CTA white.
-- Cards: white, `border`, `shadow-sm`, no gradients.
-- Progress: `bg-primary` for personal/team, no rainbow.
-- Leaderboard: current user row `bg-primary/5 border-primary/20`, "YOU" badge `bg-primary text-primary-foreground`.
-- Status pills (e.g. "Roster Challenge", "31 days left") — Title Case, brand-colored badges.
-- Icons 1rem (`h-4 w-4`).
-- Mobile: hero stat trio collapses to 1 column, headline challenge stacks personal-link card above leaderboard, other campaigns single column.
+### 3. Pills row above the greeting (only what we can power)
+The mockup shows "6-day streak" and "Climbed 2 spots this week" — we can't compute either without history. Instead, show **real, campaign-intelligent pills**:
+- `Roster Challenge` (when headline is roster-attribution) — primary tint
+- `{N} Days Left` (when `end_date` exists) — amber tint if ≤7 days, else neutral
+- `{N} Supporters` (compact) — neutral
 
-## Sharing affordances added
-- Copy link, native `navigator.share`.
-- Deep links: SMS (`sms:?&body=`), Email (`mailto:`), Facebook sharer, X/Twitter intent, WhatsApp `wa.me`.
-- Pre-filled message: *"Help me reach my goal for {Campaign} — every donation counts! {url}"*.
+These replace the gamification chips so the row still has visual texture but every pill is real.
+
+### 4. Bottom action bar (the missing row from the mockup)
+Inside the hero, after the stat tiles, a divider then a flex row matching the mockup:
+
+- **Left side**: a context line — *if* the headline campaign is roster-attribution: `Tip: players who share 3+ times raise 3× more.` *Otherwise*: `Share the team page to help reach the goal.` (Static, branded copy — no fake quest progress like "2 / 3".)
+- **Right side**, three buttons:
+  - **Record My Pitch** — primary white-on-navy button, opens a new `<RecordPitchDialog>` that wraps `CampaignPitchEditor` (already exists) for the **player's `roster_member_campaign_links` row** for the headline campaign. Saves pitch_message / pitch_image_url / pitch_recorded_video_url for the player's personal link. Only shown when headline is roster-attribution AND the player has a `roster_member_campaign_links` row. Uses existing `CampaignPitchEditor` save path which already targets `roster_member_campaign_links`.
+  - **Show My QR** — outline white button, opens a new `<QRDialog>` that renders a QR code for `headline.personalUrl` (or the team URL when no personal link). Use the lightweight `qrcode.react` package (or render via `qrcode` lib already in deps — fall back to dynamic import if missing).
+  - **Share Link** — outline white button, fires existing `shareLink(headline.personalUrl, headline.name, true)`.
+
+When there is **no headline campaign**, hide the action bar entirely.
+
+### 5. New small components (same file or extracted)
+- `PlayerHeroBar` (gradient hero block — replaces current hero JSX inside `PlayerDashboard.tsx`)
+- `RecordPitchDialog` (lightweight `<Dialog>` wrapping `CampaignPitchEditor` — new file `src/components/player/RecordPitchDialog.tsx`)
+- `QRDialog` (new file `src/components/player/QRDialog.tsx`, uses `qrcode.react`)
+
+### 6. Dependency
+- Add `qrcode.react` for the QR component (small, ~5KB). If you'd prefer no new dep, I'll generate the QR via Google Charts URL — say which.
 
 ## Files touched
-- `src/components/PlayerDashboard.tsx` — replace **only** the player return JSX (lines ~595–866). Parent branch (`isParentView`), data-fetching, `ManageGuardiansCard`, `loading`, and `hasNoCampaigns` blocks remain unchanged. Optionally extract `PlayerHero`, `HeadlineChallenge`, `TeamLeaderboardList`, and `OtherCampaignCard` as inline subcomponents in the same file.
+1. `src/components/PlayerDashboard.tsx` — replace hero JSX (lines ~779–846) with new gradient hero + dynamic headline + action bar; add `pitchDialogOpen` / `qrDialogOpen` state.
+2. `src/components/player/RecordPitchDialog.tsx` — **new**, wraps `CampaignPitchEditor`.
+3. `src/components/player/QRDialog.tsx` — **new**, renders QR for the personal/team URL.
+4. `package.json` — add `qrcode.react` (unless you say otherwise).
+
+## What's still NOT built (kept honest)
+- "6-day streak", "Climbed N spots this week", "LV 7 / 2840 XP" ring, daily quest progress bar — no source data. Replaced with real, intelligent pills + the share tip line.
+- If you later want streaks/levels, we'd need a `player_activity` table and a daily aggregation cron — say the word and I'll plan it as a follow-up.
 
 ## Out of scope
-- Parent (`isParentView`) view restyle.
-- Sidebar / header / breadcrumbs.
-- New tables, edge functions, schema changes.
-- Gamification features without backing data (badges, XP, streaks, pitch video, milestones, recent supporters feed).
+- Headline Challenge card, Other Campaigns grid, parent view, sidebar/header.
+- Any other gamification.
 
