@@ -4,12 +4,15 @@ import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users, Copy, Share2, DollarSign, Calendar, Clock, Medal, MessageSquare, Mail, Facebook, Twitter, MessageCircle, Link2, Target, TrendingUp, ArrowRight } from "lucide-react";
+import { Trophy, Users, Copy, Share2, DollarSign, Calendar, Clock, Medal, MessageSquare, Mail, Facebook, Twitter, MessageCircle, Link2, Target, TrendingUp, ArrowRight, Mic, QrCode, Sparkles, Flame } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "./ManageGuardiansCard";
+import { RecordPitchDialog } from "@/components/player/RecordPitchDialog";
+import { QRDialog } from "@/components/player/QRDialog";
 
 interface Campaign {
   id: string;
