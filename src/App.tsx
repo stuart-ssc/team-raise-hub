@@ -80,6 +80,7 @@ import StateLandingPage from "./pages/StateLandingPage";
 import SchoolLandingPage from "./pages/SchoolLandingPage";
 import DistrictLandingPage from "./pages/DistrictLandingPage";
 import FAQ from "./pages/FAQ";
+import CampaignLeaderboard from "./pages/CampaignLeaderboard";
 
 // Marketing Campaign Pages
 import CampaignsOverview from "./pages/CampaignsOverview";
@@ -170,6 +171,7 @@ const AppContent = () => {
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path="/set-password" element={<SetPassword />} />
         <Route path="/c/:slug" element={<CampaignLanding />} />
+        <Route path="/c/:slug/leaderboard" element={<CampaignLeaderboard />} />
         <Route path="/c/:slug/:rosterMemberSlug" element={<CampaignLanding />} />
         <Route path="/schools/:state/:slug" element={<SchoolLandingPage />} />
         <Route path="/districts/:state/:slug" element={<DistrictLandingPage />} />

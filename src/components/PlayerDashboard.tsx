@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trophy, Users, Copy, Share2, DollarSign, Calendar, Clock, Medal, MessageSquare, Mail, Facebook, Twitter, MessageCircle, Link2, Target, TrendingUp, ArrowRight, Mic, QrCode, Sparkles, Flame } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -1111,7 +1112,9 @@ export default function PlayerDashboard() {
                     <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Team Leaderboard</p>
                   </div>
                   {leaderboard.length > 0 && (
-                    <span className="text-xs text-muted-foreground">{leaderboard.length} members</span>
+                    <span className="text-xs text-muted-foreground">
+                      {leaderboard.length > 5 ? `Top 5 of ${leaderboard.length}+` : `${leaderboard.length} members`}
+                    </span>
                   )}
                 </div>
                 {leaderboard.length > 0 && !leaderboard.some(e => e.totalRaised > 0) && (
@@ -1120,7 +1123,7 @@ export default function PlayerDashboard() {
                   </p>
                 )}
                 <div className="space-y-1.5">
-                  {leaderboard.slice(0, 10).map((entry, i) => {
+                  {leaderboard.slice(0, 5).map((entry, i) => {
                     const isZero = entry.totalRaised <= 0;
                     return (
                       <div
@@ -1147,6 +1150,16 @@ export default function PlayerDashboard() {
                     );
                   })}
                 </div>
+                {headline?.slug && leaderboard.length > 0 && (
+                  <div className="mt-3 flex justify-end">
+                    <Button asChild variant="link" size="sm" className="h-auto p-0 text-primary">
+                      <Link to={`/c/${headline.slug}/leaderboard`}>
+                        View full leaderboard
+                        <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                      </Link>
+                    </Button>
+                  </div>
+                )}
                 {gapToNext > 0 && aheadEntry && (
                   <p className="text-xs text-muted-foreground mt-3 text-center">
                     <span className="font-semibold text-primary">${gapToNext.toFixed(0)}</span> separates you from #{currentEntryIdx}
