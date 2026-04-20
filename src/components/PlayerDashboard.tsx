@@ -906,7 +906,7 @@ export default function PlayerDashboard() {
                   <div className="min-w-0">
                     <p className="font-semibold text-white truncate">{firstName} {lastName}</p>
                     <p className="text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/60 mt-1 truncate">
-                      Player{activeGroup?.name ? ` · ${activeGroup.name}` : ''}
+                      Player{activeGroup?.group_name ? ` · ${activeGroup.group_name}` : ''}
                     </p>
                   </div>
                 </div>
