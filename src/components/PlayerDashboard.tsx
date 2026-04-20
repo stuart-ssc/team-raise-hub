@@ -743,11 +743,39 @@ export default function PlayerDashboard() {
     ? Math.max(0, aheadEntry.totalRaised - leaderboard[currentEntryIdx].totalRaised)
     : 0;
 
-  const headlineMessage = aheadEntry && gapToNext > 0
-    ? `You're $${gapToNext.toFixed(2)} away from passing ${aheadEntry.firstName} ${aheadEntry.lastName.charAt(0)}.`
-    : currentEntryIdx === 0
-      ? "You're #1 on the team — keep pushing to widen your lead!"
-      : "Share your link to get on the leaderboard.";
+  // Intelligent, campaign-aware headline message
+  const headlineMessage: { lead: string; highlight: string } = (() => {
+    if (!headline) {
+      return { lead: "No active campaigns yet —", highlight: "check back soon." };
+    }
+    if (headline.enable_roster_attribution) {
+      if (aheadEntry && gapToNext > 0) {
+        return {
+          lead: "You're",
+          highlight: `$${gapToNext.toFixed(0)} away from passing ${aheadEntry.firstName}.`,
+        };
+      }
+      if (currentEntryIdx === 0 && leaderboard.length > 1) {
+        return { lead: "You're", highlight: "#1 on the team — keep widening the lead." };
+      }
+      if ((headline.totalRaised || 0) === 0) {
+        return { lead: "Share your link to", highlight: "land your first donation." };
+      }
+      if (!headline.personalGoal || headline.personalGoal <= 0) {
+        return { lead: "Set a personal goal and", highlight: `start raising for ${headline.name}.` };
+      }
+      return { lead: "Keep going —", highlight: `every share gets you closer to your goal.` };
+    }
+    // Team-only campaign
+    const teamRemaining = Math.max(0, (headline.goal_amount || 0) - (headline.amount_raised || 0));
+    if (teamRemaining > 0) {
+      return {
+        lead: "Your team is",
+        highlight: `$${teamRemaining.toLocaleString()} from the ${headline.name} goal — every share helps.`,
+      };
+    }
+    return { lead: "Your team", highlight: `crushed the ${headline.name} goal — keep the momentum.` };
+  })();
 
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "P";
 
