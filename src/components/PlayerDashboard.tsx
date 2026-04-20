@@ -810,62 +810,110 @@ export default function PlayerDashboard() {
   return (
     <div className="space-y-6">
       {/* ============================== HERO ============================== */}
-      <Card className="bg-sidebar text-sidebar-foreground border-sidebar-border overflow-hidden">
-        <CardContent className="p-6 md:p-8">
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+      <div className="relative overflow-hidden rounded-xl border border-sidebar-border bg-gradient-to-br from-sidebar via-sidebar to-primary/40 text-sidebar-foreground shadow-lg">
+        {/* Decorative radial glow */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-60"
+          style={{
+            background:
+              "radial-gradient(circle at 85% 15%, hsl(var(--primary) / 0.35), transparent 55%), radial-gradient(circle at 10% 90%, hsl(var(--primary) / 0.20), transparent 50%)",
+          }}
+        />
+
+        <div className="relative p-6 md:p-8">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            {/* LEFT: greeting + pills + headline + stats */}
             <div className="flex-1 min-w-0">
-              <p className="text-sm uppercase tracking-wider text-sidebar-foreground/60 font-medium">
-                {greeting}
+              {/* Pills row */}
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                {headline?.enable_roster_attribution && (
+                  <Badge className="bg-primary/90 text-primary-foreground hover:bg-primary border-0">
+                    <Target className="h-3 w-3 mr-1" /> Roster Challenge
+                  </Badge>
+                )}
+                {headline?.end_date && daysLeft(headline.end_date) !== null && (
+                  <Badge
+                    variant="outline"
+                    className={
+                      (daysLeft(headline.end_date) ?? 99) <= 7
+                        ? "border-amber-300/40 bg-amber-300/15 text-amber-100"
+                        : "border-white/20 bg-white/10 text-sidebar-foreground/90"
+                    }
+                  >
+                    <Clock className="h-3 w-3 mr-1" /> {daysLeft(headline.end_date)} Days Left
+                  </Badge>
+                )}
+                {headline && (
+                  <Badge variant="outline" className="border-white/20 bg-white/10 text-sidebar-foreground/90">
+                    <Users className="h-3 w-3 mr-1" /> {headline.uniqueSupporters} Supporters
+                  </Badge>
+                )}
+              </div>
+
+              <p className="text-xs uppercase tracking-[0.18em] text-sidebar-foreground/60 font-semibold">
+                {greeting}, {firstName}
               </p>
-              <h1 className="text-3xl md:text-4xl font-bold mt-1">
-                {firstName}
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mt-2 leading-tight">
+                <span className="text-sidebar-foreground/95">{headlineMessage.lead}</span>{" "}
+                <span className="italic bg-gradient-to-r from-primary-foreground to-primary-foreground/70 bg-clip-text text-transparent">
+                  {headlineMessage.highlight}
+                </span>
               </h1>
-              <p className="mt-3 text-sidebar-foreground/80 text-base md:text-lg">
-                {headlineMessage}
-              </p>
 
               {/* Stat trio */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
-                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                  <p className="text-xs uppercase tracking-wider text-sidebar-foreground/60 font-medium">My Raised</p>
-                  <p className="text-2xl font-bold mt-1">${totalRaisedAll.toFixed(0)}</p>
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/60 font-semibold">My Raised</p>
+                  <p className="text-2xl md:text-3xl font-bold mt-1 text-white">${totalRaisedAll.toFixed(0)}</p>
                   <p className="text-xs text-sidebar-foreground/60 mt-1">
-                    {attributedCampaigns.length} campaign{attributedCampaigns.length !== 1 ? 's' : ''}
+                    Across {attributedCampaigns.length} campaign{attributedCampaigns.length !== 1 ? 's' : ''}
                   </p>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                  <p className="text-xs uppercase tracking-wider text-sidebar-foreground/60 font-medium">Team Rank</p>
-                  <p className="text-2xl font-bold mt-1">
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/60 font-semibold">Team Rank</p>
+                  <p className="text-2xl md:text-3xl font-bold mt-1 text-white">
                     {bestRank > 0 && bestRank < 999 ? `#${bestRank}` : '—'}
                     {leaderboard.length > 0 && (
                       <span className="text-base font-normal text-sidebar-foreground/60"> / {leaderboard.length}</span>
                     )}
                   </p>
-                  <p className="text-xs text-sidebar-foreground/60 mt-1">On Your Team</p>
+                  <p className="text-xs text-sidebar-foreground/60 mt-1">On your team</p>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                  <p className="text-xs uppercase tracking-wider text-sidebar-foreground/60 font-medium">Supporters</p>
-                  <p className="text-2xl font-bold mt-1">{totalSupportersAll}</p>
-                  <p className="text-xs text-sidebar-foreground/60 mt-1">Unique Donors</p>
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/60 font-semibold">Supporters</p>
+                  <p className="text-2xl md:text-3xl font-bold mt-1 text-white">{totalSupportersAll}</p>
+                  <p className="text-xs text-sidebar-foreground/60 mt-1">Unique donors</p>
                 </div>
               </div>
             </div>
 
-            {/* Player card */}
-            <div className="md:w-64 shrink-0">
-              <div className="bg-white/5 border border-white/10 rounded-lg p-5 flex flex-col items-center text-center">
-                <div className="h-16 w-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
+            {/* RIGHT: Player Card */}
+            <div className="lg:w-72 shrink-0">
+              <div className="relative overflow-hidden bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5">
+                {/* Watermark initials */}
+                <div
+                  aria-hidden
+                  className="absolute -right-4 -bottom-6 text-[7rem] font-black leading-none text-white/5 select-none pointer-events-none"
+                >
                   {initials}
                 </div>
-                <p className="mt-3 font-semibold">{firstName} {lastName}</p>
-                <p className="text-xs uppercase tracking-wider text-sidebar-foreground/60 mt-1">
-                  Player
-                </p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/60 font-semibold">Player Card</p>
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="h-14 w-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold ring-2 ring-white/20">
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-white truncate">{firstName} {lastName}</p>
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/60 mt-1 truncate">
+                      Player{activeGroup?.name ? ` · ${activeGroup.name}` : ''}
+                    </p>
+                  </div>
+                </div>
                 {headline && (
                   <Button
                     size="sm"
-                    variant="secondary"
-                    className="mt-4 w-full bg-white text-sidebar hover:bg-white/90"
+                    className="relative mt-4 w-full bg-white text-sidebar hover:bg-white/90 font-semibold"
                     onClick={() => shareLink(headline.personalUrl, headline.name, true)}
                   >
                     <Share2 className="h-4 w-4 mr-2" />
@@ -875,8 +923,69 @@ export default function PlayerDashboard() {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* BOTTOM ACTION BAR */}
+          {headline && (
+            <>
+              <div className="my-6 h-px bg-white/10" />
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <p className="text-sm text-sidebar-foreground/80 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary-foreground/80" />
+                  {headline.enable_roster_attribution
+                    ? "Tip: players who share 3+ times raise 3× more."
+                    : "Share the team page to help reach the goal."}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {headline.enable_roster_attribution && rosterMembership && (
+                    <Button
+                      size="sm"
+                      className="bg-white text-sidebar hover:bg-white/90 font-semibold"
+                      onClick={() => setPitchDialogOpen(true)}
+                    >
+                      <Mic className="h-4 w-4 mr-2" /> Record My Pitch
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                    onClick={() => setQrDialogOpen(true)}
+                  >
+                    <QrCode className="h-4 w-4 mr-2" /> Show My QR
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                    onClick={() => shareLink(headline.personalUrl, headline.name, true)}
+                  >
+                    <Share2 className="h-4 w-4 mr-2" /> Share Link
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Pitch + QR dialogs */}
+      {headline && (
+        <>
+          <RecordPitchDialog
+            open={pitchDialogOpen}
+            onOpenChange={setPitchDialogOpen}
+            campaignId={headline.id}
+            campaignName={headline.name}
+            onSaved={() => fetchPlayerData()}
+          />
+          <QRDialog
+            open={qrDialogOpen}
+            onOpenChange={setQrDialogOpen}
+            url={headline.personalUrl}
+            campaignName={headline.name}
+          />
+        </>
+      )}
 
       {/* ====================== HEADLINE CHALLENGE ======================= */}
       {headline && (
