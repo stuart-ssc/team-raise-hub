@@ -488,7 +488,7 @@ export default function PlayerDashboard() {
       });
 
       // Build leaderboard entries
-      const leaderboardEntries: LeaderboardEntry[] = teammates
+      const allEntries: LeaderboardEntry[] = teammates
         .map(teammate => {
           const profile = profilesMap[teammate.user_id] || null;
           const donations = donationsByMember[teammate.id] || { total: 0, count: 0 };
@@ -501,10 +501,17 @@ export default function PlayerDashboard() {
             donationCount: donations.count,
             isCurrentUser: teammate.user_id === user?.id,
           };
-        })
-        .filter(entry => entry.totalRaised > 0) // Only include those with donations
-        .sort((a, b) => b.totalRaised - a.totalRaised)
-        .slice(0, 10);
+        });
+
+      const hasAnyDonations = allEntries.some(e => e.totalRaised > 0);
+      const leaderboardEntries: LeaderboardEntry[] = (
+        hasAnyDonations
+          ? [...allEntries].sort((a, b) => b.totalRaised - a.totalRaised)
+          : [...allEntries].sort((a, b) =>
+              (a.firstName || '').localeCompare(b.firstName || '') ||
+              (a.lastName || '').localeCompare(b.lastName || '')
+            )
+      ).slice(0, 10);
 
       setLeaderboard(leaderboardEntries);
     } catch (error) {
@@ -989,47 +996,55 @@ export default function PlayerDashboard() {
 
       {/* ====================== HEADLINE CHALLENGE ======================= */}
       {headline && (
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <Badge className="bg-primary text-primary-foreground hover:bg-primary">
-                <Target className="h-3 w-3 mr-1" /> Roster Challenge
-              </Badge>
-              {headline.end_date && daysLeft(headline.end_date) !== null && (
-                <Badge variant="outline" className="border-primary/30 text-primary">
-                  <Clock className="h-3 w-3 mr-1" /> {daysLeft(headline.end_date)} Days Left
-                </Badge>
-              )}
-              {headline.end_date && (
-                <Badge variant="outline" className="text-muted-foreground">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  Ends {new Date(headline.end_date).toLocaleDateString()}
-                </Badge>
+        <Card className="border border-border rounded-lg overflow-hidden shadow-sm border-t-4 border-t-primary p-0 gap-0">
+          {/* Header zone */}
+          <div className="bg-muted/30 border-b px-6 py-5">
+            <div className="grid lg:grid-cols-2 gap-4 items-start">
+              {/* Left: pills + title */}
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <Badge className="bg-primary text-primary-foreground hover:bg-primary">
+                    <Target className="h-3 w-3 mr-1" /> Roster Challenge
+                  </Badge>
+                  {headline.end_date && daysLeft(headline.end_date) !== null && (
+                    <Badge variant="outline" className="border-primary/30 text-primary">
+                      <Clock className="h-3 w-3 mr-1" /> {daysLeft(headline.end_date)} Days Left
+                    </Badge>
+                  )}
+                  {headline.end_date && (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Ends {new Date(headline.end_date).toLocaleDateString()}
+                    </Badge>
+                  )}
+                </div>
+                <h3 className="text-2xl font-semibold tracking-tight leading-tight">{headline.name}</h3>
+                <p className="text-sm text-muted-foreground mt-1">Your Headline Challenge</p>
+              </div>
+
+              {/* Right: Team Raised */}
+              {(headline.goal_amount || 0) > 0 && (
+                <div className="lg:text-right">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-1">Team Raised</p>
+                  <p className="text-2xl font-bold tabular-nums">
+                    ${(headline.amount_raised || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    <span className="text-base font-medium text-muted-foreground">
+                      {' '}/ ${(headline.goal_amount || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    </span>
+                  </p>
+                  <Progress
+                    value={Math.min(((headline.amount_raised || 0) / (headline.goal_amount || 1)) * 100, 100)}
+                    className="h-2 mt-2 bg-primary/10 [&>div]:bg-primary"
+                  />
+                </div>
               )}
             </div>
-            <CardTitle className="text-2xl">{headline.name}</CardTitle>
-            <CardDescription>Your Headline Challenge</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Team pot */}
-            {(headline.goal_amount || 0) > 0 && (
-              <div className="bg-muted/40 rounded-lg p-4">
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="font-medium uppercase tracking-wider text-xs text-muted-foreground">Team Pot</span>
-                  <span className="font-semibold">
-                    ${(headline.amount_raised || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} / ${(headline.goal_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </span>
-                </div>
-                <Progress
-                  value={Math.min(((headline.amount_raised || 0) / (headline.goal_amount || 1)) * 100, 100)}
-                  className="h-2"
-                />
-              </div>
-            )}
+          </div>
 
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Personal goal + share toolkit */}
-              <div className="space-y-5">
+          <CardContent className="p-0">
+            <div className="grid lg:grid-cols-2">
+              {/* Left content zone — Personal goal + share toolkit */}
+              <div className="bg-background p-6 space-y-5 lg:border-r border-t lg:border-t-0">
                 <div>
                   <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-2">My Personal Goal</p>
                   <div className="flex items-baseline justify-between mb-2">
@@ -1088,25 +1103,32 @@ export default function PlayerDashboard() {
                 </div>
               </div>
 
-              {/* Inline leaderboard (top 5 + see all) */}
-              <div>
+              {/* Right content zone — Team Leaderboard */}
+              <div className="bg-primary/[0.03] p-6">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Team Leaderboard</p>
-                  <Medal className="h-4 w-4 text-primary" />
-                </div>
-                {leaderboard.length === 0 ? (
-                  <div className="text-sm text-muted-foreground bg-muted/40 rounded-md p-4 text-center">
-                    No donations yet — be the first to share your link!
+                  <div className="flex items-center gap-2">
+                    <Medal className="h-4 w-4 text-primary" />
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Team Leaderboard</p>
                   </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    {leaderboard.slice(0, 5).map((entry, i) => (
+                  {leaderboard.length > 0 && (
+                    <span className="text-xs text-muted-foreground">{leaderboard.length} members</span>
+                  )}
+                </div>
+                {leaderboard.length > 0 && !leaderboard.some(e => e.totalRaised > 0) && (
+                  <p className="text-xs text-muted-foreground mb-3 italic">
+                    No donations yet — share your link to take the lead.
+                  </p>
+                )}
+                <div className="space-y-1.5">
+                  {leaderboard.slice(0, 10).map((entry, i) => {
+                    const isZero = entry.totalRaised <= 0;
+                    return (
                       <div
                         key={entry.userId}
                         className={`flex items-center justify-between px-3 py-2 rounded-md ${
                           entry.isCurrentUser
                             ? 'bg-primary/5 border border-primary/20'
-                            : 'bg-muted/30'
+                            : 'bg-background border border-border/60'
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -1118,13 +1140,13 @@ export default function PlayerDashboard() {
                             <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">YOU</Badge>
                           )}
                         </div>
-                        <span className="text-sm font-semibold tabular-nums">
+                        <span className={`text-sm tabular-nums ${isZero ? 'text-muted-foreground' : 'font-semibold'}`}>
                           ${entry.totalRaised.toFixed(0)}
                         </span>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
                 {gapToNext > 0 && aheadEntry && (
                   <p className="text-xs text-muted-foreground mt-3 text-center">
                     <span className="font-semibold text-primary">${gapToNext.toFixed(0)}</span> separates you from #{currentEntryIdx}
