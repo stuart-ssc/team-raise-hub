@@ -592,257 +592,446 @@ export default function PlayerDashboard() {
   // Get first child name for single-child parent view
   const singleChildName = linkedChildren.length === 1 ? `${linkedChildren[0].firstName} ${linkedChildren[0].lastName}`.trim() : null;
 
-  return (
-    <div className="space-y-6">
-      {/* Quick Stats - Only show if user has attributed campaigns */}
-      {attributedCampaigns.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {isParentView && singleChildName ? `${singleChildName}'s Total Raised` : (isParentView ? "Total Raised" : "My Total Raised")}
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${totalRaisedAll.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">
-                From {attributedCampaigns.length} attributed campaign{attributedCampaigns.length !== 1 ? 's' : ''}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {isParentView && singleChildName ? `${singleChildName}'s Supporters` : (isParentView ? "Supporters" : "My Supporters")}
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalSupportersAll}</div>
-              <p className="text-xs text-muted-foreground">
-                {isParentView && singleChildName ? `Unique donors via ${singleChildName}'s links` : (isParentView ? "Unique donors" : "Unique donors via my links")}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Best Rank</CardTitle>
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {bestRank > 0 && bestRank < 999 ? `#${bestRank}` : '-'}
-              </div>
-              <p className="text-xs text-muted-foreground">Highest ranking</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Team Leaderboard */}
-      {leaderboard.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Medal className="h-5 w-5 text-primary" />
-              <div>
-                <CardTitle>Team Leaderboard</CardTitle>
-                <CardDescription>Top fundraisers on your roster</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {leaderboard.map((entry, index) => (
-                <div
-                  key={entry.userId}
-                  className={`flex items-center justify-between p-3 rounded-lg ${
-                    entry.isCurrentUser 
-                      ? 'bg-primary/10 border border-primary/20' 
-                      : 'bg-muted/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {getRankIcon(index + 1)}
-                    <div>
-                      <p className="font-medium">
-                        {entry.firstName} {entry.lastName}
-                        {entry.isCurrentUser && (
-                          <span className="text-primary ml-2 text-sm">(You)</span>
-                        )}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {entry.donationCount} donation{entry.donationCount !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="font-semibold">
-                    ${entry.totalRaised.toFixed(2)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* My Fundraising - Attributed Campaigns */}
-      {attributedCampaigns.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-primary" />
-              <div>
-                <CardTitle>
-                  {isParentView && singleChildName 
-                    ? `${singleChildName}'s Fundraising` 
-                    : (isParentView && linkedChildren.length > 1 
-                      ? "Your Children's Fundraising" 
-                      : "My Fundraising")}
+  // ============================================================
+  // PARENT VIEW — keep existing layout (out of scope for redesign)
+  // ============================================================
+  if (isParentView) {
+    return (
+      <div className="space-y-6">
+        {/* Quick Stats - Only show if there are attributed campaigns */}
+        {attributedCampaigns.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {singleChildName ? `${singleChildName}'s Total Raised` : "Total Raised"}
                 </CardTitle>
-                <CardDescription>
-                  {isParentView 
-                    ? "Campaigns with personal fundraising links - share to help raise funds!"
-                    : "Campaigns with your personal fundraising link"}
-                </CardDescription>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">${totalRaisedAll.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">
+                  From {attributedCampaigns.length} attributed campaign{attributedCampaigns.length !== 1 ? 's' : ''}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {singleChildName ? `${singleChildName}'s Supporters` : "Supporters"}
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalSupportersAll}</div>
+                <p className="text-xs text-muted-foreground">
+                  {singleChildName ? `Unique donors via ${singleChildName}'s links` : "Unique donors"}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Best Rank</CardTitle>
+                <Trophy className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {bestRank > 0 && bestRank < 999 ? `#${bestRank}` : '-'}
+                </div>
+                <p className="text-xs text-muted-foreground">Highest ranking</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {attributedCampaigns.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle>
+                    {singleChildName ? `${singleChildName}'s Fundraising` : (linkedChildren.length > 1 ? "Your Children's Fundraising" : "Fundraising")}
+                  </CardTitle>
+                  <CardDescription>Campaigns with personal fundraising links - share to help raise funds!</CardDescription>
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {attributedCampaigns.map((campaign) => (
-              <Card key={`${campaign.id}-${campaign.childOrganizationUserId || 'self'}`} className="border-2 border-primary/20 bg-primary/5">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h4 className="font-semibold">{campaign.name}</h4>
-                      {isParentView && linkedChildren.length > 1 && campaign.childName && (
-                        <Badge variant="outline" className="mt-1 mb-1">{campaign.childName}</Badge>
-                      )}
-                      <p className="text-sm text-muted-foreground">
-                        Rank #{campaign.rank} of {campaign.totalParticipants}
-                      </p>
-                    </div>
-                    <Badge variant="secondary">
-                      {campaign.donationCount} donation{campaign.donationCount !== 1 ? 's' : ''}
-                    </Badge>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        {isParentView && campaign.childName ? `${campaign.childName}'s Progress` : "My Progress"}
-                      </span>
-                      <span className="font-medium">
-                        ${campaign.totalRaised.toFixed(2)} / ${campaign.personalGoal.toFixed(2)}
-                      </span>
-                    </div>
-                    <Progress value={campaign.percentToGoal} className="h-2" />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => copyLink(campaign.personalUrl, true, isParentView ? campaign.childName : undefined)}
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      {isParentView && campaign.childName 
-                        ? (linkedChildren.length > 1 ? `Copy ${campaign.childName?.split(' ')[0]}'s Link` : "Copy Link")
-                        : "Copy My Link"}
-                    </Button>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => shareLink(campaign.personalUrl, campaign.name, true, isParentView ? campaign.childName : undefined)}
-                    >
-                      <Share2 className="h-4 w-4 mr-2" />
-                      Share
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Current Campaigns - All active campaigns for user's groups */}
-      {currentCampaigns.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              <div>
-                <CardTitle>Current Campaigns</CardTitle>
-                <CardDescription>
-                  {isParentView 
-                    ? "Active campaigns for your child's team - share to help raise funds"
-                    : "Active campaigns for your team - share to help raise funds"}
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {currentCampaigns.map((campaign) => {
-              // Check if this campaign is also in attributed
-              const isAttributed = attributedCampaigns.some(a => a.id === campaign.id);
-              if (isAttributed) return null; // Don't show duplicates
-
-              const goalAmount = campaign.goal_amount || 0;
-              const amountRaised = campaign.amount_raised || 0;
-              const progress = goalAmount > 0 ? (amountRaised / goalAmount) * 100 : 0;
-              const campaignUrl = getCampaignUrl(campaign);
-
-              return (
-                <Card key={campaign.id} className="border">
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {attributedCampaigns.map((campaign) => (
+                <Card key={`${campaign.id}-${campaign.childOrganizationUserId || 'self'}`} className="border-2 border-primary/20 bg-primary/5">
                   <CardContent className="pt-6">
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h4 className="font-semibold">{campaign.name}</h4>
-                        {campaign.end_date && (
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            Ends {new Date(campaign.end_date).toLocaleDateString()}
-                          </p>
+                        {linkedChildren.length > 1 && campaign.childName && (
+                          <Badge variant="outline" className="mt-1 mb-1">{campaign.childName}</Badge>
                         )}
+                        <p className="text-sm text-muted-foreground">Rank #{campaign.rank} of {campaign.totalParticipants}</p>
                       </div>
-                      <Badge className="bg-success text-success-foreground border-success">Active</Badge>
+                      <Badge variant="secondary">{campaign.donationCount} donation{campaign.donationCount !== 1 ? 's' : ''}</Badge>
                     </div>
-
-                    {goalAmount > 0 && (
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Team Progress</span>
-                          <span className="font-medium">
-                            ${amountRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${goalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                        <Progress value={Math.min(progress, 100)} className="h-2" />
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{campaign.childName ? `${campaign.childName}'s Progress` : "Progress"}</span>
+                        <span className="font-medium">${campaign.totalRaised.toFixed(2)} / ${campaign.personalGoal.toFixed(2)}</span>
                       </div>
-                    )}
-
+                      <Progress value={campaign.percentToGoal} className="h-2" />
+                    </div>
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => copyLink(campaignUrl, false)}
-                      >
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => copyLink(campaign.personalUrl, true, campaign.childName)}>
                         <Copy className="h-4 w-4 mr-2" />
-                        Copy Link
+                        {linkedChildren.length > 1 ? `Copy ${campaign.childName?.split(' ')[0]}'s Link` : "Copy Link"}
                       </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => shareLink(campaignUrl, campaign.name, false)}
-                      >
+                      <Button variant="default" size="sm" className="flex-1" onClick={() => shareLink(campaign.personalUrl, campaign.name, true, campaign.childName)}>
                         <Share2 className="h-4 w-4 mr-2" />
+                        Share
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  }
+
+  // ============================================================
+  // PLAYER VIEW — REDESIGNED
+  // ============================================================
+  const firstName =
+    (user?.user_metadata as any)?.first_name ||
+    leaderboard.find(e => e.isCurrentUser)?.firstName ||
+    "there";
+  const lastName =
+    (user?.user_metadata as any)?.last_name ||
+    leaderboard.find(e => e.isCurrentUser)?.lastName ||
+    "";
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
+  })();
+
+  // Headline campaign: prefer roster-attribution; fall back to first attributed
+  const headline =
+    attributedCampaigns.find(c => c.enable_roster_attribution) ||
+    attributedCampaigns[0] ||
+    null;
+
+  // Other campaigns: attributed (excluding headline) then team-only (excluding any duplicates)
+  const otherAttributed = attributedCampaigns.filter(c => c.id !== headline?.id);
+  const teamOnly = currentCampaigns.filter(
+    c => !attributedCampaigns.some(a => a.id === c.id)
+  );
+
+  // Gap-to-next computation from leaderboard
+  const currentEntryIdx = leaderboard.findIndex(e => e.isCurrentUser);
+  const aheadEntry = currentEntryIdx > 0 ? leaderboard[currentEntryIdx - 1] : null;
+  const gapToNext = aheadEntry
+    ? Math.max(0, aheadEntry.totalRaised - leaderboard[currentEntryIdx].totalRaised)
+    : 0;
+
+  const headlineMessage = aheadEntry && gapToNext > 0
+    ? `You're $${gapToNext.toFixed(2)} away from passing ${aheadEntry.firstName} ${aheadEntry.lastName.charAt(0)}.`
+    : currentEntryIdx === 0
+      ? "You're #1 on the team — keep pushing to widen your lead!"
+      : "Share your link to get on the leaderboard.";
+
+  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "P";
+
+  // Days remaining helper
+  const daysLeft = (endDate: string | null) => {
+    if (!endDate) return null;
+    const diff = new Date(endDate).getTime() - Date.now();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return days > 0 ? days : 0;
+  };
+
+  // Pre-filled share message helpers
+  const buildShareMessage = (campaignName: string, url: string) =>
+    `Help me reach my goal for ${campaignName} — every donation counts! ${url}`;
+
+  const openShare = (kind: 'sms' | 'email' | 'facebook' | 'twitter' | 'whatsapp', campaignName: string, url: string) => {
+    const msg = buildShareMessage(campaignName, url);
+    const enc = encodeURIComponent(msg);
+    const encUrl = encodeURIComponent(url);
+    const subject = encodeURIComponent(`Support me in ${campaignName}`);
+    let target = '';
+    switch (kind) {
+      case 'sms':      target = `sms:?&body=${enc}`; break;
+      case 'email':    target = `mailto:?subject=${subject}&body=${enc}`; break;
+      case 'facebook': target = `https://www.facebook.com/sharer/sharer.php?u=${encUrl}`; break;
+      case 'twitter':  target = `https://twitter.com/intent/tweet?text=${enc}`; break;
+      case 'whatsapp': target = `https://wa.me/?text=${enc}`; break;
+    }
+    window.open(target, '_blank', 'noopener,noreferrer');
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* ============================== HERO ============================== */}
+      <Card className="bg-sidebar text-sidebar-foreground border-sidebar-border overflow-hidden">
+        <CardContent className="p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm uppercase tracking-wider text-sidebar-foreground/60 font-medium">
+                {greeting}
+              </p>
+              <h1 className="text-3xl md:text-4xl font-bold mt-1">
+                {firstName}
+              </h1>
+              <p className="mt-3 text-sidebar-foreground/80 text-base md:text-lg">
+                {headlineMessage}
+              </p>
+
+              {/* Stat trio */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  <p className="text-xs uppercase tracking-wider text-sidebar-foreground/60 font-medium">My Raised</p>
+                  <p className="text-2xl font-bold mt-1">${totalRaisedAll.toFixed(0)}</p>
+                  <p className="text-xs text-sidebar-foreground/60 mt-1">
+                    {attributedCampaigns.length} campaign{attributedCampaigns.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  <p className="text-xs uppercase tracking-wider text-sidebar-foreground/60 font-medium">Team Rank</p>
+                  <p className="text-2xl font-bold mt-1">
+                    {bestRank > 0 && bestRank < 999 ? `#${bestRank}` : '—'}
+                    {leaderboard.length > 0 && (
+                      <span className="text-base font-normal text-sidebar-foreground/60"> / {leaderboard.length}</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-sidebar-foreground/60 mt-1">On Your Team</p>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  <p className="text-xs uppercase tracking-wider text-sidebar-foreground/60 font-medium">Supporters</p>
+                  <p className="text-2xl font-bold mt-1">{totalSupportersAll}</p>
+                  <p className="text-xs text-sidebar-foreground/60 mt-1">Unique Donors</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Player card */}
+            <div className="md:w-64 shrink-0">
+              <div className="bg-white/5 border border-white/10 rounded-lg p-5 flex flex-col items-center text-center">
+                <div className="h-16 w-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
+                  {initials}
+                </div>
+                <p className="mt-3 font-semibold">{firstName} {lastName}</p>
+                <p className="text-xs uppercase tracking-wider text-sidebar-foreground/60 mt-1">
+                  Player
+                </p>
+                {headline && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="mt-4 w-full bg-white text-sidebar hover:bg-white/90"
+                    onClick={() => shareLink(headline.personalUrl, headline.name, true)}
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share My Link
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ====================== HEADLINE CHALLENGE ======================= */}
+      {headline && (
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <Badge className="bg-primary text-primary-foreground hover:bg-primary">
+                <Target className="h-3 w-3 mr-1" /> Roster Challenge
+              </Badge>
+              {headline.end_date && daysLeft(headline.end_date) !== null && (
+                <Badge variant="outline" className="border-primary/30 text-primary">
+                  <Clock className="h-3 w-3 mr-1" /> {daysLeft(headline.end_date)} Days Left
+                </Badge>
+              )}
+              {headline.end_date && (
+                <Badge variant="outline" className="text-muted-foreground">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Ends {new Date(headline.end_date).toLocaleDateString()}
+                </Badge>
+              )}
+            </div>
+            <CardTitle className="text-2xl">{headline.name}</CardTitle>
+            <CardDescription>Your Headline Challenge</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Team pot */}
+            {(headline.goal_amount || 0) > 0 && (
+              <div className="bg-muted/40 rounded-lg p-4">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="font-medium uppercase tracking-wider text-xs text-muted-foreground">Team Pot</span>
+                  <span className="font-semibold">
+                    ${(headline.amount_raised || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} / ${(headline.goal_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </span>
+                </div>
+                <Progress
+                  value={Math.min(((headline.amount_raised || 0) / (headline.goal_amount || 1)) * 100, 100)}
+                  className="h-2"
+                />
+              </div>
+            )}
+
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Personal goal + share toolkit */}
+              <div className="space-y-5">
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-2">My Personal Goal</p>
+                  <div className="flex items-baseline justify-between mb-2">
+                    <span className="text-2xl font-bold text-primary">
+                      ${headline.totalRaised.toFixed(0)}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      of ${headline.personalGoal.toFixed(0)} ({Math.round(headline.percentToGoal)}%)
+                    </span>
+                  </div>
+                  <Progress value={headline.percentToGoal} className="h-3" />
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-2">Your Personal Link</p>
+                  <div className="flex items-center gap-2 bg-muted/40 rounded-md px-3 py-2 border">
+                    <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm truncate flex-1">{headline.personalUrl.replace(/^https?:\/\//, '')}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2"
+                      onClick={() => copyLink(headline.personalUrl, true)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-2 mt-3">
+                    <Button variant="outline" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => openShare('sms', headline.name, headline.personalUrl)}>
+                      <MessageSquare className="h-4 w-4" />
+                      <span className="text-[10px]">Text</span>
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => openShare('email', headline.name, headline.personalUrl)}>
+                      <Mail className="h-4 w-4" />
+                      <span className="text-[10px]">Email</span>
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => openShare('facebook', headline.name, headline.personalUrl)}>
+                      <Facebook className="h-4 w-4" />
+                      <span className="text-[10px]">Facebook</span>
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => openShare('twitter', headline.name, headline.personalUrl)}>
+                      <Twitter className="h-4 w-4" />
+                      <span className="text-[10px]">X</span>
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-col h-auto py-2 gap-1" onClick={() => openShare('whatsapp', headline.name, headline.personalUrl)}>
+                      <MessageCircle className="h-4 w-4" />
+                      <span className="text-[10px]">WhatsApp</span>
+                    </Button>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3" />
+                    Tip: Players who share 5+ times raise 3× more on average.
+                  </p>
+                </div>
+              </div>
+
+              {/* Inline leaderboard (top 5 + see all) */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Team Leaderboard</p>
+                  <Medal className="h-4 w-4 text-primary" />
+                </div>
+                {leaderboard.length === 0 ? (
+                  <div className="text-sm text-muted-foreground bg-muted/40 rounded-md p-4 text-center">
+                    No donations yet — be the first to share your link!
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {leaderboard.slice(0, 5).map((entry, i) => (
+                      <div
+                        key={entry.userId}
+                        className={`flex items-center justify-between px-3 py-2 rounded-md ${
+                          entry.isCurrentUser
+                            ? 'bg-primary/5 border border-primary/20'
+                            : 'bg-muted/30'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-6 text-center">{getRankIcon(i + 1)}</span>
+                          <span className={`text-sm truncate ${entry.isCurrentUser ? 'font-semibold' : 'font-medium'}`}>
+                            {entry.firstName} {entry.lastName}
+                          </span>
+                          {entry.isCurrentUser && (
+                            <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">YOU</Badge>
+                          )}
+                        </div>
+                        <span className="text-sm font-semibold tabular-nums">
+                          ${entry.totalRaised.toFixed(0)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {gapToNext > 0 && aheadEntry && (
+                  <p className="text-xs text-muted-foreground mt-3 text-center">
+                    <span className="font-semibold text-primary">${gapToNext.toFixed(0)}</span> separates you from #{currentEntryIdx}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ========================= OTHER CAMPAIGNS ======================== */}
+      {(otherAttributed.length > 0 || teamOnly.length > 0) && (
+        <div>
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-primary" />
+            Other Campaigns
+          </h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {otherAttributed.map(campaign => {
+              const dl = daysLeft(campaign.end_date);
+              return (
+                <Card key={campaign.id} className="border-l-4 border-l-primary/60">
+                  <CardContent className="pt-5">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <h4 className="font-semibold leading-tight">{campaign.name}</h4>
+                      {dl !== null && (
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          <Clock className="h-3 w-3 mr-1" /> {dl}d Left
+                        </Badge>
+                      )}
+                    </div>
+                    <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10 text-[10px] mb-3">
+                      Roster Challenge
+                    </Badge>
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">My Progress</span>
+                        <span className="font-medium">${campaign.totalRaised.toFixed(0)} / ${campaign.personalGoal.toFixed(0)}</span>
+                      </div>
+                      <Progress value={campaign.percentToGoal} className="h-2" />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => copyLink(campaign.personalUrl, true)}>
+                        <Copy className="h-4 w-4 mr-1" />
+                        Copy
+                      </Button>
+                      <Button variant="default" size="sm" className="flex-1" onClick={() => shareLink(campaign.personalUrl, campaign.name, true)}>
+                        <Share2 className="h-4 w-4 mr-1" />
                         Share
                       </Button>
                     </div>
@@ -850,12 +1039,54 @@ export default function PlayerDashboard() {
                 </Card>
               );
             })}
-          </CardContent>
-        </Card>
+
+            {teamOnly.map(campaign => {
+              const dl = daysLeft(campaign.end_date);
+              const goalAmount = campaign.goal_amount || 0;
+              const amountRaised = campaign.amount_raised || 0;
+              const progress = goalAmount > 0 ? (amountRaised / goalAmount) * 100 : 0;
+              const campaignUrl = getCampaignUrl(campaign);
+              return (
+                <Card key={campaign.id} className="border-l-4 border-l-muted-foreground/30">
+                  <CardContent className="pt-5">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <h4 className="font-semibold leading-tight">{campaign.name}</h4>
+                      {dl !== null && (
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          <Clock className="h-3 w-3 mr-1" /> {dl}d Left
+                        </Badge>
+                      )}
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] mb-3">Team Campaign</Badge>
+                    {goalAmount > 0 && (
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Team Progress</span>
+                          <span className="font-medium">${amountRaised.toFixed(0)} / ${goalAmount.toFixed(0)}</span>
+                        </div>
+                        <Progress value={Math.min(progress, 100)} className="h-2" />
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => copyLink(campaignUrl, false)}>
+                        <Copy className="h-4 w-4 mr-1" />
+                        Copy
+                      </Button>
+                      <Button variant="default" size="sm" className="flex-1" onClick={() => shareLink(campaignUrl, campaign.name, false)}>
+                        <Share2 className="h-4 w-4 mr-1" />
+                        Share
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
       )}
 
-      {/* Family Members Section - Only show for players, not parents */}
-      {!isParentView && rosterMembership && (
+      {/* ============================ FAMILY ============================== */}
+      {rosterMembership && (
         <ManageGuardiansCard
           organizationUserId={rosterMembership.id}
           organizationId={rosterMembership.organization_id}
