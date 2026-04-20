@@ -171,7 +171,6 @@ const AppContent = () => {
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path="/set-password" element={<SetPassword />} />
         <Route path="/c/:slug" element={<CampaignLanding />} />
-        <Route path="/c/:slug/leaderboard" element={<CampaignLeaderboard />} />
         <Route path="/c/:slug/:rosterMemberSlug" element={<CampaignLanding />} />
         <Route path="/schools/:state/:slug" element={<SchoolLandingPage />} />
         <Route path="/districts/:state/:slug" element={<DistrictLandingPage />} />
@@ -208,6 +207,7 @@ const AppContent = () => {
         <Route path="/dashboard/messages/:id" element={<ProtectedRoute><Conversation /></ProtectedRoute>} />
         <Route path="/dashboard/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
         <Route path="/dashboard/my-fundraising" element={<ProtectedRoute><MyFundraising /></ProtectedRoute>} />
+        <Route path="/dashboard/my-fundraising/leaderboard/:slug" element={<ProtectedRoute><CampaignLeaderboard /></ProtectedRoute>} />
         <Route path="/dashboard/family" element={<ProtectedRoute><FamilyDashboard /></ProtectedRoute>} />
         <Route path="/dashboard/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
         <Route path="/system-admin" element={<ProtectedRoute><SystemAdminGuard><SystemAdminDashboard /></SystemAdminGuard></ProtectedRoute>} />

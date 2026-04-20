@@ -1153,7 +1153,7 @@ export default function PlayerDashboard() {
                 {headline?.slug && leaderboard.length > 0 && (
                   <div className="mt-3 flex justify-end">
                     <Button asChild variant="link" size="sm" className="h-auto p-0 text-primary">
-                      <Link to={`/c/${headline.slug}/leaderboard`}>
+                      <Link to={`/dashboard/my-fundraising/leaderboard/${headline.slug}`}>
                         View full leaderboard
                         <ArrowRight className="h-3.5 w-3.5 ml-1" />
                       </Link>
