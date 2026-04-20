@@ -306,6 +306,6 @@ export default function CampaignLeaderboard() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </DashboardPageLayout>
   );
 }
