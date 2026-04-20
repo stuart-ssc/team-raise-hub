@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Calendar, Clock, Medal, Share2, Target, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { fetchRosterLeaderboard, type LeaderboardEntry } from "@/lib/leaderboard";
+import DashboardPageLayout from "@/components/DashboardPageLayout";
 
 interface CampaignRecord {
   id: string;
@@ -114,28 +115,35 @@ export default function CampaignLeaderboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background py-10">
-        <div className="max-w-4xl mx-auto px-4 space-y-4">
+      <DashboardPageLayout loading>
+        <div className="max-w-4xl mx-auto space-y-4">
           <Skeleton className="h-8 w-40" />
           <Skeleton className="h-40 w-full" />
           <Skeleton className="h-96 w-full" />
         </div>
-      </div>
+      </DashboardPageLayout>
     );
   }
 
   if (notFound || !campaign) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center space-y-3">
+      <DashboardPageLayout
+        segments={[
+          { label: "My Fundraising", path: "/dashboard/my-fundraising" },
+          { label: "Leaderboard" },
+        ]}
+      >
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center space-y-3">
           <Trophy className="h-10 w-10 text-muted-foreground mx-auto" />
           <h1 className="text-xl font-semibold">Campaign not found</h1>
           <p className="text-sm text-muted-foreground">The campaign you're looking for doesn't exist.</p>
           <Button asChild variant="outline">
-            <Link to="/">Back to home</Link>
+            <Link to="/dashboard/my-fundraising">Back to My Fundraising</Link>
           </Button>
+          </div>
         </div>
-      </div>
+      </DashboardPageLayout>
     );
   }
 
@@ -145,7 +153,13 @@ export default function CampaignLeaderboard() {
   const progressPct = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0;
 
   return (
-    <div className="min-h-screen bg-background py-10">
+    <DashboardPageLayout
+      segments={[
+        { label: "My Fundraising", path: "/dashboard/my-fundraising" },
+        { label: campaign.name, path: "/dashboard/my-fundraising" },
+        { label: "Leaderboard" },
+      ]}
+    >
       <Helmet>
         <title>{campaign.name} — Team Leaderboard</title>
         <meta
@@ -154,12 +168,12 @@ export default function CampaignLeaderboard() {
         />
       </Helmet>
 
-      <div className="max-w-4xl mx-auto px-4 space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <Link
-          to={`/c/${campaign.slug}`}
+          to="/dashboard/my-fundraising"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to {campaign.name}
+          <ArrowLeft className="h-4 w-4" /> Back to My Fundraising
         </Link>
 
         {/* Header card */}
