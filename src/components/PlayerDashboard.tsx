@@ -75,6 +75,8 @@ export default function PlayerDashboard() {
     group_id: string | null;
     roster_id: number | null;
   } | null>(null);
+  const [pitchDialogOpen, setPitchDialogOpen] = useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
