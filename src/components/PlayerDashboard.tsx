@@ -1015,6 +1015,11 @@ export default function PlayerDashboard() {
             url={headline.personalUrl}
             campaignName={headline.name}
             participantName={firstName}
+            logoUrl={pickBrandLogo({
+              groupLogo: headline.groupLogo,
+              schoolLogo: headline.schoolLogo,
+              orgLogo: headline.orgLogo,
+            })}
           />
         </>
       )}
