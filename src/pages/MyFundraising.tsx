@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
@@ -34,6 +35,7 @@ import { PitchEditor } from "@/components/PitchEditor";
 import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
 import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "@/components/ManageGuardiansCard";
+import { ShareMenu } from "@/components/ShareMenu";
 import MyConnectedStudentsCard from "@/components/MyConnectedStudentsCard";
 import InviteParentDialog from "@/components/InviteParentDialog";
 import { useNavigate } from "react-router-dom";
@@ -494,26 +496,6 @@ export default function MyFundraising() {
     });
   };
 
-  const shareLink = async (url: string, campaignName: string, childName?: string) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: childName
-            ? `Support ${childName} in ${campaignName}`
-            : `Support me in ${campaignName}`,
-          text: childName
-            ? `Help ${childName} reach their fundraising goal for ${campaignName}!`
-            : `Help me reach my fundraising goal for ${campaignName}!`,
-          url,
-        });
-      } catch (error) {
-        console.error("Error sharing:", error);
-      }
-    } else {
-      copyLink(url);
-    }
-  };
-
   /* --------------------------- Derived data --------------------------- */
 
   const totalRaisedAll = stats.reduce((sum, s) => sum + s.totalRaised, 0);
@@ -676,7 +658,6 @@ export default function MyFundraising() {
                       stat={stat}
                       isParentView={isParentView}
                       onCopy={copyLink}
-                      onShare={shareLink}
                       onTogglePitch={(id) =>
                         setEditingPitchId(editingPitchId === id ? null : id)
                       }
@@ -1018,7 +999,6 @@ function CampaignCard({
   stat,
   isParentView,
   onCopy,
-  onShare,
   onTogglePitch,
   isPitchOpen,
   onOpenQR,
@@ -1028,7 +1008,6 @@ function CampaignCard({
   stat: CampaignStat;
   isParentView: boolean;
   onCopy: (url: string) => void;
-  onShare: (url: string, name: string, child?: string) => void;
   onTogglePitch: (id: string) => void;
   isPitchOpen: boolean;
   onOpenQR: () => void;
@@ -1187,12 +1166,23 @@ function CampaignCard({
               <IconBtn label="Show QR code" onClick={onOpenQR}>
                 <QrCode className="h-4 w-4" />
               </IconBtn>
-              <IconBtn
-                label="Share"
-                onClick={() => onShare(shareUrl, stat.campaignName, stat.childName)}
+              <ShareMenu
+                url={shareUrl}
+                title={
+                  stat.childName
+                    ? `Support ${stat.childName} in ${stat.campaignName}`
+                    : `Support ${stat.campaignName}`
+                }
+                text={
+                  stat.childName
+                    ? `Help ${stat.childName} reach their fundraising goal for ${stat.campaignName}!`
+                    : `Help me reach my fundraising goal for ${stat.campaignName}!`
+                }
               >
-                <Share2 className="h-4 w-4" />
-              </IconBtn>
+                <IconBtn label="Share">
+                  <Share2 className="h-4 w-4" />
+                </IconBtn>
+              </ShareMenu>
               <IconBtn
                 label="Open"
                 onClick={() => window.open(shareUrl, "_blank")}
@@ -1265,32 +1255,34 @@ function StatColumn({
   );
 }
 
-function IconBtn({
-  children,
-  label,
-  onClick,
-  active,
-}: {
-  children: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  active?: boolean;
-}) {
+const IconBtn = React.forwardRef<
+  HTMLButtonElement,
+  {
+    children: React.ReactNode;
+    label: string;
+    onClick?: () => void;
+    active?: boolean;
+  } & React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ children, label, onClick, active, className, ...rest }, ref) => {
   return (
     <button
+      ref={ref}
       type="button"
       aria-label={label}
       title={label}
       onClick={onClick}
+      {...rest}
       className={cn(
         "inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground",
-        active && "bg-background text-foreground"
+        active && "bg-background text-foreground",
+        className
       )}
     >
       {children}
     </button>
   );
-}
+});
+IconBtn.displayName = "IconBtn";
 
 function CompactCampaignRow({
   stat,

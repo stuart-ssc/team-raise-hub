@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "./ManageGuardiansCard";
 import { RecordPitchDialog } from "@/components/player/RecordPitchDialog";
+import { ShareMenu } from "@/components/ShareMenu";
 import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
 
 interface Campaign {
@@ -562,28 +563,14 @@ export default function PlayerDashboard() {
     });
   };
 
-  const shareLink = async (url: string, campaignName: string, isPersonal: boolean = false, childName?: string) => {
-    const shareTitle = isPersonal 
+  const buildShareTitle = (campaignName: string, isPersonal: boolean = false, childName?: string) =>
+    isPersonal
       ? (childName ? `Support ${childName} in ${campaignName}` : `Support me in ${campaignName}`)
       : `Support ${campaignName}`;
-    const shareText = isPersonal 
+  const buildShareText = (campaignName: string, isPersonal: boolean = false, childName?: string) =>
+    isPersonal
       ? (childName ? `Help ${childName} reach their fundraising goal for ${campaignName}!` : `Help me reach my fundraising goal for ${campaignName}!`)
       : `Support our ${campaignName} fundraiser!`;
-      
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: shareTitle,
-          text: shareText,
-          url: url,
-        });
-      } catch (error) {
-        console.error('Error sharing:', error);
-      }
-    } else {
-      copyLink(url, isPersonal, childName);
-    }
-  };
 
   const getCampaignUrl = (campaign: Campaign) => {
     return `${window.location.origin}/c/${campaign.slug}`;
@@ -730,10 +717,16 @@ export default function PlayerDashboard() {
                         <Copy className="h-4 w-4 mr-2" />
                         {linkedChildren.length > 1 ? `Copy ${campaign.childName?.split(' ')[0]}'s Link` : "Copy Link"}
                       </Button>
-                      <Button variant="default" size="sm" className="flex-1" onClick={() => shareLink(campaign.personalUrl, campaign.name, true, campaign.childName)}>
-                        <Share2 className="h-4 w-4 mr-2" />
-                        Share
-                      </Button>
+                      <ShareMenu
+                        url={campaign.personalUrl}
+                        title={buildShareTitle(campaign.name, true, campaign.childName)}
+                        text={buildShareText(campaign.name, true, campaign.childName)}
+                      >
+                        <Button variant="default" size="sm" className="flex-1">
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Share
+                        </Button>
+                      </ShareMenu>
                     </div>
                   </CardContent>
                 </Card>
@@ -951,14 +944,19 @@ export default function PlayerDashboard() {
                   </div>
                 </div>
                 {headline && (
-                  <Button
-                    size="sm"
-                    className="relative mt-4 w-full bg-white text-sidebar hover:bg-white/90 font-semibold"
-                    onClick={() => shareLink(headline.personalUrl, headline.name, true)}
+                  <ShareMenu
+                    url={headline.personalUrl}
+                    title={buildShareTitle(headline.name, true)}
+                    text={buildShareText(headline.name, true)}
                   >
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Share My Link
-                  </Button>
+                    <Button
+                      size="sm"
+                      className="relative mt-4 w-full bg-white text-sidebar hover:bg-white/90 font-semibold"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share My Link
+                    </Button>
+                  </ShareMenu>
                 )}
               </div>
             </div>
@@ -993,14 +991,19 @@ export default function PlayerDashboard() {
                   >
                     <QrCode className="h-4 w-4 mr-2" /> Show My QR
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-                    onClick={() => shareLink(headline.personalUrl, headline.name, true)}
+                  <ShareMenu
+                    url={headline.personalUrl}
+                    title={buildShareTitle(headline.name, true)}
+                    text={buildShareText(headline.name, true)}
                   >
-                    <Share2 className="h-4 w-4 mr-2" /> Share Link
-                  </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" /> Share Link
+                    </Button>
+                  </ShareMenu>
                 </div>
               </div>
             </>
@@ -1248,10 +1251,16 @@ export default function PlayerDashboard() {
                         <Copy className="h-4 w-4 mr-1" />
                         Copy
                       </Button>
-                      <Button variant="default" size="sm" className="flex-1" onClick={() => shareLink(campaign.personalUrl, campaign.name, true)}>
-                        <Share2 className="h-4 w-4 mr-1" />
-                        Share
-                      </Button>
+                      <ShareMenu
+                        url={campaign.personalUrl}
+                        title={buildShareTitle(campaign.name, true)}
+                        text={buildShareText(campaign.name, true)}
+                      >
+                        <Button variant="default" size="sm" className="flex-1">
+                          <Share2 className="h-4 w-4 mr-1" />
+                          Share
+                        </Button>
+                      </ShareMenu>
                     </div>
                   </CardContent>
                 </Card>
@@ -1290,10 +1299,16 @@ export default function PlayerDashboard() {
                         <Copy className="h-4 w-4 mr-1" />
                         Copy
                       </Button>
-                      <Button variant="default" size="sm" className="flex-1" onClick={() => shareLink(campaignUrl, campaign.name, false)}>
-                        <Share2 className="h-4 w-4 mr-1" />
-                        Share
-                      </Button>
+                      <ShareMenu
+                        url={campaignUrl}
+                        title={buildShareTitle(campaign.name, false)}
+                        text={buildShareText(campaign.name, false)}
+                      >
+                        <Button variant="default" size="sm" className="flex-1">
+                          <Share2 className="h-4 w-4 mr-1" />
+                          Share
+                        </Button>
+                      </ShareMenu>
                     </div>
                   </CardContent>
                 </Card>

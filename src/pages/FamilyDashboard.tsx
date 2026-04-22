@@ -16,6 +16,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { ShareMenu } from "@/components/ShareMenu";
 
 interface GroupLeader {
   id: string;
@@ -279,21 +280,6 @@ const FamilyDashboard = () => {
   const copyToClipboard = (url: string) => {
     navigator.clipboard.writeText(url);
     toast.success('Link copied to clipboard!');
-  };
-
-  const shareLink = async (url: string, childName: string) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Support ${childName}'s Fundraiser`,
-          url,
-        });
-      } catch (err) {
-        copyToClipboard(url);
-      }
-    } else {
-      copyToClipboard(url);
-    }
   };
 
   const getRankBadge = (rank: number) => {
@@ -761,14 +747,15 @@ const FamilyDashboard = () => {
                                           <Copy className="h-4 w-4 mr-1" />
                                           Copy
                                         </Button>
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => shareLink(shareUrl, stat.childName)}
+                                        <ShareMenu
+                                          url={shareUrl}
+                                          title={`Support ${stat.childName}'s Fundraiser`}
                                         >
-                                          <Share2 className="h-4 w-4 mr-1" />
-                                          Share
-                                        </Button>
+                                          <Button variant="outline" size="sm">
+                                            <Share2 className="h-4 w-4 mr-1" />
+                                            Share
+                                          </Button>
+                                        </ShareMenu>
                                         <Button
                                           variant="outline"
                                           size="sm"
