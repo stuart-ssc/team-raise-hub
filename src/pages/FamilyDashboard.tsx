@@ -747,14 +747,15 @@ const FamilyDashboard = () => {
                                           <Copy className="h-4 w-4 mr-1" />
                                           Copy
                                         </Button>
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => shareLink(shareUrl, stat.childName)}
+                                        <ShareMenu
+                                          url={shareUrl}
+                                          title={`Support ${stat.childName}'s Fundraiser`}
                                         >
-                                          <Share2 className="h-4 w-4 mr-1" />
-                                          Share
-                                        </Button>
+                                          <Button variant="outline" size="sm">
+                                            <Share2 className="h-4 w-4 mr-1" />
+                                            Share
+                                          </Button>
+                                        </ShareMenu>
                                         <Button
                                           variant="outline"
                                           size="sm"
