@@ -36,7 +36,6 @@ import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "@/components/ManageGuardiansCard";
 import MyConnectedStudentsCard from "@/components/MyConnectedStudentsCard";
 import InviteParentDialog from "@/components/InviteParentDialog";
-import { useConnectedGuardians } from "@/hooks/useConnectedGuardians";
 import { useNavigate } from "react-router-dom";
 import {
   Select,
@@ -147,8 +146,6 @@ export default function MyFundraising() {
   const [sortMode, setSortMode] = useState<SortMode>("recent");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [inviteOpen, setInviteOpen] = useState(false);
-
-  const { guardians } = useConnectedGuardians(rosterMembership?.id ?? null);
 
   useEffect(() => {
     if (user) fetchFundraisingStats();
@@ -602,14 +599,6 @@ export default function MyFundraising() {
           </Button>
         </header>
 
-        {/* Connected family banner (player view only) */}
-        {!isParentView && guardians.length > 0 && (
-          <ConnectedFamilyBanner
-            guardians={guardians}
-            onInviteClick={() => setInviteOpen(true)}
-          />
-        )}
-
         {loading ? (
           <LoadingSkeleton />
         ) : stats.length === 0 ? (
@@ -617,15 +606,21 @@ export default function MyFundraising() {
         ) : (
           <>
             {/* Hero stats */}
-            <section className="grid gap-4 md:grid-cols-3">
-              <LifetimeRaisedCard
+            <section className="grid gap-4 lg:grid-cols-10">
+              <div className="lg:col-span-4">
+                <LifetimeRaisedCard
                 amount={totalRaisedAll}
                 campaignCount={stats.length}
                 potShare={teamPotShare}
                 sparkline={sparkline}
-              />
-              <SupportersCard count={totalSupportersAll} />
-              <BestRankCard rank={bestRank} campaignName={bestRankCampaign} />
+                />
+              </div>
+              <div className="lg:col-span-3">
+                <SupportersCard count={totalSupportersAll} />
+              </div>
+              <div className="lg:col-span-3">
+                <BestRankCard rank={bestRank} campaignName={bestRankCampaign} />
+              </div>
             </section>
 
             {/* Filter row */}
