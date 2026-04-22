@@ -1141,12 +1141,14 @@ function CampaignCard({
           )}
 
           {/* Link bar */}
-          <div className="mt-5 flex flex-col gap-2 rounded-lg border bg-muted/40 px-3 py-2 sm:flex-row sm:items-center">
-            <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-muted-foreground">
-              <Link2 className="h-4 w-4 shrink-0" />
-              <span className="truncate font-mono">{displayUrl}</span>
+          <div className="mt-5 flex flex-col gap-2 rounded-lg border bg-muted/40 px-3 py-2 lg:flex-row lg:items-center">
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-2 rounded-md border bg-background/80 px-3 py-2 text-sm text-muted-foreground">
+                <Link2 className="h-4 w-4 shrink-0" />
+                <span className="min-w-0 truncate font-mono">{displayUrl}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center justify-end gap-1">
               <IconBtn label="Copy link" onClick={() => onCopy(shareUrl)}>
                 <Copy className="h-4 w-4" />
               </IconBtn>
@@ -1169,7 +1171,7 @@ function CampaignCard({
                 <Button
                   size="sm"
                   onClick={() => onTogglePitch(stat.campaignId)}
-                  className="ml-1 bg-emerald-600 text-white hover:bg-emerald-700"
+                  className="ml-1 whitespace-nowrap bg-emerald-600 text-white hover:bg-emerald-700"
                 >
                   {isPitchOpen ? (
                     <>
@@ -1179,7 +1181,7 @@ function CampaignCard({
                   ) : (
                     <>
                       <Mic className="mr-1.5 h-3.5 w-3.5" />
-                      {hasPitch ? "Re-record pitch" : "Record pitch"}
+                      {hasPitch ? "Re-record" : "Record pitch"}
                     </>
                   )}
                 </Button>
