@@ -7,6 +7,7 @@ import DashboardPageLayout from "@/components/DashboardPageLayout";
 import DonorActivityTimeline from "@/components/DonorActivityTimeline";
 import DonorCommunicationHistory from "@/components/DonorCommunicationHistory";
 import DonorInsightsPanel from "@/components/DonorInsightsPanel";
+import AddToListDialog from "@/components/AddToListDialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +26,8 @@ import {
   Building2,
   CheckCircle2,
   X,
-  Plus
+  Plus,
+  List
 } from "lucide-react";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
@@ -80,6 +82,13 @@ interface BusinessAffiliation {
   linked_at: string;
 }
 
+interface ListMembership {
+  id: string;
+  list_id: string;
+  list_name: string;
+  added_at: string;
+}
+
 const DonorProfile = () => {
   const { donorId } = useParams<{ donorId: string }>();
   const navigate = useNavigate();
@@ -89,6 +98,9 @@ const DonorProfile = () => {
   const [donor, setDonor] = useState<DonorProfile | null>(null);
   const [donations, setDonations] = useState<DonationHistory[]>([]);
   const [businessAffiliations, setBusinessAffiliations] = useState<BusinessAffiliation[]>([]);
+  const [listMemberships, setListMemberships] = useState<ListMembership[]>([]);
+  const [showAddToListDialog, setShowAddToListDialog] = useState(false);
+  const [removingMembershipId, setRemovingMembershipId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
@@ -247,6 +259,9 @@ const DonorProfile = () => {
       }));
 
       setBusinessAffiliations(formattedAffiliations);
+
+      // Fetch list memberships
+      await fetchListMemberships();
     } catch (error) {
       console.error("Error fetching donor data:", error);
       toast({
@@ -256,6 +271,48 @@ const DonorProfile = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchListMemberships = async () => {
+    if (!donorId || !organizationUser?.organization_id) return;
+    const { data, error } = await supabase
+      .from("donor_list_members")
+      .select("id, added_at, donor_lists!inner(id, name, organization_id)")
+      .eq("donor_id", donorId)
+      .eq("donor_lists.organization_id", organizationUser.organization_id);
+
+    if (error) {
+      console.error("Error fetching list memberships:", error);
+      return;
+    }
+    const formatted: ListMembership[] = (data || []).map((m: any) => ({
+      id: m.id,
+      list_id: m.donor_lists.id,
+      list_name: m.donor_lists.name,
+      added_at: m.added_at,
+    }));
+    setListMemberships(formatted);
+  };
+
+  const handleRemoveFromList = async (membershipId: string) => {
+    setRemovingMembershipId(membershipId);
+    try {
+      const { error } = await supabase
+        .from("donor_list_members")
+        .delete()
+        .eq("id", membershipId);
+      if (error) throw error;
+      toast({ title: "Removed", description: "Donor removed from list" });
+      await fetchListMemberships();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove from list",
+        variant: "destructive",
+      });
+    } finally {
+      setRemovingMembershipId(null);
     }
   };
 
@@ -632,6 +689,67 @@ const DonorProfile = () => {
                   </Card>
                 )}
 
+                {/* List Memberships */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <List className="h-4 w-4" />
+                          List Memberships
+                        </CardTitle>
+                        <CardDescription>
+                          Outreach lists this donor belongs to
+                        </CardDescription>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setShowAddToListDialog(true)}
+                        title="Add to list"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {listMemberships.length === 0 ? (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-muted-foreground">
+                          Not on any lists yet
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {listMemberships.map((m) => (
+                          <div
+                            key={m.id}
+                            className="flex items-center justify-between p-2 rounded-md border bg-card"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{m.list_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Added {format(parseISO(m.added_at), "MMM d, yyyy")}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => handleRemoveFromList(m.id)}
+                              disabled={removingMembershipId === m.id}
+                              title="Remove from list"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
                 {/* AI Insights Panel */}
                 <DonorInsightsPanel donorId={donor.id} />
 
@@ -703,6 +821,13 @@ const DonorProfile = () => {
           user_id: donor.user_id,
         } : null}
         onComplete={fetchDonorData}
+      />
+
+      <AddToListDialog
+        open={showAddToListDialog}
+        onOpenChange={setShowAddToListDialog}
+        selectedDonorIds={donor ? [donor.id] : []}
+        onComplete={fetchListMemberships}
       />
     </DashboardPageLayout>
   );

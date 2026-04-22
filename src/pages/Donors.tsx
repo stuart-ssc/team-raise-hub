@@ -40,7 +40,8 @@ import {
   Tag,
   Pencil,
   Building2,
-  Trash2
+  Trash2,
+  List
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -97,6 +98,9 @@ const Donors = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<string>("recent");
   const [filterBy, setFilterBy] = useState<string>("all");
+  const [filterList, setFilterList] = useState<string>("all");
+  const [lists, setLists] = useState<{ id: string; name: string }[]>([]);
+  const [memberMap, setMemberMap] = useState<Record<string, Set<string>>>({});
   const [importWizardOpen, setImportWizardOpen] = useState(false);
   const [selectedDonorIds, setSelectedDonorIds] = useState<string[]>([]);
   const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
@@ -109,6 +113,7 @@ const Donors = () => {
   const [menuDonor, setMenuDonor] = useState<DonorProfile | null>(null);
   const [showSingleEmailDialog, setShowSingleEmailDialog] = useState(false);
   const [showSingleTagDialog, setShowSingleTagDialog] = useState(false);
+  const [showSingleAddToListDialog, setShowSingleAddToListDialog] = useState(false);
   const [showLinkBusinessDialog, setShowLinkBusinessDialog] = useState(false);
   const [showEditDonorDialog, setShowEditDonorDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -116,17 +121,19 @@ const Donors = () => {
   useEffect(() => {
     if (organizationUser && !connectionsLoading) {
       fetchDonors(activeGroup?.id);
+      fetchLists();
       setupRealtimeSubscription();
     }
 
     return () => {
       supabase.channel('donors-updates').unsubscribe();
+      supabase.channel('donor-lists-updates').unsubscribe();
     };
   }, [organizationUser, activeGroup?.id, connectionsLoading, isParticipantView, connectedDonorEmails]);
 
   useEffect(() => {
     filterAndSortDonors();
-  }, [donors, searchQuery, sortBy, filterBy]);
+  }, [donors, searchQuery, sortBy, filterBy, filterList, memberMap]);
 
   // Auto-open import wizard when arriving with ?upload=1
   useEffect(() => {
@@ -162,7 +169,53 @@ const Donors = () => {
       )
       .subscribe();
 
+    supabase
+      .channel('donor-lists-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'donor_list_members' },
+        () => fetchLists()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'donor_lists' },
+        () => fetchLists()
+      )
+      .subscribe();
+
     return channel;
+  };
+
+  const fetchLists = async () => {
+    if (!organizationUser?.organization_id) return;
+    try {
+      const { data: listsData, error: listsErr } = await supabase
+        .from("donor_lists")
+        .select("id, name")
+        .eq("organization_id", organizationUser.organization_id)
+        .order("name");
+      if (listsErr) throw listsErr;
+      setLists(listsData || []);
+
+      const listIds = (listsData || []).map((l) => l.id);
+      if (listIds.length === 0) {
+        setMemberMap({});
+        return;
+      }
+      const { data: membersData, error: membersErr } = await supabase
+        .from("donor_list_members")
+        .select("list_id, donor_id")
+        .in("list_id", listIds);
+      if (membersErr) throw membersErr;
+      const map: Record<string, Set<string>> = {};
+      (membersData || []).forEach((m) => {
+        if (!map[m.list_id]) map[m.list_id] = new Set();
+        map[m.list_id].add(m.donor_id);
+      });
+      setMemberMap(map);
+    } catch (err) {
+      console.error("Error fetching lists:", err);
+    }
   };
 
   const fetchDonors = async (groupId?: string | null) => {
@@ -250,6 +303,18 @@ const Donors = () => {
         case "low":
           result = result.filter((d) => d.engagement_score < 40);
           break;
+      }
+    }
+
+    // List filter
+    if (filterList !== "all") {
+      if (filterList === "none") {
+        const allMembers = new Set<string>();
+        Object.values(memberMap).forEach((s) => s.forEach((id) => allMembers.add(id)));
+        result = result.filter((d) => !allMembers.has(d.id));
+      } else {
+        const members = memberMap[filterList] || new Set();
+        result = result.filter((d) => members.has(d.id));
       }
     }
 
@@ -379,13 +444,23 @@ const Donors = () => {
                       : "Track and engage with your supporters"}
                   </p>
                 </div>
-                <Button
-                  onClick={() => setImportWizardOpen(true)}
-                  className="bg-foreground text-background hover:bg-foreground/90 w-full sm:w-auto"
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload donors
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("/dashboard/donors/segmentation?tab=lists")}
+                    className="w-full sm:w-auto"
+                  >
+                    <List className="mr-2 h-4 w-4" />
+                    Lists
+                  </Button>
+                  <Button
+                    onClick={() => setImportWizardOpen(true)}
+                    className="bg-foreground text-background hover:bg-foreground/90 w-full sm:w-auto"
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload donors
+                  </Button>
+                </div>
               </div>
               
               {/* Admin-only quick actions */}
@@ -506,7 +581,7 @@ const Donors = () => {
             {/* Filters and Search */}
             <Card>
               <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                   <div className="md:col-span-2">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -529,6 +604,22 @@ const Donors = () => {
                       <SelectItem value="high">High Engagement</SelectItem>
                       <SelectItem value="medium">Medium Engagement</SelectItem>
                       <SelectItem value="low">Low Engagement</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterList} onValueChange={setFilterList}>
+                    <SelectTrigger>
+                      <List className="mr-2 h-4 w-4" />
+                      <SelectValue placeholder="All lists" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All lists</SelectItem>
+                      <SelectItem value="none">Not on any list</SelectItem>
+                      {lists.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
 
@@ -625,8 +716,7 @@ const Donors = () => {
                                   <Badge className={getEngagementColor(donor.engagement_score)}>
                                     {getEngagementLabel(donor.engagement_score)}
                                   </Badge>
-                                  {canManageDonors() && (
-                                    <DropdownMenu>
+                                  <DropdownMenu>
                                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                         <Button
                                           variant="ghost"
@@ -664,12 +754,25 @@ const Donors = () => {
                                             e.stopPropagation();
                                             setMenuDonor(donor);
                                             setMenuDonorId(donor.id);
+                                            setShowSingleAddToListDialog(true);
+                                          }}
+                                        >
+                                          <List className="mr-2 h-4 w-4" />
+                                          Add to List
+                                        </DropdownMenuItem>
+                                        {canManageDonors() && (
+                                          <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMenuDonor(donor);
+                                            setMenuDonorId(donor.id);
                                             setShowLinkBusinessDialog(true);
                                           }}
                                         >
                                           <Building2 className="mr-2 h-4 w-4" />
                                           Link to Business
                                         </DropdownMenuItem>
+                                        )}
                                         <DropdownMenuItem
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -680,8 +783,10 @@ const Donors = () => {
                                           <Pencil className="mr-2 h-4 w-4" />
                                           Edit Details
                                         </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem
+                                        {canManageDonors() && (
+                                          <>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setMenuDonor(donor);
@@ -692,9 +797,10 @@ const Donors = () => {
                                           <Trash2 className="mr-2 h-4 w-4" />
                                           Delete
                                         </DropdownMenuItem>
+                                          </>
+                                        )}
                                       </DropdownMenuContent>
                                     </DropdownMenu>
-                                  )}
                                 </div>
                               </div>
                       
@@ -816,6 +922,20 @@ const Donors = () => {
               setMenuDonorId(null);
               setMenuDonor(null);
               fetchDonors();
+            }}
+          />
+        )}
+
+        {/* Single Donor Add-to-List Dialog */}
+        {menuDonorId && (
+          <AddToListDialog
+            open={showSingleAddToListDialog}
+            onOpenChange={setShowSingleAddToListDialog}
+            selectedDonorIds={[menuDonorId]}
+            onComplete={() => {
+              setMenuDonorId(null);
+              setMenuDonor(null);
+              fetchLists();
             }}
           />
         )}

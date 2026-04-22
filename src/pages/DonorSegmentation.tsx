@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,8 @@ export default function DonorSegmentation() {
   const { toast } = useToast();
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup } = useActiveGroup();
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") === "lists" ? "lists" : "overview";
   
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
@@ -508,7 +510,7 @@ export default function DonorSegmentation() {
               </div>
             </div>
 
-            <Tabs defaultValue="overview" className="w-full">
+            <Tabs defaultValue={initialTab} className="w-full">
               <TabsList>
                 <TabsTrigger value="overview">RFM Overview</TabsTrigger>
                 <TabsTrigger value="segments">Custom Segments</TabsTrigger>
