@@ -585,7 +585,7 @@ export default function MyFundraising() {
         {/* Header */}
         <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-2">
-            <h1 className="font-serif text-4xl md:text-5xl font-semibold tracking-tight text-foreground">
+            <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground">
               {pageTitle}
             </h1>
             <p className="max-w-2xl text-muted-foreground">{subheading}</p>
