@@ -128,6 +128,16 @@ const Donors = () => {
     filterAndSortDonors();
   }, [donors, searchQuery, sortBy, filterBy]);
 
+  // Auto-open import wizard when arriving with ?upload=1
+  useEffect(() => {
+    if (searchParams.get("upload") === "1") {
+      setImportWizardOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("upload");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   const setupRealtimeSubscription = () => {
     if (!organizationUser?.organization_id) return;
 
