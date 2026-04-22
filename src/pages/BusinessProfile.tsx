@@ -168,6 +168,19 @@ const BusinessProfile = () => {
         .single();
 
       if (businessError) throw businessError;
+
+      // Access check for participants — allow if they OWN the business or
+      // the business id is in the resolved participant connection list.
+      const ownsBusiness =
+        !!organizationUser &&
+        (businessData as any).added_by_organization_user_id === organizationUser.id;
+      const connectedById = !!businessId && connectedBusinessIds.includes(businessId);
+      if (isParticipantView && !ownsBusiness && !connectedById) {
+        toast.error("You can only view businesses connected to your fundraising");
+        navigate("/dashboard/businesses");
+        return;
+      }
+
       setBusiness(businessData);
 
       // Fetch organization notes
