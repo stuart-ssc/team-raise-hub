@@ -17,6 +17,12 @@ interface QRDialogProps {
   scanStats?: { today: number; lastScannedRelative?: string };
   /** Best brand logo for the PDF poster (team → school → org → Sponsorly fallback). */
   logoUrl?: string;
+  /** School name (for school groups) or organization name (for nonprofits). Used in PDF title. */
+  schoolOrOrgName?: string | null;
+  /** Group/team name. Used in PDF title. */
+  groupName?: string | null;
+  /** Campaign description rendered under the PDF title. */
+  campaignDescription?: string | null;
 }
 
 const SPONSORLY_FALLBACK_LOGO = "/lovable-uploads/Sponsorly-Logo.png";
@@ -113,6 +119,9 @@ export function QRDialog({
   shortUrl,
   scanStats,
   logoUrl,
+  schoolOrOrgName,
+  groupName,
+  campaignDescription,
 }: QRDialogProps) {
   const { toast } = useToast();
   const qrWrapRef = useRef<HTMLDivElement>(null);
