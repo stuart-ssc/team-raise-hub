@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PitchEditor } from "@/components/PitchEditor";
-import QRCode from "react-qr-code";
+import { QRDialog } from "@/components/player/QRDialog";
 import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "@/components/ManageGuardiansCard";
 import MyConnectedStudentsCard from "@/components/MyConnectedStudentsCard";
@@ -136,7 +136,7 @@ export default function MyFundraising() {
 
   const [stats, setStats] = useState<CampaignStat[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showQRCode, setShowQRCode] = useState<string | null>(null);
+  const [qrDialogStat, setQrDialogStat] = useState<CampaignStat | null>(null);
   const [editingPitchId, setEditingPitchId] = useState<string | null>(null);
   const [rosterMembership, setRosterMembership] = useState<RosterMembership | null>(null);
   const [isParentView, setIsParentView] = useState(false);
