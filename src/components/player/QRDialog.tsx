@@ -315,9 +315,6 @@ export function QRDialog({
                 {badgeText}
               </span>
             </div>
-            <p className="mt-4 break-all px-2 text-center text-xs text-muted-foreground">
-              {displayShortUrl}
-            </p>
           </div>
 
           {/* Right: CTAs */}
