@@ -36,7 +36,6 @@ import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "@/components/ManageGuardiansCard";
 import MyConnectedStudentsCard from "@/components/MyConnectedStudentsCard";
 import InviteParentDialog from "@/components/InviteParentDialog";
-import { useConnectedGuardians } from "@/hooks/useConnectedGuardians";
 import { useNavigate } from "react-router-dom";
 import {
   Select,
@@ -147,8 +146,6 @@ export default function MyFundraising() {
   const [sortMode, setSortMode] = useState<SortMode>("recent");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [inviteOpen, setInviteOpen] = useState(false);
-
-  const { guardians } = useConnectedGuardians(rosterMembership?.id ?? null);
 
   useEffect(() => {
     if (user) fetchFundraisingStats();
@@ -602,14 +599,6 @@ export default function MyFundraising() {
           </Button>
         </header>
 
-        {/* Connected family banner (player view only) */}
-        {!isParentView && guardians.length > 0 && (
-          <ConnectedFamilyBanner
-            guardians={guardians}
-            onInviteClick={() => setInviteOpen(true)}
-          />
-        )}
-
         {loading ? (
           <LoadingSkeleton />
         ) : stats.length === 0 ? (
@@ -617,15 +606,21 @@ export default function MyFundraising() {
         ) : (
           <>
             {/* Hero stats */}
-            <section className="grid gap-4 md:grid-cols-3">
-              <LifetimeRaisedCard
+            <section className="grid gap-4 lg:grid-cols-10">
+              <div className="lg:col-span-4 [&>*]:h-full">
+                <LifetimeRaisedCard
                 amount={totalRaisedAll}
                 campaignCount={stats.length}
                 potShare={teamPotShare}
                 sparkline={sparkline}
-              />
-              <SupportersCard count={totalSupportersAll} />
-              <BestRankCard rank={bestRank} campaignName={bestRankCampaign} />
+                />
+              </div>
+              <div className="lg:col-span-3 [&>*]:h-full">
+                <SupportersCard count={totalSupportersAll} />
+              </div>
+              <div className="lg:col-span-3 [&>*]:h-full">
+                <BestRankCard rank={bestRank} campaignName={bestRankCampaign} />
+              </div>
             </section>
 
             {/* Filter row */}
@@ -896,19 +891,27 @@ function FilterToolbar({
       key={key}
       onClick={() => setStatusFilter(key)}
       className={cn(
-        "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+        "whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
         statusFilter === key
           ? "bg-foreground text-background"
           : "text-muted-foreground hover:text-foreground"
       )}
     >
-      {label} <span className="opacity-70">({count})</span>
+      {label}
+      <span
+        className={cn(
+          "ml-1.5",
+          statusFilter === key ? "text-background/70" : "text-muted-foreground/70"
+        )}
+      >
+        ({count})
+      </span>
     </button>
   );
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="inline-flex items-center gap-1 rounded-full border bg-card p-1">
+      <div className="inline-flex w-auto items-center gap-1 self-start rounded-full border bg-card p-1">
         {tab("active", "Active", counts.active)}
         {tab("past", "Past", counts.past)}
         {tab("all", "All", counts.all)}
