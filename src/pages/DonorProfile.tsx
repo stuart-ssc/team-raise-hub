@@ -564,7 +564,7 @@ const DonorProfile = () => {
                       </CardHeader>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <CardContent>
+                      <CardContent className="p-0 border-t">
                         <DonorActivityTimeline donorId={donor.id} />
                       </CardContent>
                     </CollapsibleContent>
@@ -586,7 +586,7 @@ const DonorProfile = () => {
                       </CardHeader>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <CardContent>
+                      <CardContent className="p-0 border-t">
                         <DonorCommunicationHistory donorEmail={donor.email} />
                       </CardContent>
                     </CollapsibleContent>
