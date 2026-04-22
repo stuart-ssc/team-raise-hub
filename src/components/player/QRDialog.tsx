@@ -205,21 +205,41 @@ export function QRDialog({
       const titleY = LOGO_BLOCK_BOTTOM + 36;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(28);
-      const title = subjectName
-        ? `Support ${subjectName}`
-        : `Support ${campaignName}`;
+      const entityLine = [schoolOrOrgName, groupName]
+        .filter((s): s is string => !!s && !!s.trim())
+        .map((s) => s.trim())
+        .join(" ");
+      const title = entityLine
+        ? `Support ${entityLine}`
+        : subjectName
+          ? `Support ${subjectName}`
+          : `Support ${campaignName}`;
       doc.text(title, pageWidth / 2, titleY, { align: "center" });
 
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(16);
-      doc.setTextColor(90);
-      doc.text(campaignName, pageWidth / 2, titleY + 30, { align: "center" });
-      doc.setTextColor(0);
+      // Description (campaigns.description) — wrapped, capped to keep page balanced
+      let descBlockHeight = 0;
+      const desc = (campaignDescription || "").trim();
+      if (desc) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(12);
+        doc.setTextColor(90);
+        const wrapped: string[] = doc.splitTextToSize(desc, pageWidth - 120);
+        const MAX_LINES = 4;
+        const lines = wrapped.length > MAX_LINES
+          ? [...wrapped.slice(0, MAX_LINES - 1), wrapped[MAX_LINES - 1].replace(/\s*\S*$/, "") + "…"]
+          : wrapped;
+        const lineHeight = 15;
+        lines.forEach((ln: string, i: number) => {
+          doc.text(ln, pageWidth / 2, titleY + 28 + i * lineHeight, { align: "center" });
+        });
+        descBlockHeight = lines.length * lineHeight;
+        doc.setTextColor(0);
+      }
 
       // QR
       const qrSize = 360;
       const qrX = (pageWidth - qrSize) / 2;
-      const qrY = titleY + 70;
+      const qrY = titleY + 28 + descBlockHeight + 18;
       doc.addImage(dataUrl, "PNG", qrX, qrY, qrSize, qrSize);
 
       // Scan instruction
@@ -234,10 +254,30 @@ export function QRDialog({
       doc.setTextColor(90);
       doc.text(displayShortUrl, pageWidth / 2, qrY + qrSize + 78, { align: "center" });
 
-      // Footer
-      doc.setFontSize(11);
+      // Footer: "Powered by [Sponsorly logo]" centered
+      const footerY = pageHeight - 40;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
       doc.setTextColor(140);
-      doc.text("sponsorly.io", pageWidth / 2, pageHeight - 36, { align: "center" });
+      const poweredText = "Powered by";
+      try {
+        const { dataUrl: spLogoUrl, width: spW, height: spH } = await loadImageAsPngDataUrl(
+          SPONSORLY_FALLBACK_LOGO,
+          80,
+          24
+        );
+        const textWidth = doc.getTextWidth(poweredText);
+        const gap = 6;
+        const totalWidth = textWidth + gap + spW;
+        const startX = (pageWidth - totalWidth) / 2;
+        // Baseline-align the "Powered by" text vertically with the logo's center
+        doc.text(poweredText, startX, footerY + spH / 2 + 3);
+        doc.addImage(spLogoUrl, "PNG", startX + textWidth + gap, footerY, spW, spH);
+      } catch {
+        doc.setFontSize(11);
+        doc.text("sponsorly.io", pageWidth / 2, pageHeight - 36, { align: "center" });
+      }
+      doc.setTextColor(0);
 
       doc.save(`${fileBase}-poster.pdf`);
       toast({ title: "Poster downloaded" });
