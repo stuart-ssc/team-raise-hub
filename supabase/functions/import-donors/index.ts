@@ -71,28 +71,35 @@ Deno.serve(async (req) => {
 
     console.log(`Starting import of ${donors.length} donors for organization ${organizationId}`);
 
-    // Verify user has permission to import donors for this organization
-    const { data: orgUser, error: orgError } = await supabase
+    // Verify user is an active member of this organization (any role can import).
+    // If multiple roles exist, prefer the most-privileged one for attribution.
+    const permissionRank: Record<string, number> = {
+      organization_admin: 5,
+      program_manager: 4,
+      participant: 3,
+      supporter: 2,
+      sponsor: 1,
+    };
+
+    const { data: orgUserRoles, error: orgError } = await supabase
       .from("organization_user")
-      .select("user_type_id, user_type!inner(permission_level)")
+      .select("id, user_type_id, user_type!inner(permission_level)")
       .eq("user_id", user.id)
       .eq("organization_id", organizationId)
-      .single();
+      .eq("active_user", true);
 
-    if (orgError || !orgUser) {
+    if (orgError || !orgUserRoles || orgUserRoles.length === 0) {
       return new Response(
         JSON.stringify({ error: "User does not belong to this organization" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const permissionLevel = (orgUser as any).user_type?.permission_level;
-    if (!["organization_admin", "program_manager"].includes(permissionLevel)) {
-      return new Response(
-        JSON.stringify({ error: "Insufficient permissions to import donors" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const sortedRoles = [...orgUserRoles].sort((a: any, b: any) =>
+      (permissionRank[b.user_type?.permission_level] || 0) -
+      (permissionRank[a.user_type?.permission_level] || 0)
+    );
+    const callerOrgUserId: string = (sortedRoles[0] as any).id;
 
     const result: ImportResult = {
       success: true,
@@ -155,6 +162,18 @@ Deno.serve(async (req) => {
               updateData.preferred_communication = donor.preferred_communication;
             }
 
+            // Only set ownership if it isn't already set (don't steal ownership from
+            // the original uploader when an admin re-imports the same donor)
+            const { data: existingFull } = await supabase
+              .from("donor_profiles")
+              .select("added_by_organization_user_id")
+              .eq("id", existingDonor.id)
+              .single();
+
+            if (!existingFull?.added_by_organization_user_id) {
+              updateData.added_by_organization_user_id = callerOrgUserId;
+            }
+
             const { error: updateError } = await supabase
               .from("donor_profiles")
               .update(updateData)
@@ -186,6 +205,7 @@ Deno.serve(async (req) => {
             tags: donor.tags && donor.tags.length > 0 ? donor.tags : null,
             notes: donor.notes?.trim() || null,
             preferred_communication: donor.preferred_communication || "email",
+            added_by_organization_user_id: callerOrgUserId,
           };
 
           const { data: insertedData, error: insertError } = await supabase

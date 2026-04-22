@@ -64,32 +64,58 @@ export const useParticipantConnections = (
           }
         }
 
-        // Fetch orders attributed to these org user IDs
-        const { data: attributedOrders, error } = await supabase
+        // Source 1: orders attributed to this user/child via roster
+        const ordersPromise = supabase
           .from('orders')
           .select('customer_email, business_id')
           .in('attributed_roster_member_id', orgUserIds)
           .in('status', ['succeeded', 'completed', 'paid']);
 
-        if (error) {
-          console.error('Error fetching attributed orders:', error);
-          return;
+        // Source 2: donors this user uploaded/created (added_by_organization_user_id)
+        const uploadedDonorsPromise = supabase
+          .from('donor_profiles')
+          .select('email')
+          .eq('organization_id', organizationUser.organization_id)
+          .in('added_by_organization_user_id', orgUserIds);
+
+        // Source 3: businesses this user uploaded/created
+        const uploadedBusinessesPromise = supabase
+          .from('businesses')
+          .select('id')
+          .in('added_by_organization_user_id', orgUserIds);
+
+        const [ordersRes, uploadedDonorsRes, uploadedBusinessesRes] = await Promise.all([
+          ordersPromise,
+          uploadedDonorsPromise,
+          uploadedBusinessesPromise,
+        ]);
+
+        if (ordersRes.error) {
+          console.error('Error fetching attributed orders:', ordersRes.error);
+        }
+        if (uploadedDonorsRes.error) {
+          console.error('Error fetching uploaded donors:', uploadedDonorsRes.error);
+        }
+        if (uploadedBusinessesRes.error) {
+          console.error('Error fetching uploaded businesses:', uploadedBusinessesRes.error);
         }
 
-        const emails = [...new Set(
-          (attributedOrders || [])
-            .map(o => o.customer_email)
-            .filter(Boolean) as string[]
-        )];
+        const orderEmails = (ordersRes.data || [])
+          .map(o => o.customer_email)
+          .filter(Boolean) as string[];
+        const uploadedEmails = (uploadedDonorsRes.data || [])
+          .map(d => d.email)
+          .filter(Boolean) as string[];
 
-        const businessIds = [...new Set(
-          (attributedOrders || [])
-            .map(o => o.business_id)
-            .filter(Boolean) as string[]
-        )];
+        const orderBusinessIds = (ordersRes.data || [])
+          .map(o => o.business_id)
+          .filter(Boolean) as string[];
+        const uploadedBusinessIds = (uploadedBusinessesRes.data || [])
+          .map(b => b.id)
+          .filter(Boolean) as string[];
 
-        setConnectedDonorEmails(emails);
-        setConnectedBusinessIds(businessIds);
+        setConnectedDonorEmails([...new Set([...orderEmails, ...uploadedEmails])]);
+        setConnectedBusinessIds([...new Set([...orderBusinessIds, ...uploadedBusinessIds])]);
       } catch (error) {
         console.error('Error fetching participant connections:', error);
       } finally {
