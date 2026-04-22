@@ -304,6 +304,7 @@ export default function MyFundraising() {
           const personalGoal =
             statsData?.personalGoal || ((campaign as any).goal_amount || 0) / 10;
 
+          const grp: any = (campaign as any).groups;
           allStats.push({
             campaignId: campaign.id,
             campaignName: campaign.name,
@@ -332,6 +333,9 @@ export default function MyFundraising() {
             endDate: (campaign as any).end_date ?? null,
             topGiftAmount: statsData?.topGiftAmount ?? null,
             topGiftDonorName: statsData?.topGiftDonorName ?? null,
+            groupLogo: grp?.logo_url ?? null,
+            schoolLogo: grp?.schools?.logo_file ?? null,
+            orgLogo: grp?.organizations?.logo_url ?? null,
           });
         }
       }
@@ -428,6 +432,7 @@ export default function MyFundraising() {
         const personalGoal =
           statsData?.personalGoal || (campaign.goal_amount || 0) / 10;
 
+        const grp: any = (campaign as any).groups;
         return {
           campaignId: campaign.id,
           campaignName: campaign.name,
@@ -454,6 +459,9 @@ export default function MyFundraising() {
           endDate: (campaign as any).end_date ?? null,
           topGiftAmount: statsData?.topGiftAmount ?? null,
           topGiftDonorName: statsData?.topGiftDonorName ?? null,
+          groupLogo: grp?.logo_url ?? null,
+          schoolLogo: grp?.schools?.logo_file ?? null,
+          orgLogo: grp?.organizations?.logo_url ?? null,
         } as CampaignStat;
       });
 
@@ -722,6 +730,11 @@ export default function MyFundraising() {
           }
           campaignName={qrDialogStat.campaignName}
           participantName={isParentView ? qrDialogStat.childName : undefined}
+          logoUrl={pickBrandLogo({
+            groupLogo: qrDialogStat.groupLogo,
+            schoolLogo: qrDialogStat.schoolLogo,
+            orgLogo: qrDialogStat.orgLogo,
+          })}
         />
       )}
     </DashboardPageLayout>
