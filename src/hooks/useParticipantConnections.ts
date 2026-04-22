@@ -22,7 +22,10 @@ export const useParticipantConnections = (
 ): ParticipantConnections => {
   const [connectedDonorEmails, setConnectedDonorEmails] = useState<string[]>([]);
   const [connectedBusinessIds, setConnectedBusinessIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Initialize as true so consumers wait for the first fetch before running
+  // access checks. We flip to false in the early-return branch below for
+  // non-participant views.
+  const [loading, setLoading] = useState(true);
 
   const permissionLevel = organizationUser?.user_type?.permission_level;
   const isParticipantView = 
@@ -34,6 +37,7 @@ export const useParticipantConnections = (
     if (!isParticipantView || !organizationUser) {
       setConnectedDonorEmails([]);
       setConnectedBusinessIds([]);
+      setLoading(false);
       return;
     }
 
@@ -124,7 +128,7 @@ export const useParticipantConnections = (
     };
 
     fetchConnections();
-  }, [organizationUser?.id, isParticipantView]);
+  }, [organizationUser?.id, isParticipantView, allRoles.length]);
 
   return { connectedDonorEmails, connectedBusinessIds, loading, isParticipantView };
 };
