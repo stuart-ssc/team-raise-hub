@@ -34,6 +34,7 @@ import { PitchEditor } from "@/components/PitchEditor";
 import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
 import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "@/components/ManageGuardiansCard";
+import { ShareMenu } from "@/components/ShareMenu";
 import MyConnectedStudentsCard from "@/components/MyConnectedStudentsCard";
 import InviteParentDialog from "@/components/InviteParentDialog";
 import { useNavigate } from "react-router-dom";
