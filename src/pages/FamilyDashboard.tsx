@@ -282,21 +282,6 @@ const FamilyDashboard = () => {
     toast.success('Link copied to clipboard!');
   };
 
-  const shareLink = async (url: string, childName: string) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Support ${childName}'s Fundraiser`,
-          url,
-        });
-      } catch (err) {
-        copyToClipboard(url);
-      }
-    } else {
-      copyToClipboard(url);
-    }
-  };
-
   const getRankBadge = (rank: number) => {
     if (rank === 1) return <Badge className="bg-yellow-500 text-white"><Medal className="h-3 w-3 mr-1" />1st</Badge>;
     if (rank === 2) return <Badge className="bg-gray-400 text-white"><Medal className="h-3 w-3 mr-1" />2nd</Badge>;
