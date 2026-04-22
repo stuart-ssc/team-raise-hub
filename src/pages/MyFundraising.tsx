@@ -1177,43 +1177,15 @@ function CampaignCard({
               {!isParentView && isRoster && stat.hasPersonalLink && (
                 <Button
                   size="sm"
-                  onClick={() => onTogglePitch(stat.campaignId)}
+                  onClick={() => onOpenPitch(stat.campaignId)}
                   className="ml-1 whitespace-nowrap bg-emerald-600 text-white hover:bg-emerald-700"
                 >
-                  {isPitchOpen ? (
-                    <>
-                      <ChevronUp className="mr-1.5 h-3.5 w-3.5" />
-                      Close
-                    </>
-                  ) : (
-                    <>
-                      <Mic className="mr-1.5 h-3.5 w-3.5" />
-                      {hasPitch ? "Re-record" : "Record pitch"}
-                    </>
-                  )}
+                  <Mic className="mr-1.5 h-3.5 w-3.5" />
+                  {hasPitch ? "Re-record" : "Record pitch"}
                 </Button>
               )}
             </div>
           </div>
-
-          {/* Inline pitch editor */}
-          {!isParentView && isPitchOpen && (
-            <>
-              <Separator className="my-5" />
-              <PitchEditor
-                campaignId={stat.campaignId}
-                campaignName={stat.campaignName}
-                initialPitch={{
-                  message: stat.pitchMessage,
-                  imageUrl: stat.pitchImageUrl,
-                  videoUrl: stat.pitchVideoUrl,
-                  recordedVideoUrl: stat.pitchRecordedVideoUrl,
-                }}
-                onSave={onPitchSaved}
-                onClose={onPitchClose}
-              />
-            </>
-          )}
         </div>
       </div>
     </Card>
