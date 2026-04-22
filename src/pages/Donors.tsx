@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
@@ -86,6 +86,7 @@ interface DonorProfile {
 const Donors = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { organizationUser, allRoles, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup } = useActiveGroup();
   const { toast } = useToast();
