@@ -426,9 +426,6 @@ const DonorProfile = () => {
                   </Card>
                 </div>
 
-                {/* AI Insights Panel */}
-                <DonorInsightsPanel donorId={donor.id} />
-
                 {/* Giving History */}
                 <Card>
                   <CardHeader>
@@ -634,6 +631,9 @@ const DonorProfile = () => {
                     </CardContent>
                   </Card>
                 )}
+
+                {/* AI Insights Panel */}
+                <DonorInsightsPanel donorId={donor.id} />
 
                 {/* Notes - Admin/Manager only */}
                 {!isParticipantView && (
