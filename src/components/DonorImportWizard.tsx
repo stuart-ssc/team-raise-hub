@@ -70,6 +70,14 @@ const DONOR_FIELDS = [
   { value: "phone", label: "Phone", required: false },
   { value: "notes", label: "Notes", required: false },
   { value: "preferred_communication", label: "Preferred Communication", required: false },
+  { value: "company_name", label: "Company Name", required: false },
+  { value: "company_role", label: "Company Role / Title", required: false },
+  { value: "company_email", label: "Company Email", required: false },
+  { value: "company_phone", label: "Company Phone", required: false },
+  { value: "company_website", label: "Company Website", required: false },
+  { value: "company_industry", label: "Company Industry", required: false },
+  { value: "company_city", label: "Company City", required: false },
+  { value: "company_state", label: "Company State", required: false },
 ];
 
 const DonorImportWizard = ({ open, onOpenChange, onImportComplete }: DonorImportWizardProps) => {
@@ -140,14 +148,26 @@ const DonorImportWizard = ({ open, onOpenChange, onImportComplete }: DonorImport
         const autoMappings: FieldMapping[] = headers.map(header => {
           const normalizedHeader = header.toLowerCase().trim();
           let donorField = "";
-          
-          if (normalizedHeader.includes("email")) donorField = "email";
+
+          const isCompany = normalizedHeader.includes("company") || normalizedHeader.includes("business") || normalizedHeader.includes("organization");
+
+          if (isCompany && normalizedHeader.includes("email")) donorField = "company_email";
+          else if (isCompany && normalizedHeader.includes("phone")) donorField = "company_phone";
+          else if (isCompany && (normalizedHeader.includes("website") || normalizedHeader.includes("url"))) donorField = "company_website";
+          else if (isCompany && normalizedHeader.includes("industry")) donorField = "company_industry";
+          else if (isCompany && normalizedHeader.includes("city")) donorField = "company_city";
+          else if (isCompany && normalizedHeader.includes("state")) donorField = "company_state";
+          else if (isCompany && (normalizedHeader.includes("role") || normalizedHeader.includes("title") || normalizedHeader.includes("position"))) donorField = "company_role";
+          else if (isCompany && (normalizedHeader.includes("name") || normalizedHeader === "company" || normalizedHeader === "business" || normalizedHeader === "organization")) donorField = "company_name";
+          else if (normalizedHeader === "title" || normalizedHeader === "role" || normalizedHeader === "job title") donorField = "company_role";
+          else if (normalizedHeader === "industry") donorField = "company_industry";
+          else if (normalizedHeader.includes("email")) donorField = "email";
           else if (normalizedHeader.includes("first") && normalizedHeader.includes("name")) donorField = "first_name";
           else if (normalizedHeader.includes("last") && normalizedHeader.includes("name")) donorField = "last_name";
           else if (normalizedHeader.includes("phone")) donorField = "phone";
           else if (normalizedHeader.includes("note")) donorField = "notes";
           else if (normalizedHeader.includes("communication")) donorField = "preferred_communication";
-          
+
           return { csvField: header, donorField };
         });
         
@@ -318,7 +338,10 @@ const DonorImportWizard = ({ open, onOpenChange, onImportComplete }: DonorImport
   };
 
   const downloadTemplate = () => {
-    const template = "email,first_name,last_name,phone,notes,preferred_communication\njohn@example.com,John,Doe,555-0100,Great donor,email\njane@example.com,Jane,Smith,555-0200,Regular supporter,phone";
+    const template =
+      "email,first_name,last_name,phone,notes,preferred_communication,company_name,company_role,company_email,company_phone,company_website,company_industry,company_city,company_state\n" +
+      "john@example.com,John,Doe,555-0100,Great donor,email,Acme Co,Owner,contact@acme.com,555-0101,https://acme.com,Retail,Lexington,KY\n" +
+      "jane@example.com,Jane,Smith,555-0200,Regular supporter,phone,Acme Co,Marketing Manager,,,,,,";
     const blob = new Blob([template], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -352,6 +375,7 @@ const DonorImportWizard = ({ open, onOpenChange, onImportComplete }: DonorImport
                 <AlertDescription>
                   Upload a CSV file with donor information. The file should include at least an email column.
                   Donors you upload will be added to your supporters and shared with your organization's staff.
+                  Optionally include the donor's company so we can group supporters by business and personalize outreach.
                 </AlertDescription>
               </Alert>
 
