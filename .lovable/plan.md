@@ -1,36 +1,44 @@
 
 
 ## Goal
-Three small layout fixes on `/dashboard/my-fundraising`: remove the redundant top guardian banner, fix tab padding, and adjust hero card widths.
+Ensure the **Lifetime Raised**, **Unique Supporters**, and **Best Rank** hero cards always sit on one row at typical dashboard widths (matching the mockup), rather than wrapping to three rows.
 
-## Changes
+## Root cause
+The hero grid currently uses the `lg:` breakpoint (1024px viewport):
 
-All in **`src/pages/MyFundraising.tsx`**:
+```tsx
+<section className="grid gap-4 lg:grid-cols-10">
+  <div className="lg:col-span-4 ...">  {/* Lifetime Raised  */}
+  <div className="lg:col-span-3 ...">  {/* Supporters */}
+  <div className="lg:col-span-3 ...">  {/* Best Rank */}
+```
 
-### 1. Remove top "Connected family" banner
-- Delete the banner block rendered just under the page header (the one driven by `useConnectedGuardians`).
-- Remove the now-unused `useConnectedGuardians` import and call.
-- The full `ManageGuardiansCard` at the bottom of the page stays as-is — it's the canonical management surface.
+Below `lg`, the section falls back to a single-column grid → all three cards stack vertically (3 rows). At the user's 1336px viewport the sidebar (`lg:w-64` = 256px) and dashboard padding eat into available width, and any time the sidebar is expanded on a smaller monitor the cards stack. The mockup shows them on one row at desktop widths well under 1024px.
 
-### 2. Fix Active/Past/All tab padding
-- Current `TabsTrigger` items clip the count text at narrow widths.
-- Update each trigger to use `px-4 py-1.5` (and `whitespace-nowrap` to prevent wrap), and let the `TabsList` size to content (`inline-flex w-auto`) instead of stretching.
-- Render counts inside a muted span: `Active <span className="ml-1.5 text-muted-foreground">({n})</span>` so the number breathes from the label.
+## Fix
 
-### 3. Hero stat strip widths (40 / 30 / 30)
-- Replace the current equal-width grid with a 10-column grid:
-  ```
-  grid grid-cols-1 lg:grid-cols-10 gap-4
-  ```
-- **Lifetime Raised** card: `lg:col-span-4` (40%).
-- **Unique Supporters** card: `lg:col-span-3` (30%).
-- **Best Rank** card: `lg:col-span-3` (30%).
-- On mobile (`<lg`) all three stack full-width — matches mockup behavior.
-- Inside the Lifetime Raised card, keep the sparkline right-aligned; it gets more horizontal room with the 40% width.
+**File: `src/pages/MyFundraising.tsx`** (only the hero section, lines ~609–624):
+
+1. Lower the breakpoint from `lg:` to `md:` so the row activates at 768px viewport — comfortably fitting on a typical sidebar-included dashboard layout:
+   ```tsx
+   <section className="grid gap-4 md:grid-cols-10">
+     <div className="md:col-span-4 [&>*]:h-full"> ... LifetimeRaisedCard ... </div>
+     <div className="md:col-span-3 [&>*]:h-full"> ... SupportersCard ... </div>
+     <div className="md:col-span-3 [&>*]:h-full"> ... BestRankCard ... </div>
+   </section>
+   ```
+2. Keep proportions exactly as approved before: **40 / 30 / 30** (col-span 4 / 3 / 3 of 10).
+3. Mobile (`<md`, i.e. <768px) still stacks one card per row — matches the mockup's mobile behavior.
+
+## Verification
+- At 1336px viewport (current user) → sidebar 256px + content padding ≈ 1040px content width → 10-col grid kicks in well below the threshold and renders 3 cards in one row.
+- At narrow tablet (e.g. 800px) → still one row (cards become tighter but readable).
+- At phone (<768px) → stacks vertically.
 
 ## Files touched
-1. `src/pages/MyFundraising.tsx` — remove banner + import, fix Tabs styling, change hero grid to 10-col with 4/3/3 spans.
+1. `src/pages/MyFundraising.tsx` — swap `lg:` → `md:` on the hero `<section>` and its three child `<div>` wrappers (3 class swaps total). No other changes.
 
 ## Out of scope
-- `ManageGuardiansCard` itself, parent view, campaign card layout, sort/view toggles, edge functions.
+- Card internals (LifetimeRaisedCard, sparkline layout, fonts).
+- Filter toolbar, campaign cards, parent view, edge functions.
 
