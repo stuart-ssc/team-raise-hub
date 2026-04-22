@@ -831,9 +831,6 @@ const DonorProfile = () => {
                   </CardContent>
                 </Card>
 
-                {/* AI Insights Panel */}
-                <DonorInsightsPanel donorId={donor.id} />
-
                 {/* Notes - Admin/Manager only */}
                 {!isParticipantView && (
                   <Card>
