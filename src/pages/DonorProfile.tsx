@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Mail, 
   Phone, 
@@ -27,7 +28,8 @@ import {
   CheckCircle2,
   X,
   Plus,
-  List
+  List,
+  ChevronDown
 } from "lucide-react";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
@@ -107,6 +109,9 @@ const DonorProfile = () => {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [unlinkingAffiliation, setUnlinkingAffiliation] = useState<BusinessAffiliation | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [givingOpen, setGivingOpen] = useState(true);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [commsOpen, setCommsOpen] = useState(false);
 
   const canManageOwnership = (() => {
     const name = organizationUser?.user_type?.name;
@@ -485,11 +490,20 @@ const DonorProfile = () => {
 
                 {/* Giving History */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Giving History</CardTitle>
-                    <CardDescription>All donations from this supporter</CardDescription>
-                  </CardHeader>
-                  <CardContent>
+                  <Collapsible open={givingOpen} onOpenChange={setGivingOpen}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors flex flex-row items-center justify-between space-y-0">
+                        <div className="space-y-1.5">
+                          <CardTitle>Giving History</CardTitle>
+                          <CardDescription>All donations from this supporter</CardDescription>
+                        </div>
+                        <ChevronDown
+                          className={`h-5 w-5 text-muted-foreground transition-transform ${givingOpen ? "rotate-180" : ""}`}
+                        />
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent>
                     {donations.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-sm text-muted-foreground">No donations yet</p>
@@ -530,14 +544,54 @@ const DonorProfile = () => {
                         ))}
                       </div>
                     )}
-                  </CardContent>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </Card>
 
                 {/* Activity Timeline */}
-                <DonorActivityTimeline donorId={donor.id} />
+                <Card>
+                  <Collapsible open={timelineOpen} onOpenChange={setTimelineOpen}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors flex flex-row items-center justify-between space-y-0">
+                        <div className="space-y-1.5">
+                          <CardTitle>Activity Timeline</CardTitle>
+                          <CardDescription>Recent interactions and engagement history</CardDescription>
+                        </div>
+                        <ChevronDown
+                          className={`h-5 w-5 text-muted-foreground transition-transform ${timelineOpen ? "rotate-180" : ""}`}
+                        />
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent className="p-0 border-t">
+                        <DonorActivityTimeline donorId={donor.id} />
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
 
                 {/* Communication History */}
-                <DonorCommunicationHistory donorEmail={donor.email} />
+                <Card>
+                  <Collapsible open={commsOpen} onOpenChange={setCommsOpen}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors flex flex-row items-center justify-between space-y-0">
+                        <div className="space-y-1.5">
+                          <CardTitle>Communication History</CardTitle>
+                          <CardDescription>Email and message history with this supporter</CardDescription>
+                        </div>
+                        <ChevronDown
+                          className={`h-5 w-5 text-muted-foreground transition-transform ${commsOpen ? "rotate-180" : ""}`}
+                        />
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent className="p-0 border-t">
+                        <DonorCommunicationHistory donorEmail={donor.email} />
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
               </div>
 
               {/* Sidebar */}
