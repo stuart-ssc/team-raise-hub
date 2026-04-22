@@ -232,8 +232,12 @@ export default function PlayerDashboard() {
               return null;
             }
 
+            const grp: any = (campaign as any).groups;
             return {
               ...campaign,
+              groupLogo: grp?.logo_url ?? null,
+              schoolLogo: grp?.schools?.logo_file ?? null,
+              orgLogo: grp?.organizations?.logo_url ?? null,
               personalSlug: link.slug,
               personalUrl: `${window.location.origin}/c/${campaign.slug}/${link.slug}`,
               ...statsData,
