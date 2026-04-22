@@ -584,11 +584,12 @@ export default function MyFundraising() {
       <div className="space-y-8">
         {/* Header */}
         <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+              <Trophy className="h-8 w-8 text-primary" />
               {pageTitle}
             </h1>
-            <p className="max-w-2xl text-muted-foreground">{subheading}</p>
+            <p className="text-muted-foreground mt-1">{subheading}</p>
           </div>
           <Button
             onClick={() => navigate("/dashboard/donors?upload=1")}
