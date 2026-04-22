@@ -75,6 +75,10 @@ interface CampaignStat {
   // Parent view additions
   childName?: string;
   childOrganizationUserId?: string;
+  // Branding for QR poster
+  groupLogo?: string | null;
+  schoolLogo?: string | null;
+  orgLogo?: string | null;
 }
 
 interface RosterMembership {
@@ -248,7 +252,7 @@ export default function MyFundraising() {
       const { data: campaigns, error: campaignError } = await supabase
         .from("campaigns")
         .select(
-          "id, name, slug, group_directions, enable_roster_attribution, goal_amount, start_date, end_date"
+          "id, name, slug, group_directions, enable_roster_attribution, goal_amount, start_date, end_date, groups:groups(logo_url, schools(logo_file), organizations(logo_url))"
         )
         .in("group_id", groupIds)
         .eq("status", true);
@@ -381,7 +385,7 @@ export default function MyFundraising() {
       const { data: campaigns, error: campaignError } = await supabase
         .from("campaigns")
         .select(
-          "id, name, slug, group_directions, enable_roster_attribution, goal_amount, start_date, end_date"
+          "id, name, slug, group_directions, enable_roster_attribution, goal_amount, start_date, end_date, groups:groups(logo_url, schools(logo_file), organizations(logo_url))"
         )
         .in("group_id", groupIds)
         .eq("status", true);
