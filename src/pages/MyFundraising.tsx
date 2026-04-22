@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PitchEditor } from "@/components/PitchEditor";
-import { QRDialog } from "@/components/player/QRDialog";
+import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
 import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "@/components/ManageGuardiansCard";
 import MyConnectedStudentsCard from "@/components/MyConnectedStudentsCard";
@@ -75,6 +75,10 @@ interface CampaignStat {
   // Parent view additions
   childName?: string;
   childOrganizationUserId?: string;
+  // Branding for QR poster
+  groupLogo?: string | null;
+  schoolLogo?: string | null;
+  orgLogo?: string | null;
 }
 
 interface RosterMembership {
@@ -248,7 +252,7 @@ export default function MyFundraising() {
       const { data: campaigns, error: campaignError } = await supabase
         .from("campaigns")
         .select(
-          "id, name, slug, group_directions, enable_roster_attribution, goal_amount, start_date, end_date"
+          "id, name, slug, group_directions, enable_roster_attribution, goal_amount, start_date, end_date, groups:groups(logo_url, schools(logo_file), organizations(logo_url))"
         )
         .in("group_id", groupIds)
         .eq("status", true);
@@ -300,6 +304,7 @@ export default function MyFundraising() {
           const personalGoal =
             statsData?.personalGoal || ((campaign as any).goal_amount || 0) / 10;
 
+          const grp: any = (campaign as any).groups;
           allStats.push({
             campaignId: campaign.id,
             campaignName: campaign.name,
@@ -328,6 +333,9 @@ export default function MyFundraising() {
             endDate: (campaign as any).end_date ?? null,
             topGiftAmount: statsData?.topGiftAmount ?? null,
             topGiftDonorName: statsData?.topGiftDonorName ?? null,
+            groupLogo: grp?.logo_url ?? null,
+            schoolLogo: grp?.schools?.logo_file ?? null,
+            orgLogo: grp?.organizations?.logo_url ?? null,
           });
         }
       }
@@ -381,7 +389,7 @@ export default function MyFundraising() {
       const { data: campaigns, error: campaignError } = await supabase
         .from("campaigns")
         .select(
-          "id, name, slug, group_directions, enable_roster_attribution, goal_amount, start_date, end_date"
+          "id, name, slug, group_directions, enable_roster_attribution, goal_amount, start_date, end_date, groups:groups(logo_url, schools(logo_file), organizations(logo_url))"
         )
         .in("group_id", groupIds)
         .eq("status", true);
@@ -424,6 +432,7 @@ export default function MyFundraising() {
         const personalGoal =
           statsData?.personalGoal || (campaign.goal_amount || 0) / 10;
 
+        const grp: any = (campaign as any).groups;
         return {
           campaignId: campaign.id,
           campaignName: campaign.name,
@@ -450,6 +459,9 @@ export default function MyFundraising() {
           endDate: (campaign as any).end_date ?? null,
           topGiftAmount: statsData?.topGiftAmount ?? null,
           topGiftDonorName: statsData?.topGiftDonorName ?? null,
+          groupLogo: grp?.logo_url ?? null,
+          schoolLogo: grp?.schools?.logo_file ?? null,
+          orgLogo: grp?.organizations?.logo_url ?? null,
         } as CampaignStat;
       });
 
@@ -718,6 +730,11 @@ export default function MyFundraising() {
           }
           campaignName={qrDialogStat.campaignName}
           participantName={isParentView ? qrDialogStat.childName : undefined}
+          logoUrl={pickBrandLogo({
+            groupLogo: qrDialogStat.groupLogo,
+            schoolLogo: qrDialogStat.schoolLogo,
+            orgLogo: qrDialogStat.orgLogo,
+          })}
         />
       )}
     </DashboardPageLayout>

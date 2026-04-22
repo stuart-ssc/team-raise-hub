@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "./ManageGuardiansCard";
 import { RecordPitchDialog } from "@/components/player/RecordPitchDialog";
-import { QRDialog } from "@/components/player/QRDialog";
+import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
 
 interface Campaign {
   id: string;
@@ -26,6 +26,9 @@ interface Campaign {
   status: boolean;
   enable_roster_attribution: boolean;
   group_id: string;
+  groupLogo?: string | null;
+  schoolLogo?: string | null;
+  orgLogo?: string | null;
 }
 
 interface AttributedCampaign extends Campaign {
@@ -150,7 +153,7 @@ export default function PlayerDashboard() {
       // Fetch ALL campaigns for these groups (not just roster-enabled ones)
       const { data: allCampaigns, error: campaignError } = await supabase
         .from('campaigns')
-        .select('id, name, slug, goal_amount, amount_raised, start_date, end_date, status, enable_roster_attribution, group_id')
+        .select('id, name, slug, goal_amount, amount_raised, start_date, end_date, status, enable_roster_attribution, group_id, groups:groups(logo_url, schools(logo_file), organizations(logo_url))')
         .in('group_id', groupIds)
         .order('created_at', { ascending: false });
 
@@ -173,7 +176,13 @@ export default function PlayerDashboard() {
         const isPast = endDate && endDate < today;
 
         if (isActive && !isPast) {
-          current.push(campaign);
+          const grp: any = (campaign as any).groups;
+          current.push({
+            ...campaign,
+            groupLogo: grp?.logo_url ?? null,
+            schoolLogo: grp?.schools?.logo_file ?? null,
+            orgLogo: grp?.organizations?.logo_url ?? null,
+          } as Campaign);
         }
       });
 
@@ -223,8 +232,12 @@ export default function PlayerDashboard() {
               return null;
             }
 
+            const grp: any = (campaign as any).groups;
             return {
               ...campaign,
+              groupLogo: grp?.logo_url ?? null,
+              schoolLogo: grp?.schools?.logo_file ?? null,
+              orgLogo: grp?.organizations?.logo_url ?? null,
               personalSlug: link.slug,
               personalUrl: `${window.location.origin}/c/${campaign.slug}/${link.slug}`,
               ...statsData,
@@ -334,7 +347,7 @@ export default function PlayerDashboard() {
       // Fetch campaigns for children's groups
       const { data: allCampaigns, error: campaignError } = await supabase
         .from('campaigns')
-        .select('id, name, slug, goal_amount, amount_raised, start_date, end_date, status, enable_roster_attribution, group_id')
+        .select('id, name, slug, goal_amount, amount_raised, start_date, end_date, status, enable_roster_attribution, group_id, groups:groups(logo_url, schools(logo_file), organizations(logo_url))')
         .in('group_id', groupIds)
         .order('created_at', { ascending: false });
 
@@ -357,7 +370,13 @@ export default function PlayerDashboard() {
         const isPast = endDate && endDate < today;
 
         if (isActive && !isPast) {
-          current.push(campaign);
+          const grp: any = (campaign as any).groups;
+          current.push({
+            ...campaign,
+            groupLogo: grp?.logo_url ?? null,
+            schoolLogo: grp?.schools?.logo_file ?? null,
+            orgLogo: grp?.organizations?.logo_url ?? null,
+          } as Campaign);
         }
       });
 
@@ -400,8 +419,12 @@ export default function PlayerDashboard() {
                 return null;
               }
 
+              const grp: any = (campaign as any).groups;
               return {
                 ...campaign,
+                groupLogo: grp?.logo_url ?? null,
+                schoolLogo: grp?.schools?.logo_file ?? null,
+                orgLogo: grp?.organizations?.logo_url ?? null,
                 personalSlug: link.slug,
                 personalUrl: `${window.location.origin}/c/${campaign.slug}/${link.slug}`,
                 childName: `${child.firstName} ${child.lastName}`.trim(),
@@ -992,6 +1015,11 @@ export default function PlayerDashboard() {
             url={headline.personalUrl}
             campaignName={headline.name}
             participantName={firstName}
+            logoUrl={pickBrandLogo({
+              groupLogo: headline.groupLogo,
+              schoolLogo: headline.schoolLogo,
+              orgLogo: headline.orgLogo,
+            })}
           />
         </>
       )}

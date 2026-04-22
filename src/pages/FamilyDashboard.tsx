@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Users, DollarSign, Trophy, Target, Copy, Share2, QrCode, Medal, Heart, Loader2, Zap, MessageCircle, ArrowDown, ExternalLink } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { QRDialog } from "@/components/player/QRDialog";
+import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -51,6 +51,9 @@ interface ChildCampaignStats {
   uniqueSupporters: number;
   rank: number;
   totalParticipants: number;
+  groupLogo?: string | null;
+  schoolLogo?: string | null;
+  orgLogo?: string | null;
 }
 
 interface RecentDonation {
@@ -74,6 +77,7 @@ const FamilyDashboard = () => {
     shareUrl: string;
     childName: string;
     campaignName: string;
+    logoUrl?: string;
   } | null>(null);
   
   // Quick Actions state
@@ -172,7 +176,7 @@ const FamilyDashboard = () => {
         // Get ALL active campaigns for this child's group
         const { data: campaigns } = await supabase
           .from('campaigns')
-          .select('id, name, slug, enable_roster_attribution, goal_amount')
+          .select('id, name, slug, enable_roster_attribution, goal_amount, groups:groups(logo_url, schools(logo_file), organizations(logo_url))')
           .eq('group_id', childGroupId)
           .eq('status', true);
 
@@ -222,6 +226,7 @@ const FamilyDashboard = () => {
 
           const personalGoal = statsData?.personalGoal || (campaign.goal_amount || 0) / 10;
 
+          const grp: any = (campaign as any).groups;
           allStats.push({
             childId: child.user_id,
             childName,
@@ -238,6 +243,9 @@ const FamilyDashboard = () => {
             uniqueSupporters: statsData?.uniqueSupporters || 0,
             rank: statsData?.rank || 0,
             totalParticipants: statsData?.totalParticipants || 0,
+            groupLogo: grp?.logo_url ?? null,
+            schoolLogo: grp?.schools?.logo_file ?? null,
+            orgLogo: grp?.organizations?.logo_url ?? null,
           });
         }
       }
@@ -760,6 +768,11 @@ const FamilyDashboard = () => {
                                               shareUrl,
                                               childName: stat.childName,
                                               campaignName: stat.campaignName,
+                                              logoUrl: pickBrandLogo({
+                                                groupLogo: stat.groupLogo,
+                                                schoolLogo: stat.schoolLogo,
+                                                orgLogo: stat.orgLogo,
+                                              }),
                                             })
                                           }
                                         >
@@ -898,6 +911,7 @@ const FamilyDashboard = () => {
           url={qrTarget.shareUrl}
           campaignName={qrTarget.campaignName}
           participantName={qrTarget.childName}
+          logoUrl={qrTarget.logoUrl}
         />
       )}
     </DashboardPageLayout>

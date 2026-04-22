@@ -15,6 +15,56 @@ interface QRDialogProps {
   shortCode?: string;
   shortUrl?: string;
   scanStats?: { today: number; lastScannedRelative?: string };
+  /** Best brand logo for the PDF poster (team → school → org → Sponsorly fallback). */
+  logoUrl?: string;
+}
+
+const SPONSORLY_FALLBACK_LOGO = "/lovable-uploads/Sponsorly-Logo.png";
+
+/**
+ * Returns the first non-empty logo URL in the priority order:
+ * group (team) → school → organization. Returns undefined when none exist,
+ * so the dialog can fall back to the Sponsorly logo.
+ */
+export function pickBrandLogo(opts: {
+  groupLogo?: string | null;
+  schoolLogo?: string | null;
+  orgLogo?: string | null;
+}): string | undefined {
+  const candidates = [opts.groupLogo, opts.schoolLogo, opts.orgLogo];
+  for (const c of candidates) {
+    if (c && typeof c === "string" && c.trim()) return c.trim();
+  }
+  return undefined;
+}
+
+async function loadImageAsPngDataUrl(
+  url: string,
+  maxW: number,
+  maxH: number
+): Promise<{ dataUrl: string; width: number; height: number }> {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = (e) => reject(e);
+    img.src = url;
+  });
+  const naturalW = img.naturalWidth || img.width || maxW;
+  const naturalH = img.naturalHeight || img.height || maxH;
+  const scale = Math.min(maxW / naturalW, maxH / naturalH, 1);
+  const targetW = Math.max(1, Math.round(naturalW * scale));
+  const targetH = Math.max(1, Math.round(naturalH * scale));
+  // Render at 2x for crispness in print
+  const canvas = document.createElement("canvas");
+  canvas.width = targetW * 2;
+  canvas.height = targetH * 2;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unsupported");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return { dataUrl: canvas.toDataURL("image/png"), width: targetW, height: targetH };
 }
 
 const slugify = (s: string) =>
@@ -62,6 +112,7 @@ export function QRDialog({
   shortCode,
   shortUrl,
   scanStats,
+  logoUrl,
 }: QRDialogProps) {
   const { toast } = useToast();
   const qrWrapRef = useRef<HTMLDivElement>(null);
@@ -110,24 +161,56 @@ export function QRDialog({
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
 
+      // Branded logo at the top (team → school → org → Sponsorly fallback)
+      const LOGO_MAX_W = 200;
+      const LOGO_MAX_H = 64;
+      const LOGO_TOP_Y = 40;
+      const LOGO_BLOCK_BOTTOM = LOGO_TOP_Y + LOGO_MAX_H + 16; // reserved space below logo
+      let logoLoaded = false;
+      const tryDrawLogo = async (src: string) => {
+        const { dataUrl: logoDataUrl, width, height } = await loadImageAsPngDataUrl(
+          src,
+          LOGO_MAX_W,
+          LOGO_MAX_H
+        );
+        const x = (pageWidth - width) / 2;
+        doc.addImage(logoDataUrl, "PNG", x, LOGO_TOP_Y, width, height);
+        logoLoaded = true;
+      };
+      if (logoUrl) {
+        try {
+          await tryDrawLogo(logoUrl);
+        } catch {
+          // CORS/network failure — fall through to Sponsorly fallback
+        }
+      }
+      if (!logoLoaded) {
+        try {
+          await tryDrawLogo(SPONSORLY_FALLBACK_LOGO);
+        } catch {
+          // If even the fallback fails (offline), continue without a logo
+        }
+      }
+
       // Title
+      const titleY = LOGO_BLOCK_BOTTOM + 36;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(28);
       const title = subjectName
         ? `Support ${subjectName}`
         : `Support ${campaignName}`;
-      doc.text(title, pageWidth / 2, 90, { align: "center" });
+      doc.text(title, pageWidth / 2, titleY, { align: "center" });
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(16);
       doc.setTextColor(90);
-      doc.text(campaignName, pageWidth / 2, 120, { align: "center" });
+      doc.text(campaignName, pageWidth / 2, titleY + 30, { align: "center" });
       doc.setTextColor(0);
 
       // QR
       const qrSize = 360;
       const qrX = (pageWidth - qrSize) / 2;
-      const qrY = 160;
+      const qrY = titleY + 70;
       doc.addImage(dataUrl, "PNG", qrX, qrY, qrSize, qrSize);
 
       // Scan instruction
