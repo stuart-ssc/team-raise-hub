@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Users, DollarSign, Trophy, Target, Copy, Share2, QrCode, Medal, Heart, Loader2, Zap, MessageCircle, ArrowDown, ExternalLink } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import QRCode from "react-qr-code";
+import { QRDialog } from "@/components/player/QRDialog";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -70,7 +70,11 @@ const FamilyDashboard = () => {
   const [linkedChildren, setLinkedChildren] = useState<LinkedChild[]>([]);
   const [campaignStats, setCampaignStats] = useState<ChildCampaignStats[]>([]);
   const [recentDonations, setRecentDonations] = useState<RecentDonation[]>([]);
-  const [showQRCode, setShowQRCode] = useState<string | null>(null);
+  const [qrTarget, setQrTarget] = useState<{
+    shareUrl: string;
+    childName: string;
+    campaignName: string;
+  } | null>(null);
   
   // Quick Actions state
   const [messageCoachOpen, setMessageCoachOpen] = useState(false);
@@ -751,16 +755,17 @@ const FamilyDashboard = () => {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          onClick={() => setShowQRCode(showQRCode === qrKey ? null : qrKey!)}
+                                          onClick={() =>
+                                            setQrTarget({
+                                              shareUrl,
+                                              childName: stat.childName,
+                                              campaignName: stat.campaignName,
+                                            })
+                                          }
                                         >
                                           <QrCode className="h-4 w-4" />
                                         </Button>
                                       </div>
-                                      {showQRCode === qrKey && (
-                                        <div className="bg-white p-3 rounded-lg">
-                                          <QRCode value={shareUrl} size={100} />
-                                        </div>
-                                      )}
                                     </>
                                   );
                                 })()}
@@ -885,6 +890,16 @@ const FamilyDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {qrTarget && (
+        <QRDialog
+          open={!!qrTarget}
+          onOpenChange={(o) => !o && setQrTarget(null)}
+          url={qrTarget.shareUrl}
+          campaignName={qrTarget.campaignName}
+          participantName={qrTarget.childName}
+        />
+      )}
     </DashboardPageLayout>
   );
 };

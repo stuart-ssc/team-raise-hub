@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PitchEditor } from "@/components/PitchEditor";
-import QRCode from "react-qr-code";
+import { QRDialog } from "@/components/player/QRDialog";
 import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "@/components/ManageGuardiansCard";
 import MyConnectedStudentsCard from "@/components/MyConnectedStudentsCard";
@@ -136,7 +136,7 @@ export default function MyFundraising() {
 
   const [stats, setStats] = useState<CampaignStat[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showQRCode, setShowQRCode] = useState<string | null>(null);
+  const [qrDialogStat, setQrDialogStat] = useState<CampaignStat | null>(null);
   const [editingPitchId, setEditingPitchId] = useState<string | null>(null);
   const [rosterMembership, setRosterMembership] = useState<RosterMembership | null>(null);
   const [isParentView, setIsParentView] = useState(false);
@@ -662,14 +662,7 @@ export default function MyFundraising() {
                         setEditingPitchId(editingPitchId === id ? null : id)
                       }
                       isPitchOpen={editingPitchId === stat.campaignId}
-                      qrOpen={
-                        showQRCode ===
-                        (stat.hasPersonalLink ? stat.personalUrl : stat.campaignSlug)
-                      }
-                      onToggleQR={() => {
-                        const key = stat.hasPersonalLink ? stat.personalUrl : stat.campaignSlug;
-                        setShowQRCode(showQRCode === key ? null : key);
-                      }}
+                      onOpenQR={() => setQrDialogStat(stat)}
                       onPitchSaved={() => {
                         setEditingPitchId(null);
                         fetchFundraisingStats();
@@ -713,6 +706,20 @@ export default function MyFundraising() {
           />
         )}
       </div>
+
+      {qrDialogStat && (
+        <QRDialog
+          open={!!qrDialogStat}
+          onOpenChange={(o) => !o && setQrDialogStat(null)}
+          url={
+            qrDialogStat.hasPersonalLink && qrDialogStat.personalUrl
+              ? qrDialogStat.personalUrl
+              : `${window.location.origin}/c/${qrDialogStat.campaignSlug}`
+          }
+          campaignName={qrDialogStat.campaignName}
+          participantName={isParentView ? qrDialogStat.childName : undefined}
+        />
+      )}
     </DashboardPageLayout>
   );
 }
@@ -987,8 +994,7 @@ function CampaignCard({
   onShare,
   onTogglePitch,
   isPitchOpen,
-  qrOpen,
-  onToggleQR,
+  onOpenQR,
   onPitchSaved,
   onPitchClose,
 }: {
@@ -998,8 +1004,7 @@ function CampaignCard({
   onShare: (url: string, name: string, child?: string) => void;
   onTogglePitch: (id: string) => void;
   isPitchOpen: boolean;
-  qrOpen: boolean;
-  onToggleQR: () => void;
+  onOpenQR: () => void;
   onPitchSaved: () => void;
   onPitchClose: () => void;
 }) {
@@ -1152,7 +1157,7 @@ function CampaignCard({
               <IconBtn label="Copy link" onClick={() => onCopy(shareUrl)}>
                 <Copy className="h-4 w-4" />
               </IconBtn>
-              <IconBtn label="Show QR code" onClick={onToggleQR} active={qrOpen}>
+              <IconBtn label="Show QR code" onClick={onOpenQR}>
                 <QrCode className="h-4 w-4" />
               </IconBtn>
               <IconBtn
@@ -1188,12 +1193,6 @@ function CampaignCard({
               )}
             </div>
           </div>
-
-          {qrOpen && (
-            <div className="mt-3 flex justify-center rounded-md border bg-white p-4">
-              <QRCode value={shareUrl} size={180} />
-            </div>
-          )}
 
           {/* Inline pitch editor */}
           {!isParentView && isPitchOpen && (

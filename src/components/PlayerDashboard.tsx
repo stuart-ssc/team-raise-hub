@@ -991,6 +991,7 @@ export default function PlayerDashboard() {
             onOpenChange={setQrDialogOpen}
             url={headline.personalUrl}
             campaignName={headline.name}
+            participantName={firstName}
           />
         </>
       )}
