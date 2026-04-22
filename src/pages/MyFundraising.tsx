@@ -680,8 +680,7 @@ export default function MyFundraising() {
               )}
             </section>
 
-            {/* Pro tip */}
-            {hasRosterCampaign && <ProTipCard />}
+            {/* Pro tip removed */}
           </>
         )}
 
