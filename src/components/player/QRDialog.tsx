@@ -112,6 +112,7 @@ export function QRDialog({
   shortCode,
   shortUrl,
   scanStats,
+  logoUrl,
 }: QRDialogProps) {
   const { toast } = useToast();
   const qrWrapRef = useRef<HTMLDivElement>(null);
