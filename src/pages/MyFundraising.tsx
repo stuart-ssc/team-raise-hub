@@ -657,16 +657,8 @@ export default function MyFundraising() {
                       stat={stat}
                       isParentView={isParentView}
                       onCopy={copyLink}
-                      onTogglePitch={(id) =>
-                        setEditingPitchId(editingPitchId === id ? null : id)
-                      }
-                      isPitchOpen={editingPitchId === stat.campaignId}
+                      onOpenPitch={(id) => setEditingPitchId(id)}
                       onOpenQR={() => setQrDialogStat(stat)}
-                      onPitchSaved={() => {
-                        setEditingPitchId(null);
-                        fetchFundraisingStats();
-                      }}
-                      onPitchClose={() => setEditingPitchId(null)}
                     />
                   )
                 )
@@ -998,20 +990,14 @@ function CampaignCard({
   stat,
   isParentView,
   onCopy,
-  onTogglePitch,
-  isPitchOpen,
+  onOpenPitch,
   onOpenQR,
-  onPitchSaved,
-  onPitchClose,
 }: {
   stat: CampaignStat;
   isParentView: boolean;
   onCopy: (url: string) => void;
-  onTogglePitch: (id: string) => void;
-  isPitchOpen: boolean;
+  onOpenPitch: (id: string) => void;
   onOpenQR: () => void;
-  onPitchSaved: () => void;
-  onPitchClose: () => void;
 }) {
   const isRoster = stat.enableRosterAttribution;
   const stripeColor = isRoster ? "bg-emerald-500" : "bg-sky-500";
