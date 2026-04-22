@@ -890,6 +890,16 @@ const FamilyDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {qrTarget && (
+        <QRDialog
+          open={!!qrTarget}
+          onOpenChange={(o) => !o && setQrTarget(null)}
+          url={qrTarget.shareUrl}
+          campaignName={qrTarget.campaignName}
+          participantName={qrTarget.childName}
+        />
+      )}
     </DashboardPageLayout>
   );
 };
