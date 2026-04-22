@@ -1,5 +1,5 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { PitchEditor } from "@/components/PitchEditor";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { PitchWizard } from "@/components/player/PitchWizard";
 
 interface RecordPitchDialogProps {
   open: boolean;
@@ -25,14 +25,8 @@ export function RecordPitchDialog({
 }: RecordPitchDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Record My Pitch</DialogTitle>
-          <DialogDescription>
-            Personalize your fundraising page for {campaignName}. Add a message, image, or video that supporters will see when they visit your link.
-          </DialogDescription>
-        </DialogHeader>
-        <PitchEditor
+      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
+        <PitchWizard
           campaignId={campaignId}
           campaignName={campaignName}
           initialPitch={initialPitch}

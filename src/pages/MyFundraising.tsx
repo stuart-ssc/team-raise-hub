@@ -31,9 +31,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PitchEditor } from "@/components/PitchEditor";
 import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
-import { Separator } from "@/components/ui/separator";
+import { RecordPitchDialog } from "@/components/player/RecordPitchDialog";
 import ManageGuardiansCard from "@/components/ManageGuardiansCard";
 import { ShareMenu } from "@/components/ShareMenu";
 import MyConnectedStudentsCard from "@/components/MyConnectedStudentsCard";
@@ -658,16 +657,8 @@ export default function MyFundraising() {
                       stat={stat}
                       isParentView={isParentView}
                       onCopy={copyLink}
-                      onTogglePitch={(id) =>
-                        setEditingPitchId(editingPitchId === id ? null : id)
-                      }
-                      isPitchOpen={editingPitchId === stat.campaignId}
+                      onOpenPitch={(id) => setEditingPitchId(id)}
                       onOpenQR={() => setQrDialogStat(stat)}
-                      onPitchSaved={() => {
-                        setEditingPitchId(null);
-                        fetchFundraisingStats();
-                      }}
-                      onPitchClose={() => setEditingPitchId(null)}
                     />
                   )
                 )
@@ -680,6 +671,31 @@ export default function MyFundraising() {
 
         {/* Connected students / guardians management cards */}
         {isParentView && user?.id && <MyConnectedStudentsCard userId={user.id} />}
+
+        {/* Record Pitch dialog (3-step wizard) */}
+        {!isParentView && (() => {
+          const editing = visibleStats.find(s => s.campaignId === editingPitchId);
+          if (!editing) return null;
+          return (
+            <RecordPitchDialog
+              open={!!editingPitchId}
+              onOpenChange={(o) => !o && setEditingPitchId(null)}
+              campaignId={editing.campaignId}
+              campaignName={editing.campaignName}
+              initialPitch={{
+                message: editing.pitchMessage,
+                imageUrl: editing.pitchImageUrl,
+                videoUrl: editing.pitchVideoUrl,
+                recordedVideoUrl: editing.pitchRecordedVideoUrl,
+              }}
+              onSaved={() => {
+                setEditingPitchId(null);
+                fetchFundraisingStats();
+              }}
+            />
+          );
+        })()}
+
         {!isParentView && rosterMembership && (
           <ManageGuardiansCard
             organizationUserId={rosterMembership.id}
@@ -999,20 +1015,14 @@ function CampaignCard({
   stat,
   isParentView,
   onCopy,
-  onTogglePitch,
-  isPitchOpen,
+  onOpenPitch,
   onOpenQR,
-  onPitchSaved,
-  onPitchClose,
 }: {
   stat: CampaignStat;
   isParentView: boolean;
   onCopy: (url: string) => void;
-  onTogglePitch: (id: string) => void;
-  isPitchOpen: boolean;
+  onOpenPitch: (id: string) => void;
   onOpenQR: () => void;
-  onPitchSaved: () => void;
-  onPitchClose: () => void;
 }) {
   const isRoster = stat.enableRosterAttribution;
   const stripeColor = isRoster ? "bg-emerald-500" : "bg-sky-500";
@@ -1192,43 +1202,15 @@ function CampaignCard({
               {!isParentView && isRoster && stat.hasPersonalLink && (
                 <Button
                   size="sm"
-                  onClick={() => onTogglePitch(stat.campaignId)}
+                  onClick={() => onOpenPitch(stat.campaignId)}
                   className="ml-1 whitespace-nowrap bg-emerald-600 text-white hover:bg-emerald-700"
                 >
-                  {isPitchOpen ? (
-                    <>
-                      <ChevronUp className="mr-1.5 h-3.5 w-3.5" />
-                      Close
-                    </>
-                  ) : (
-                    <>
-                      <Mic className="mr-1.5 h-3.5 w-3.5" />
-                      {hasPitch ? "Re-record" : "Record pitch"}
-                    </>
-                  )}
+                  <Mic className="mr-1.5 h-3.5 w-3.5" />
+                  {hasPitch ? "Re-record" : "Record pitch"}
                 </Button>
               )}
             </div>
           </div>
-
-          {/* Inline pitch editor */}
-          {!isParentView && isPitchOpen && (
-            <>
-              <Separator className="my-5" />
-              <PitchEditor
-                campaignId={stat.campaignId}
-                campaignName={stat.campaignName}
-                initialPitch={{
-                  message: stat.pitchMessage,
-                  imageUrl: stat.pitchImageUrl,
-                  videoUrl: stat.pitchVideoUrl,
-                  recordedVideoUrl: stat.pitchRecordedVideoUrl,
-                }}
-                onSave={onPitchSaved}
-                onClose={onPitchClose}
-              />
-            </>
-          )}
         </div>
       </div>
     </Card>
