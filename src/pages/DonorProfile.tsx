@@ -301,7 +301,7 @@ const DonorProfile = () => {
         ]}
         loading={true}
       >
-        <div className="max-w-5xl mx-auto space-y-6">
+        <div className="space-y-6">
           <Skeleton className="h-10 w-64" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Skeleton className="h-96 lg:col-span-2" />
@@ -320,7 +320,7 @@ const DonorProfile = () => {
           { label: "Not Found" }
         ]}
       >
-        <div className="max-w-5xl mx-auto">
+        <div>
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground">Donor not found</p>
@@ -341,7 +341,7 @@ const DonorProfile = () => {
         { label: donor.first_name && donor.last_name ? `${donor.first_name} ${donor.last_name}` : donor.email }
       ]}
     >
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="space-y-6">
             {/* Header */}
             <div>
               <div className="flex items-start justify-between">
