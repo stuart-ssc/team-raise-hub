@@ -1,36 +1,35 @@
 
 
-## Why the numbers don't match
+## Goal
+Make the Donors page agree with My Fundraising: `test_archived`, `refunded`, and `cancelled` orders should not contribute to donor lifetime stats. Repair the existing stale numbers and harden the trigger so future status downgrades correctly decrement.
 
-The two pages are measuring two **completely different** things, and both are working correctly:
+## Changes
 
-### Donors page = "people in your contact book" (2)
-Counts every donor record you can see — including the **2 donors you uploaded via the CSV importer** (Donor Five, Donor Six). They have no purchase history; they're prospects/contacts.
+### 1. Migration — harden `update_donor_profile_from_order` trigger
+Replace the function so it handles three cases instead of one:
 
-### My Fundraising → "Lifetime Raised" / "Supporters" (0)
-Counts only **completed orders** (`status IN ('succeeded','completed')`) where `attributed_roster_member_id = your roster member id`. Source: the `roster_member_fundraising_stats` materialized view, computed from the `orders` table by the `get-roster-member-stats` edge function.
+- **INSERT with successful status** → add to donor stats (today's behavior).
+- **UPDATE transitioning INTO `succeeded`/`completed`** (from anything else) → add to donor stats.
+- **UPDATE transitioning OUT OF `succeeded`/`completed`** (to `test_archived`, `refunded`, `cancelled`, `failed`, etc.) → **subtract** the prior order amount, decrement `donation_count`, recompute `last_donation_date` from remaining successful orders, and recompute `engagement_score`. Floor totals at 0 to guard against drift.
+- **UPDATE between two successful statuses** (e.g. `succeeded` → `completed`) → no-op (current guard preserved).
 
-Your two uploaded donors have **never placed an order**, so:
-- they correctly appear in your contact book (Donors page), and
-- they correctly contribute $0 raised and 0 supporters on My Fundraising.
+The activity log entry for `'donation'` is only inserted on the add path. On the subtract path, log a `'donation_reversed'` activity with the order id and amount so admins can see the history.
 
-This is the intended split: **Donors = relationships**, **My Fundraising = money actually raised**. Once one of those donors completes a purchase through your personal link, they'll start counting on My Fundraising too.
+### 2. Migration — one-time data repair
+Call the existing `recalculate_donor_stats(p_organization_id)` function for **all organizations** (pass `NULL`) so every donor's `total_donations`, `donation_count`, `lifetime_value`, `first_donation_date`, and `last_donation_date` are rebuilt from `orders WHERE status IN ('succeeded','completed')`.
 
-## What we recommend changing (small UX fix, optional)
+Note: the existing `recalculate_donor_stats` function only filters on `status = 'succeeded'`. We'll update it in the same migration to include `'completed'` too, so it matches the trigger and the materialized view.
 
-To prevent this confusion in the future, add a tiny clarifier on the My Fundraising stat cards so it's obvious these are donation-based, not contact-based.
+### 3. No frontend changes
+Donors page will automatically show $0 / 0 donations for Donor Five and Donor Six after the repair. My Fundraising remains unchanged (already correct).
 
-### Plan
-1. In `src/pages/MyFundraising.tsx`:
-   - **`SupportersCard`** — change the small label under the count from "Unique supporters" to "Donors who gave". Add a one-line muted helper: "Contacts you've added live in the Donors page."
-   - **`LifetimeRaisedCard`** — leave the title alone, but add a muted tagline: "Total from completed orders attributed to your link."
-2. No data, RLS, or edge-function changes — both numbers are accurate.
+## Files touched
+- `supabase/migrations/<new>.sql` — replaces `update_donor_profile_from_order`, updates `recalculate_donor_stats` to include `'completed'`, and runs `SELECT recalculate_donor_stats(NULL);` once at the end of the migration.
 
-### Files touched
-- `src/pages/MyFundraising.tsx` (copy tweaks only — `SupportersCard` and `LifetimeRaisedCard` components near the bottom of the file).
-
-### Verification
-- My Fundraising still shows $0 / 0 supporters for Taylor (correct — no attributed orders yet).
-- The new helper copy makes it clear these are gift-based metrics.
-- After a test donation through Taylor's personal link, both numbers go up; the Donors page count is unaffected by the donation itself but already includes that donor via the order-based path.
+## Verification
+- After migration: Donors page shows Donor Five and Donor Six with `$0` / `0 donations` (matches My Fundraising).
+- Other donors with real `succeeded`/`completed` orders are unchanged (totals match the sum of their order items).
+- Manually flip a test order from `completed` → `test_archived`: donor's `total_donations` and `donation_count` drop by exactly that order's amount; a `donation_reversed` row appears in `donor_activity_log`.
+- Flip the same order back to `completed`: stats restore; a fresh `donation` activity row is logged.
+- My Fundraising for Taylor still shows `$0` / `0 supporters` (unchanged — view already filtered correctly).
 
