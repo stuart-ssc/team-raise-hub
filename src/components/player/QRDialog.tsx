@@ -1,0 +1,229 @@
+import { useRef } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { QRCodeSVG } from "qrcode.react";
+import { Copy, Download, Image as ImageIcon, FileDown } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+
+interface QRDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  url: string;
+  campaignName: string;
+  participantName?: string;
+  shortCode?: string;
+  shortUrl?: string;
+  scanStats?: { today: number; lastScannedRelative?: string };
+}
+
+const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "qr";
+
+const stripProtocol = (u: string) => u.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+
+async function svgToPngDataUrl(svg: SVGSVGElement, size: number): Promise<string> {
+  const serializer = new XMLSerializer();
+  const source = serializer.serializeToString(svg);
+  const svgBlob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+  const blobUrl = URL.createObjectURL(svgBlob);
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = (e) => reject(e);
+      img.src = blobUrl;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas unsupported");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+    ctx.drawImage(img, 0, 0, size, size);
+    return canvas.toDataURL("image/png");
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+}
+
+export function QRDialog({
+  open,
+  onOpenChange,
+  url,
+  campaignName,
+  participantName,
+  shortCode,
+  shortUrl,
+  scanStats,
+}: QRDialogProps) {
+  const { toast } = useToast();
+  const qrWrapRef = useRef<HTMLDivElement>(null);
+
+  const displayShortUrl = shortUrl || stripProtocol(url);
+  const subjectName = participantName?.trim();
+  const subtitle = subjectName
+    ? `Scan to support ${subjectName} — ${campaignName}`
+    : `Scan to support ${campaignName}`;
+  const fileBase = `${slugify(campaignName)}${subjectName ? `-${slugify(subjectName)}` : ""}`;
+
+  const getSvg = (): SVGSVGElement | null => {
+    return qrWrapRef.current?.querySelector("svg") ?? null;
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Link copied", description: "Share it anywhere." });
+    } catch {
+      toast({ title: "Copy failed", variant: "destructive" });
+    }
+  };
+
+  const handleDownloadPng = async () => {
+    const svg = getSvg();
+    if (!svg) return;
+    try {
+      const dataUrl = await svgToPngDataUrl(svg, 1024);
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${fileBase}-qr.png`;
+      a.click();
+      toast({ title: "QR image downloaded" });
+    } catch {
+      toast({ title: "Download failed", variant: "destructive" });
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    const svg = getSvg();
+    if (!svg) return;
+    try {
+      const dataUrl = await svgToPngDataUrl(svg, 1200);
+      const doc = new jsPDF({ unit: "pt", format: "letter" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(28);
+      const title = subjectName
+        ? `Support ${subjectName}`
+        : `Support ${campaignName}`;
+      doc.text(title, pageWidth / 2, 90, { align: "center" });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(16);
+      doc.setTextColor(90);
+      doc.text(campaignName, pageWidth / 2, 120, { align: "center" });
+      doc.setTextColor(0);
+
+      // QR
+      const qrSize = 360;
+      const qrX = (pageWidth - qrSize) / 2;
+      const qrY = 160;
+      doc.addImage(dataUrl, "PNG", qrX, qrY, qrSize, qrSize);
+
+      // Scan instruction
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text("Scan with your phone camera", pageWidth / 2, qrY + qrSize + 50, {
+        align: "center",
+      });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(14);
+      doc.setTextColor(90);
+      doc.text(displayShortUrl, pageWidth / 2, qrY + qrSize + 78, { align: "center" });
+
+      // Footer
+      doc.setFontSize(11);
+      doc.setTextColor(140);
+      doc.text("sponsorly.io", pageWidth / 2, pageHeight - 36, { align: "center" });
+
+      doc.save(`${fileBase}-poster.pdf`);
+      toast({ title: "Poster downloaded" });
+    } catch {
+      toast({ title: "PDF generation failed", variant: "destructive" });
+    }
+  };
+
+  const badgeText = shortCode ? `SCAN ME · ${shortCode}` : "SCAN ME";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Your personal QR code</DialogTitle>
+          <DialogDescription>{subtitle}</DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-6 py-2 md:grid-cols-2">
+          {/* Left: framed QR */}
+          <div className="flex flex-col items-center">
+            <div className="relative w-full">
+              <div
+                ref={qrWrapRef}
+                className="rounded-xl border bg-white p-6 flex items-center justify-center"
+              >
+                <QRCodeSVG
+                  value={url}
+                  size={220}
+                  level="M"
+                  includeMargin={false}
+                />
+              </div>
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold tracking-wide text-white shadow-sm">
+                {badgeText}
+              </span>
+            </div>
+            <p className="mt-4 break-all px-2 text-center text-xs text-muted-foreground">
+              {displayShortUrl}
+            </p>
+          </div>
+
+          {/* Right: CTAs */}
+          <div className="flex flex-col">
+            <h3 className="text-lg font-semibold leading-tight">
+              Print it. Post it. Show it.
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Hand out the poster at events, pin it to a bulletin board, or drop the
+              image into a text. Every scan opens your fundraising page in one tap.
+            </p>
+
+            <div className="mt-5 flex flex-col gap-2">
+              <Button onClick={handleDownloadPdf} className="w-full">
+                <FileDown className="h-4 w-4 mr-2" />
+                Download poster (PDF)
+              </Button>
+              <Button variant="outline" onClick={handleDownloadPng} className="w-full">
+                <ImageIcon className="h-4 w-4 mr-2" />
+                Download QR image
+              </Button>
+              <Button variant="outline" onClick={handleCopy} className="w-full">
+                <Copy className="h-4 w-4 mr-2" />
+                Copy short link
+              </Button>
+            </div>
+
+            {scanStats && (
+              <div className="mt-5 rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                {scanStats.today} scan{scanStats.today === 1 ? "" : "s"} today
+                {scanStats.lastScannedRelative
+                  ? ` · last scanned ${scanStats.lastScannedRelative}`
+                  : ""}
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
