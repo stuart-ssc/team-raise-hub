@@ -195,10 +195,12 @@ Deno.serve(async (req) => {
                 error: "Failed to update existing donor",
               });
               result.skipped++;
+              continue;
             } else {
               result.updated++;
               result.importedDonorIds.push(existingDonor.id);
             }
+            await linkDonorCompany(supabase, donor, existingDonor.id, organizationId, callerOrgUserId, rowNumber, result);
           } else {
             result.skipped++;
           }
@@ -230,10 +232,12 @@ Deno.serve(async (req) => {
               error: "Failed to insert new donor",
             });
             result.skipped++;
+            continue;
           } else {
             result.imported++;
             result.importedDonorIds.push(insertedData.id);
           }
+          await linkDonorCompany(supabase, donor, insertedData.id, organizationId, callerOrgUserId, rowNumber, result);
         }
       } catch (error) {
         console.error(`Error processing row ${rowNumber}:`, error);
