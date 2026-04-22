@@ -358,6 +358,10 @@ const DonorProfile = () => {
                     {getEngagementLabel(donor.engagement_score)} ({donor.engagement_score})
                   </Badge>
                 </div>
+                <Button variant="outline" onClick={() => setShowEditDialog(true)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Contact
+                </Button>
               </div>
             </div>
 
