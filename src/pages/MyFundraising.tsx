@@ -1165,12 +1165,23 @@ function CampaignCard({
               <IconBtn label="Show QR code" onClick={onOpenQR}>
                 <QrCode className="h-4 w-4" />
               </IconBtn>
-              <IconBtn
-                label="Share"
-                onClick={() => onShare(shareUrl, stat.campaignName, stat.childName)}
+              <ShareMenu
+                url={shareUrl}
+                title={
+                  stat.childName
+                    ? `Support ${stat.childName} in ${stat.campaignName}`
+                    : `Support ${stat.campaignName}`
+                }
+                text={
+                  stat.childName
+                    ? `Help ${stat.childName} reach their fundraising goal for ${stat.campaignName}!`
+                    : `Help me reach my fundraising goal for ${stat.campaignName}!`
+                }
               >
-                <Share2 className="h-4 w-4" />
-              </IconBtn>
+                <IconBtn label="Share">
+                  <Share2 className="h-4 w-4" />
+                </IconBtn>
+              </ShareMenu>
               <IconBtn
                 label="Open"
                 onClick={() => window.open(shareUrl, "_blank")}
