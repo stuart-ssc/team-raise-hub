@@ -83,6 +83,31 @@ Deno.serve(async (req) => {
     const totalRaised = Number(stats?.total_raised || 0);
     const percentToGoal = personalGoal > 0 ? (totalRaised / personalGoal) * 100 : 0;
 
+    // Determine the top gift (largest single order) for this roster member on this campaign
+    let topGiftAmount: number | null = null;
+    let topGiftDonorName: string | null = null;
+    if (supporters && supporters.length > 0) {
+      let bestAmount = 0;
+      let bestName: string | null = null;
+      for (const order of supporters) {
+        const amount = (order.items as any[])?.reduce(
+          (sum: number, item: any) =>
+            sum + (item.price_at_purchase || 0) * (item.quantity || 1),
+          0
+        ) || 0;
+        if (amount > bestAmount) {
+          bestAmount = amount;
+          const fullName = order.customer_name || order.customer_email || '';
+          // Use first name only for the inline label
+          bestName = fullName.split(' ')[0] || fullName || null;
+        }
+      }
+      if (bestAmount > 0) {
+        topGiftAmount = bestAmount;
+        topGiftDonorName = bestName;
+      }
+    }
+
     return new Response(
       JSON.stringify({
         totalRaised: totalRaised,
@@ -103,6 +128,8 @@ Deno.serve(async (req) => {
         personalGoal: personalGoal,
         percentToGoal: Math.min(percentToGoal, 100),
         lastDonationDate: stats?.last_donation_date,
+        topGiftAmount,
+        topGiftDonorName,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
