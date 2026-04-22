@@ -1,77 +1,96 @@
 
 
 ## Problem
-Taylor saved a phone number on a donor she owns. She got a "Success" toast, but the value did not persist. Database confirms `phone` is still NULL and `updated_at` did not change.
+Saving the donor edit dialog throws `"query returned more than one row"`. The donor row itself is fine (single row by primary key). The error comes from a **database trigger**, not the client.
 
 ## Root cause
-Two issues, one a real bug, one a UX bug:
-
-1. **RLS blocks the update silently.** The current UPDATE policy on `donor_profiles` (`Authorized users can update donors`) only allows `organization_admin` or `program_manager`. Participants (players, parents, etc.) — even when they are the donor's owner (`added_by_organization_user_id` = their `organization_user.id`) — cannot update the row. Supabase `.update()` with RLS returns `0 rows, no error`, so the client thinks it succeeded.
-2. **Client treats "0 rows updated" as success.** `EditDonorDialog.handleSave` does not check `count`, so it always toasts "Success" even when nothing was written.
-
-## Fix
-
-### 1. Database — allow donor owners to update their own donors
-Add a new RLS policy on `public.donor_profiles` for UPDATE:
+The `log_donor_profile_update` trigger on `public.donor_profiles` (AFTER UPDATE) contains:
 
 ```sql
-CREATE POLICY "Donor owners can update their donors"
-ON public.donor_profiles
-FOR UPDATE
-TO authenticated
-USING (
-  added_by_organization_user_id IN (
-    SELECT id FROM public.organization_user
-    WHERE user_id = auth.uid()
-      AND organization_id = donor_profiles.organization_id
-      AND active_user = true
-  )
-)
-WITH CHECK (
-  added_by_organization_user_id IN (
-    SELECT id FROM public.organization_user
-    WHERE user_id = auth.uid()
-      AND organization_id = donor_profiles.organization_id
-      AND active_user = true
-  )
-);
+IF jsonb_object_keys(changed_fields) IS NOT NULL THEN
+  INSERT INTO donor_activity_log ...
+END IF;
 ```
 
-This is additive — existing admin/manager and self-edit policies remain. A participant can only edit donors they themselves added.
+`jsonb_object_keys()` is a **set-returning function** — it returns one row per key in the JSONB. When the user changes more than one field at a time (e.g., `phone` + `updated_at`, or `first_name` + `phone`), the function returns multiple rows, and PL/pgSQL refuses to coerce that into a single boolean for the `IF` expression. Postgres raises `query returned more than one row`, the UPDATE is rolled back, and PostgREST surfaces it as the toast.
 
-Note: this does **not** allow ownership reassignment (still blocked by the existing `reassign_donor_ownership` RPC permission check). The dialog already hides that select for non-managers.
+This is why the previous Taylor save (only `phone`) silently succeeded under RLS but the current save (after the RLS fix) actually reaches the trigger and explodes whenever multiple tracked fields differ.
 
-### 2. Client — surface silent failures
-In `src/components/EditDonorDialog.tsx`:
-- Change the update call to request the affected rows count:
-  ```ts
-  const { data, error, count } = await supabase
-    .from("donor_profiles")
-    .update(updatePayload, { count: "exact" })
-    .eq("id", donor.id)
-    .select("id");
-  ```
-- If `error` → existing error toast.
-- Else if `!data || data.length === 0` → toast `"You don't have permission to edit this donor"` (destructive) and return without firing the success path. This prevents future silent-success regressions on any RLS-restricted row.
+## Fix
+Replace the bad guard in `public.log_donor_profile_update` with a proper scalar check, and only insert the activity-log row when there is actually something to log.
 
-### 3. Optional polish (same file)
-Hide the "Edit Contact" button on the donor profile when the viewer has neither manager-level permission nor ownership of the donor, so non-owners (e.g., a teammate viewing another player's donor) don't see a button that would also fail. Logic in `src/pages/DonorProfile.tsx`:
-```ts
-const canEditDonor =
-  canManageOwnership ||
-  donor?.added_by_organization_user_id === organizationUser?.id;
+New migration with:
+
+```sql
+CREATE OR REPLACE FUNCTION public.log_donor_profile_update()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  changed_fields jsonb := '{}'::jsonb;
+BEGIN
+  IF OLD.first_name IS DISTINCT FROM NEW.first_name THEN
+    changed_fields := changed_fields || jsonb_build_object(
+      'first_name', jsonb_build_object('old', OLD.first_name, 'new', NEW.first_name));
+  END IF;
+
+  IF OLD.last_name IS DISTINCT FROM NEW.last_name THEN
+    changed_fields := changed_fields || jsonb_build_object(
+      'last_name', jsonb_build_object('old', OLD.last_name, 'new', NEW.last_name));
+  END IF;
+
+  IF OLD.email IS DISTINCT FROM NEW.email THEN
+    changed_fields := changed_fields || jsonb_build_object(
+      'email', jsonb_build_object('old', OLD.email, 'new', NEW.email));
+  END IF;
+
+  IF OLD.phone IS DISTINCT FROM NEW.phone THEN
+    changed_fields := changed_fields || jsonb_build_object(
+      'phone', jsonb_build_object('old', OLD.phone, 'new', NEW.phone));
+  END IF;
+
+  IF OLD.tags IS DISTINCT FROM NEW.tags THEN
+    changed_fields := changed_fields || jsonb_build_object(
+      'tags', jsonb_build_object('old', OLD.tags, 'new', NEW.tags));
+  END IF;
+
+  IF OLD.preferred_communication IS DISTINCT FROM NEW.preferred_communication THEN
+    changed_fields := changed_fields || jsonb_build_object(
+      'preferred_communication',
+      jsonb_build_object('old', OLD.preferred_communication, 'new', NEW.preferred_communication));
+  END IF;
+
+  IF OLD.notes IS DISTINCT FROM NEW.notes THEN
+    changed_fields := changed_fields || jsonb_build_object('notes_updated', true);
+  END IF;
+
+  -- Correct scalar guard: only log if something actually changed
+  IF changed_fields <> '{}'::jsonb THEN
+    INSERT INTO public.donor_activity_log (donor_id, activity_type, activity_data)
+    VALUES (
+      NEW.id,
+      'profile_update',
+      jsonb_build_object(
+        'changed_fields', changed_fields,
+        'updated_at', NEW.updated_at
+      )
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$function$;
 ```
-Render the button only when `canEditDonor` is true.
+
+No client changes needed.
 
 ## Files touched
-- New migration adding the RLS policy above.
-- `src/components/EditDonorDialog.tsx` — verify row count, show real failure toast.
-- `src/pages/DonorProfile.tsx` — gate the "Edit Contact" button on `canEditDonor`.
+- New Supabase migration replacing `public.log_donor_profile_update`.
 
 ## Verification
-- As Taylor, edit Donor Five, add phone `270-123-4324`, save → toast "Donor information updated successfully", the Contact card on the profile immediately shows the new phone, and `donor_profiles.phone` in the database is set.
-- As Taylor, attempt to edit a donor she does not own (via direct API call) → RLS still blocks; the new UI guard hides the button anyway.
-- As an org admin, edit any donor → still works exactly as before.
-- A donor user (with `user_id`) editing their own profile elsewhere → unaffected (separate self-edit policy).
-- Email field remains locked when `donor.user_id` is set (prior change preserved).
-
+- As Taylor, edit Donor Five, change first name + phone in one save → no error toast, success toast appears, both fields persist in `donor_profiles`, and one new row is added to `donor_activity_log` with `activity_type = 'profile_update'` listing both changes.
+- Editing a single field (just phone) still logs correctly.
+- Saving with no changes → still no log row, no error.
+- Admin / manager edits behave the same way (they were silently rolled back before this fix any time they changed >1 tracked field — now they succeed and log).
