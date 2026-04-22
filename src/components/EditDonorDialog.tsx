@@ -302,6 +302,28 @@ export default function EditDonorDialog({
               rows={4}
             />
           </div>
+
+          {canManageOwnership && (
+            <div className="space-y-2">
+              <Label htmlFor="owner">Owner / Added by</Label>
+              <Select value={ownerOrgUserId} onValueChange={setOwnerOrgUserId}>
+                <SelectTrigger id="owner">
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {orgMembers.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Reassign this donor to a different team member. They will see this donor in their supporters list.
+              </p>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
