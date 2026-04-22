@@ -657,7 +657,6 @@ export default function MyFundraising() {
                       stat={stat}
                       isParentView={isParentView}
                       onCopy={copyLink}
-                      onShare={shareLink}
                       onTogglePitch={(id) =>
                         setEditingPitchId(editingPitchId === id ? null : id)
                       }
