@@ -563,28 +563,14 @@ export default function PlayerDashboard() {
     });
   };
 
-  const shareLink = async (url: string, campaignName: string, isPersonal: boolean = false, childName?: string) => {
-    const shareTitle = isPersonal 
+  const buildShareTitle = (campaignName: string, isPersonal: boolean = false, childName?: string) =>
+    isPersonal
       ? (childName ? `Support ${childName} in ${campaignName}` : `Support me in ${campaignName}`)
       : `Support ${campaignName}`;
-    const shareText = isPersonal 
+  const buildShareText = (campaignName: string, isPersonal: boolean = false, childName?: string) =>
+    isPersonal
       ? (childName ? `Help ${childName} reach their fundraising goal for ${campaignName}!` : `Help me reach my fundraising goal for ${campaignName}!`)
       : `Support our ${campaignName} fundraiser!`;
-      
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: shareTitle,
-          text: shareText,
-          url: url,
-        });
-      } catch (error) {
-        console.error('Error sharing:', error);
-      }
-    } else {
-      copyLink(url, isPersonal, childName);
-    }
-  };
 
   const getCampaignUrl = (campaign: Campaign) => {
     return `${window.location.origin}/c/${campaign.slug}`;
