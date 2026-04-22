@@ -1251,10 +1251,16 @@ export default function PlayerDashboard() {
                         <Copy className="h-4 w-4 mr-1" />
                         Copy
                       </Button>
-                      <Button variant="default" size="sm" className="flex-1" onClick={() => shareLink(campaign.personalUrl, campaign.name, true)}>
-                        <Share2 className="h-4 w-4 mr-1" />
-                        Share
-                      </Button>
+                      <ShareMenu
+                        url={campaign.personalUrl}
+                        title={buildShareTitle(campaign.name, true)}
+                        text={buildShareText(campaign.name, true)}
+                      >
+                        <Button variant="default" size="sm" className="flex-1">
+                          <Share2 className="h-4 w-4 mr-1" />
+                          Share
+                        </Button>
+                      </ShareMenu>
                     </div>
                   </CardContent>
                 </Card>
@@ -1293,10 +1299,16 @@ export default function PlayerDashboard() {
                         <Copy className="h-4 w-4 mr-1" />
                         Copy
                       </Button>
-                      <Button variant="default" size="sm" className="flex-1" onClick={() => shareLink(campaignUrl, campaign.name, false)}>
-                        <Share2 className="h-4 w-4 mr-1" />
-                        Share
-                      </Button>
+                      <ShareMenu
+                        url={campaignUrl}
+                        title={buildShareTitle(campaign.name, false)}
+                        text={buildShareText(campaign.name, false)}
+                      >
+                        <Button variant="default" size="sm" className="flex-1">
+                          <Share2 className="h-4 w-4 mr-1" />
+                          Share
+                        </Button>
+                      </ShareMenu>
                     </div>
                   </CardContent>
                 </Card>
