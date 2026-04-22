@@ -22,10 +22,11 @@ export const useParticipantConnections = (
 ): ParticipantConnections => {
   const [connectedDonorEmails, setConnectedDonorEmails] = useState<string[]>([]);
   const [connectedBusinessIds, setConnectedBusinessIds] = useState<string[]>([]);
-  // Initialize as true so consumers wait for the first fetch before running
-  // access checks. We flip to false in the early-return branch below for
-  // non-participant views.
-  const [loading, setLoading] = useState(true);
+  // Track which role context the hook has actually resolved for. While this
+  // does not match the current desired key, consumers in participant view
+  // must treat the hook as still loading (prevents stale empty-array reads
+  // during role/auth transitions).
+  const [resolvedKey, setResolvedKey] = useState<string | null>(null);
 
   const permissionLevel = organizationUser?.user_type?.permission_level;
   const isParticipantView = 
@@ -33,16 +34,25 @@ export const useParticipantConnections = (
     permissionLevel === 'supporter' || 
     permissionLevel === 'sponsor';
 
+  // Stable signature of the relevant role context. Changes whenever the
+  // active org user OR the set of linked/participant role IDs changes —
+  // even if the count stays the same.
+  const roleSignature = allRoles
+    .map(r => `${r.id}:${r.linked_organization_user_id ?? ''}:${r.user_type?.permission_level ?? ''}`)
+    .sort()
+    .join('|');
+  const desiredKey = organizationUser ? `${organizationUser.id}::${roleSignature}` : null;
+
   useEffect(() => {
     if (!isParticipantView || !organizationUser) {
       setConnectedDonorEmails([]);
       setConnectedBusinessIds([]);
-      setLoading(false);
+      // Mark resolved for non-participant context so consumers do not block.
+      setResolvedKey(desiredKey ?? '__non_participant__');
       return;
     }
 
     const fetchConnections = async () => {
-      setLoading(true);
       try {
         // Collect org user IDs: current user's ID + any linked children (for parents)
         const orgUserIds: string[] = [organizationUser.id];
@@ -123,12 +133,19 @@ export const useParticipantConnections = (
       } catch (error) {
         console.error('Error fetching participant connections:', error);
       } finally {
-        setLoading(false);
+        setResolvedKey(desiredKey);
       }
     };
 
     fetchConnections();
-  }, [organizationUser?.id, isParticipantView, allRoles.length]);
+  }, [desiredKey, isParticipantView]);
+
+  // Loading is true whenever the hook has not yet resolved for the current
+  // desired role context. This prevents the one-render stale window where
+  // organizationUser has just loaded but the fetch has not started.
+  const loading = isParticipantView
+    ? resolvedKey !== desiredKey
+    : resolvedKey === null;
 
   return { connectedDonorEmails, connectedBusinessIds, loading, isParticipantView };
 };

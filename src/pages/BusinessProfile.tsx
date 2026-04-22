@@ -72,6 +72,7 @@ interface BusinessDetails {
   total_partnership_value: number | null;
   linked_donors_count: number | null;
   last_donor_activity_date: string | null;
+  added_by_organization_user_id: string | null;
 }
 
 interface LinkedDonor {
@@ -113,7 +114,7 @@ const BusinessProfile = () => {
   const { businessId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { organizationUser, allRoles } = useOrganizationUser();
+  const { organizationUser, allRoles, loading: organizationUserLoading } = useOrganizationUser();
   const { connectedBusinessIds, loading: connectionsLoading, isParticipantView } = useParticipantConnections(organizationUser, allRoles);
   const [business, setBusiness] = useState<BusinessDetails | null>(null);
   const [linkedDonors, setLinkedDonors] = useState<LinkedDonor[]>([]);
@@ -144,17 +145,16 @@ const BusinessProfile = () => {
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
 
   useEffect(() => {
-    if (businessId && organizationUser?.organization_id && !connectionsLoading) {
-      // Access check for participants
-      if (isParticipantView && !connectedBusinessIds.includes(businessId)) {
-        toast.error("You can only view businesses connected to your fundraising");
-        navigate("/dashboard/businesses");
-        return;
-      }
+    if (
+      businessId &&
+      organizationUser?.organization_id &&
+      !organizationUserLoading &&
+      !connectionsLoading
+    ) {
       fetchBusinessDetails();
       fetchEnrollments();
     }
-  }, [businessId, organizationUser?.organization_id, connectionsLoading]);
+  }, [businessId, organizationUser?.organization_id, organizationUserLoading, connectionsLoading]);
 
   const fetchBusinessDetails = async () => {
     try {
