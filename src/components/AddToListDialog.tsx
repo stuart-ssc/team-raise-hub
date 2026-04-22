@@ -9,7 +9,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, List, Users } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, List, Users, Plus, X } from "lucide-react";
 
 interface AddToListDialogProps {
   open: boolean;
@@ -36,6 +38,10 @@ export default function AddToListDialog({
   const [lists, setLists] = useState<DonorList[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newListName, setNewListName] = useState("");
+  const [newListDescription, setNewListDescription] = useState("");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (open && organizationUser?.organization_id) {
@@ -73,6 +79,56 @@ export default function AddToListDialog({
       console.error("Error fetching lists:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateAndAdd = async () => {
+    if (!newListName.trim() || !organizationUser?.organization_id) return;
+    setCreating(true);
+    try {
+      const { data: created, error: createErr } = await supabase
+        .from("donor_lists")
+        .insert({
+          organization_id: organizationUser.organization_id,
+          name: newListName.trim(),
+          description: newListDescription.trim() || null,
+          created_by: organizationUser.user_id,
+        })
+        .select("id")
+        .single();
+
+      if (createErr) throw createErr;
+
+      const rows = selectedDonorIds.map((donorId) => ({
+        list_id: created.id,
+        donor_id: donorId,
+        added_by: organizationUser?.user_id,
+      }));
+
+      const { error: addErr } = await supabase
+        .from("donor_list_members")
+        .upsert(rows, { onConflict: "list_id,donor_id", ignoreDuplicates: true });
+
+      if (addErr) throw addErr;
+
+      toast({
+        title: "List created",
+        description: `${selectedDonorIds.length} donor(s) added to "${newListName.trim()}"`,
+      });
+
+      setNewListName("");
+      setNewListDescription("");
+      setShowCreate(false);
+      onOpenChange(false);
+      onComplete?.();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create list",
+        variant: "destructive",
+      });
+    } finally {
+      setCreating(false);
     }
   };
 
