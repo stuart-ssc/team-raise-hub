@@ -828,6 +828,9 @@ function LifetimeRaisedCard({
               Across {campaignCount} campaign{campaignCount !== 1 ? "s" : ""}
               {potShare > 0 && <> · you've personally driven {potShare}% of team pot</>}
             </p>
+            <p className="text-[11px] text-background/50 leading-snug">
+              Total from completed orders attributed to your link.
+            </p>
           </div>
           <div className="h-16 w-24 shrink-0 opacity-70">
             <ResponsiveContainer width="100%" height="100%">
@@ -858,13 +861,15 @@ function SupportersCard({ count }: { count: number }) {
             <Users className="h-3.5 w-3.5" />
           </div>
           <span className="text-xs uppercase tracking-wider text-muted-foreground">
-            Unique supporters
+            Donors who gave
           </span>
         </div>
         <div className="font-serif text-4xl font-semibold leading-none text-foreground">
           {count}
         </div>
-        <p className="text-xs text-muted-foreground">Family, friends &amp; fans</p>
+        <p className="text-xs text-muted-foreground">
+          Contacts you've added live in the Donors page.
+        </p>
       </CardContent>
     </Card>
   );
