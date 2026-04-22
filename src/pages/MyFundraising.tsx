@@ -79,6 +79,10 @@ interface CampaignStat {
   groupLogo?: string | null;
   schoolLogo?: string | null;
   orgLogo?: string | null;
+  // Title/description data for QR poster
+  groupName?: string | null;
+  schoolOrOrgName?: string | null;
+  campaignDescription?: string | null;
 }
 
 interface RosterMembership {
@@ -252,7 +256,7 @@ export default function MyFundraising() {
       const { data: campaigns, error: campaignError } = await supabase
         .from("campaigns")
         .select(
-          "id, name, slug, group_directions, enable_roster_attribution, goal_amount, start_date, end_date, groups:groups(logo_url, schools(logo_file), organizations(logo_url))"
+          "id, name, slug, group_directions, enable_roster_attribution, goal_amount, start_date, end_date, description, groups:groups(logo_url, group_name, schools(school_name, logo_file), organizations(name, logo_url))"
         )
         .in("group_id", groupIds)
         .eq("status", true);
@@ -336,6 +340,9 @@ export default function MyFundraising() {
             groupLogo: grp?.logo_url ?? null,
             schoolLogo: grp?.schools?.logo_file ?? null,
             orgLogo: grp?.organizations?.logo_url ?? null,
+            groupName: grp?.group_name ?? null,
+            schoolOrOrgName: grp?.schools?.school_name ?? grp?.organizations?.name ?? null,
+            campaignDescription: (campaign as any).description ?? null,
           });
         }
       }
@@ -389,7 +396,7 @@ export default function MyFundraising() {
       const { data: campaigns, error: campaignError } = await supabase
         .from("campaigns")
         .select(
-          "id, name, slug, group_directions, enable_roster_attribution, goal_amount, start_date, end_date, groups:groups(logo_url, schools(logo_file), organizations(logo_url))"
+          "id, name, slug, group_directions, enable_roster_attribution, goal_amount, start_date, end_date, description, groups:groups(logo_url, group_name, schools(school_name, logo_file), organizations(name, logo_url))"
         )
         .in("group_id", groupIds)
         .eq("status", true);
@@ -735,6 +742,9 @@ export default function MyFundraising() {
             schoolLogo: qrDialogStat.schoolLogo,
             orgLogo: qrDialogStat.orgLogo,
           })}
+          schoolOrOrgName={qrDialogStat.schoolOrOrgName}
+          groupName={qrDialogStat.groupName}
+          campaignDescription={qrDialogStat.campaignDescription}
         />
       )}
     </DashboardPageLayout>

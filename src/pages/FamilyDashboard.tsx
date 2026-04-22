@@ -54,6 +54,9 @@ interface ChildCampaignStats {
   groupLogo?: string | null;
   schoolLogo?: string | null;
   orgLogo?: string | null;
+  groupName?: string | null;
+  schoolOrOrgName?: string | null;
+  campaignDescription?: string | null;
 }
 
 interface RecentDonation {
@@ -78,6 +81,9 @@ const FamilyDashboard = () => {
     childName: string;
     campaignName: string;
     logoUrl?: string;
+    schoolOrOrgName?: string | null;
+    groupName?: string | null;
+    campaignDescription?: string | null;
   } | null>(null);
   
   // Quick Actions state
@@ -176,7 +182,7 @@ const FamilyDashboard = () => {
         // Get ALL active campaigns for this child's group
         const { data: campaigns } = await supabase
           .from('campaigns')
-          .select('id, name, slug, enable_roster_attribution, goal_amount, groups:groups(logo_url, schools(logo_file), organizations(logo_url))')
+          .select('id, name, slug, enable_roster_attribution, goal_amount, description, groups:groups(logo_url, group_name, schools(school_name, logo_file), organizations(name, logo_url))')
           .eq('group_id', childGroupId)
           .eq('status', true);
 
@@ -246,6 +252,9 @@ const FamilyDashboard = () => {
             groupLogo: grp?.logo_url ?? null,
             schoolLogo: grp?.schools?.logo_file ?? null,
             orgLogo: grp?.organizations?.logo_url ?? null,
+            groupName: grp?.group_name ?? null,
+            schoolOrOrgName: grp?.schools?.school_name ?? grp?.organizations?.name ?? null,
+            campaignDescription: (campaign as any).description ?? null,
           });
         }
       }
@@ -773,6 +782,9 @@ const FamilyDashboard = () => {
                                                 schoolLogo: stat.schoolLogo,
                                                 orgLogo: stat.orgLogo,
                                               }),
+                                              schoolOrOrgName: stat.schoolOrOrgName,
+                                              groupName: stat.groupName,
+                                              campaignDescription: stat.campaignDescription,
                                             })
                                           }
                                         >
@@ -912,6 +924,9 @@ const FamilyDashboard = () => {
           campaignName={qrTarget.campaignName}
           participantName={qrTarget.childName}
           logoUrl={qrTarget.logoUrl}
+          schoolOrOrgName={qrTarget.schoolOrOrgName}
+          groupName={qrTarget.groupName}
+          campaignDescription={qrTarget.campaignDescription}
         />
       )}
     </DashboardPageLayout>
