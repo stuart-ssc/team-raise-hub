@@ -111,6 +111,7 @@ const DonorProfile = () => {
   const [unlinkingAffiliation, setUnlinkingAffiliation] = useState<BusinessAffiliation | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [givingOpen, setGivingOpen] = useState(true);
+  const [insightsOpen, setInsightsOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [commsOpen, setCommsOpen] = useState(false);
 
