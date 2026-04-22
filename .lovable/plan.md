@@ -1,96 +1,60 @@
 
 
-## Problem
-Saving the donor edit dialog throws `"query returned more than one row"`. The donor row itself is fine (single row by primary key). The error comes from a **database trigger**, not the client.
+## Goal
+Two small visual fixes on `/dashboard/donors/:id`:
+1. Stop the engagement pill (e.g. "Low Engagement (26)") from changing color on hover.
+2. Remove the stray separator line that appears under the last contact detail in the Contact Information card.
 
-## Root cause
-The `log_donor_profile_update` trigger on `public.donor_profiles` (AFTER UPDATE) contains:
+## Changes
 
-```sql
-IF jsonb_object_keys(changed_fields) IS NOT NULL THEN
-  INSERT INTO donor_activity_log ...
-END IF;
+### `src/pages/DonorProfile.tsx`
+
+**1. Engagement badge — kill hover color shift**
+The `Badge` default variant ships with `hover:bg-primary/80`, which fights the custom `bg-success/10 / bg-warning/10 / bg-muted` colors and produces a hover flash. Override by appending matching `hover:bg-*` classes inside `getEngagementColor`, plus `hover:text-*` to keep text stable:
+
+```tsx
+const getEngagementColor = (score: number) => {
+  if (score >= 70) return "bg-success/10 text-success border-success/20 hover:bg-success/10 hover:text-success";
+  if (score >= 40) return "bg-warning/10 text-warning border-warning/20 hover:bg-warning/10 hover:text-warning";
+  return "bg-muted text-muted-foreground border-border hover:bg-muted hover:text-muted-foreground";
+};
 ```
 
-`jsonb_object_keys()` is a **set-returning function** — it returns one row per key in the JSONB. When the user changes more than one field at a time (e.g., `phone` + `updated_at`, or `first_name` + `phone`), the function returns multiple rows, and PL/pgSQL refuses to coerce that into a single boolean for the `IF` expression. Postgres raises `query returned more than one row`, the UPDATE is rolled back, and PostgREST surfaces it as the toast.
+Result: pill stays exactly the same color when hovered.
 
-This is why the previous Taylor save (only `phone`) silently succeeded under RLS but the current save (after the RLS fix) actually reaches the trigger and explodes whenever multiple tracked fields differ.
+**2. Contact Information — remove dangling separator**
+The card unconditionally renders a `<Separator />` (line 518) between Phone and First Donation. When First/Last Donation aren't present (or when Phone is the bottom-most rendered field on screen), it leaves a horizontal line under the last detail with nothing below it.
 
-## Fix
-Replace the bad guard in `public.log_donor_profile_update` with a proper scalar check, and only insert the activity-log row when there is actually something to log.
+Fix: remove that standalone separator. Add a conditional separator at the top of each subsequent block instead, so a divider only appears *between* two visible rows, never trailing:
 
-New migration with:
+```tsx
+// Phone block — already wrapped in <> with <Separator /> before it. Keep.
+// REMOVE the standalone <Separator /> currently between Phone and First Donation.
 
-```sql
-CREATE OR REPLACE FUNCTION public.log_donor_profile_update()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $function$
-DECLARE
-  changed_fields jsonb := '{}'::jsonb;
-BEGIN
-  IF OLD.first_name IS DISTINCT FROM NEW.first_name THEN
-    changed_fields := changed_fields || jsonb_build_object(
-      'first_name', jsonb_build_object('old', OLD.first_name, 'new', NEW.first_name));
-  END IF;
+// First Donation block: wrap in fragment and only show separator if Phone exists
+{donor.first_donation_date && (
+  <>
+    {donor.phone && <Separator />}
+    <div className="flex items-center gap-3"> ... First Donation ... </div>
+  </>
+)}
 
-  IF OLD.last_name IS DISTINCT FROM NEW.last_name THEN
-    changed_fields := changed_fields || jsonb_build_object(
-      'last_name', jsonb_build_object('old', OLD.last_name, 'new', NEW.last_name));
-  END IF;
-
-  IF OLD.email IS DISTINCT FROM NEW.email THEN
-    changed_fields := changed_fields || jsonb_build_object(
-      'email', jsonb_build_object('old', OLD.email, 'new', NEW.email));
-  END IF;
-
-  IF OLD.phone IS DISTINCT FROM NEW.phone THEN
-    changed_fields := changed_fields || jsonb_build_object(
-      'phone', jsonb_build_object('old', OLD.phone, 'new', NEW.phone));
-  END IF;
-
-  IF OLD.tags IS DISTINCT FROM NEW.tags THEN
-    changed_fields := changed_fields || jsonb_build_object(
-      'tags', jsonb_build_object('old', OLD.tags, 'new', NEW.tags));
-  END IF;
-
-  IF OLD.preferred_communication IS DISTINCT FROM NEW.preferred_communication THEN
-    changed_fields := changed_fields || jsonb_build_object(
-      'preferred_communication',
-      jsonb_build_object('old', OLD.preferred_communication, 'new', NEW.preferred_communication));
-  END IF;
-
-  IF OLD.notes IS DISTINCT FROM NEW.notes THEN
-    changed_fields := changed_fields || jsonb_build_object('notes_updated', true);
-  END IF;
-
-  -- Correct scalar guard: only log if something actually changed
-  IF changed_fields <> '{}'::jsonb THEN
-    INSERT INTO public.donor_activity_log (donor_id, activity_type, activity_data)
-    VALUES (
-      NEW.id,
-      'profile_update',
-      jsonb_build_object(
-        'changed_fields', changed_fields,
-        'updated_at', NEW.updated_at
-      )
-    );
-  END IF;
-
-  RETURN NEW;
-END;
-$function$;
+// Last Donation block: separator only if Phone OR First Donation exists
+{donor.last_donation_date && (
+  <>
+    {(donor.phone || donor.first_donation_date) && <Separator />}
+    <div className="flex items-center gap-3"> ... Last Donation ... </div>
+  </>
+)}
 ```
 
-No client changes needed.
+Result: dividers always sit *between* details, never below the last one.
 
 ## Files touched
-- New Supabase migration replacing `public.log_donor_profile_update`.
+- `src/pages/DonorProfile.tsx`
 
 ## Verification
-- As Taylor, edit Donor Five, change first name + phone in one save → no error toast, success toast appears, both fields persist in `donor_profiles`, and one new row is added to `donor_activity_log` with `activity_type = 'profile_update'` listing both changes.
-- Editing a single field (just phone) still logs correctly.
-- Saving with no changes → still no log row, no error.
-- Admin / manager edits behave the same way (they were silently rolled back before this fix any time they changed >1 tracked field — now they succeed and log).
+- Hovering the "Low Engagement (26)" pill no longer changes its background or text color (same for moderately/highly engaged variants).
+- Contact Information card: no horizontal line below the bottom-most contact detail in any combination (email only / email+phone / email+phone+first / email+phone+first+last). Lines still separate adjacent rows when both are present.
+- No layout shift in any other Contact Information state.
+
