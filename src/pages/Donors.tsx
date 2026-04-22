@@ -337,7 +337,7 @@ const Donors = () => {
   if (organizationUserLoading || loading) {
     return (
       <DashboardPageLayout segments={[{ label: "Donors" }]} loading={true}>
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className="space-y-6">
           <Skeleton className="h-10 w-64" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
@@ -352,7 +352,7 @@ const Donors = () => {
 
   return (
     <DashboardPageLayout segments={[{ label: "Donors" }]}>
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col gap-4">
               <div className="flex items-start justify-between">
