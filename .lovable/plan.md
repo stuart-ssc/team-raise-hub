@@ -1,35 +1,47 @@
 
 
-## Goal
-Make the Donors page agree with My Fundraising: `test_archived`, `refunded`, and `cancelled` orders should not contribute to donor lifetime stats. Repair the existing stale numbers and harden the trigger so future status downgrades correctly decrement.
+## Problem
+When Taylor (a participant) clicks one of her uploaded donors (Donor Five / Six), `DonorProfile.tsx` shows "Access Denied" and bounces back to /dashboard/donors — even though those donors are correctly attributed to her (`added_by_organization_user_id = Taylor's org_user id`) and show "Added by you" on the list page.
 
-## Changes
+## Root cause
+A race condition in `useParticipantConnections`, not RLS.
 
-### 1. Migration — harden `update_donor_profile_from_order` trigger
-Replace the function so it handles three cases instead of one:
+- The hook initializes `loading = false` and only sets it to `true` *inside* `fetchConnections`, which runs in `useEffect` after the component mounts.
+- `DonorProfile` gates its access check on `!connectionsLoading`. On first render, `connectionsLoading` is already `false` and `connectedDonorEmails` is still `[]`, so `fetchDonorData()` fires immediately.
+- The check `connectedDonorEmails.includes(donorData.email)` returns false against the empty array → toast + redirect, before the hook finishes loading the real list.
 
-- **INSERT with successful status** → add to donor stats (today's behavior).
-- **UPDATE transitioning INTO `succeeded`/`completed`** (from anything else) → add to donor stats.
-- **UPDATE transitioning OUT OF `succeeded`/`completed`** (to `test_archived`, `refunded`, `cancelled`, `failed`, etc.) → **subtract** the prior order amount, decrement `donation_count`, recompute `last_donation_date` from remaining successful orders, and recompute `engagement_score`. Floor totals at 0 to guard against drift.
-- **UPDATE between two successful statuses** (e.g. `succeeded` → `completed`) → no-op (current guard preserved).
+Database confirms the donors are correctly owned by Taylor:
 
-The activity log entry for `'donation'` is only inserted on the add path. On the subtract path, log a `'donation_reversed'` activity with the order id and amount so admins can see the history.
+| Donor | Email | added_by_organization_user_id |
+|---|---|---|
+| Donor Five | donor@sparky.co | 47ddbeb5… (Taylor) |
+| Donor Six | six@donor.com | 47ddbeb5… (Taylor) |
 
-### 2. Migration — one-time data repair
-Call the existing `recalculate_donor_stats(p_organization_id)` function for **all organizations** (pass `NULL`) so every donor's `total_donations`, `donation_count`, `lifetime_value`, `first_donation_date`, and `last_donation_date` are rebuilt from `orders WHERE status IN ('succeeded','completed')`.
+So the data and the hook's logic are both correct — the timing is wrong.
 
-Note: the existing `recalculate_donor_stats` function only filters on `status = 'succeeded'`. We'll update it in the same migration to include `'completed'` too, so it matches the trigger and the materialized view.
+## Fix
 
-### 3. No frontend changes
-Donors page will automatically show $0 / 0 donations for Donor Five and Donor Six after the repair. My Fundraising remains unchanged (already correct).
+### 1. `src/hooks/useParticipantConnections.ts`
+- Initialize `loading = true` when `isParticipantView` is true so consumers wait for the first fetch.
+- Set `loading = false` in the early-return branch (non-participant views).
+- Add `allRoles.length` to the effect's dependency array so changes in roles re-trigger the fetch.
+
+### 2. `src/pages/DonorProfile.tsx`
+- Defensive guard: only run the participant access check **after** `connectionsLoading === false` AND the hook has had a chance to populate (already covered by the hook fix, but also keep `connectionsLoading` in the gating `useEffect` — which it already is). No logic change needed here once the hook is corrected.
+- Normalize the email comparison to lowercase on both sides (cheap safety against future case-mismatch bugs):
+  `connectedDonorEmails.map(e => e.toLowerCase()).includes(donorData.email.toLowerCase())`.
+
+### 3. `src/pages/BusinessProfile.tsx` (same race exists)
+No code change required after the hook fix, but verify the equivalent `connectedBusinessIds.includes(...)` check now resolves after `connectionsLoading` flips correctly.
 
 ## Files touched
-- `supabase/migrations/<new>.sql` — replaces `update_donor_profile_from_order`, updates `recalculate_donor_stats` to include `'completed'`, and runs `SELECT recalculate_donor_stats(NULL);` once at the end of the migration.
+- `src/hooks/useParticipantConnections.ts` — fix initial `loading` state.
+- `src/pages/DonorProfile.tsx` — case-insensitive email comparison.
 
 ## Verification
-- After migration: Donors page shows Donor Five and Donor Six with `$0` / `0 donations` (matches My Fundraising).
-- Other donors with real `succeeded`/`completed` orders are unchanged (totals match the sum of their order items).
-- Manually flip a test order from `completed` → `test_archived`: donor's `total_donations` and `donation_count` drop by exactly that order's amount; a `donation_reversed` row appears in `donor_activity_log`.
-- Flip the same order back to `completed`: stats restore; a fresh `donation` activity row is logged.
-- My Fundraising for Taylor still shows `$0` / `0 supporters` (unchanged — view already filtered correctly).
+- As Taylor: open `/dashboard/donors`, click **Donor Five** → profile loads; no Access Denied toast; donation history shows $0 (correct, no completed orders).
+- As Taylor: open `/dashboard/donors`, click **Donor Six** → same — loads cleanly.
+- As Taylor: try to navigate directly to `/dashboard/donors/<some-other-donor-id-not-attributed-to-her>` → still correctly blocked with "Access Denied" and redirected.
+- As an admin (Sample School admin): donor profile pages still load for any donor in the org.
+- BusinessProfile page exhibits the same fix automatically — no regression.
 
