@@ -306,6 +306,18 @@ const Donors = () => {
       }
     }
 
+    // List filter
+    if (filterList !== "all") {
+      if (filterList === "none") {
+        const allMembers = new Set<string>();
+        Object.values(memberMap).forEach((s) => s.forEach((id) => allMembers.add(id)));
+        result = result.filter((d) => !allMembers.has(d.id));
+      } else {
+        const members = memberMap[filterList] || new Set();
+        result = result.filter((d) => members.has(d.id));
+      }
+    }
+
     // Sort
     switch (sortBy) {
       case "recent":
