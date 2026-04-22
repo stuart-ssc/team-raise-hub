@@ -944,14 +944,19 @@ export default function PlayerDashboard() {
                   </div>
                 </div>
                 {headline && (
-                  <Button
-                    size="sm"
-                    className="relative mt-4 w-full bg-white text-sidebar hover:bg-white/90 font-semibold"
-                    onClick={() => shareLink(headline.personalUrl, headline.name, true)}
+                  <ShareMenu
+                    url={headline.personalUrl}
+                    title={buildShareTitle(headline.name, true)}
+                    text={buildShareText(headline.name, true)}
                   >
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Share My Link
-                  </Button>
+                    <Button
+                      size="sm"
+                      className="relative mt-4 w-full bg-white text-sidebar hover:bg-white/90 font-semibold"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share My Link
+                    </Button>
+                  </ShareMenu>
                 )}
               </div>
             </div>
