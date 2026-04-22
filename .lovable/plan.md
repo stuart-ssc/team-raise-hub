@@ -1,27 +1,27 @@
 
-
 ## Goal
-Make the Donor detail page (`/dashboard/donors/:id`) span the full width of the dashboard content area, matching the other dashboard pages.
+Tighten the donor profile header: shrink the "Low Engagement" risk badge into a small pill placed below the donor name, and remove the email line that currently sits beneath the name.
 
-## Cause
-`src/pages/DonorProfile.tsx` wraps its content in:
+## Changes
+Single-file edit: `src/pages/DonorProfile.tsx` (header block of the loaded profile view).
+
+1. **Remove email line** under the donor name in the header.
+2. **Move the risk badge** (`Low Engagement` / `Medium` / `High Engagement Risk`) out of the right-side stats cluster and place it directly under the donor name as a small pill.
+3. **Shrink the badge** to a compact pill style: smaller text, tighter padding, retain the existing semantic color (low = secondary/muted, medium = default, high = destructive).
+4. Leave everything else (avatar, name, action buttons, stat cards, tabs) unchanged.
+
+## Result
+```text
+[Avatar]  Donor Name
+          • Low Engagement •     ← small pill, compact
+          (no email line)
 ```
-<div className="max-w-5xl mx-auto space-y-6">
-```
-That `max-w-5xl mx-auto` caps the page at ~1024px and centers it, leaving large empty gutters on wider screens. Other dashboard pages let the layout's own `p-6` define the width and don't add this constraint.
 
-`BusinessProfile.tsx` does not have this constraint — it's already full width — so no change is needed there.
-
-## Fix
-Single-file edit in `src/pages/DonorProfile.tsx`:
-- Replace `<div className="max-w-5xl mx-auto space-y-6">` with `<div className="space-y-6">`.
-- Leave all child layout (the `lg:grid-cols-3` 2/1 split for main content + sidebar) unchanged so the existing two-column structure simply expands to fill the available width.
-
-No other files touched. No layout, hook, or RLS changes.
+## Files touched
+- `src/pages/DonorProfile.tsx`
 
 ## Verification
-- `/dashboard/donors/:id` content now extends to the same right edge as `/dashboard/donors` and other dashboard pages at 1427px viewport.
-- Two-column grid (insights/activity vs. side panel) widens proportionally; cards remain readable.
-- Mobile (<768px) is unaffected — grid already collapses to a single column.
-- Business profile page is unchanged (already full width).
-
+- `/dashboard/donors/:id` shows donor name with a small risk pill directly beneath it.
+- Email no longer appears in the header (still available in the sidebar/contact section).
+- Badge color still reflects risk level (low / medium / high).
+- Mobile layout unaffected — pill wraps naturally beneath the name.
