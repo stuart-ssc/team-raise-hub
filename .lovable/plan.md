@@ -1,24 +1,23 @@
 
 
 ## Goal
-Make the "My Supports" (My Fundraising) page content span the full width of the main content area, matching other dashboard pages.
+Make the Donors / "My Supporters" page span the full width of the main content area, matching other dashboard pages.
 
-## Investigation
-Looking at `src/pages/MyFundraising.tsx`, the content is likely wrapped in a constrained container (e.g. `max-w-*` or `container mx-auto`) inside the `DashboardPageLayout`. Other dashboard pages render their content directly without an inner max-width wrapper, so they fill `main`'s padding box edge-to-edge.
+## Root cause
+`src/pages/Donors.tsx` wraps its content in `<div className="max-w-7xl mx-auto space-y-6">` in two places (the loading skeleton at line 340 and the main return at line 355). At a 1427px viewport, this caps content at ~1280px and leaves visible empty space on the right.
 
 ## Change
 
-### `src/pages/MyFundraising.tsx`
-- Remove the constraining wrapper around the page body so its children fill the available width inside `<main className="flex-1 overflow-y-auto p-6">` (provided by `DashboardPageLayout`).
-- Specifically: locate the top-level wrapper inside the `<DashboardPageLayout>` return (likely a `div` with classes like `max-w-7xl mx-auto` or `container mx-auto px-…`) and replace it with a plain `<div className="space-y-6">` (or whatever vertical-spacing utility is already in use), so width is 100%.
-- Keep all internal spacing/grid utilities intact — only the outer width constraint is removed.
-- Do not touch `DashboardPageLayout` (it already provides the standard `p-6` padding used on every dashboard page).
+### `src/pages/Donors.tsx`
+- Line 340 (loading skeleton wrapper): change `max-w-7xl mx-auto space-y-6` → `space-y-6`.
+- Line 355 (main content wrapper): change `max-w-7xl mx-auto space-y-6` → `space-y-6`.
+- No other changes — internal grid/flex layouts already adapt to full width.
 
 ## Verification
-- Navigate to `/dashboard/my-fundraising` at desktop widths (≥1280px). The campaign cards, stat tiles, and any tables now extend to the same right edge as content on `/dashboard`, `/dashboard/orders`, etc.
-- No horizontal scrollbar appears.
-- Mobile layout is unchanged (cards still stack and respect the layout's `p-6` padding).
+- `/dashboard/donors` content (header, stat tiles, search/filter bar, donors list card) extends to the same right edge as `/dashboard` and `/dashboard/orders`.
+- Stat tiles still use the existing 4-column grid and now have more breathing room per card.
+- No horizontal scrollbar; mobile layout unchanged (the constraint only affected desktop widths).
 
 ## Files touched
-1. `src/pages/MyFundraising.tsx` — remove outer max-width container.
+1. `src/pages/Donors.tsx` — remove `max-w-7xl mx-auto` from both wrappers.
 
