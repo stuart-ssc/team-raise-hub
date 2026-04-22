@@ -47,6 +47,7 @@ interface DonorProfile {
   notes: string | null;
   tags: string[] | null;
   preferred_communication: string;
+  added_by_organization_user_id: string | null;
 }
 
 interface DonationHistoryItem {
@@ -92,10 +93,15 @@ const DonorProfile = () => {
   const [unlinkingAffiliation, setUnlinkingAffiliation] = useState<BusinessAffiliation | null>(null);
 
   useEffect(() => {
-    if (organizationUser?.organization_id && donorId && !connectionsLoading) {
+    if (
+      organizationUser?.organization_id &&
+      donorId &&
+      !organizationUserLoading &&
+      !connectionsLoading
+    ) {
       fetchDonorData();
     }
-  }, [organizationUser?.organization_id, donorId, connectionsLoading]);
+  }, [organizationUser?.organization_id, donorId, organizationUserLoading, connectionsLoading]);
 
   const fetchDonorData = async () => {
     if (!donorId) return;
@@ -111,13 +117,16 @@ const DonorProfile = () => {
 
       if (donorError) throw donorError;
 
-      // Access check for participants - verify donor is connected to them
-      // (case-insensitive to guard against email casing mismatches)
-      const normalizedConnected = connectedDonorEmails.map((e) => e.toLowerCase());
-      if (
-        isParticipantView &&
-        !normalizedConnected.includes((donorData.email || "").toLowerCase())
-      ) {
+      // Access check for participants — allow if they OWN the donor or the
+      // donor email is in the resolved participant connection list.
+      const ownsDonor =
+        !!organizationUser &&
+        donorData.added_by_organization_user_id === organizationUser.id;
+      const donorEmailNorm = (donorData.email || "").trim().toLowerCase();
+      const connectedByEmail = connectedDonorEmails.some(
+        (e) => e.trim().toLowerCase() === donorEmailNorm
+      );
+      if (isParticipantView && !ownsDonor && !connectedByEmail) {
         toast({
           title: "Access Denied",
           description: "You can only view donors connected to your fundraising",
