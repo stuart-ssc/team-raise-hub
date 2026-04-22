@@ -7,6 +7,7 @@ import DashboardPageLayout from "@/components/DashboardPageLayout";
 import DonorActivityTimeline from "@/components/DonorActivityTimeline";
 import DonorCommunicationHistory from "@/components/DonorCommunicationHistory";
 import DonorInsightsPanel from "@/components/DonorInsightsPanel";
+import AddToListDialog from "@/components/AddToListDialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +26,8 @@ import {
   Building2,
   CheckCircle2,
   X,
-  Plus
+  Plus,
+  List
 } from "lucide-react";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
