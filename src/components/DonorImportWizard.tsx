@@ -351,6 +351,7 @@ const DonorImportWizard = ({ open, onOpenChange, onImportComplete }: DonorImport
                 <FileText className="h-4 w-4" />
                 <AlertDescription>
                   Upload a CSV file with donor information. The file should include at least an email column.
+                  Donors you upload will be added to your supporters and shared with your organization's staff.
                 </AlertDescription>
               </Alert>
 
