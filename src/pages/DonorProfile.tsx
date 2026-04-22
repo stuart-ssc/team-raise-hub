@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Mail, 
   Phone, 
@@ -27,7 +28,8 @@ import {
   CheckCircle2,
   X,
   Plus,
-  List
+  List,
+  ChevronDown
 } from "lucide-react";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
@@ -107,6 +109,9 @@ const DonorProfile = () => {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [unlinkingAffiliation, setUnlinkingAffiliation] = useState<BusinessAffiliation | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [givingOpen, setGivingOpen] = useState(true);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [commsOpen, setCommsOpen] = useState(false);
 
   const canManageOwnership = (() => {
     const name = organizationUser?.user_type?.name;
