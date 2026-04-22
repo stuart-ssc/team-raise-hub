@@ -550,10 +550,48 @@ const DonorProfile = () => {
                 </Card>
 
                 {/* Activity Timeline */}
-                <DonorActivityTimeline donorId={donor.id} />
+                <Card>
+                  <Collapsible open={timelineOpen} onOpenChange={setTimelineOpen}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors flex flex-row items-center justify-between space-y-0">
+                        <div className="space-y-1.5">
+                          <CardTitle>Activity Timeline</CardTitle>
+                          <CardDescription>Recent interactions and engagement history</CardDescription>
+                        </div>
+                        <ChevronDown
+                          className={`h-5 w-5 text-muted-foreground transition-transform ${timelineOpen ? "rotate-180" : ""}`}
+                        />
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent>
+                        <DonorActivityTimeline donorId={donor.id} />
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
 
                 {/* Communication History */}
-                <DonorCommunicationHistory donorEmail={donor.email} />
+                <Card>
+                  <Collapsible open={commsOpen} onOpenChange={setCommsOpen}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors flex flex-row items-center justify-between space-y-0">
+                        <div className="space-y-1.5">
+                          <CardTitle>Communication History</CardTitle>
+                          <CardDescription>Email and message history with this supporter</CardDescription>
+                        </div>
+                        <ChevronDown
+                          className={`h-5 w-5 text-muted-foreground transition-transform ${commsOpen ? "rotate-180" : ""}`}
+                        />
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent>
+                        <DonorCommunicationHistory donorEmail={donor.email} />
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
               </div>
 
               {/* Sidebar */}
