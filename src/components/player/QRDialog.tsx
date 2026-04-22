@@ -161,24 +161,56 @@ export function QRDialog({
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
 
+      // Branded logo at the top (team → school → org → Sponsorly fallback)
+      const LOGO_MAX_W = 200;
+      const LOGO_MAX_H = 64;
+      const LOGO_TOP_Y = 40;
+      const LOGO_BLOCK_BOTTOM = LOGO_TOP_Y + LOGO_MAX_H + 16; // reserved space below logo
+      let logoLoaded = false;
+      const tryDrawLogo = async (src: string) => {
+        const { dataUrl: logoDataUrl, width, height } = await loadImageAsPngDataUrl(
+          src,
+          LOGO_MAX_W,
+          LOGO_MAX_H
+        );
+        const x = (pageWidth - width) / 2;
+        doc.addImage(logoDataUrl, "PNG", x, LOGO_TOP_Y, width, height);
+        logoLoaded = true;
+      };
+      if (logoUrl) {
+        try {
+          await tryDrawLogo(logoUrl);
+        } catch {
+          // CORS/network failure — fall through to Sponsorly fallback
+        }
+      }
+      if (!logoLoaded) {
+        try {
+          await tryDrawLogo(SPONSORLY_FALLBACK_LOGO);
+        } catch {
+          // If even the fallback fails (offline), continue without a logo
+        }
+      }
+
       // Title
+      const titleY = LOGO_BLOCK_BOTTOM + 36;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(28);
       const title = subjectName
         ? `Support ${subjectName}`
         : `Support ${campaignName}`;
-      doc.text(title, pageWidth / 2, 90, { align: "center" });
+      doc.text(title, pageWidth / 2, titleY, { align: "center" });
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(16);
       doc.setTextColor(90);
-      doc.text(campaignName, pageWidth / 2, 120, { align: "center" });
+      doc.text(campaignName, pageWidth / 2, titleY + 30, { align: "center" });
       doc.setTextColor(0);
 
       // QR
       const qrSize = 360;
       const qrX = (pageWidth - qrSize) / 2;
-      const qrY = 160;
+      const qrY = titleY + 70;
       doc.addImage(dataUrl, "PNG", qrX, qrY, qrSize, qrSize);
 
       // Scan instruction
