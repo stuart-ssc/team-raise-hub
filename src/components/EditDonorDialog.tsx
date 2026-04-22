@@ -242,7 +242,13 @@ export default function EditDonorDialog({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="john.doe@example.com"
               required
+              disabled={emailLocked}
             />
+            {emailLocked && (
+              <p className="text-xs text-muted-foreground">
+                This email is verified with a Sponsorly account and cannot be changed here.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
