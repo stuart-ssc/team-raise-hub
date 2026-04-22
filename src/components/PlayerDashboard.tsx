@@ -717,10 +717,16 @@ export default function PlayerDashboard() {
                         <Copy className="h-4 w-4 mr-2" />
                         {linkedChildren.length > 1 ? `Copy ${campaign.childName?.split(' ')[0]}'s Link` : "Copy Link"}
                       </Button>
-                      <Button variant="default" size="sm" className="flex-1" onClick={() => shareLink(campaign.personalUrl, campaign.name, true, campaign.childName)}>
-                        <Share2 className="h-4 w-4 mr-2" />
-                        Share
-                      </Button>
+                      <ShareMenu
+                        url={campaign.personalUrl}
+                        title={buildShareTitle(campaign.name, true, campaign.childName)}
+                        text={buildShareText(campaign.name, true, campaign.childName)}
+                      >
+                        <Button variant="default" size="sm" className="flex-1">
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Share
+                        </Button>
+                      </ShareMenu>
                     </div>
                   </CardContent>
                 </Card>
