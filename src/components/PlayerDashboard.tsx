@@ -337,7 +337,7 @@ export default function PlayerDashboard() {
       // Fetch campaigns for children's groups
       const { data: allCampaigns, error: campaignError } = await supabase
         .from('campaigns')
-        .select('id, name, slug, goal_amount, amount_raised, start_date, end_date, status, enable_roster_attribution, group_id')
+        .select('id, name, slug, goal_amount, amount_raised, start_date, end_date, status, enable_roster_attribution, group_id, groups:groups(logo_url, schools(logo_file), organizations(logo_url))')
         .in('group_id', groupIds)
         .order('created_at', { ascending: false });
 
