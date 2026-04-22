@@ -401,10 +401,6 @@ const Donors = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="w-56">
-                        <DropdownMenuItem onClick={() => setImportWizardOpen(true)}>
-                          <Upload className="mr-2 h-4 w-4" />
-                          Import CSV
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate("/dashboard/donors/segmentation")}>
                           <TrendingUp className="mr-2 h-4 w-4" />
                           Segments
@@ -424,13 +420,6 @@ const Donors = () => {
                   {/* Desktop: Individual Buttons */}
                   {!isMobile && (
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline"
-                        onClick={() => setImportWizardOpen(true)}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        Import CSV
-                      </Button>
                       <Button 
                         variant="outline"
                         onClick={() => navigate("/dashboard/donors/segmentation")}
