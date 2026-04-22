@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import { getPermissionLevel, PermissionLevel } from "@/lib/permissions";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +37,7 @@ interface EditDonorDialogProps {
     tags: string[] | null;
     preferred_communication: string | null;
     notes: string | null;
+    added_by_organization_user_id?: string | null;
   } | null;
   onComplete: () => void;
 }
@@ -46,6 +49,7 @@ export default function EditDonorDialog({
   onComplete,
 }: EditDonorDialogProps) {
   const { toast } = useToast();
+  const { organizationUser } = useOrganizationUser();
   const [saving, setSaving] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -55,6 +59,15 @@ export default function EditDonorDialog({
   const [preferredComm, setPreferredComm] = useState<string>("email");
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
+  const [ownerOrgUserId, setOwnerOrgUserId] = useState<string>("unassigned");
+  const [orgMembers, setOrgMembers] = useState<Array<{ id: string; label: string }>>([]);
+
+  const canManageOwnership = (() => {
+    const name = organizationUser?.user_type?.name;
+    if (!name) return false;
+    const lvl = getPermissionLevel(name);
+    return lvl === PermissionLevel.ORGANIZATION_ADMIN || lvl === PermissionLevel.PROGRAM_MANAGER;
+  })();
 
   useEffect(() => {
     if (donor && open) {
@@ -65,8 +78,38 @@ export default function EditDonorDialog({
       setNotes(donor.notes || "");
       setPreferredComm(donor.preferred_communication || "email");
       setTags(donor.tags || []);
+      setOwnerOrgUserId(donor.added_by_organization_user_id || "unassigned");
     }
   }, [donor, open]);
+
+  useEffect(() => {
+    if (!open || !canManageOwnership || !organizationUser?.organization_id) return;
+
+    const loadMembers = async () => {
+      const { data, error } = await supabase
+        .from("organization_user")
+        .select("id, profiles!inner(first_name, last_name), user_type!inner(name)")
+        .eq("organization_id", organizationUser.organization_id)
+        .eq("active_user", true);
+
+      if (error) {
+        console.error("Error loading org members:", error);
+        return;
+      }
+
+      const members = (data || []).map((m: any) => {
+        const fn = m.profiles?.first_name || "";
+        const ln = m.profiles?.last_name || "";
+        const fullName = `${fn} ${ln}`.trim() || "Unnamed user";
+        const role = m.user_type?.name ? ` · ${m.user_type.name}` : "";
+        return { id: m.id, label: `${fullName}${role}` };
+      });
+      members.sort((a, b) => a.label.localeCompare(b.label));
+      setOrgMembers(members);
+    };
+
+    loadMembers();
+  }, [open, canManageOwnership, organizationUser?.organization_id]);
 
   const handleAddTag = () => {
     const trimmedTag = newTag.trim();
@@ -116,6 +159,19 @@ export default function EditDonorDialog({
         .eq("id", donor.id);
 
       if (error) throw error;
+
+      // If admin/manager changed ownership, call the secure RPC
+      if (canManageOwnership) {
+        const newOwner = ownerOrgUserId === "unassigned" ? null : ownerOrgUserId;
+        const currentOwner = donor.added_by_organization_user_id ?? null;
+        if (newOwner !== currentOwner) {
+          const { error: reassignError } = await supabase.rpc("reassign_donor_ownership", {
+            _donor_id: donor.id,
+            _new_owner_org_user_id: newOwner,
+          });
+          if (reassignError) throw reassignError;
+        }
+      }
 
       toast({
         title: "Success",
