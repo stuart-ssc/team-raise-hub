@@ -351,11 +351,10 @@ const DonorProfile = () => {
                       ? `${donor.first_name} ${donor.last_name}`
                       : "Donor Profile"}
                   </h1>
-                  <p className="text-muted-foreground mt-1">{donor.email}</p>
+                  <Badge className={`${getEngagementColor(donor.engagement_score)} mt-2 text-xs px-2 py-0.5`}>
+                    {getEngagementLabel(donor.engagement_score)} ({donor.engagement_score})
+                  </Badge>
                 </div>
-                <Badge className={`${getEngagementColor(donor.engagement_score)} text-base px-4 py-2`}>
-                  {getEngagementLabel(donor.engagement_score)} ({donor.engagement_score})
-                </Badge>
               </div>
             </div>
 
