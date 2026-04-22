@@ -367,7 +367,7 @@ const Donors = () => {
       <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col gap-4">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
                   <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
                     <Users className="h-8 w-8 text-primary" />
@@ -379,6 +379,13 @@ const Donors = () => {
                       : "Track and engage with your supporters"}
                   </p>
                 </div>
+                <Button
+                  onClick={() => setImportWizardOpen(true)}
+                  className="bg-foreground text-background hover:bg-foreground/90 w-full sm:w-auto"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload donors
+                </Button>
               </div>
               
               {/* Admin-only quick actions */}
