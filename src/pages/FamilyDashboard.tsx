@@ -755,16 +755,17 @@ const FamilyDashboard = () => {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          onClick={() => setShowQRCode(showQRCode === qrKey ? null : qrKey!)}
+                                          onClick={() =>
+                                            setQrTarget({
+                                              shareUrl,
+                                              childName: stat.childName,
+                                              campaignName: stat.campaignName,
+                                            })
+                                          }
                                         >
                                           <QrCode className="h-4 w-4" />
                                         </Button>
                                       </div>
-                                      {showQRCode === qrKey && (
-                                        <div className="bg-white p-3 rounded-lg">
-                                          <QRCode value={shareUrl} size={100} />
-                                        </div>
-                                      )}
                                     </>
                                   );
                                 })()}
