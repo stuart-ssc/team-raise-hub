@@ -82,6 +82,13 @@ interface BusinessAffiliation {
   linked_at: string;
 }
 
+interface ListMembership {
+  id: string;
+  list_id: string;
+  list_name: string;
+  added_at: string;
+}
+
 const DonorProfile = () => {
   const { donorId } = useParams<{ donorId: string }>();
   const navigate = useNavigate();
@@ -91,6 +98,9 @@ const DonorProfile = () => {
   const [donor, setDonor] = useState<DonorProfile | null>(null);
   const [donations, setDonations] = useState<DonationHistory[]>([]);
   const [businessAffiliations, setBusinessAffiliations] = useState<BusinessAffiliation[]>([]);
+  const [listMemberships, setListMemberships] = useState<ListMembership[]>([]);
+  const [showAddToListDialog, setShowAddToListDialog] = useState(false);
+  const [removingMembershipId, setRemovingMembershipId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
