@@ -160,12 +160,22 @@ export default function EditDonorDialog({
         updatePayload.email = email.trim();
       }
 
-      const { error } = await supabase
+      const { data: updatedRows, error } = await supabase
         .from("donor_profiles")
         .update(updatePayload)
-        .eq("id", donor.id);
+        .eq("id", donor.id)
+        .select("id");
 
       if (error) throw error;
+
+      if (!updatedRows || updatedRows.length === 0) {
+        toast({
+          title: "Permission denied",
+          description: "You don't have permission to edit this donor.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       // If admin/manager changed ownership, call the secure RPC
       if (canManageOwnership) {

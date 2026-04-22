@@ -32,6 +32,7 @@ import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialo
 import EditDonorDialog from "@/components/EditDonorDialog";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { getPermissionLevel, PermissionLevel } from "@/lib/permissions";
 
 interface DonorProfile {
   id: string;
@@ -94,6 +95,16 @@ const DonorProfile = () => {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [unlinkingAffiliation, setUnlinkingAffiliation] = useState<BusinessAffiliation | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+
+  const canManageOwnership = (() => {
+    const name = organizationUser?.user_type?.name;
+    if (!name) return false;
+    const lvl = getPermissionLevel(name);
+    return lvl === PermissionLevel.ORGANIZATION_ADMIN || lvl === PermissionLevel.PROGRAM_MANAGER;
+  })();
+  const canEditDonor =
+    canManageOwnership ||
+    (!!donor && donor.added_by_organization_user_id === organizationUser?.id);
 
   useEffect(() => {
     if (
@@ -358,10 +369,12 @@ const DonorProfile = () => {
                     {getEngagementLabel(donor.engagement_score)} ({donor.engagement_score})
                   </Badge>
                 </div>
-                <Button variant="outline" onClick={() => setShowEditDialog(true)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Contact
-                </Button>
+                {canEditDonor && (
+                  <Button variant="outline" onClick={() => setShowEditDialog(true)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Contact
+                  </Button>
+                )}
               </div>
             </div>
 
