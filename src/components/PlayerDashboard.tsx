@@ -185,6 +185,9 @@ export default function PlayerDashboard() {
             groupLogo: grp?.logo_url ?? null,
             schoolLogo: grp?.schools?.logo_file ?? null,
             orgLogo: grp?.organizations?.logo_url ?? null,
+            groupName: grp?.group_name ?? null,
+            schoolOrOrgName: grp?.schools?.school_name ?? grp?.organizations?.name ?? null,
+            campaignDescription: (campaign as any).description ?? null,
           } as Campaign);
         }
       });
@@ -379,6 +382,9 @@ export default function PlayerDashboard() {
             groupLogo: grp?.logo_url ?? null,
             schoolLogo: grp?.schools?.logo_file ?? null,
             orgLogo: grp?.organizations?.logo_url ?? null,
+            groupName: grp?.group_name ?? null,
+            schoolOrOrgName: grp?.schools?.school_name ?? grp?.organizations?.name ?? null,
+            campaignDescription: (campaign as any).description ?? null,
           } as Campaign);
         }
       });
@@ -1023,6 +1029,9 @@ export default function PlayerDashboard() {
               schoolLogo: headline.schoolLogo,
               orgLogo: headline.orgLogo,
             })}
+            schoolOrOrgName={headline.schoolOrOrgName}
+            groupName={headline.groupName}
+            campaignDescription={headline.campaignDescription}
           />
         </>
       )}
