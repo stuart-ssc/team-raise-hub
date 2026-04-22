@@ -689,6 +689,67 @@ const DonorProfile = () => {
                   </Card>
                 )}
 
+                {/* List Memberships */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <List className="h-4 w-4" />
+                          List Memberships
+                        </CardTitle>
+                        <CardDescription>
+                          Outreach lists this donor belongs to
+                        </CardDescription>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setShowAddToListDialog(true)}
+                        title="Add to list"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {listMemberships.length === 0 ? (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-muted-foreground">
+                          Not on any lists yet
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {listMemberships.map((m) => (
+                          <div
+                            key={m.id}
+                            className="flex items-center justify-between p-2 rounded-md border bg-card"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{m.list_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Added {format(parseISO(m.added_at), "MMM d, yyyy")}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => handleRemoveFromList(m.id)}
+                              disabled={removingMembershipId === m.id}
+                              title="Remove from list"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
                 {/* AI Insights Panel */}
                 <DonorInsightsPanel donorId={donor.id} />
 
