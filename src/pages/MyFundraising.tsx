@@ -606,8 +606,8 @@ export default function MyFundraising() {
         ) : (
           <>
             {/* Hero stats */}
-            <section className="grid gap-4 lg:grid-cols-10">
-              <div className="lg:col-span-4 [&>*]:h-full">
+            <section className="grid gap-4 md:grid-cols-10">
+              <div className="md:col-span-4 [&>*]:h-full">
                 <LifetimeRaisedCard
                 amount={totalRaisedAll}
                 campaignCount={stats.length}
@@ -615,10 +615,10 @@ export default function MyFundraising() {
                 sparkline={sparkline}
                 />
               </div>
-              <div className="lg:col-span-3 [&>*]:h-full">
+              <div className="md:col-span-3 [&>*]:h-full">
                 <SupportersCard count={totalSupportersAll} />
               </div>
-              <div className="lg:col-span-3 [&>*]:h-full">
+              <div className="md:col-span-3 [&>*]:h-full">
                 <BestRankCard rank={bestRank} campaignName={bestRankCampaign} />
               </div>
             </section>
