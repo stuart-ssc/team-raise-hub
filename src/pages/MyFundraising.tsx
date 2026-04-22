@@ -671,6 +671,31 @@ export default function MyFundraising() {
 
         {/* Connected students / guardians management cards */}
         {isParentView && user?.id && <MyConnectedStudentsCard userId={user.id} />}
+
+        {/* Record Pitch dialog (3-step wizard) */}
+        {!isParentView && (() => {
+          const editing = visibleStats.find(s => s.campaignId === editingPitchId);
+          if (!editing) return null;
+          return (
+            <RecordPitchDialog
+              open={!!editingPitchId}
+              onOpenChange={(o) => !o && setEditingPitchId(null)}
+              campaignId={editing.campaignId}
+              campaignName={editing.campaignName}
+              initialPitch={{
+                message: editing.pitchMessage,
+                imageUrl: editing.pitchImageUrl,
+                videoUrl: editing.pitchVideoUrl,
+                recordedVideoUrl: editing.pitchRecordedVideoUrl,
+              }}
+              onSaved={() => {
+                setEditingPitchId(null);
+                fetchFundraisingStats();
+              }}
+            />
+          );
+        })()}
+
         {!isParentView && rosterMembership && (
           <ManageGuardiansCard
             organizationUserId={rosterMembership.id}
