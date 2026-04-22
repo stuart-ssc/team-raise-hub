@@ -495,26 +495,6 @@ export default function MyFundraising() {
     });
   };
 
-  const shareLink = async (url: string, campaignName: string, childName?: string) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: childName
-            ? `Support ${childName} in ${campaignName}`
-            : `Support me in ${campaignName}`,
-          text: childName
-            ? `Help ${childName} reach their fundraising goal for ${campaignName}!`
-            : `Help me reach my fundraising goal for ${campaignName}!`,
-          url,
-        });
-      } catch (error) {
-        console.error("Error sharing:", error);
-      }
-    } else {
-      copyLink(url);
-    }
-  };
-
   /* --------------------------- Derived data --------------------------- */
 
   const totalRaisedAll = stats.reduce((sum, s) => sum + s.totalRaised, 0);
