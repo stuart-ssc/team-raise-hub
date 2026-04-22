@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
+import EditDonorDialog from "@/components/EditDonorDialog";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -48,6 +49,7 @@ interface DonorProfile {
   tags: string[] | null;
   preferred_communication: string;
   added_by_organization_user_id: string | null;
+  user_id: string | null;
 }
 
 interface DonationHistoryItem {
@@ -91,6 +93,7 @@ const DonorProfile = () => {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [unlinkingAffiliation, setUnlinkingAffiliation] = useState<BusinessAffiliation | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   useEffect(() => {
     if (
@@ -355,6 +358,10 @@ const DonorProfile = () => {
                     {getEngagementLabel(donor.engagement_score)} ({donor.engagement_score})
                   </Badge>
                 </div>
+                <Button variant="outline" onClick={() => setShowEditDialog(true)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Contact
+                </Button>
               </div>
             </div>
 
@@ -664,6 +671,24 @@ const DonorProfile = () => {
         organizationId={organizationUser?.organization_id || ""}
         isPrimaryContact={unlinkingAffiliation?.is_primary_contact || false}
         onSuccess={fetchDonorData}
+      />
+
+      <EditDonorDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        donor={donor ? {
+          id: donor.id,
+          email: donor.email,
+          first_name: donor.first_name,
+          last_name: donor.last_name,
+          phone: donor.phone,
+          tags: donor.tags,
+          preferred_communication: donor.preferred_communication,
+          notes: donor.notes,
+          added_by_organization_user_id: donor.added_by_organization_user_id,
+          user_id: donor.user_id,
+        } : null}
+        onComplete={fetchDonorData}
       />
     </DashboardPageLayout>
   );

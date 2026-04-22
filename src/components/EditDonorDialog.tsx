@@ -38,6 +38,7 @@ interface EditDonorDialogProps {
     preferred_communication: string | null;
     notes: string | null;
     added_by_organization_user_id?: string | null;
+    user_id?: string | null;
   } | null;
   onComplete: () => void;
 }
@@ -68,6 +69,8 @@ export default function EditDonorDialog({
     const lvl = getPermissionLevel(name);
     return lvl === PermissionLevel.ORGANIZATION_ADMIN || lvl === PermissionLevel.PROGRAM_MANAGER;
   })();
+
+  const emailLocked = !!donor?.user_id;
 
   useEffect(() => {
     if (donor && open) {
@@ -144,18 +147,22 @@ export default function EditDonorDialog({
 
     setSaving(true);
     try {
+      const updatePayload: Record<string, unknown> = {
+        first_name: firstName.trim() || null,
+        last_name: lastName.trim() || null,
+        phone: phone.trim() || null,
+        notes: notes.trim() || null,
+        preferred_communication: preferredComm,
+        tags: tags.length > 0 ? tags : null,
+        updated_at: new Date().toISOString(),
+      };
+      if (!emailLocked) {
+        updatePayload.email = email.trim();
+      }
+
       const { error } = await supabase
         .from("donor_profiles")
-        .update({
-          first_name: firstName.trim() || null,
-          last_name: lastName.trim() || null,
-          email: email.trim(),
-          phone: phone.trim() || null,
-          notes: notes.trim() || null,
-          preferred_communication: preferredComm,
-          tags: tags.length > 0 ? tags : null,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", donor.id);
 
       if (error) throw error;
@@ -235,7 +242,13 @@ export default function EditDonorDialog({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="john.doe@example.com"
               required
+              disabled={emailLocked}
             />
+            {emailLocked && (
+              <p className="text-xs text-muted-foreground">
+                This email is verified with a Sponsorly account and cannot be changed here.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
