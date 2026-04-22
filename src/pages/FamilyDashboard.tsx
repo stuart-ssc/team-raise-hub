@@ -16,6 +16,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { ShareMenu } from "@/components/ShareMenu";
 
 interface GroupLeader {
   id: string;
