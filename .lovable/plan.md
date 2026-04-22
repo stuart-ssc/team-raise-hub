@@ -1,44 +1,38 @@
 
 
 ## Goal
-Move `AI Insights` (DonorInsightsPanel) back into the left column on the donor profile, positioned as the **second** card (between Giving History and Activity Timeline). Make it collapsible and **collapsed by default**, matching the pattern used for Timeline and Communications.
+Eliminate the duplicate "AI-Powered Donor Insights" heading inside the panel so the section shows only the outer collapsible header. Update the outer header's description to the longer sentence and keep the blue gradient background on the inner card.
 
 ## Changes
 
 ### `src/pages/DonorProfile.tsx`
+Update the outer collapsible header description:
+- Replace `"AI-generated recommendations and analysis"` with `"Personalized recommendations based on giving patterns, engagement history, and behavior analysis"`.
 
-1. **Remove** `<DonorInsightsPanel donorId={donor.id} />` from the right sidebar (currently between Business Affiliations / List Memberships and Notes).
-2. **Insert** it in the left column directly after the Giving History `Collapsible` block and before the Activity Timeline block.
-3. **Wrap** it in a `Card` + `Collapsible` using the same pattern as Timeline/Communications, with its own state:
-   ```tsx
-   const [insightsOpen, setInsightsOpen] = useState(false);
-   ```
-   Header shows title + `Sparkles` icon + rotating `ChevronDown`. Body renders `<DonorInsightsPanel donorId={donor.id} />` inside `<CardContent className="p-0 border-t">` so the nested card aligns cleanly.
+### `src/components/DonorInsightsPanel.tsx`
+Inside the panel's `CardHeader`:
+- **Remove** the inner title row (`Sparkles` + `<CardTitle>AI-Powered Donor Insights</CardTitle>`).
+- **Remove** the inner `<CardDescription>` (now duplicated by the outer header).
+- **Keep** the `<Button>` (Generate Insights / Refresh).
+- Keep the `Card` wrapper's blue gradient classes (`bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20`) so the body retains its blue tint.
+- Since the header now contains only a button, simplify the wrapper from `space-y-3` to no extra spacing, or wrap the button alone. The `CardHeader` padding still provides breathing room above the body content.
 
-### Resulting left column order
+### Resulting structure
 ```text
-Stats Cards (3 tiles)
-Giving History          (open by default)
-AI Insights             (collapsed by default)  ← moved here
-Activity Timeline       (collapsed by default)
-Communication History   (collapsed by default)
-```
-
-### Right sidebar after change
-```text
-Contact Information
-Business Affiliations
-List Memberships
-Notes
+[Outer Card header — Sparkles • "AI Insights" • description • chevron]
+  └─ (collapsible body, blue gradient)
+       [Generate Insights / Refresh button]
+       [Insights body or empty-state alert]
 ```
 
 ## Files touched
 - `src/pages/DonorProfile.tsx`
+- `src/components/DonorInsightsPanel.tsx`
 
 ## Verification
-- AI Insights no longer renders in the right sidebar.
-- AI Insights appears in the left column as the second card, between Giving History and Activity Timeline.
-- On page load: Giving History expanded; AI Insights, Activity Timeline, and Communication History all collapsed.
-- Clicking the AI Insights header toggles it; chevron rotates 180°.
-- No regressions to data fetching or participant-view permission gating.
+- Only one "AI Insights" heading appears (the outer collapsible header).
+- Outer description reads: "Personalized recommendations based on giving patterns, engagement history, and behavior analysis".
+- The inner panel still has the blue gradient background.
+- Generate Insights / Refresh button still works; insights body unchanged.
+- No duplicate Sparkles icons stacked vertically.
 
