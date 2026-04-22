@@ -444,13 +444,23 @@ const Donors = () => {
                       : "Track and engage with your supporters"}
                   </p>
                 </div>
-                <Button
-                  onClick={() => setImportWizardOpen(true)}
-                  className="bg-foreground text-background hover:bg-foreground/90 w-full sm:w-auto"
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload donors
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("/dashboard/donors/segmentation?tab=lists")}
+                    className="w-full sm:w-auto"
+                  >
+                    <List className="mr-2 h-4 w-4" />
+                    Lists
+                  </Button>
+                  <Button
+                    onClick={() => setImportWizardOpen(true)}
+                    className="bg-foreground text-background hover:bg-foreground/90 w-full sm:w-auto"
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload donors
+                  </Button>
+                </div>
               </div>
               
               {/* Admin-only quick actions */}
