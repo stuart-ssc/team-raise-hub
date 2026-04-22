@@ -581,7 +581,7 @@ const Donors = () => {
             {/* Filters and Search */}
             <Card>
               <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                   <div className="md:col-span-2">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -604,6 +604,22 @@ const Donors = () => {
                       <SelectItem value="high">High Engagement</SelectItem>
                       <SelectItem value="medium">Medium Engagement</SelectItem>
                       <SelectItem value="low">Low Engagement</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterList} onValueChange={setFilterList}>
+                    <SelectTrigger>
+                      <List className="mr-2 h-4 w-4" />
+                      <SelectValue placeholder="All lists" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All lists</SelectItem>
+                      <SelectItem value="none">Not on any list</SelectItem>
+                      {lists.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
 
