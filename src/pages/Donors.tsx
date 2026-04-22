@@ -98,6 +98,9 @@ const Donors = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<string>("recent");
   const [filterBy, setFilterBy] = useState<string>("all");
+  const [filterList, setFilterList] = useState<string>("all");
+  const [lists, setLists] = useState<{ id: string; name: string }[]>([]);
+  const [memberMap, setMemberMap] = useState<Record<string, Set<string>>>({});
   const [importWizardOpen, setImportWizardOpen] = useState(false);
   const [selectedDonorIds, setSelectedDonorIds] = useState<string[]>([]);
   const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
@@ -110,6 +113,7 @@ const Donors = () => {
   const [menuDonor, setMenuDonor] = useState<DonorProfile | null>(null);
   const [showSingleEmailDialog, setShowSingleEmailDialog] = useState(false);
   const [showSingleTagDialog, setShowSingleTagDialog] = useState(false);
+  const [showSingleAddToListDialog, setShowSingleAddToListDialog] = useState(false);
   const [showLinkBusinessDialog, setShowLinkBusinessDialog] = useState(false);
   const [showEditDonorDialog, setShowEditDonorDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
