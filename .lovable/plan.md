@@ -1,110 +1,113 @@
 
 
 ## Goal
-Rebuild the player's "Record Pitch" experience as a focused 3-step wizard modal — Message → Headshot → Record — matching the mockup, while keeping the platform's existing fonts/colors/buttons.
+Let participants (players, parents, supporters) upload donor lists from the Donors page, automatically attribute each uploaded donor (and any business linked during upload) to the uploading user, and have those donors/businesses show up in their Donors / Businesses views — while remaining visible to org admins and program managers, who can later reassign ownership.
 
-## Scope
-- Applies to the player-facing pitch flow only (PlayerDashboard "Record pitch" button + the inline pitch editor in My Supports / MyFundraising).
-- The org-side `CampaignPitchEditor` and `CampaignPitchSection` are **out of scope** — they edit the campaign-level pitch and stay as-is.
+## Current state (so we don't rebuild what exists)
+- **Upload UI**: `DonorImportWizard` (CSV → field mapping → preview → import → optional list assignment). Already mounted on `Donors.tsx` for everyone. **Keep as-is** for the UX.
+- **Server**: `supabase/functions/import-donors/index.ts` — currently **blocks** non-admins. Needs to allow participants and record attribution.
+- **Visibility for participants**: `useParticipantConnections` returns `connectedDonorEmails` derived **only** from `orders.attributed_roster_member_id`. Uploaded donors never have an order, so they're invisible to participants today.
 
-## New component
-Create `src/components/player/PitchWizard.tsx` implementing the 3-step flow:
+## Database changes
 
-### Layout (matches screenshots)
-```text
-┌─────────────────────────────────────────────────────┐
-│ Build your pitch — {Campaign Name}              [×] │
-│ Message · headshot · video. All three together      │
-│ raise 3.2× more.                                    │
-├─────────────────────────────────────────────────────┤
-│  (1 Message) ─── (2 Headshot) ─── (3 Record)        │  ← stepper pills
-├─────────────────────────────────────────────────────┤
-│  STEP X · {STEP LABEL}                              │
-│  {Step heading}                                     │
-│  {Step subhead}                                     │
-│                                                     │
-│  {step body}                                        │
-├─────────────────────────────────────────────────────┤
-│  N of 3 complete       [Back]   [Continue / Finish] │
-└─────────────────────────────────────────────────────┘
+### 1. Add ownership column to `donor_profiles`
+```sql
+ALTER TABLE public.donor_profiles
+  ADD COLUMN added_by_organization_user_id uuid
+    REFERENCES public.organization_user(id) ON DELETE SET NULL;
+
+CREATE INDEX idx_donor_profiles_added_by_ou
+  ON public.donor_profiles(added_by_organization_user_id);
+```
+Nullable so existing donors (no original uploader) stay valid. Set on every insert by `import-donors` and by manual "Add donor" flows. **Reassignable** later by an admin.
+
+### 2. Add the same to `business_donors` (link table) and `businesses`
+- `business_donors` already has `linked_by uuid` (a `profiles` id). We will additionally populate `linked_by` on every link the import wizard creates. No schema change needed there.
+- For `businesses` (when the wizard or a participant creates a *new* business record), add:
+```sql
+ALTER TABLE public.businesses
+  ADD COLUMN added_by_organization_user_id uuid
+    REFERENCES public.organization_user(id) ON DELETE SET NULL;
+CREATE INDEX idx_businesses_added_by_ou
+  ON public.businesses(added_by_organization_user_id);
 ```
 
-### Step 1 — Message
-- Heading: **"Say it in your own voice"**
-- Sub: "This is the note that shows on your donation page, above your pitch video."
-- `Textarea` (rows 5, maxLength **280**, counter `X/280` bottom-right inside the field).
-- "NOT SURE WHERE TO START? TRY ONE:" — three suggestion chips (full-width dashed-border buttons with a sparkle icon). Clicking one fills the textarea.
-  - "Hey! I'm fundraising for {Campaign} — every dollar puts me closer to our goal."
-  - "Your donation keeps us in jerseys, gym time, and away-game buses. Thank you!"
-  - "Any amount helps — even a $5 share feels huge when I see your name pop up. 🙏"
-- Step is "complete" when message length > 0.
+### 3. RLS — keep org admins/managers able to read everything (already true), and let participants read donors/businesses they uploaded
+Add SELECT policies so participants can read donor rows where `added_by_organization_user_id` belongs to one of their `organization_user` rows. Existing "Organization members can view donors" policy already covers this for any authenticated user in the same org, so **no new SELECT policy is strictly required** for visibility — the change is purely on the *application-side filter* in `useParticipantConnections` (see below). RLS stays as-is.
 
-### Step 2 — Headshot
-- Heading: **"Put a face to the ask"**
-- Sub: "This image shows on your donation page, QR poster, and leaderboard avatar."
-- Two-column on desktop (stacks on mobile):
-  - Left: square dashed dropzone "Click to upload — JPG, PNG · 5MB max" → on click opens file picker. Once uploaded, shows preview with a small remove (X) button.
-  - Right: "Tips for a great shot" muted card with bullet list (Face the camera chest up; Wear team jersey or colors; Natural light, no sunglasses; Square crop works best).
-- Primary button under dropzone: **"+ Upload photo"** (also opens file picker).
-- Reuses existing `pitch-media` storage upload logic from `PitchEditor.handleImageUpload`.
-- Step is "complete" when an image URL is set.
+### 4. Add `reassign_donor_ownership` SECURITY DEFINER function
+```sql
+CREATE FUNCTION public.reassign_donor_ownership(
+  _donor_id uuid,
+  _new_owner_org_user_id uuid
+) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ ... $$;
+```
+Verifies caller is `organization_admin` / `program_manager` of the donor's org and that the new owner belongs to the same org, then updates `added_by_organization_user_id`.
 
-### Step 3 — Record
-- Heading: **"30–60 seconds. Be yourself."**
-- Dark video stage (matches mock): striped slate background when idle, with mic icon and "Tap record when ready" + "Donors who watch a pitch give 3.2× more on average."
-- Three prompt chips along the bottom of the stage: "Intro yourself", "Why the team matters", "The ask".
-- Footer row inside stage area: "Length: **0.0s** / 60s" with a thin progress bar + a **Record / Stop** button on the right.
-- Wraps the existing `VideoRecorder` component (max duration **60s**) but restyled to match this dark stage. To avoid rewriting `VideoRecorder`, render it with a custom container and add a subtle overlay for prompt chips. Keep its existing record/stop/re-record/upload behavior.
-- Step is "complete" when a recorded video URL exists.
+## Edge function: `supabase/functions/import-donors/index.ts`
+- **Remove** the hard 403 for non-admins. New rule: caller must be an active member of `organization_id`. All five permission levels can import.
+- After auth, look up the caller's matching `organization_user.id` (filter by `organization_id` + `active_user=true` + most-privileged role if multiple).
+- For each insert, set `added_by_organization_user_id` to that org_user id. For each update branch (`updateExisting`), only overwrite ownership when current value is `NULL` (so admins editing don't get reassigned to themselves).
+- Continue returning `importedDonorIds` so the wizard's existing "add to list" step still works.
 
-### Footer (all steps)
-- Left: "**N of 3 complete**" — counts steps that have content.
-- Right: `[Back]` (hidden on step 1) and:
-  - Step 1, 2 → **"Continue →"** (advances; not gated — users can skip and still save partial pitch).
-  - Step 3 → **"✓ Finish all 3 to save"** (always enabled; saves whatever exists, even partial). Disabled-look styling only when literally nothing has been entered across all 3 steps.
+## Application changes
 
-### Save behavior
-- Single save on finish: invokes `save-roster-pitch` edge function with all four fields (`pitchMessage`, `pitchImageUrl`, `pitchVideoUrl: null`, `pitchRecordedVideoUrl`) — same payload shape PitchEditor already uses. The "paste a video link" option is **dropped** in this rebuild per the mockup (recording-only).
-- On success: toast "Pitch saved!" and call `onSave()` to close.
+### `useParticipantConnections.ts`
+Augment what's "connected" for a participant. Two parallel sources, unioned:
+1. **Existing**: emails / business_ids from `orders.attributed_roster_member_id ∈ orgUserIds`.
+2. **New**: 
+   - `donor_profiles.email` where `added_by_organization_user_id ∈ orgUserIds` (for the same `organization_id`).
+   - `business_donors.business_id` where `added_by_organization_user_id ∈ orgUserIds` *or* `linked_by = auth.uid()`.
+Return the union as `connectedDonorEmails` / `connectedBusinessIds`. No other consumers need to change — `Donors.tsx`, `DonorProfile.tsx`, `Businesses.tsx`, `BusinessProfile.tsx` already filter via these arrays.
 
-### Stepper
-- Pill-shaped buttons with circle number + label. Active pill = solid black/foreground bg with white text. Completed pills = same active styling but with a check; inactive = muted bg, muted text. Uses existing tokens (no hardcoded colors beyond `bg-foreground`/`bg-muted`).
+### `DonorImportWizard.tsx`
+- No UI change required — the wizard already calls `import-donors` with the active org. It will just start succeeding for participants.
+- Small copy tweak in step 1 description for participants ("Donors you upload will be added to your supporters and shared with your organization's staff").
 
-### Typography
-- All headings use the project's existing serif heading font (`font-serif` if present, otherwise inherit from `h2`/`h3` defaults already used in dialogs). Body uses default sans. We will NOT introduce new fonts — reuse whatever `Dialog`/`h2` already render with.
+### Donors page visibility (`src/pages/Donors.tsx`)
+- No filter changes — already keys off `connectedDonorEmails`. Once the hook returns uploaded-donor emails too, they appear automatically.
+- Add a small "Added by you" badge on donor rows where `added_by_organization_user_id === organizationUser.id` (purely informational, helps participants recognize their uploads).
 
-## Wire-up changes
+### Admin reassignment UI
+- In `EditDonorDialog.tsx`, add an "Owner / Added by" select (visible only to org admins + program managers). Lists active org users; default to current value or "Unassigned"; on save calls the `reassign_donor_ownership` RPC. Out of scope: bulk reassignment (can be follow-up).
 
-### `src/components/player/RecordPitchDialog.tsx`
-- Replace `<PitchEditor …/>` with `<PitchWizard …/>`. Keep the same props interface (`campaignId`, `campaignName`, `initialPitch`, `onSaved`).
-- Drop the existing `<DialogHeader>` (title/description) — the wizard renders its own header with the "Build your pitch — {name}" title and subhead, matching the mock. Make `DialogContent` use `max-w-2xl p-0` so the wizard can render its own padded sections (header / stepper / body / footer) with dividers.
-
-### `src/pages/MyFundraising.tsx` (inline pitch editor)
-- The inline expand-in-place `PitchEditor` (lines ~1215–1230) is replaced with an `onClick` that opens the same `RecordPitchDialog` (state already exists pattern in `PlayerDashboard`). This unifies the experience: clicking "Record pitch" or "Re-record" anywhere always opens the wizard modal instead of expanding inline. The `isPitchOpen` toggle becomes a `dialogOpen` boolean; the `Separator` + inline editor block is removed.
-
-### Files unchanged
-- `VideoRecorder.tsx` — reused as-is inside Step 3.
-- `save-roster-pitch` edge function — payload unchanged.
-- `CampaignPitchEditor.tsx`, `CampaignPitchSection.tsx`, `AddCampaignForm.tsx` — org-side flow untouched.
-- `PitchEditor.tsx` — left in place but no longer referenced by player flows; safe to delete in a follow-up if desired.
+## Backfill (one-time, optional, runs in same migration)
+For donors that have any existing orders attributed via `attributed_roster_member_id`, populate `added_by_organization_user_id` with the earliest such org_user id. This means existing roster-attributed supporters keep showing up for the right participant even after the visibility hook is updated:
+```sql
+UPDATE public.donor_profiles dp
+SET added_by_organization_user_id = sub.org_user_id
+FROM ( SELECT DISTINCT ON (o.customer_email, g.organization_id)
+         o.customer_email, g.organization_id,
+         o.attributed_roster_member_id AS org_user_id
+       FROM orders o
+       JOIN campaigns c ON c.id = o.campaign_id
+       JOIN groups g    ON g.id = c.group_id
+       WHERE o.attributed_roster_member_id IS NOT NULL
+       ORDER BY o.customer_email, g.organization_id, o.created_at ) sub
+WHERE dp.email = sub.customer_email
+  AND dp.organization_id = sub.organization_id
+  AND dp.added_by_organization_user_id IS NULL;
+```
 
 ## Out of scope
-- Persisting partial progress between sessions (wizard state lives only in the open dialog).
-- Adding back the "paste YouTube/Vimeo link" option for players (intentionally removed per mockup).
-- Restyling `VideoRecorder`'s internal controls beyond its outer container.
-- Any change to org-level campaign pitch editor.
+- Bulk reassignment of donor ownership.
+- Changing how `donor_profiles.user_id` is linked at signup (separate concept — that's the donor's own user account, not the uploader).
+- Any change to the "donations attributed to participant" calculation — orders still drive fundraising totals.
 
 ## Files touched
-1. `src/components/player/PitchWizard.tsx` — **new** 3-step wizard component.
-2. `src/components/player/RecordPitchDialog.tsx` — swap `PitchEditor` → `PitchWizard`, adjust dialog padding.
-3. `src/pages/MyFundraising.tsx` — replace inline `PitchEditor` expansion with `RecordPitchDialog` open state.
+1. `supabase/migrations/<new>.sql` — add columns, function, backfill.
+2. `supabase/functions/import-donors/index.ts` — allow all org members; record `added_by_organization_user_id`.
+3. `src/hooks/useParticipantConnections.ts` — union upload-attributed donors/businesses with order-attributed ones.
+4. `src/components/DonorImportWizard.tsx` — minor copy tweak (no logic change).
+5. `src/pages/Donors.tsx` — "Added by you" badge.
+6. `src/components/EditDonorDialog.tsx` — admin/manager-only "Owner" selector calling the new RPC.
 
 ## Verification
-- Click "Record pitch" on a player campaign card (PlayerDashboard or My Supports) → modal opens on Step 1.
-- Typing message increments "N of 3 complete"; clicking a suggestion chip fills the textarea.
-- Continue → Step 2: upload an image → preview shown, X removes it, count updates.
-- Continue → Step 3: record a video up to 60s → on stop, video uploads via existing flow, count updates.
-- "Finish all 3 to save" persists via `save-roster-pitch`; reopening the modal pre-fills all three steps from `initialPitch`.
-- Back navigation preserves entries on prior steps.
-- All headings render in the app's existing serif/sans fonts — no new font files added.
+- A player on `/dashboard/donors` clicks "Upload donors", maps a CSV with 5 emails, imports — wizard reports "5 imported" (no 403).
+- The 5 donors immediately appear on the player's Donors page and can be opened.
+- An org admin viewing Donors sees the same rows; the EditDonor dialog shows "Added by: <player name>", and admin can reassign to another participant — after refresh, the original uploader no longer sees the row, and the new owner does.
+- A parent (`Family Member` linked to a child) sees both donors *they* uploaded and donors the child uploaded.
+- An existing donor whose only relationship was a roster-attributed order continues to show for the same player after the backfill.
+- Non-org users cannot import (still 401/403).
 
