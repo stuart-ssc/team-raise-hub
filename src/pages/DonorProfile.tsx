@@ -672,6 +672,24 @@ const DonorProfile = () => {
         isPrimaryContact={unlinkingAffiliation?.is_primary_contact || false}
         onSuccess={fetchDonorData}
       />
+
+      <EditDonorDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        donor={donor ? {
+          id: donor.id,
+          email: donor.email,
+          first_name: donor.first_name,
+          last_name: donor.last_name,
+          phone: donor.phone,
+          tags: donor.tags,
+          preferred_communication: donor.preferred_communication,
+          notes: donor.notes,
+          added_by_organization_user_id: donor.added_by_organization_user_id,
+          user_id: donor.user_id,
+        } : null}
+        onComplete={fetchDonorData}
+      />
     </DashboardPageLayout>
   );
 };
