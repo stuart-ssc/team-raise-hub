@@ -15,6 +15,56 @@ interface QRDialogProps {
   shortCode?: string;
   shortUrl?: string;
   scanStats?: { today: number; lastScannedRelative?: string };
+  /** Best brand logo for the PDF poster (team → school → org → Sponsorly fallback). */
+  logoUrl?: string;
+}
+
+const SPONSORLY_FALLBACK_LOGO = "/lovable-uploads/Sponsorly-Logo.png";
+
+/**
+ * Returns the first non-empty logo URL in the priority order:
+ * group (team) → school → organization. Returns undefined when none exist,
+ * so the dialog can fall back to the Sponsorly logo.
+ */
+export function pickBrandLogo(opts: {
+  groupLogo?: string | null;
+  schoolLogo?: string | null;
+  orgLogo?: string | null;
+}): string | undefined {
+  const candidates = [opts.groupLogo, opts.schoolLogo, opts.orgLogo];
+  for (const c of candidates) {
+    if (c && typeof c === "string" && c.trim()) return c.trim();
+  }
+  return undefined;
+}
+
+async function loadImageAsPngDataUrl(
+  url: string,
+  maxW: number,
+  maxH: number
+): Promise<{ dataUrl: string; width: number; height: number }> {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = (e) => reject(e);
+    img.src = url;
+  });
+  const naturalW = img.naturalWidth || img.width || maxW;
+  const naturalH = img.naturalHeight || img.height || maxH;
+  const scale = Math.min(maxW / naturalW, maxH / naturalH, 1);
+  const targetW = Math.max(1, Math.round(naturalW * scale));
+  const targetH = Math.max(1, Math.round(naturalH * scale));
+  // Render at 2x for crispness in print
+  const canvas = document.createElement("canvas");
+  canvas.width = targetW * 2;
+  canvas.height = targetH * 2;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unsupported");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return { dataUrl: canvas.toDataURL("image/png"), width: targetW, height: targetH };
 }
 
 const slugify = (s: string) =>
