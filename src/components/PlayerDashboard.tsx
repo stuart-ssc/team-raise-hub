@@ -13,8 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "./ManageGuardiansCard";
 import { RecordPitchDialog } from "@/components/player/RecordPitchDialog";
-import { QRDialog } from "@/components/player/QRDialog";
-import { pickBrandLogo } from "@/components/player/QRDialog";
+import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
 
 interface Campaign {
   id: string;
@@ -27,6 +26,9 @@ interface Campaign {
   status: boolean;
   enable_roster_attribution: boolean;
   group_id: string;
+  groupLogo?: string | null;
+  schoolLogo?: string | null;
+  orgLogo?: string | null;
 }
 
 interface AttributedCampaign extends Campaign {
