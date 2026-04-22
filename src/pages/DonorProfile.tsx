@@ -259,6 +259,9 @@ const DonorProfile = () => {
       }));
 
       setBusinessAffiliations(formattedAffiliations);
+
+      // Fetch list memberships
+      await fetchListMemberships();
     } catch (error) {
       console.error("Error fetching donor data:", error);
       toast({
@@ -268,6 +271,48 @@ const DonorProfile = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchListMemberships = async () => {
+    if (!donorId || !organizationUser?.organization_id) return;
+    const { data, error } = await supabase
+      .from("donor_list_members")
+      .select("id, added_at, donor_lists!inner(id, name, organization_id)")
+      .eq("donor_id", donorId)
+      .eq("donor_lists.organization_id", organizationUser.organization_id);
+
+    if (error) {
+      console.error("Error fetching list memberships:", error);
+      return;
+    }
+    const formatted: ListMembership[] = (data || []).map((m: any) => ({
+      id: m.id,
+      list_id: m.donor_lists.id,
+      list_name: m.donor_lists.name,
+      added_at: m.added_at,
+    }));
+    setListMemberships(formatted);
+  };
+
+  const handleRemoveFromList = async (membershipId: string) => {
+    setRemovingMembershipId(membershipId);
+    try {
+      const { error } = await supabase
+        .from("donor_list_members")
+        .delete()
+        .eq("id", membershipId);
+      if (error) throw error;
+      toast({ title: "Removed", description: "Donor removed from list" });
+      await fetchListMemberships();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove from list",
+        variant: "destructive",
+      });
+    } finally {
+      setRemovingMembershipId(null);
     }
   };
 
