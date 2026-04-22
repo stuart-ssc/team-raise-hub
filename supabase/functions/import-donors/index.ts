@@ -13,6 +13,14 @@ interface DonorImportRow {
   tags?: string[];
   notes?: string;
   preferred_communication?: string;
+  company_name?: string;
+  company_role?: string;
+  company_email?: string;
+  company_phone?: string;
+  company_website?: string;
+  company_industry?: string;
+  company_city?: string;
+  company_state?: string;
 }
 
 interface ImportRequest {
