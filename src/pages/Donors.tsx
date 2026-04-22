@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
@@ -86,6 +86,7 @@ interface DonorProfile {
 const Donors = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { organizationUser, allRoles, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup } = useActiveGroup();
   const { toast } = useToast();
@@ -126,6 +127,16 @@ const Donors = () => {
   useEffect(() => {
     filterAndSortDonors();
   }, [donors, searchQuery, sortBy, filterBy]);
+
+  // Auto-open import wizard when arriving with ?upload=1
+  useEffect(() => {
+    if (searchParams.get("upload") === "1") {
+      setImportWizardOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("upload");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const setupRealtimeSubscription = () => {
     if (!organizationUser?.organization_id) return;
@@ -356,7 +367,7 @@ const Donors = () => {
       <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col gap-4">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
                   <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
                     <Users className="h-8 w-8 text-primary" />
@@ -368,6 +379,13 @@ const Donors = () => {
                       : "Track and engage with your supporters"}
                   </p>
                 </div>
+                <Button
+                  onClick={() => setImportWizardOpen(true)}
+                  className="bg-foreground text-background hover:bg-foreground/90 w-full sm:w-auto"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload donors
+                </Button>
               </div>
               
               {/* Admin-only quick actions */}
@@ -383,10 +401,6 @@ const Donors = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="w-56">
-                        <DropdownMenuItem onClick={() => setImportWizardOpen(true)}>
-                          <Upload className="mr-2 h-4 w-4" />
-                          Import CSV
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate("/dashboard/donors/segmentation")}>
                           <TrendingUp className="mr-2 h-4 w-4" />
                           Segments
@@ -406,13 +420,6 @@ const Donors = () => {
                   {/* Desktop: Individual Buttons */}
                   {!isMobile && (
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline"
-                        onClick={() => setImportWizardOpen(true)}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        Import CSV
-                      </Button>
                       <Button 
                         variant="outline"
                         onClick={() => navigate("/dashboard/donors/segmentation")}
