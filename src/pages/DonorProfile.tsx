@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
+import EditDonorDialog from "@/components/EditDonorDialog";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -48,6 +49,7 @@ interface DonorProfile {
   tags: string[] | null;
   preferred_communication: string;
   added_by_organization_user_id: string | null;
+  user_id: string | null;
 }
 
 interface DonationHistoryItem {
@@ -91,6 +93,7 @@ const DonorProfile = () => {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [unlinkingAffiliation, setUnlinkingAffiliation] = useState<BusinessAffiliation | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   useEffect(() => {
     if (
