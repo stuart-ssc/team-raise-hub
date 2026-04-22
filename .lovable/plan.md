@@ -1,43 +1,77 @@
 
-## Goal
-Add an "Edit Contact" button to the donor profile page header that opens the existing `EditDonorDialog`. Make the email field read-only inside that dialog when the donor record is already linked to a real authenticated user account.
 
-## Changes
+## Problem
+Taylor saved a phone number on a donor she owns. She got a "Success" toast, but the value did not persist. Database confirms `phone` is still NULL and `updated_at` did not change.
 
-### 1. `src/pages/DonorProfile.tsx`
-- Add `user_id: string | null` to the local `DonorProfile` interface and select it from `donor_profiles` (already done via `select("*")`).
-- Add state `const [showEditDialog, setShowEditDialog] = useState(false)`.
-- In the header row (next to the donor name/badge), add a right-aligned **"Edit Contact"** button (outline variant, `Edit` icon already imported) that sets `showEditDialog(true)`.
-- Render `<EditDonorDialog />` at the bottom of the page, passing `donor` (mapped to the dialog's expected shape) and an `onComplete` callback that re-runs `fetchDonorData()` to refresh the profile in place.
-- Import `EditDonorDialog` from `@/components/EditDonorDialog`.
+## Root cause
+Two issues, one a real bug, one a UX bug:
 
-### 2. `src/components/EditDonorDialog.tsx`
-- Extend the `donor` prop interface with `user_id?: string | null`.
-- Compute `const emailLocked = !!donor?.user_id`.
-- When `emailLocked`:
-  - Render the email `Input` as `disabled` with a small helper line below: *"This email is verified with a Sponsorly account and cannot be changed here."*
-  - In `handleSave`, omit the `email` field from the update payload so a locked email is never sent.
-- When not locked, behavior is unchanged (still required, still validated).
+1. **RLS blocks the update silently.** The current UPDATE policy on `donor_profiles` (`Authorized users can update donors`) only allows `organization_admin` or `program_manager`. Participants (players, parents, etc.) — even when they are the donor's owner (`added_by_organization_user_id` = their `organization_user.id`) — cannot update the row. Supabase `.update()` with RLS returns `0 rows, no error`, so the client thinks it succeeded.
+2. **Client treats "0 rows updated" as success.** `EditDonorDialog.handleSave` does not check `count`, so it always toasts "Success" even when nothing was written.
 
-## Visual result
-```text
-Donor Name                                [Edit Contact]
-• Low Engagement •
+## Fix
+
+### 1. Database — allow donor owners to update their own donors
+Add a new RLS policy on `public.donor_profiles` for UPDATE:
+
+```sql
+CREATE POLICY "Donor owners can update their donors"
+ON public.donor_profiles
+FOR UPDATE
+TO authenticated
+USING (
+  added_by_organization_user_id IN (
+    SELECT id FROM public.organization_user
+    WHERE user_id = auth.uid()
+      AND organization_id = donor_profiles.organization_id
+      AND active_user = true
+  )
+)
+WITH CHECK (
+  added_by_organization_user_id IN (
+    SELECT id FROM public.organization_user
+    WHERE user_id = auth.uid()
+      AND organization_id = donor_profiles.organization_id
+      AND active_user = true
+  )
+);
 ```
-Inside the dialog, if linked to an account:
+
+This is additive — existing admin/manager and self-edit policies remain. A participant can only edit donors they themselves added.
+
+Note: this does **not** allow ownership reassignment (still blocked by the existing `reassign_donor_ownership` RPC permission check). The dialog already hides that select for non-managers.
+
+### 2. Client — surface silent failures
+In `src/components/EditDonorDialog.tsx`:
+- Change the update call to request the affected rows count:
+  ```ts
+  const { data, error, count } = await supabase
+    .from("donor_profiles")
+    .update(updatePayload, { count: "exact" })
+    .eq("id", donor.id)
+    .select("id");
+  ```
+- If `error` → existing error toast.
+- Else if `!data || data.length === 0` → toast `"You don't have permission to edit this donor"` (destructive) and return without firing the success path. This prevents future silent-success regressions on any RLS-restricted row.
+
+### 3. Optional polish (same file)
+Hide the "Edit Contact" button on the donor profile when the viewer has neither manager-level permission nor ownership of the donor, so non-owners (e.g., a teammate viewing another player's donor) don't see a button that would also fail. Logic in `src/pages/DonorProfile.tsx`:
+```ts
+const canEditDonor =
+  canManageOwnership ||
+  donor?.added_by_organization_user_id === organizationUser?.id;
 ```
-Email *  [john@example.com    ] (disabled, greyed)
-This email is verified with a Sponsorly account and cannot be changed here.
-```
+Render the button only when `canEditDonor` is true.
 
 ## Files touched
-- `src/pages/DonorProfile.tsx`
-- `src/components/EditDonorDialog.tsx`
+- New migration adding the RLS policy above.
+- `src/components/EditDonorDialog.tsx` — verify row count, show real failure toast.
+- `src/pages/DonorProfile.tsx` — gate the "Edit Contact" button on `canEditDonor`.
 
 ## Verification
-- On `/dashboard/donors/:id`, an "Edit Contact" button appears in the header (admins, managers, and owners — anyone who can view the page).
-- Clicking it opens the existing edit dialog pre-filled with current values.
-- For donors with no `user_id`: email is editable; saving updates all fields and the profile refreshes.
-- For donors whose `user_id` is set (linked to an auth user): email field is disabled with the explanatory note; all other fields remain editable; save still works and email stays unchanged.
-- Owner reassignment select still appears only for org admins / program managers (existing logic preserved).
-- No RLS or schema changes required — `donor_profiles.user_id` already exists and updates already work via existing RLS.
+- As Taylor, edit Donor Five, add phone `270-123-4324`, save → toast "Donor information updated successfully", the Contact card on the profile immediately shows the new phone, and `donor_profiles.phone` in the database is set.
+- As Taylor, attempt to edit a donor she does not own (via direct API call) → RLS still blocks; the new UI guard hides the button anyway.
+- As an org admin, edit any donor → still works exactly as before.
+- A donor user (with `user_id`) editing their own profile elsewhere → unaffected (separate self-edit policy).
+- Email field remains locked when `donor.user_id` is set (prior change preserved).
+
