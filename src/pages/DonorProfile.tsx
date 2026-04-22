@@ -295,9 +295,9 @@ const DonorProfile = () => {
   };
 
   const getEngagementColor = (score: number) => {
-    if (score >= 70) return "bg-success/10 text-success border-success/20";
-    if (score >= 40) return "bg-warning/10 text-warning border-warning/20";
-    return "bg-muted text-muted-foreground border-border";
+    if (score >= 70) return "bg-success/10 text-success border-success/20 hover:bg-success/10 hover:text-success";
+    if (score >= 40) return "bg-warning/10 text-warning border-warning/20 hover:bg-warning/10 hover:text-warning";
+    return "bg-muted text-muted-foreground border-border hover:bg-muted hover:text-muted-foreground";
   };
 
   const getEngagementLabel = (score: number) => {
@@ -515,23 +515,24 @@ const DonorProfile = () => {
                       </>
                     )}
 
-                    <Separator />
-
                     {donor.first_donation_date && (
-                      <div className="flex items-center gap-3">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <div className="flex-1">
-                          <p className="text-xs text-muted-foreground">First Donation</p>
-                          <p className="text-sm">
-                            {format(parseISO(donor.first_donation_date), "MMM d, yyyy")}
-                          </p>
+                      <>
+                        {donor.phone && <Separator />}
+                        <div className="flex items-center gap-3">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex-1">
+                            <p className="text-xs text-muted-foreground">First Donation</p>
+                            <p className="text-sm">
+                              {format(parseISO(donor.first_donation_date), "MMM d, yyyy")}
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      </>
                     )}
 
                     {donor.last_donation_date && (
                       <>
-                        <Separator />
+                        {(donor.phone || donor.first_donation_date) && <Separator />}
                         <div className="flex items-center gap-3">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           <div className="flex-1">
