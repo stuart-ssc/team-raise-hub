@@ -370,7 +370,13 @@ export default function PlayerDashboard() {
         const isPast = endDate && endDate < today;
 
         if (isActive && !isPast) {
-          current.push(campaign);
+          const grp: any = (campaign as any).groups;
+          current.push({
+            ...campaign,
+            groupLogo: grp?.logo_url ?? null,
+            schoolLogo: grp?.schools?.logo_file ?? null,
+            orgLogo: grp?.organizations?.logo_url ?? null,
+          } as Campaign);
         }
       });
 
