@@ -822,6 +822,13 @@ const DonorProfile = () => {
         } : null}
         onComplete={fetchDonorData}
       />
+
+      <AddToListDialog
+        open={showAddToListDialog}
+        onOpenChange={setShowAddToListDialog}
+        selectedDonorIds={donor ? [donor.id] : []}
+        onComplete={fetchListMemberships}
+      />
     </DashboardPageLayout>
   );
 };
