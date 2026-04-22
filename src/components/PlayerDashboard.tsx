@@ -991,14 +991,19 @@ export default function PlayerDashboard() {
                   >
                     <QrCode className="h-4 w-4 mr-2" /> Show My QR
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-                    onClick={() => shareLink(headline.personalUrl, headline.name, true)}
+                  <ShareMenu
+                    url={headline.personalUrl}
+                    title={buildShareTitle(headline.name, true)}
+                    text={buildShareText(headline.name, true)}
                   >
-                    <Share2 className="h-4 w-4 mr-2" /> Share Link
-                  </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" /> Share Link
+                    </Button>
+                  </ShareMenu>
                 </div>
               </div>
             </>
