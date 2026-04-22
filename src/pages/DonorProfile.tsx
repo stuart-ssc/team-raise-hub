@@ -29,7 +29,8 @@ import {
   X,
   Plus,
   List,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from "lucide-react";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
@@ -110,6 +111,7 @@ const DonorProfile = () => {
   const [unlinkingAffiliation, setUnlinkingAffiliation] = useState<BusinessAffiliation | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [givingOpen, setGivingOpen] = useState(true);
+  const [insightsOpen, setInsightsOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [commsOpen, setCommsOpen] = useState(false);
 
@@ -549,6 +551,31 @@ const DonorProfile = () => {
                   </Collapsible>
                 </Card>
 
+                {/* AI Insights */}
+                <Card>
+                  <Collapsible open={insightsOpen} onOpenChange={setInsightsOpen}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors flex flex-row items-center justify-between space-y-0">
+                        <div className="space-y-1.5 flex flex-row items-center gap-2">
+                          <Sparkles className="h-5 w-5 text-primary" />
+                          <div className="space-y-1.5">
+                            <CardTitle>AI Insights</CardTitle>
+                            <CardDescription>AI-generated recommendations and analysis</CardDescription>
+                          </div>
+                        </div>
+                        <ChevronDown
+                          className={`h-5 w-5 text-muted-foreground transition-transform ${insightsOpen ? "rotate-180" : ""}`}
+                        />
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent className="p-0 border-t">
+                        <DonorInsightsPanel donorId={donor.id} />
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
+
                 {/* Activity Timeline */}
                 <Card>
                   <Collapsible open={timelineOpen} onOpenChange={setTimelineOpen}>
@@ -803,9 +830,6 @@ const DonorProfile = () => {
                     )}
                   </CardContent>
                 </Card>
-
-                {/* AI Insights Panel */}
-                <DonorInsightsPanel donorId={donor.id} />
 
                 {/* Notes - Admin/Manager only */}
                 {!isParticipantView && (
