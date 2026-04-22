@@ -112,7 +112,12 @@ const DonorProfile = () => {
       if (donorError) throw donorError;
 
       // Access check for participants - verify donor is connected to them
-      if (isParticipantView && !connectedDonorEmails.includes(donorData.email)) {
+      // (case-insensitive to guard against email casing mismatches)
+      const normalizedConnected = connectedDonorEmails.map((e) => e.toLowerCase());
+      if (
+        isParticipantView &&
+        !normalizedConnected.includes((donorData.email || "").toLowerCase())
+      ) {
         toast({
           title: "Access Denied",
           description: "You can only view donors connected to your fundraising",
