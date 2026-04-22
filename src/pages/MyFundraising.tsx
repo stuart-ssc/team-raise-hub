@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PitchEditor } from "@/components/PitchEditor";
-import { QRDialog } from "@/components/player/QRDialog";
+import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
 import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "@/components/ManageGuardiansCard";
 import MyConnectedStudentsCard from "@/components/MyConnectedStudentsCard";
