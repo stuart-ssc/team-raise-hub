@@ -662,14 +662,7 @@ export default function MyFundraising() {
                         setEditingPitchId(editingPitchId === id ? null : id)
                       }
                       isPitchOpen={editingPitchId === stat.campaignId}
-                      qrOpen={
-                        showQRCode ===
-                        (stat.hasPersonalLink ? stat.personalUrl : stat.campaignSlug)
-                      }
-                      onToggleQR={() => {
-                        const key = stat.hasPersonalLink ? stat.personalUrl : stat.campaignSlug;
-                        setShowQRCode(showQRCode === key ? null : key);
-                      }}
+                      onOpenQR={() => setQrDialogStat(stat)}
                       onPitchSaved={() => {
                         setEditingPitchId(null);
                         fetchFundraisingStats();
@@ -987,8 +980,7 @@ function CampaignCard({
   onShare,
   onTogglePitch,
   isPitchOpen,
-  qrOpen,
-  onToggleQR,
+  onOpenQR,
   onPitchSaved,
   onPitchClose,
 }: {
@@ -998,8 +990,7 @@ function CampaignCard({
   onShare: (url: string, name: string, child?: string) => void;
   onTogglePitch: (id: string) => void;
   isPitchOpen: boolean;
-  qrOpen: boolean;
-  onToggleQR: () => void;
+  onOpenQR: () => void;
   onPitchSaved: () => void;
   onPitchClose: () => void;
 }) {
@@ -1152,7 +1143,7 @@ function CampaignCard({
               <IconBtn label="Copy link" onClick={() => onCopy(shareUrl)}>
                 <Copy className="h-4 w-4" />
               </IconBtn>
-              <IconBtn label="Show QR code" onClick={onToggleQR} active={qrOpen}>
+              <IconBtn label="Show QR code" onClick={onOpenQR}>
                 <QrCode className="h-4 w-4" />
               </IconBtn>
               <IconBtn
@@ -1188,12 +1179,6 @@ function CampaignCard({
               )}
             </div>
           </div>
-
-          {qrOpen && (
-            <div className="mt-3 flex justify-center rounded-md border bg-white p-4">
-              <QRCode value={shareUrl} size={180} />
-            </div>
-          )}
 
           {/* Inline pitch editor */}
           {!isParentView && isPitchOpen && (
