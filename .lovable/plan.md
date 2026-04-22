@@ -1,27 +1,43 @@
 
 ## Goal
-Tighten the donor profile header: shrink the "Low Engagement" risk badge into a small pill placed below the donor name, and remove the email line that currently sits beneath the name.
+Add an "Edit Contact" button to the donor profile page header that opens the existing `EditDonorDialog`. Make the email field read-only inside that dialog when the donor record is already linked to a real authenticated user account.
 
 ## Changes
-Single-file edit: `src/pages/DonorProfile.tsx` (header block of the loaded profile view).
 
-1. **Remove email line** under the donor name in the header.
-2. **Move the risk badge** (`Low Engagement` / `Medium` / `High Engagement Risk`) out of the right-side stats cluster and place it directly under the donor name as a small pill.
-3. **Shrink the badge** to a compact pill style: smaller text, tighter padding, retain the existing semantic color (low = secondary/muted, medium = default, high = destructive).
-4. Leave everything else (avatar, name, action buttons, stat cards, tabs) unchanged.
+### 1. `src/pages/DonorProfile.tsx`
+- Add `user_id: string | null` to the local `DonorProfile` interface and select it from `donor_profiles` (already done via `select("*")`).
+- Add state `const [showEditDialog, setShowEditDialog] = useState(false)`.
+- In the header row (next to the donor name/badge), add a right-aligned **"Edit Contact"** button (outline variant, `Edit` icon already imported) that sets `showEditDialog(true)`.
+- Render `<EditDonorDialog />` at the bottom of the page, passing `donor` (mapped to the dialog's expected shape) and an `onComplete` callback that re-runs `fetchDonorData()` to refresh the profile in place.
+- Import `EditDonorDialog` from `@/components/EditDonorDialog`.
 
-## Result
+### 2. `src/components/EditDonorDialog.tsx`
+- Extend the `donor` prop interface with `user_id?: string | null`.
+- Compute `const emailLocked = !!donor?.user_id`.
+- When `emailLocked`:
+  - Render the email `Input` as `disabled` with a small helper line below: *"This email is verified with a Sponsorly account and cannot be changed here."*
+  - In `handleSave`, omit the `email` field from the update payload so a locked email is never sent.
+- When not locked, behavior is unchanged (still required, still validated).
+
+## Visual result
 ```text
-[Avatar]  Donor Name
-          • Low Engagement •     ← small pill, compact
-          (no email line)
+Donor Name                                [Edit Contact]
+• Low Engagement •
+```
+Inside the dialog, if linked to an account:
+```
+Email *  [john@example.com    ] (disabled, greyed)
+This email is verified with a Sponsorly account and cannot be changed here.
 ```
 
 ## Files touched
 - `src/pages/DonorProfile.tsx`
+- `src/components/EditDonorDialog.tsx`
 
 ## Verification
-- `/dashboard/donors/:id` shows donor name with a small risk pill directly beneath it.
-- Email no longer appears in the header (still available in the sidebar/contact section).
-- Badge color still reflects risk level (low / medium / high).
-- Mobile layout unaffected — pill wraps naturally beneath the name.
+- On `/dashboard/donors/:id`, an "Edit Contact" button appears in the header (admins, managers, and owners — anyone who can view the page).
+- Clicking it opens the existing edit dialog pre-filled with current values.
+- For donors with no `user_id`: email is editable; saving updates all fields and the profile refreshes.
+- For donors whose `user_id` is set (linked to an auth user): email field is disabled with the explanatory note; all other fields remain editable; save still works and email stays unchanged.
+- Owner reassignment select still appears only for org admins / program managers (existing logic preserved).
+- No RLS or schema changes required — `donor_profiles.user_id` already exists and updates already work via existing RLS.
