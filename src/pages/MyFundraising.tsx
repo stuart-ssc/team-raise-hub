@@ -998,7 +998,6 @@ function CampaignCard({
   stat,
   isParentView,
   onCopy,
-  onShare,
   onTogglePitch,
   isPitchOpen,
   onOpenQR,
@@ -1008,7 +1007,6 @@ function CampaignCard({
   stat: CampaignStat;
   isParentView: boolean;
   onCopy: (url: string) => void;
-  onShare: (url: string, name: string, child?: string) => void;
   onTogglePitch: (id: string) => void;
   isPitchOpen: boolean;
   onOpenQR: () => void;
