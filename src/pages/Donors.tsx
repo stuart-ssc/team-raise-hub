@@ -80,6 +80,7 @@ interface DonorProfile {
   tags: string[] | null;
   preferred_communication: string;
   notes: string | null;
+  added_by_organization_user_id: string | null;
 }
 
 const Donors = () => {
@@ -592,6 +593,11 @@ const Donors = () => {
                                   <p className="text-sm text-muted-foreground truncate">
                                     {donor.email}
                                   </p>
+                                  {organizationUser?.id && donor.added_by_organization_user_id === organizationUser.id && (
+                                    <Badge variant="outline" className="mt-1 text-[10px] font-normal">
+                                      Added by you
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-1">
                                   {!isParticipantView && (
