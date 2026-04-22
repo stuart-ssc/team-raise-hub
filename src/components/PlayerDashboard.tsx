@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "./ManageGuardiansCard";
 import { RecordPitchDialog } from "@/components/player/RecordPitchDialog";
 import { QRDialog } from "@/components/player/QRDialog";
+import { pickBrandLogo } from "@/components/player/QRDialog";
 
 interface Campaign {
   id: string;
