@@ -716,8 +716,7 @@ const Donors = () => {
                                   <Badge className={getEngagementColor(donor.engagement_score)}>
                                     {getEngagementLabel(donor.engagement_score)}
                                   </Badge>
-                                  {canManageDonors() && (
-                                    <DropdownMenu>
+                                  <DropdownMenu>
                                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                         <Button
                                           variant="ghost"
@@ -755,12 +754,25 @@ const Donors = () => {
                                             e.stopPropagation();
                                             setMenuDonor(donor);
                                             setMenuDonorId(donor.id);
+                                            setShowSingleAddToListDialog(true);
+                                          }}
+                                        >
+                                          <List className="mr-2 h-4 w-4" />
+                                          Add to List
+                                        </DropdownMenuItem>
+                                        {canManageDonors() && (
+                                          <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMenuDonor(donor);
+                                            setMenuDonorId(donor.id);
                                             setShowLinkBusinessDialog(true);
                                           }}
                                         >
                                           <Building2 className="mr-2 h-4 w-4" />
                                           Link to Business
                                         </DropdownMenuItem>
+                                        )}
                                         <DropdownMenuItem
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -771,8 +783,10 @@ const Donors = () => {
                                           <Pencil className="mr-2 h-4 w-4" />
                                           Edit Details
                                         </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem
+                                        {canManageDonors() && (
+                                          <>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setMenuDonor(donor);
@@ -783,9 +797,10 @@ const Donors = () => {
                                           <Trash2 className="mr-2 h-4 w-4" />
                                           Delete
                                         </DropdownMenuItem>
+                                          </>
+                                        )}
                                       </DropdownMenuContent>
                                     </DropdownMenu>
-                                  )}
                                 </div>
                               </div>
                       
