@@ -136,19 +136,12 @@ const DonorInsightsPanel = ({ donorId }: DonorInsightsPanelProps) => {
   return (
     <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
       <CardHeader>
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <CardTitle>AI-Powered Donor Insights</CardTitle>
-          </div>
-          <CardDescription>
-            Personalized recommendations based on giving patterns, engagement history, and behavior analysis
-          </CardDescription>
-          <Button
+        <Button
             onClick={generateInsights} 
             disabled={loading}
             variant={insights ? "outline" : "default"}
             size="sm"
+            className="w-fit"
           >
             {loading ? (
               <>
@@ -166,8 +159,7 @@ const DonorInsightsPanel = ({ donorId }: DonorInsightsPanelProps) => {
                 Generate Insights
               </>
             )}
-          </Button>
-        </div>
+        </Button>
       </CardHeader>
       <CardContent className="space-y-6">
         {loading ? (

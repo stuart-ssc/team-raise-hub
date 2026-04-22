@@ -560,7 +560,7 @@ const DonorProfile = () => {
                           <Sparkles className="h-5 w-5 text-primary" />
                           <div className="space-y-1.5">
                             <CardTitle>AI Insights</CardTitle>
-                            <CardDescription>AI-generated recommendations and analysis</CardDescription>
+                            <CardDescription>Personalized recommendations based on giving patterns, engagement history, and behavior analysis</CardDescription>
                           </div>
                         </div>
                         <ChevronDown
