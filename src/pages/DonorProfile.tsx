@@ -29,7 +29,8 @@ import {
   X,
   Plus,
   List,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from "lucide-react";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
