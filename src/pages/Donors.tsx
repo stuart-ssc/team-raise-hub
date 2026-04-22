@@ -926,6 +926,20 @@ const Donors = () => {
           />
         )}
 
+        {/* Single Donor Add-to-List Dialog */}
+        {menuDonorId && (
+          <AddToListDialog
+            open={showSingleAddToListDialog}
+            onOpenChange={setShowSingleAddToListDialog}
+            selectedDonorIds={[menuDonorId]}
+            onComplete={() => {
+              setMenuDonorId(null);
+              setMenuDonor(null);
+              fetchLists();
+            }}
+          />
+        )}
+
         {/* Link to Business Dialog */}
         {menuDonorId && organizationUser?.organization_id && (
           <LinkDonorToBusinessDialog
