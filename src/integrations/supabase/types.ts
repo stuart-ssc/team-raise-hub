@@ -601,6 +601,7 @@ export type Database = {
       }
       businesses: {
         Row: {
+          added_by_organization_user_id: string | null
           address_line1: string | null
           address_line2: string | null
           archived_at: string | null
@@ -634,6 +635,7 @@ export type Database = {
           zip: string | null
         }
         Insert: {
+          added_by_organization_user_id?: string | null
           address_line1?: string | null
           address_line2?: string | null
           archived_at?: string | null
@@ -667,6 +669,7 @@ export type Database = {
           zip?: string | null
         }
         Update: {
+          added_by_organization_user_id?: string | null
           address_line1?: string | null
           address_line2?: string | null
           archived_at?: string | null
@@ -699,7 +702,22 @@ export type Database = {
           website_url?: string | null
           zip?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "businesses_added_by_organization_user_id_fkey"
+            columns: ["added_by_organization_user_id"]
+            isOneToOne: false
+            referencedRelation: "organization_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "businesses_added_by_organization_user_id_fkey"
+            columns: ["added_by_organization_user_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["roster_member_id"]
+          },
+        ]
       }
       campaign_custom_fields: {
         Row: {
@@ -1574,6 +1592,7 @@ export type Database = {
       }
       donor_profiles: {
         Row: {
+          added_by_organization_user_id: string | null
           created_at: string | null
           donation_count: number | null
           email: string
@@ -1600,6 +1619,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          added_by_organization_user_id?: string | null
           created_at?: string | null
           donation_count?: number | null
           email: string
@@ -1626,6 +1646,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          added_by_organization_user_id?: string | null
           created_at?: string | null
           donation_count?: number | null
           email?: string
@@ -1652,6 +1673,20 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "donor_profiles_added_by_organization_user_id_fkey"
+            columns: ["added_by_organization_user_id"]
+            isOneToOne: false
+            referencedRelation: "organization_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_profiles_added_by_organization_user_id_fkey"
+            columns: ["added_by_organization_user_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["roster_member_id"]
+          },
           {
             foreignKeyName: "donor_profiles_organization_id_fkey"
             columns: ["organization_id"]
@@ -4684,6 +4719,10 @@ export type Database = {
       }
       is_donor_only_user: { Args: { check_user_id: string }; Returns: boolean }
       is_system_admin: { Args: { user_id: string }; Returns: boolean }
+      reassign_donor_ownership: {
+        Args: { _donor_id: string; _new_owner_org_user_id: string }
+        Returns: undefined
+      }
       recalculate_donor_stats: {
         Args: { p_organization_id?: string }
         Returns: {
