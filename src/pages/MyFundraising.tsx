@@ -891,19 +891,27 @@ function FilterToolbar({
       key={key}
       onClick={() => setStatusFilter(key)}
       className={cn(
-        "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+        "whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
         statusFilter === key
           ? "bg-foreground text-background"
           : "text-muted-foreground hover:text-foreground"
       )}
     >
-      {label} <span className="opacity-70">({count})</span>
+      {label}
+      <span
+        className={cn(
+          "ml-1.5",
+          statusFilter === key ? "text-background/70" : "text-muted-foreground/70"
+        )}
+      >
+        ({count})
+      </span>
     </button>
   );
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="inline-flex items-center gap-1 rounded-full border bg-card p-1">
+      <div className="inline-flex w-auto items-center gap-1 self-start rounded-full border bg-card p-1">
         {tab("active", "Active", counts.active)}
         {tab("past", "Past", counts.past)}
         {tab("all", "All", counts.all)}
