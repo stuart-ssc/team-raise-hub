@@ -490,11 +490,20 @@ const DonorProfile = () => {
 
                 {/* Giving History */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Giving History</CardTitle>
-                    <CardDescription>All donations from this supporter</CardDescription>
-                  </CardHeader>
-                  <CardContent>
+                  <Collapsible open={givingOpen} onOpenChange={setGivingOpen}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors flex flex-row items-center justify-between space-y-0">
+                        <div className="space-y-1.5">
+                          <CardTitle>Giving History</CardTitle>
+                          <CardDescription>All donations from this supporter</CardDescription>
+                        </div>
+                        <ChevronDown
+                          className={`h-5 w-5 text-muted-foreground transition-transform ${givingOpen ? "rotate-180" : ""}`}
+                        />
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent>
                     {donations.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-sm text-muted-foreground">No donations yet</p>
@@ -535,7 +544,9 @@ const DonorProfile = () => {
                         ))}
                       </div>
                     )}
-                  </CardContent>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </Card>
 
                 {/* Activity Timeline */}
