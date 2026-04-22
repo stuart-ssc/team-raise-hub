@@ -510,7 +510,7 @@ export default function DonorSegmentation() {
               </div>
             </div>
 
-            <Tabs defaultValue="overview" className="w-full">
+            <Tabs defaultValue={initialTab} className="w-full">
               <TabsList>
                 <TabsTrigger value="overview">RFM Overview</TabsTrigger>
                 <TabsTrigger value="segments">Custom Segments</TabsTrigger>
