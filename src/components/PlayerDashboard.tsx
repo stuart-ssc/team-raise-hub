@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import ManageGuardiansCard from "./ManageGuardiansCard";
 import { RecordPitchDialog } from "@/components/player/RecordPitchDialog";
+import { ShareMenu } from "@/components/ShareMenu";
 import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
 
 interface Campaign {
