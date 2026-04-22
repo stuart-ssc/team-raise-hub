@@ -1254,32 +1254,34 @@ function StatColumn({
   );
 }
 
-function IconBtn({
-  children,
-  label,
-  onClick,
-  active,
-}: {
-  children: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  active?: boolean;
-}) {
+const IconBtn = React.forwardRef<
+  HTMLButtonElement,
+  {
+    children: React.ReactNode;
+    label: string;
+    onClick?: () => void;
+    active?: boolean;
+  } & React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ children, label, onClick, active, className, ...rest }, ref) => {
   return (
     <button
+      ref={ref}
       type="button"
       aria-label={label}
       title={label}
       onClick={onClick}
+      {...rest}
       className={cn(
         "inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground",
-        active && "bg-background text-foreground"
+        active && "bg-background text-foreground",
+        className
       )}
     >
       {children}
     </button>
   );
-}
+});
+IconBtn.displayName = "IconBtn";
 
 function CompactCampaignRow({
   stat,
