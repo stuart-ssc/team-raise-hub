@@ -706,6 +706,20 @@ export default function MyFundraising() {
           />
         )}
       </div>
+
+      {qrDialogStat && (
+        <QRDialog
+          open={!!qrDialogStat}
+          onOpenChange={(o) => !o && setQrDialogStat(null)}
+          url={
+            qrDialogStat.hasPersonalLink && qrDialogStat.personalUrl
+              ? qrDialogStat.personalUrl
+              : `${window.location.origin}/c/${qrDialogStat.campaignSlug}`
+          }
+          campaignName={qrDialogStat.campaignName}
+          participantName={isParentView ? qrDialogStat.childName : undefined}
+        />
+      )}
     </DashboardPageLayout>
   );
 }
