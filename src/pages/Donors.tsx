@@ -121,17 +121,19 @@ const Donors = () => {
   useEffect(() => {
     if (organizationUser && !connectionsLoading) {
       fetchDonors(activeGroup?.id);
+      fetchLists();
       setupRealtimeSubscription();
     }
 
     return () => {
       supabase.channel('donors-updates').unsubscribe();
+      supabase.channel('donor-lists-updates').unsubscribe();
     };
   }, [organizationUser, activeGroup?.id, connectionsLoading, isParticipantView, connectedDonorEmails]);
 
   useEffect(() => {
     filterAndSortDonors();
-  }, [donors, searchQuery, sortBy, filterBy]);
+  }, [donors, searchQuery, sortBy, filterBy, filterList, memberMap]);
 
   // Auto-open import wizard when arriving with ?upload=1
   useEffect(() => {
@@ -167,7 +169,53 @@ const Donors = () => {
       )
       .subscribe();
 
+    supabase
+      .channel('donor-lists-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'donor_list_members' },
+        () => fetchLists()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'donor_lists' },
+        () => fetchLists()
+      )
+      .subscribe();
+
     return channel;
+  };
+
+  const fetchLists = async () => {
+    if (!organizationUser?.organization_id) return;
+    try {
+      const { data: listsData, error: listsErr } = await supabase
+        .from("donor_lists")
+        .select("id, name")
+        .eq("organization_id", organizationUser.organization_id)
+        .order("name");
+      if (listsErr) throw listsErr;
+      setLists(listsData || []);
+
+      const listIds = (listsData || []).map((l) => l.id);
+      if (listIds.length === 0) {
+        setMemberMap({});
+        return;
+      }
+      const { data: membersData, error: membersErr } = await supabase
+        .from("donor_list_members")
+        .select("list_id, donor_id")
+        .in("list_id", listIds);
+      if (membersErr) throw membersErr;
+      const map: Record<string, Set<string>> = {};
+      (membersData || []).forEach((m) => {
+        if (!map[m.list_id]) map[m.list_id] = new Set();
+        map[m.list_id].add(m.donor_id);
+      });
+      setMemberMap(map);
+    } catch (err) {
+      console.error("Error fetching lists:", err);
+    }
   };
 
   const fetchDonors = async (groupId?: string | null) => {
