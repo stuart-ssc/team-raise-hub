@@ -18,14 +18,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore, TrendingUp, Activity, Play, Pause, XCircle, ChevronDown, ShieldCheck, ShieldX, Clock } from "lucide-react";
+import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore, TrendingUp, Activity, Play, Pause, XCircle, ChevronDown, ShieldCheck, ShieldX, Clock, MoreHorizontal, BellOff, Bell, Trash2 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getSegmentInfo } from "@/lib/businessEngagement";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
+import { DisengageContactDialog } from "@/components/DisengageContactDialog";
 import { EditBusinessDialog } from "@/components/EditBusinessDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { BusinessActivityTimeline } from "@/components/BusinessActivityTimeline";
 import { BusinessInsightsPanel } from "@/components/BusinessInsightsPanel";
 import { BusinessCampaignAssetsList } from "@/components/BusinessCampaignAssetsList";
