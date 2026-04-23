@@ -7,7 +7,6 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -305,25 +304,15 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-primary" />
-            <div>
-              <CardTitle>Fundraiser Items</CardTitle>
-              <CardDescription>Products or sponsorship levels for your fundraiser</CardDescription>
-            </div>
-          </div>
-          {!isFormVisible && items.length > 0 && (
-            <Button onClick={handleAddNew} className="gap-2">
-              <Plus className="h-4 w-4" /> Add Item
-            </Button>
-          )}
+    <div className="space-y-4">
+      {!isFormVisible && items.length > 0 && (
+        <div className="flex justify-end">
+          <Button onClick={handleAddNew} className="gap-2">
+            <Plus className="h-4 w-4" /> Add Item
+          </Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        {isFormVisible ? (
+      )}
+      {isFormVisible ? (
           <div className="space-y-4">
             {/* Form Header */}
             <div className="flex items-center justify-between p-4 -mx-6 -mt-4 mb-4 bg-primary/10 border-b rounded-t-lg">
@@ -589,7 +578,6 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 }
