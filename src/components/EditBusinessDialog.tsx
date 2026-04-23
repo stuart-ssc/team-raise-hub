@@ -282,9 +282,9 @@ export function EditBusinessDialog({
                 name="business_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Business Name *</FormLabel>
+                    <LockedLabel locked={lockedMap.business_name}>Business Name *</LockedLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter business name" />
+                      <Input {...field} placeholder="Enter business name" disabled={lockedMap.business_name} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -296,9 +296,9 @@ export function EditBusinessDialog({
                 name="ein"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>EIN</FormLabel>
+                    <LockedLabel locked={lockedMap.ein}>EIN</LockedLabel>
                     <FormControl>
-                      <Input {...field} placeholder="XX-XXXXXXX" />
+                      <Input {...field} placeholder="XX-XXXXXXX" disabled={lockedMap.ein} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -310,8 +310,8 @@ export function EditBusinessDialog({
                 name="industry"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Industry</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <LockedLabel locked={lockedMap.industry}>Industry</LockedLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={lockedMap.industry}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select an industry" />
