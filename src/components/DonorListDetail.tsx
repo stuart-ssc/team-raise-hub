@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, UserPlus, Trash2, Loader2, Users } from "lucide-react";
+import { Megaphone } from "lucide-react";
+import ContactFundraiserDialog from "@/components/ContactFundraiserDialog";
 
 interface DonorListDetailProps {
   open: boolean;
@@ -58,6 +60,7 @@ export default function DonorListDetail({
   const [searching, setSearching] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
 
   useEffect(() => {
     if (open && listId) {
@@ -171,6 +174,7 @@ export default function DonorListDetail({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
@@ -179,6 +183,19 @@ export default function DonorListDetail({
             <Badge variant="secondary">{members.length} members</Badge>
           </DialogTitle>
         </DialogHeader>
+
+        {/* Header actions */}
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="default"
+            onClick={() => setContactDialogOpen(true)}
+            disabled={members.length === 0}
+          >
+            <Megaphone className="h-4 w-4 mr-2" />
+            Contact about Fundraiser
+          </Button>
+        </div>
 
         {/* Search & Add */}
         <div className="space-y-2">
@@ -270,5 +287,12 @@ export default function DonorListDetail({
         </div>
       </DialogContent>
     </Dialog>
+
+    <ContactFundraiserDialog
+      open={contactDialogOpen}
+      onOpenChange={setContactDialogOpen}
+      listId={listId}
+    />
+    </>
   );
 }

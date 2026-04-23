@@ -14,9 +14,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
-import { Loader2, Users, TrendingUp, Send, Filter, RefreshCw, Award, AlertCircle, Heart, List, Plus, Trash2, Pencil } from "lucide-react";
+import { Loader2, Users, TrendingUp, Send, Filter, RefreshCw, Award, AlertCircle, Heart, List, Plus, Trash2, Pencil, Megaphone } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import DonorListDetail from "@/components/DonorListDetail";
+import ContactFundraiserDialog from "@/components/ContactFundraiserDialog";
 
 interface DonorSegment {
   id: string;
@@ -74,6 +75,8 @@ export default function DonorSegmentation() {
   const [listDetailOpen, setListDetailOpen] = useState(false);
   const [listCampaignDialogOpen, setListCampaignDialogOpen] = useState(false);
   const [selectedListIdForCampaign, setSelectedListIdForCampaign] = useState<string>("");
+  const [contactFundraiserListId, setContactFundraiserListId] = useState<string | null>(null);
+  const [contactFundraiserOpen, setContactFundraiserOpen] = useState(false);
   
   // Form states
   const [segmentName, setSegmentName] = useState("");
@@ -645,6 +648,18 @@ export default function DonorSegmentation() {
                           </Button>
                           <Button
                             size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setContactFundraiserListId(list.id);
+                              setContactFundraiserOpen(true);
+                            }}
+                            disabled={list.member_count === 0}
+                          >
+                            <Megaphone className="mr-1 h-3 w-3" />
+                            Contact about Fundraiser
+                          </Button>
+                          <Button
+                            size="sm"
                             variant="ghost"
                             onClick={() => handleDeleteList(list.id)}
                           >
@@ -700,6 +715,18 @@ export default function DonorSegmentation() {
           listId={selectedListId}
           listName={selectedListName}
           onMembersChanged={() => fetchLists()}
+        />
+      )}
+
+      {/* Contact Fundraiser Dialog (from list rows) */}
+      {contactFundraiserListId && (
+        <ContactFundraiserDialog
+          open={contactFundraiserOpen}
+          onOpenChange={(o) => {
+            setContactFundraiserOpen(o);
+            if (!o) setContactFundraiserListId(null);
+          }}
+          listId={contactFundraiserListId}
         />
       )}
 

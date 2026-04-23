@@ -33,6 +33,7 @@ import Reports from "./pages/Reports";
 import Donors from "./pages/Donors";
 import DonorProfile from "./pages/DonorProfile";
 import DonorReceiptPortal from "./pages/DonorReceiptPortal";
+import FundraiserUnsubscribe from "./pages/FundraiserUnsubscribe";
 import ThankYouTemplates from "./pages/ThankYouTemplates";
 import NotFound from "./pages/NotFound";
 import SystemAdminDashboard from "./pages/SystemAdmin/Dashboard";
@@ -176,6 +177,7 @@ const AppContent = () => {
         <Route path="/districts/:state/:slug" element={<DistrictLandingPage />} />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
         <Route path="/donor-receipts" element={<DonorReceiptPortal />} />
+        <Route path="/fundraiser-unsubscribe" element={<FundraiserUnsubscribe />} />
         <Route path="/orders/:orderId" element={<OrderDetails />} />
         <Route path="/dashboard/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
         <Route path="/dashboard/orders/:orderId" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />

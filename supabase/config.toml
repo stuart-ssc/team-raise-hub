@@ -236,3 +236,12 @@ verify_jwt = false
 
 [functions.ai-campaign-builder]
 verify_jwt = false
+
+[functions.enroll-fundraiser-outreach]
+verify_jwt = true
+
+[functions.dispatch-fundraiser-outreach]
+verify_jwt = false
+
+[functions.fundraiser-outreach-unsubscribe]
+verify_jwt = false
