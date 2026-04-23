@@ -476,26 +476,26 @@ const Dashboard = () => {
           {/* Campaigns Table */}
           <Card>
             <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <CardTitle>Campaigns</CardTitle>
+              <CardTitle>Fundraisers</CardTitle>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Button 
                   variant="outline" 
-                  onClick={() => navigate('/dashboard/campaigns')}
+                  onClick={() => navigate('/dashboard/fundraisers')}
                   size="sm"
                   className="w-full sm:w-auto"
                 >
-                  Manage All Campaigns
+                  Manage All Fundraisers
                 </Button>
-                <Button onClick={() => navigate('/dashboard/campaigns/ai-builder')} size="sm" className="w-full sm:w-auto">Add Campaign</Button>
+                <Button onClick={() => navigate('/dashboard/fundraisers/ai-builder')} size="sm" className="w-full sm:w-auto">Add Fundraiser</Button>
               </div>
             </CardHeader>
             <CardContent>
               {totalCampaigns === 0 ? (
                 <div className="text-center py-12">
-                  <div className="text-lg font-medium mb-2">Let's get started - Create a Campaign Now</div>
-                  <div className="text-muted-foreground mb-4">Start fundraising by creating your first campaign</div>
-                  <Button onClick={() => navigate('/dashboard/campaigns/ai-builder')}>
-                    Create Campaign
+                  <div className="text-lg font-medium mb-2">Let's get started - Create a Fundraiser Now</div>
+                  <div className="text-muted-foreground mb-4">Start fundraising by creating your first fundraiser</div>
+                  <Button onClick={() => navigate('/dashboard/fundraisers/ai-builder')}>
+                    Create Fundraiser
                   </Button>
                 </div>
               ) : campaigns.length === 0 ? (
@@ -524,7 +524,7 @@ const Dashboard = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
+                            onClick={() => navigate(`/dashboard/fundraisers/${campaign.id}/edit`)}
                           >
                             Manage
                           </Button>
@@ -588,7 +588,7 @@ const Dashboard = () => {
                            <Button
                              variant="outline"
                              size="sm"
-                             onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
+                             onClick={() => navigate(`/dashboard/fundraisers/${campaign.id}/edit`)}
                            >
                              Manage
                            </Button>

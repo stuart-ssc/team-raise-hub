@@ -211,7 +211,7 @@ export function CampaignOrdersSection({ campaignId, organizationId }: CampaignOr
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate(`/dashboard/campaigns/${campaignId}/orders/${order.id}`)}
+                    onClick={() => navigate(`/dashboard/fundraisers/${campaignId}/orders/${order.id}`)}
                   >
                     Details
                   </Button>

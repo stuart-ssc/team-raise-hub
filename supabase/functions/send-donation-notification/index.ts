@@ -79,7 +79,7 @@ serve(async (req) => {
             type: 'donation',
             orderId,
             campaignId,
-            route: `/dashboard/campaigns`
+            route: `/dashboard/fundraisers`
           }
         }
       })
