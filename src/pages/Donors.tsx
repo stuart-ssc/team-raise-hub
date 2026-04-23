@@ -643,10 +643,10 @@ const Donors = () => {
                   {!isParticipantView && filteredDonors.length > 0 && (
                     <>
                     <div
-                      className={`inline-flex items-center justify-center rounded-md p-1.5 transition-colors ${
+                      className={`inline-flex items-center gap-2 rounded-md border shadow-sm px-2 py-1 transition-colors ${
                         selectedDonorIds.length > 0
-                          ? "bg-primary/10"
-                          : "bg-muted/40 hover:bg-muted"
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-muted/60 hover:bg-muted"
                       }`}
                     >
                       <Checkbox
@@ -676,6 +676,7 @@ const Donors = () => {
                         aria-label="Select all visible donors"
                         className="h-5 w-5"
                       />
+                      <span className="text-xs font-medium">Select all</span>
                     </div>
                     <span className="hidden md:inline text-sm text-muted-foreground">
                       Select all on this page
@@ -733,7 +734,7 @@ const Donors = () => {
                       return (
                         <Card
                           key={donor.id}
-                          className={`group cursor-pointer hover:shadow-md transition-all ${
+                          className={`group relative cursor-pointer hover:shadow-md transition-all ${
                             isSelected
                               ? "border-primary ring-2 ring-primary/20"
                               : inSelectMode
@@ -741,32 +742,33 @@ const Donors = () => {
                               : "hover:border-primary/50"
                           }`}
                         >
+                          {!isParticipantView && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className={`absolute left-3 top-3 z-10 inline-flex items-center gap-2 rounded-md border shadow-sm px-2 py-1 transition-colors ${
+                                isSelected
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border bg-background hover:bg-muted"
+                              }`}
+                            >
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  setSelectedDonorIds((prev) =>
+                                    checked
+                                      ? [...prev, donor.id]
+                                      : prev.filter((id) => id !== donor.id)
+                                  );
+                                }}
+                                aria-label={`Select ${donor.first_name || donor.email}`}
+                                className="h-4 w-4"
+                              />
+                              <span className="text-xs font-medium">Select</span>
+                            </div>
+                          )}
                           <CardContent className="pt-6">
                             <div className="space-y-3">
-                              <div className="flex items-start justify-between gap-2">
-                                {!isParticipantView && (
-                                  <div
-                                    onClick={(e) => e.stopPropagation()}
-                                    className={`inline-flex items-center justify-center rounded-md p-1.5 transition-colors ${
-                                      isSelected
-                                        ? "bg-primary/10"
-                                        : "bg-muted/40 hover:bg-muted"
-                                    }`}
-                                  >
-                                    <Checkbox
-                                      checked={isSelected}
-                                      onCheckedChange={(checked) => {
-                                        setSelectedDonorIds((prev) =>
-                                          checked
-                                            ? [...prev, donor.id]
-                                            : prev.filter((id) => id !== donor.id)
-                                        );
-                                      }}
-                                      aria-label={`Select ${donor.first_name || donor.email}`}
-                                      className="h-5 w-5"
-                                    />
-                                  </div>
-                                )}
+                              <div className={`flex items-start justify-between gap-2 ${!isParticipantView ? "pt-6" : ""}`}>
                                 <div 
                                   className="flex-1 min-w-0"
                                   onClick={handleBodyClick}
