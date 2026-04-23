@@ -718,15 +718,15 @@ const BusinessProfile = () => {
           <TooltipProvider delayDuration={150}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge
-                  tabIndex={0}
-                  className="bg-green-500/10 text-green-700 dark:text-green-400 cursor-help focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                <button
+                  type="button"
+                  className="inline-flex items-center rounded-full border border-transparent px-2.5 py-0.5 text-xs font-semibold transition-colors bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-600 hover:text-white focus:bg-green-600 focus:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <ShieldCheck className="h-3 w-3 mr-1" />
                   Verified
-                </Badge>
+                </button>
               </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
+              <TooltipContent side="bottom" sideOffset={6} className="max-w-xs">
                 <p className="font-semibold mb-1">This business is verified</p>
                 <p className="text-xs">
                   You can add missing details and disengage contacts, but
