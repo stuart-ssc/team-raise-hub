@@ -37,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3, Activity, Target, MoreHorizontal, Mail, Tag, RotateCcw, CheckSquare, Square } from "lucide-react";
+import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, BarChart3, Activity, Target, MoreHorizontal, Mail, Tag, RotateCcw, CheckSquare, Square, UserCheck } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getSegmentInfo } from "@/lib/businessEngagement";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,6 +75,7 @@ interface BusinessProfile {
   tags: string[] | null;
   engagement_segment: string | null;
   engagement_score: number | null;
+  added_by_organization_user_id: string | null;
 }
 
 const Businesses = () => {
@@ -95,7 +96,6 @@ const Businesses = () => {
   const [selectedBusinessIds, setSelectedBusinessIds] = useState<string[]>([]);
   const [showBulkArchiveDialog, setShowBulkArchiveDialog] = useState(false);
   const [showBulkRestoreDialog, setShowBulkRestoreDialog] = useState(false);
-  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
   const [showBulkEmailDialog, setShowBulkEmailDialog] = useState(false);
   const [showBulkVerificationDialog, setShowBulkVerificationDialog] = useState(false);
@@ -111,7 +111,6 @@ const Businesses = () => {
   const [showSingleEnrollDialog, setShowSingleEnrollDialog] = useState(false);
   const [showSingleArchiveDialog, setShowSingleArchiveDialog] = useState(false);
   const [showSingleRestoreDialog, setShowSingleRestoreDialog] = useState(false);
-  const [showSingleDeleteDialog, setShowSingleDeleteDialog] = useState(false);
 
   const canManageBusinesses = 
     organizationUser?.user_type?.permission_level === 'organization_admin' ||
@@ -146,7 +145,16 @@ const Businesses = () => {
 
       // For participants, filter to only connected businesses
       if (isParticipantView) {
-        if (connectedBusinessIds.length === 0) {
+        // Also include businesses the participant OWNS (added themselves)
+        const { data: ownedRows } = await supabase
+          .from("businesses")
+          .select("id")
+          .eq("added_by_organization_user_id", organizationUser?.id);
+        const ownedIds = (ownedRows || []).map(r => r.id);
+
+        const allIds = Array.from(new Set([...(connectedBusinessIds || []), ...ownedIds]));
+
+        if (allIds.length === 0) {
           setBusinesses([]);
           return;
         }
@@ -154,7 +162,7 @@ const Businesses = () => {
         const { data: businessData, error: businessError } = await supabase
           .from("businesses")
           .select("*")
-          .in("id", connectedBusinessIds);
+          .in("id", allIds);
 
         if (businessError) throw businessError;
 
@@ -374,25 +382,6 @@ const Businesses = () => {
     }
   };
 
-  const handleBulkDelete = async () => {
-    try {
-      const { error } = await supabase
-        .from('businesses')
-        .delete()
-        .in('id', selectedBusinessIds);
-
-      if (error) throw error;
-
-      toast.success(`Deleted ${selectedBusinessIds.length} business${selectedBusinessIds.length === 1 ? '' : 'es'}`);
-      setSelectedBusinessIds([]);
-      setShowBulkDeleteDialog(false);
-      fetchBusinesses();
-    } catch (error) {
-      console.error('Error deleting businesses:', error);
-      toast.error('Failed to delete businesses');
-    }
-  };
-
   const handleBulkExport = () => {
     setShowExportDialog(true);
   };
@@ -501,27 +490,6 @@ const Businesses = () => {
     } catch (error: any) {
       console.error("Error restoring business:", error);
       toast.error("Failed to restore business");
-    }
-  };
-
-  const handleSingleDelete = async () => {
-    if (!menuBusinessId) return;
-    
-    try {
-      const { error } = await supabase
-        .from("businesses")
-        .delete()
-        .eq("id", menuBusinessId);
-
-      if (error) throw error;
-      
-      toast.success("Business deleted successfully");
-      fetchBusinesses();
-      setShowSingleDeleteDialog(false);
-      setMenuBusinessId(null);
-    } catch (error: any) {
-      console.error("Error deleting business:", error);
-      toast.error("Failed to delete business");
     }
   };
 
@@ -649,6 +617,16 @@ const Businesses = () => {
                 </DropdownMenu>
               </div>
             )}
+
+            {/* Desktop: Participant Add Business */}
+            {!isMobile && isParticipantView && (
+              <div className="flex gap-2">
+                <Button onClick={() => setShowAddDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Business
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Mobile: Consolidated Dropdown - Admin only */}
@@ -704,6 +682,14 @@ const Businesses = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+
+          {/* Mobile: Participant Add Business */}
+          {isMobile && isParticipantView && (
+            <Button onClick={() => setShowAddDialog(true)} className="w-full">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Business
+            </Button>
           )}
         </div>
 
@@ -912,6 +898,12 @@ const Businesses = () => {
                                 Archived
                               </Badge>
                             )}
+                            {organizationUser && business.added_by_organization_user_id === organizationUser.id && (
+                              <Badge variant="outline" className="text-xs gap-1">
+                                <UserCheck className="h-3 w-3" />
+                                Added by you
+                              </Badge>
+                            )}
                           </div>
                           {(typeof business.engagement_score === 'number' || business.engagement_segment) && (
                             <div className="mt-1">
@@ -986,7 +978,10 @@ const Businesses = () => {
                     </div>
                   )}
                 </CardContent>
-                {canManageBusinesses && !isParticipantView && (
+                {(
+                  (canManageBusinesses && !isParticipantView) ||
+                  (isParticipantView && organizationUser && business.added_by_organization_user_id === organizationUser.id)
+                ) && (
                   <CardFooter className="pt-0 pb-4 px-6">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -1011,16 +1006,18 @@ const Businesses = () => {
                           Send Email
                         </DropdownMenuItem>
                         
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuBusinessId(business.id);
-                            setShowSingleEnrollDialog(true);
-                          }}
-                        >
-                          <Target className="h-4 w-4 mr-2" />
-                          Enroll in Campaign
-                        </DropdownMenuItem>
+                        {!isParticipantView && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuBusinessId(business.id);
+                              setShowSingleEnrollDialog(true);
+                            }}
+                          >
+                            <Target className="h-4 w-4 mr-2" />
+                            Enroll in Campaign
+                          </DropdownMenuItem>
+                        )}
                         
                         <DropdownMenuItem
                           onClick={(e) => {
@@ -1068,18 +1065,6 @@ const Businesses = () => {
                             Restore
                           </DropdownMenuItem>
                         )}
-                        
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuBusinessId(business.id);
-                            setShowSingleDeleteDialog(true);
-                          }}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </CardFooter>
@@ -1122,7 +1107,6 @@ const Businesses = () => {
           onClearSelection={handleClearSelection}
           onArchive={() => setShowBulkArchiveDialog(true)}
           onRestore={() => setShowBulkRestoreDialog(true)}
-          onDelete={() => setShowBulkDeleteDialog(true)}
           onExportCsv={handleBulkExport}
           onAddTags={handleBulkTag}
           onSendEmail={handleBulkEmail}
@@ -1174,25 +1158,6 @@ const Businesses = () => {
             <AlertDialogAction onClick={handleBulkRestore}>
               <Archive className="h-4 w-4 mr-2" />
               Restore
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Businesses</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to permanently delete {selectedBusinessIds.length} business{selectedBusinessIds.length === 1 ? '' : 'es'}? 
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1304,28 +1269,6 @@ const Businesses = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Single Business Delete Dialog */}
-      <AlertDialog open={showSingleDeleteDialog} onOpenChange={setShowSingleDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Business</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to permanently delete this business? This action cannot be undone.
-              All linked donors and donation history will be preserved but the business profile will be removed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setMenuBusinessId(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleSingleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </DashboardPageLayout>
   );
 };
