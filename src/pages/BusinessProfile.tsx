@@ -697,12 +697,16 @@ const BusinessProfile = () => {
 
   const isVerified = business?.verification_status === "verified";
   const canEditBase = canManageBusinesses || (isParticipantView && ownsBusiness);
-  // Editing details / linking / removing contacts is locked once verified (system admins bypass)
-  const canEditDetails = (canEditBase && !isVerified) || isSystemAdmin;
+  // Editing details: allowed on verified businesses too (the dialog locks already-set fields).
+  // Owners/admins can fill in missing values; system admins can change anything.
+  const canEditDetails = canEditBase || isSystemAdmin;
+  // Structural changes (linking new contacts, removing contacts) stay locked on verified
+  // businesses — the verified business owner controls their roster.
+  const canManageStructure = (canEditBase && !isVerified) || isSystemAdmin;
   // Disengage / re-engage is allowed regardless of verification status
   const canManageContactEngagement = canEditBase || isSystemAdmin;
   // Backwards-compat alias for existing references in markup
-  const canEdit = canEditDetails;
+  const canEdit = canManageStructure;
 
   const getVerificationBadge = (status: string) => {
     switch (status) {
