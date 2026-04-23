@@ -19,6 +19,21 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Search, Send, ArrowLeft, Calendar, Mail, AlertCircle } from "lucide-react";
 import { computeOutreachSchedule } from "@/lib/fundraiserOutreachSchedule";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+interface Recipient {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+}
 
 interface Campaign {
   id: string;
@@ -57,12 +72,18 @@ export default function ContactFundraiserDialog({
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
   const [selected, setSelected] = useState<Campaign | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [loadingRecipients, setLoadingRecipients] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     if (!open) {
       setStep("pick");
       setSelected(null);
       setSearch("");
+      setRecipients([]);
+      setPage(1);
     }
   }, [open]);
 
@@ -71,6 +92,49 @@ export default function ContactFundraiserDialog({
     void fetchCampaigns();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, organizationUser?.organization_id, activeGroup?.id]);
+
+  useEffect(() => {
+    if (step !== "review" || !selected) return;
+    void fetchRecipients();
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, selected?.id]);
+
+  const fetchRecipients = async () => {
+    setLoadingRecipients(true);
+    try {
+      if (donorIds && donorIds.length > 0) {
+        const { data, error } = await supabase
+          .from("donor_profiles")
+          .select("id, first_name, last_name, email")
+          .in("id", donorIds);
+        if (error) throw error;
+        setRecipients((data || []) as Recipient[]);
+      } else if (listId) {
+        const { data, error } = await supabase
+          .from("donor_list_members")
+          .select("donor_profiles:donor_id(id, first_name, last_name, email)")
+          .eq("list_id", listId);
+        if (error) throw error;
+        const rows = (data || [])
+          .map((r: any) => r.donor_profiles)
+          .filter(Boolean) as Recipient[];
+        setRecipients(rows);
+      } else {
+        setRecipients([]);
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Failed to load recipients",
+        description: err.message,
+        variant: "destructive",
+      });
+      setRecipients([]);
+    } finally {
+      setLoadingRecipients(false);
+    }
+  };
 
   const fetchCampaigns = async () => {
     setLoadingCampaigns(true);
@@ -122,8 +186,6 @@ export default function ContactFundraiserDialog({
     return computeOutreachSchedule(new Date(selected.end_date));
   }, [selected]);
 
-  const recipientCount = donorIds?.length ?? null;
-
   const handleEnroll = async () => {
     if (!selected) return;
     setSubmitting(true);
@@ -172,7 +234,7 @@ export default function ContactFundraiserDialog({
           <DialogDescription>
             {step === "pick"
               ? "Pick a published fundraiser. We'll automatically email selected donors with a branded drip campaign."
-              : "Confirm the cadence below. Emails stop automatically when each donor donates or the fundraiser ends."}
+              : "Confirm the fundraising invitation below."}
           </DialogDescription>
         </DialogHeader>
 
@@ -277,13 +339,94 @@ export default function ContactFundraiserDialog({
               <p className="text-sm">
                 Recipients:{" "}
                 <span className="font-semibold">
-                  {recipientCount !== null ? `${recipientCount} selected donor${recipientCount === 1 ? "" : "s"}` : "all members of this list"}
+                  {`${recipients.length} donor${recipients.length === 1 ? "" : "s"}`}
                 </span>
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Donors who already donated, opted out, or are suppressed will be skipped automatically.
                 Emails lead with the student (when known), then the team — and are clearly powered by Sponsorly.
               </p>
+            </div>
+
+            <div className="rounded-md border">
+              <div className="px-3 py-2 border-b bg-muted/30">
+                <p className="text-sm font-medium">Recipients ({recipients.length})</p>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="h-9">Name</TableHead>
+                    <TableHead className="h-9">Email</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loadingRecipients ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={`sk-${i}`}>
+                        <TableCell className="py-2">
+                          <Skeleton className="h-4 w-32" />
+                        </TableCell>
+                        <TableCell className="py-2">
+                          <Skeleton className="h-4 w-48" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : recipients.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={2} className="py-4 text-center text-sm text-muted-foreground">
+                        No recipients found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    recipients
+                      .slice((page - 1) * pageSize, page * pageSize)
+                      .map((r) => {
+                        const name = [r.first_name, r.last_name].filter(Boolean).join(" ").trim();
+                        return (
+                          <TableRow key={r.id}>
+                            <TableCell className="py-2 text-sm">{name || "—"}</TableCell>
+                            <TableCell className="py-2 text-sm text-muted-foreground">
+                              {r.email || "—"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                  )}
+                </TableBody>
+              </Table>
+              {recipients.length > pageSize && (() => {
+                const totalPages = Math.ceil(recipients.length / pageSize);
+                const start = (page - 1) * pageSize + 1;
+                const end = Math.min(page * pageSize, recipients.length);
+                return (
+                  <div className="flex items-center justify-between px-3 py-2 border-t text-xs text-muted-foreground">
+                    <span>
+                      Showing {start}–{end} of {recipients.length}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                      >
+                        Previous
+                      </Button>
+                      <span>
+                        Page {page} of {totalPages}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page >= totalPages}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
