@@ -183,6 +183,19 @@ export default function DonorListDetail({
           </DialogTitle>
         </DialogHeader>
 
+        {/* Header actions */}
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="default"
+            onClick={() => setContactDialogOpen(true)}
+            disabled={members.length === 0}
+          >
+            <Megaphone className="h-4 w-4 mr-2" />
+            Contact about Fundraiser
+          </Button>
+        </div>
+
         {/* Search & Add */}
         <div className="space-y-2">
           <div className="relative">
@@ -273,5 +286,12 @@ export default function DonorListDetail({
         </div>
       </DialogContent>
     </Dialog>
+
+    <ContactFundraiserDialog
+      open={contactDialogOpen}
+      onOpenChange={setContactDialogOpen}
+      listId={listId}
+    />
+    </>
   );
 }
