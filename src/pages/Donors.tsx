@@ -430,7 +430,7 @@ const Donors = () => {
 
   return (
     <DashboardPageLayout segments={[{ label: "Donors" }]}>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-24">
             {/* Header */}
             <div className="flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
