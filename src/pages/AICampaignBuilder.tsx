@@ -484,7 +484,7 @@ export default function AICampaignBuilder() {
           onStatusChange={() => {
             setCampaignStatus("published");
             setShowPublishDialog(false);
-            navigate(`/dashboard/campaigns/${campaignId}/edit`);
+            navigate(`/dashboard/fundraisers/${campaignId}/edit`);
           }}
           triggerOpen={showPublishDialog}
           onClose={() => setShowPublishDialog(false)}
