@@ -643,7 +643,42 @@ const Donors = () => {
             {/* Donors List */}
             <Card>
               <CardHeader>
-                <CardTitle>Donors ({filteredDonors.length})</CardTitle>
+                <div className="flex items-center gap-3">
+                  {!isParticipantView && filteredDonors.length > 0 && (
+                    <Checkbox
+                      checked={
+                        selectedDonorIds.length > 0 &&
+                        filteredDonors.every((d) => selectedDonorIds.includes(d.id))
+                          ? true
+                          : selectedDonorIds.some((id) =>
+                              filteredDonors.find((d) => d.id === id)
+                            )
+                          ? "indeterminate"
+                          : false
+                      }
+                      onCheckedChange={(checked) => {
+                        if (checked === true) {
+                          const visibleIds = filteredDonors.map((d) => d.id);
+                          setSelectedDonorIds((prev) =>
+                            Array.from(new Set([...prev, ...visibleIds]))
+                          );
+                        } else {
+                          const visibleIds = new Set(filteredDonors.map((d) => d.id));
+                          setSelectedDonorIds((prev) =>
+                            prev.filter((id) => !visibleIds.has(id))
+                          );
+                        }
+                      }}
+                      aria-label="Select all visible donors"
+                    />
+                  )}
+                  <CardTitle>Donors ({filteredDonors.length})</CardTitle>
+                  {selectedDonorIds.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {selectedDonorIds.length} selected
+                    </Badge>
+                  )}
+                </div>
                 <CardDescription>
                   Click on a donor to view detailed profile and giving history
                 </CardDescription>
