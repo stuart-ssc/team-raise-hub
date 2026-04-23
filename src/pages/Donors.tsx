@@ -745,19 +745,27 @@ const Donors = () => {
                             <div className="space-y-3">
                               <div className="flex items-start justify-between gap-2">
                                 {!isParticipantView && (
-                                  <Checkbox
-                                    checked={isSelected}
-                                    onCheckedChange={(checked) => {
-                                      setSelectedDonorIds((prev) =>
-                                        checked
-                                          ? [...prev, donor.id]
-                                          : prev.filter((id) => id !== donor.id)
-                                      );
-                                    }}
+                                  <div
                                     onClick={(e) => e.stopPropagation()}
-                                    aria-label={`Select ${donor.first_name || donor.email}`}
-                                    className="mt-1.5 h-5 w-5"
-                                  />
+                                    className={`inline-flex items-center justify-center rounded-md p-1.5 transition-colors ${
+                                      isSelected
+                                        ? "bg-primary/10"
+                                        : "bg-muted/40 hover:bg-muted"
+                                    }`}
+                                  >
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onCheckedChange={(checked) => {
+                                        setSelectedDonorIds((prev) =>
+                                          checked
+                                            ? [...prev, donor.id]
+                                            : prev.filter((id) => id !== donor.id)
+                                        );
+                                      }}
+                                      aria-label={`Select ${donor.first_name || donor.email}`}
+                                      className="h-5 w-5"
+                                    />
+                                  </div>
                                 )}
                                 <div 
                                   className="flex-1 min-w-0"
