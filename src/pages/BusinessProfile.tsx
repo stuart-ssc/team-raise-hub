@@ -38,6 +38,7 @@ import { BusinessInsightsPanel } from "@/components/BusinessInsightsPanel";
 import { BusinessCampaignAssetsList } from "@/components/BusinessCampaignAssetsList";
 import { ManualEnrollmentDialog } from "@/components/ManualEnrollmentDialog";
 import { BusinessVerificationDialog } from "@/components/BusinessVerificationDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
