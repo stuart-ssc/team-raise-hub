@@ -1,61 +1,44 @@
 
 ## Goal
-Make the donor-card selection control impossible to miss on `/dashboard/donors`. The current checkbox code exists, but the visual treatment is still too subtle or getting lost in the card header layout. Replace it with an explicit, pinned top-left selection chip that always shows.
+Fix three issues on `/dashboard/donors`:
+1. **Participants (players/parents) can't see selection controls** — bulk selection is currently hidden from participant view.
+2. **Per-card "Select" chip is in the top-left** and looks clunky next to the donor name. Move it to the top-right of each donor card.
+3. **"Select all on this page" chip** is currently above the donors list on the left. Move it to the top-right of the Donors card/header area.
 
 ## Changes
 
 ### `src/pages/Donors.tsx`
 
-**1. Move the per-card checkbox out of the header flow**
-- Stop rendering the donor-card checkbox inline inside the `flex items-start justify-between` row.
-- Make each donor `<Card>` `relative`.
-- Render the selection control as an absolutely positioned element in the card’s top-left (`absolute left-4 top-4 z-10`), so it no longer depends on the text/badge row layout.
+**1. Enable selection for all roles**
+- Remove the `isParticipantView` gate around the per-card selection chip and the header "Select all" chip. Selection UI renders regardless of role.
+- Bulk action toolbar (Add Tags · Add to List · Contact about Fundraiser · Send Email · Export CSV · Clear) stays available for all roles. No changes to toolbar logic — it already keys off the selection set.
 
-**2. Turn the checkbox into a clearly visible selection chip**
-- Wrap the checkbox in a bordered, high-contrast chip such as:
-  - `inline-flex items-center gap-2 rounded-md border bg-background shadow-sm px-2 py-1`
-  - selected state: `border-primary bg-primary/10`
-  - unselected state: `border-border bg-muted/60 hover:bg-muted`
-- Add a tiny label next to it like `Select` on donor cards so the affordance reads as an action, not a missing icon.
-- Keep the actual `<Checkbox>` inside the chip and preserve `checked`, `onCheckedChange`, and `aria-label`.
+**2. Move per-card checkbox to top-right of each donor card**
+- Remove the `absolute left-3 top-3` selection chip.
+- Place the checkbox in the top-right, sharing the row with the engagement badge:
+  - Card top row becomes: name/email block on the left, right-side cluster `[Checkbox] [Engagement Badge]` aligned with `flex items-center gap-2`.
+  - Remove the "Select" text label — the checkbox alone is enough once it's in a visible corner next to the badge.
+  - Keep `stopPropagation()` on the checkbox wrapper so toggling selection never triggers navigation.
+- Remove the `pt-6` top padding that was added to avoid the old absolute chip — return card header to normal spacing.
 
-**3. Prevent navigation conflicts**
-- Keep `stopPropagation()` on the chip wrapper.
-- Preserve existing behavior:
-  - no selection active: card body click navigates
-  - selection active: card body click toggles selection
-  - clicking the checkbox chip itself only changes selection
+**3. Move "Select all" to the top-right of the Donors list header**
+- The Donors list lives inside a wrapper with a header row containing the title `Donors (N)` and subtitle "Click on a donor to view detailed profile…".
+- Restructure that header into `flex items-center justify-between`:
+  - Left: `Donors (N)` title + subtitle (unchanged).
+  - Right: the "Select all on this page" chip (checkbox + "Select all" label), using the existing indeterminate state logic.
+- The chip no longer appears above the card grid on its own row.
 
-**4. Keep header bulk-select consistent**
-- Apply the same stronger visual treatment to the header “Select all on this page” control.
-- Keep the indeterminate state logic exactly as-is.
+**4. Styling**
+- Keep the subtle `bg-muted/40` hover / `bg-primary/10` selected treatment on the checkboxes so they remain visible on white cards in both the header and per-card locations.
+- Per-card checkbox: no label text, just the `<Checkbox>` in a small rounded hover chip (`rounded-md p-1 hover:bg-muted`) to keep it discoverable without feeling heavy.
+- Header "Select all" chip: keeps the "Select all" text label for clarity.
 
-**5. Clean up spacing so content doesn’t collide**
-- Add enough top padding to card content/header text so the new top-left chip does not overlap the donor name.
-- Keep the engagement badge in the top-right.
-
-## Files touched
-- `src/pages/Donors.tsx`
-
-## Technical details
-```text
-Card (relative)
-├─ absolute top-left selection chip [Checkbox + "Select"]
-├─ top row
-│  ├─ donor name/email block
-│  └─ engagement badge
-└─ stats/content
-```
-
-Recommended approach:
-- Card root: add `relative`
-- Selection chip: `absolute left-4 top-4 z-10`
-- Name block/container: add left/top spacing as needed (`pl-16` or `pt-8`) so layout stays clean
+**5. Out of scope**
+- No changes to bulk toolbar actions, selection state logic, indeterminate logic, navigation behavior, or participant RLS/data access.
 
 ## Verification
-- Every donor card visibly shows a top-left selection chip, even when unchecked.
-- The chip is clearly visible on a white card without relying on subtle borders.
-- Clicking the chip selects the donor and reveals the bulk action toolbar.
-- Multiple donors can still be selected.
-- Header “Select all on this page” remains visible and works with checked + indeterminate states.
-- Participant view still shows no selection controls.
+- Logged in as a **Coach**, **Principal**, **Player**, or **Family Member**: every donor card shows a checkbox in the top-right, next to the engagement badge.
+- The "Select all on this page" chip appears at the top-right of the Donors list header, aligned with the `Donors (N)` title.
+- Clicking a card's checkbox selects that donor (does not navigate); clicking elsewhere on the card with no active selection navigates; clicking elsewhere with an active selection toggles.
+- Header "Select all" toggles all visible donors and shows indeterminate state for partial selection.
+- Bulk action toolbar works for all roles.
