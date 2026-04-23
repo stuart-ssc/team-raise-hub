@@ -222,8 +222,6 @@ export default function ContactFundraiserDialog({
     }
   };
 
-  const isEnded = (c: Campaign) => !c.end_date || new Date(c.end_date).getTime() <= Date.now();
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
