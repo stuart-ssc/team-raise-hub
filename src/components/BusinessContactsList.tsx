@@ -7,6 +7,7 @@ interface LinkedContact {
   donor_id: string;
   role: string | null;
   is_primary_contact: boolean;
+  blocked_at?: string | null;
   donor_profiles: {
     id: string;
     first_name: string | null;
@@ -60,6 +61,7 @@ export const BusinessContactsList = ({
       {displayedContacts.map((contact) => {
         const fullName = `${contact.donor_profiles.first_name || ''} ${contact.donor_profiles.last_name || ''}`.trim() || 'Unnamed Contact';
         const isRecommended = isRecommendedContact(contact.donor_id);
+        const isDisengaged = !!contact.blocked_at;
 
         return (
           <div
@@ -67,6 +69,8 @@ export const BusinessContactsList = ({
             className={`flex items-center justify-between p-2 rounded-lg transition-colors ${
               isRecommended
                 ? 'bg-primary/10 border-2 border-primary'
+                : isDisengaged
+                ? 'bg-muted/30 hover:bg-muted/50 opacity-70'
                 : 'bg-muted/50 hover:bg-muted'
             }`}
           >
@@ -88,6 +92,11 @@ export const BusinessContactsList = ({
                       Recommended
                     </Badge>
                   )}
+                  {isDisengaged && (
+                    <Badge variant="outline" className="text-xs text-muted-foreground">
+                      Disengaged
+                    </Badge>
+                  )}
                 </div>
                 {contact.role && (
                   <p className="text-xs text-muted-foreground">{contact.role}</p>
@@ -95,7 +104,7 @@ export const BusinessContactsList = ({
               </div>
             </div>
             
-            {showOutreachActions && (
+            {showOutreachActions && !isDisengaged && (
               <div className="flex items-center gap-1">
                 {contact.donor_profiles.email && (
                   <Button

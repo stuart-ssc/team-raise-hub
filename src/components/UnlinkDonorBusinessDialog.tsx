@@ -22,6 +22,8 @@ interface UnlinkDonorBusinessDialogProps {
   businessId: string;
   organizationId: string;
   isPrimaryContact: boolean;
+  isBusinessVerified?: boolean;
+  onSwitchToDisengage?: () => void;
   onSuccess: () => void;
 }
 
@@ -34,6 +36,8 @@ export const UnlinkDonorBusinessDialog = ({
   businessId,
   organizationId,
   isPrimaryContact,
+  isBusinessVerified = false,
+  onSwitchToDisengage,
   onSuccess,
 }: UnlinkDonorBusinessDialogProps) => {
   const [loading, setLoading] = useState(false);
@@ -73,6 +77,17 @@ export const UnlinkDonorBusinessDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
+        {isBusinessVerified && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              This business is verified — its contact roster is managed by the
+              business owner. You can <strong>disengage</strong> this contact to stop
+              outreach instead.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {isPrimaryContact && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
@@ -87,9 +102,24 @@ export const UnlinkDonorBusinessDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleUnlink} disabled={loading}>
-            {loading ? "Unlinking..." : "Unlink"}
-          </Button>
+          {isBusinessVerified && onSwitchToDisengage ? (
+            <Button
+              onClick={() => {
+                onOpenChange(false);
+                onSwitchToDisengage();
+              }}
+            >
+              Disengage instead
+            </Button>
+          ) : (
+            <Button
+              variant="destructive"
+              onClick={handleUnlink}
+              disabled={loading || isBusinessVerified}
+            >
+              {loading ? "Unlinking..." : "Unlink"}
+            </Button>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
