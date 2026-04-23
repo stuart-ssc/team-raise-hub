@@ -74,6 +74,12 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
     fetchItems();
   }, [campaignId]);
 
+  useEffect(() => {
+    const handler = () => handleAddNew();
+    window.addEventListener("campaign-items:add", handler);
+    return () => window.removeEventListener("campaign-items:add", handler);
+  }, []);
+
   const fetchItems = async () => {
     const { data, error } = await supabase
       .from("campaign_items")
