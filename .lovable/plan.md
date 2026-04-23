@@ -1,27 +1,45 @@
 
 
 ## Goal
-On mobile (single-column layout), display the right sidebar cards (Contact Information, Business Affiliations, List Memberships, Notes) **before** the left column cards (Stats, Giving History, AI Insights, Activity Timeline, Communication History). On desktop (`lg` and up), keep the current two-column layout unchanged.
+Adjust the participant business ownership plan so participants can **hide (archive)** businesses they own but **never delete** them. Business records must be preserved for Sponsorly to upsell to. Admins/managers also lose hard-delete capability on businesses going forward — archive only.
 
-## Approach
+## Changes
 
-In `src/pages/DonorProfile.tsx`, the layout uses a single `grid grid-cols-1 lg:grid-cols-3` with the left column (`lg:col-span-2`) declared first in source order. On mobile this stacks left column → right column. To reverse only on mobile while preserving desktop column placement, use Tailwind's `order-*` utilities.
+### Database (RLS)
+- **Do NOT** add a `DELETE` policy on `businesses` for participants.
+- Review and **remove any existing `DELETE` policy** on `businesses` that allows org admins/managers to hard-delete. Replace destructive flows with archive.
+- Keep planned `INSERT` and `UPDATE` policies for participant owners (so they can create and edit/archive their own businesses).
+- `UPDATE` policy must allow toggling the archive field (`is_archived` / `archived_at`) — no separate delete path.
 
-### Changes to `src/pages/DonorProfile.tsx`
+### `src/components/AddBusinessDialog.tsx`
+- Set `added_by_organization_user_id: organizationUser.id` on insert (unchanged from prior plan).
 
-1. On the **left column wrapper** (`<div className="lg:col-span-2 space-y-6">`):
-   - Add `order-2 lg:order-1` so it renders second on mobile, first on desktop.
+### `src/pages/Businesses.tsx`
+- Participant per-card Actions dropdown: show **Edit**, **Add Tags**, **Send Email**, **Archive** / **Restore**. **Remove "Delete"** entirely from the participant menu.
+- Admin/manager Actions dropdown and `BulkActionToolbarBusiness`: **remove the "Delete" button** for everyone. Bulk action keeps Archive / Restore / Export / Tag / Email / Enroll / Verify.
+- Update `BulkActionToolbarBusiness.tsx` to drop the `onDelete` prop and the Trash button.
+- Show "Added by you" badge on participant-owned cards.
 
-2. On the **right column wrapper** (the sibling `<div className="space-y-6">` containing Contact Information, Business Affiliations, List Memberships, Notes):
-   - Add `order-1 lg:order-2` so it renders first on mobile, second on desktop.
+### `src/pages/BusinessProfile.tsx`
+- Permission gate: `const canEdit = canManageBusinesses || (isParticipantView && ownsBusiness);`
+- Show Edit, Archive/Restore, Link Employee, Save Notes, Add Tags when `canEdit`.
+- **Remove the Delete button** from this page for all roles (admin and participant).
+- Keep Verify and campaign enrollment management admin-only.
 
-No other layout, data, or component changes needed.
+### Copy
+- Replace any "Delete business" microcopy with "Archive business". Archive confirmation: "Archiving hides this business from your list. The record is preserved and can be restored later."
 
 ## Files touched
-- `src/pages/DonorProfile.tsx`
+- New migration in `supabase/migrations/` — add participant INSERT/UPDATE policies on `businesses`, `organization_businesses`, `business_donors`; backfill ownership; add `reassign_business_ownership` function; drop any existing DELETE policies on `businesses`.
+- `src/components/AddBusinessDialog.tsx`
+- `src/components/BulkActionToolbarBusiness.tsx`
+- `src/pages/Businesses.tsx`
+- `src/pages/BusinessProfile.tsx`
 
 ## Verification
-- Mobile (<1024px): cards appear in order — Contact Information, Business Affiliations, List Memberships, Notes, then Stats, Giving History, AI Insights, Activity Timeline, Communication History.
-- Desktop (≥1024px): unchanged — left column (stats + collapsibles) on the left spanning 2 columns, right sidebar on the right.
-- No regressions to collapsible behavior, default open/closed states, or AI Insights blue styling.
+- Participant can create a business, edit it, archive it, and restore it from `/dashboard/businesses` and `/dashboard/businesses/:id`.
+- No "Delete" button appears anywhere on the businesses UI for any role.
+- Bulk toolbar offers Archive/Restore but not Delete.
+- Attempting a `DELETE` on `businesses` via the API is rejected by RLS for non-system-admin roles.
+- Archived businesses are hidden from default views but remain in the database, queryable by system admins.
 
