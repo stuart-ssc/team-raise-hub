@@ -1,33 +1,29 @@
 
+
 ## Goal
-Remove the three-dot action menu button from each donor card on `/dashboard/donors`. The selection checkbox stays. All actions (Send Email, Add Tags, Add to List, Edit, Delete, etc.) remain accessible through the floating bulk action toolbar at the bottom once one or more donors are selected.
+The selection checkboxes are still in the code on each donor card (top-left of each card, `h-5 w-5` with a primary-colored border), but on the white card background an empty checkbox reads as a tiny faint square and is easy to miss — especially after the three-dot menu was removed and nothing else lives in that corner. Make the checkbox unmistakably visible so the user can see and use it.
 
 ## Changes
 
-### `src/pages/Donors.tsx`
+### `src/pages/Donors.tsx` — donor card checkbox visibility
 
-**1. Remove the per-card DropdownMenu**
-- Delete the entire `<DropdownMenu>…</DropdownMenu>` block in the donor card (the three-dot `MoreHorizontal` trigger and its menu items: Send Email, Add Tags, Add to List, Link to Business, Edit Details, Delete).
-- Keep the engagement `<Badge>` (High/Medium/Low) in the top-right of each card.
-- Keep the selection `<Checkbox>` in the top-left of each card.
+**1. Make the checkbox visually prominent**
+- Wrap the per-card `<Checkbox>` in a small rounded container with a subtle muted background (`bg-muted/40 hover:bg-muted rounded-md p-1.5`) so the empty checkbox sits in a visible "chip" instead of floating against white.
+- Keep size at `h-5 w-5`, keep position top-left of the card, keep `border-primary` so the outline reads clearly.
+- Selected state: container becomes `bg-primary/10` to reinforce the selection.
 
-**2. Clean up imports**
-- Remove `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuItem`, `DropdownMenuSeparator` from `@/components/ui/dropdown-menu`.
-- Remove `MoreHorizontal`, `Mail`, `Tag`, `List`, `Building2`, `Pencil`, `Trash2` from `lucide-react` — only the ones no longer referenced anywhere else in the file.
+**2. Header "Select all on this page" checkbox**
+- Apply the same chip treatment to the header checkbox so the bulk-selection affordance is consistent and discoverable.
 
-**3. Untouched**
-- Floating `BulkActionToolbar` (Add Tags · Add to List · Contact about Fundraiser · Send Email · Export CSV · Clear) stays exactly as-is.
-- Card body click behavior (navigate when nothing selected, toggle selection when in select mode) stays.
-- Header "Select all on this page" checkbox stays.
-- Participant view (`isParticipantView`) — already shows no menu, no change.
+**3. No logic changes**
+- Card click behavior, select-mode toggle, navigation, bulk action toolbar, and participant view all stay exactly as they are.
 
-## Out of scope
-- No changes to the bulk action toolbar.
-- No changes to selection logic, navigation, or participant view.
-- No changes to per-donor edit/delete flows — those become bulk-only or move to the donor detail page (already exists).
+## Files touched
+- `src/pages/Donors.tsx`
 
 ## Verification
-- Each donor card on `/dashboard/donors` shows only: checkbox (top-left), name/email/avatar, engagement badge (top-right), and donation stats. No three-dot button anywhere.
-- Selecting one or more donors via checkbox still reveals the floating bottom toolbar with all bulk actions.
-- Clicking a card with no selection still navigates to the donor detail page; clicking with an active selection still toggles selection.
+- On `/dashboard/donors`, every donor card shows a clearly visible checkbox chip in its top-left corner, even when unchecked.
+- Clicking the checkbox selects the donor and reveals the floating bottom toolbar (Add Tags · Add to List · Contact about Fundraiser · Send Email · Export CSV · Clear).
+- Selected cards show the filled primary checkbox inside a tinted chip plus the existing card ring.
+- Header "Select all on this page" checkbox is equally visible and toggles all visible donors.
 - Participant view is unchanged.
