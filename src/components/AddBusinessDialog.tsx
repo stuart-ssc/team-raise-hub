@@ -112,6 +112,7 @@ export function AddBusinessDialog({ open, onOpenChange, onSuccess }: AddBusiness
           country: data.country || "US",
           logo_url: data.logo_url || null,
           verification_status: "pending",
+          added_by_organization_user_id: organizationUser.id,
         })
         .select()
         .single();

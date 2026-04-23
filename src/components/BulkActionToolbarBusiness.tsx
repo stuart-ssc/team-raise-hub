@@ -1,13 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Archive, Trash2, Download, X, Tag, Mail, ArchiveRestore, UserPlus, ShieldCheck } from "lucide-react";
+import { Archive, Download, X, Tag, Mail, ArchiveRestore, UserPlus, ShieldCheck } from "lucide-react";
 
 interface BulkActionToolbarBusinessProps {
   selectedCount: number;
   onClearSelection: () => void;
   onArchive: () => void;
   onRestore: () => void;
-  onDelete: () => void;
   onExportCsv: () => void;
   onAddTags: () => void;
   onSendEmail: () => void;
@@ -21,7 +20,6 @@ const BulkActionToolbarBusiness = ({
   onClearSelection,
   onArchive,
   onRestore,
-  onDelete,
   onExportCsv,
   onAddTags,
   onSendEmail,
@@ -113,16 +111,6 @@ const BulkActionToolbarBusiness = ({
               Restore
             </Button>
           )}
-
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onDelete}
-            className="gap-2"
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete
-          </Button>
 
           <Button
             variant="secondary"
