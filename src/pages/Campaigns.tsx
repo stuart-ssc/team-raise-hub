@@ -463,3 +463,298 @@ export default function Campaigns() {
     </DashboardPageLayout>
   );
 }
+
+/* ============================ Card subcomponents ============================ */
+
+function fmtMoney(n: number) {
+  return `$${n.toLocaleString("en-US", {
+    minimumFractionDigits: n % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function fmtShortDate(iso: string | null) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function daysLeft(endIso: string | null): number | null {
+  if (!endIso) return null;
+  const end = new Date(endIso).getTime();
+  if (Number.isNaN(end)) return null;
+  return Math.ceil((end - Date.now()) / (1000 * 60 * 60 * 24));
+}
+
+function DaysLeftChip({ endDate }: { endDate: string | null }) {
+  const d = daysLeft(endDate);
+  if (d === null || d < 0) return null;
+  let cls = "bg-emerald-50 text-emerald-700 border-emerald-100";
+  if (d <= 7) cls = "bg-red-50 text-red-700 border-red-100";
+  else if (d <= 14) cls = "bg-amber-50 text-amber-700 border-amber-100";
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
+        cls
+      )}
+    >
+      <Clock className="h-3 w-3" />
+      {d} day{d === 1 ? "" : "s"} left
+    </div>
+  );
+}
+
+const IconBtn = React.forwardRef<
+  HTMLButtonElement,
+  {
+    children: React.ReactNode;
+    label: string;
+    onClick?: () => void;
+  } & React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ children, label, onClick, className, ...rest }, ref) => (
+  <button
+    ref={ref}
+    type="button"
+    aria-label={label}
+    title={label}
+    onClick={onClick}
+    {...rest}
+    className={cn(
+      "inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground",
+      className
+    )}
+  >
+    {children}
+  </button>
+));
+IconBtn.displayName = "IconBtn";
+
+function StatColumn({ label, value, caption }: { label: string; value: string; caption?: string }) {
+  return (
+    <div>
+      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mt-1.5 font-serif text-lg font-semibold text-foreground">{value}</p>
+      {caption && <p className="text-xs text-muted-foreground truncate">{caption}</p>}
+    </div>
+  );
+}
+
+function CampaignManagerCard({
+  campaign,
+  isExpired,
+  isDeletable,
+  filterBy,
+  onManage,
+  onShowQR,
+  onDelete,
+  onRestore,
+}: {
+  campaign: Campaign;
+  isExpired: boolean;
+  isDeletable: boolean;
+  filterBy: string;
+  onManage: () => void;
+  onShowQR: () => void;
+  onDelete: () => void;
+  onRestore: () => void;
+}) {
+  const { toast } = useToast();
+  const isRoster = !!campaign.enable_roster_attribution;
+  const stripeColor = isRoster ? "bg-emerald-500" : "bg-sky-500";
+  const progressColor = isRoster ? "bg-emerald-500" : "bg-sky-500";
+  const typePill = isRoster
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : "border-sky-200 bg-sky-50 text-sky-700";
+
+  const hasSlug = !!campaign.slug;
+  const shareUrl = hasSlug ? `${window.location.origin}/c/${campaign.slug}` : "";
+  const displayUrl = shareUrl.replace(/^https?:\/\//, "");
+
+  const goal = campaign.goal_amount || 0;
+  const raised = campaign.amount_raised || 0;
+  const pct = goal > 0 ? Math.min(100, (raised / goal) * 100) : 0;
+
+  const startStr = fmtShortDate(campaign.start_date);
+  const endStr = fmtShortDate(campaign.end_date);
+  const dateRange =
+    startStr && endStr
+      ? `${startStr} – ${endStr}`
+      : startStr
+        ? `Starts ${startStr}`
+        : endStr
+          ? `Ends ${endStr}`
+          : "—";
+
+  const copyLink = () => {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl);
+    toast({ title: "Link copied", description: "Share it anywhere." });
+  };
+
+  const statusBadge = isExpired ? (
+    <Badge variant="secondary" className="gap-1">
+      <AlertCircle className="h-3 w-3" /> Expired
+    </Badge>
+  ) : campaign.publication_status === "published" ? (
+    <Badge variant="default" className="gap-1">
+      <Globe className="h-3 w-3" /> Published
+    </Badge>
+  ) : campaign.publication_status === "pending_verification" ? (
+    <Badge variant="outline" className="gap-1">
+      <AlertCircle className="h-3 w-3" /> Pending
+    </Badge>
+  ) : (
+    <Badge variant="outline" className="gap-1">
+      <Eye className="h-3 w-3" /> Draft
+    </Badge>
+  );
+
+  return (
+    <Card className="overflow-hidden">
+      <div className="flex">
+        <div className={cn("w-1.5 shrink-0", stripeColor)} aria-hidden />
+        <div className="flex-1 p-5 md:p-6">
+          {/* Header row */}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-serif text-2xl font-semibold leading-tight text-foreground">
+                  {campaign.name}
+                </h3>
+                {hasSlug && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(`/c/${campaign.slug}`, "_blank")}
+                    title="Preview landing page"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </button>
+                )}
+                <Badge variant="outline" className={cn("text-xs", typePill)}>
+                  {isRoster ? "Roster" : "Team"}
+                </Badge>
+                {statusBadge}
+              </div>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                {campaign.group_name && <span>{campaign.group_name}</span>}
+                {campaign.campaign_type_name && (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span>{campaign.campaign_type_name}</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <DaysLeftChip endDate={campaign.end_date} />
+          </div>
+
+          {/* Stat strip */}
+          <div className="mt-5 grid gap-5 md:grid-cols-4 md:gap-6">
+            <div className="md:col-span-1">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                GOAL
+              </p>
+              <div className="mt-1.5 flex items-baseline justify-between gap-2">
+                <span className="font-serif text-lg font-semibold text-foreground">
+                  {fmtMoney(raised)}{" "}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    / {fmtMoney(goal)}
+                  </span>
+                </span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {Math.round(pct)}%
+                </span>
+              </div>
+              <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn("h-full rounded-full transition-all", progressColor)}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+            <StatColumn label="DATES" value={dateRange} />
+            <StatColumn label="TYPE" value={campaign.campaign_type_name || "—"} />
+            <StatColumn label="GROUP" value={campaign.group_name || "—"} />
+          </div>
+
+          {/* Link bar + Manage */}
+          <div className="mt-5 flex flex-col gap-2 rounded-lg border bg-muted/40 px-3 py-2 lg:flex-row lg:items-center">
+            <div className="min-w-0 flex-1">
+              {hasSlug ? (
+                <div className="flex min-w-0 items-center gap-2 rounded-md border bg-background/80 px-3 py-2 text-sm text-muted-foreground">
+                  <Link2 className="h-4 w-4 shrink-0" />
+                  <span className="min-w-0 truncate font-mono">{displayUrl}</span>
+                </div>
+              ) : (
+                <div className="flex min-w-0 items-center gap-2 rounded-md border bg-background/80 px-3 py-2 text-sm text-muted-foreground italic">
+                  <Link2 className="h-4 w-4 shrink-0" />
+                  <span>No public link yet — publish to generate one</span>
+                </div>
+              )}
+            </div>
+            <div className="flex shrink-0 items-center justify-end gap-1">
+              {hasSlug && (
+                <>
+                  <IconBtn label="Copy link" onClick={copyLink}>
+                    <Copy className="h-4 w-4" />
+                  </IconBtn>
+                  <IconBtn label="Show QR code" onClick={onShowQR}>
+                    <QrCode className="h-4 w-4" />
+                  </IconBtn>
+                  <ShareMenu
+                    url={shareUrl}
+                    title={`Support ${campaign.name}`}
+                    text={`Help ${campaign.group_name || "us"} reach the goal for ${campaign.name}!`}
+                  >
+                    <IconBtn label="Share">
+                      <Share2 className="h-4 w-4" />
+                    </IconBtn>
+                  </ShareMenu>
+                  <IconBtn
+                    label="Open"
+                    onClick={() => window.open(shareUrl, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </IconBtn>
+                </>
+              )}
+              <Button size="sm" onClick={onManage} className="ml-1">
+                Manage
+              </Button>
+              {filterBy === "deleted" ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRestore}
+                  title="Restore campaign"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              ) : isDeletable ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="px-2">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={onDelete}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
