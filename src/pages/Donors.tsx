@@ -715,6 +715,21 @@ const Donors = () => {
                           <CardContent className="pt-6">
                             <div className="space-y-3">
                               <div className="flex items-start justify-between gap-2">
+                                {!isParticipantView && (
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={(checked) => {
+                                      setSelectedDonorIds((prev) =>
+                                        checked
+                                          ? [...prev, donor.id]
+                                          : prev.filter((id) => id !== donor.id)
+                                      );
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    aria-label={`Select ${donor.first_name || donor.email}`}
+                                    className="mt-1.5"
+                                  />
+                                )}
                                 <div 
                                   className="flex-1 min-w-0"
                                   onClick={() => navigate(`/dashboard/donors/${donor.id}`)}
@@ -734,21 +749,6 @@ const Donors = () => {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  {!isParticipantView && (
-                                    <input
-                                      type="checkbox"
-                                      checked={isSelected}
-                                      onChange={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedDonorIds(prev =>
-                                          isSelected
-                                            ? prev.filter(id => id !== donor.id)
-                                            : [...prev, donor.id]
-                                        );
-                                      }}
-                                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-                                    />
-                                  )}
                                   <Badge className={getEngagementColor(donor.engagement_score)}>
                                     {getEngagementLabel(donor.engagement_score)}
                                   </Badge>
