@@ -12,6 +12,7 @@ import BulkTagDialog from "@/components/BulkTagDialog";
 import BulkEmailDialog from "@/components/BulkEmailDialog";
 import CsvExportDialog from "@/components/CsvExportDialog";
 import AddToListDialog from "@/components/AddToListDialog";
+import ContactFundraiserDialog from "@/components/ContactFundraiserDialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -839,12 +840,14 @@ const Donors = () => {
           onSendEmail={() => setBulkEmailDialogOpen(true)}
           onExportCsv={() => setCsvExportDialogOpen(true)}
           onAddToList={() => setAddToListDialogOpen(true)}
-          onContactFundraiser={() =>
-            toast({
-              title: "Contact about Fundraiser",
-              description: "Coming soon — you'll be able to message selected donors about a specific fundraiser.",
-            })
-          }
+          onContactFundraiser={() => setContactFundraiserDialogOpen(true)}
+        />
+
+        <ContactFundraiserDialog
+          open={contactFundraiserDialogOpen}
+          onOpenChange={setContactFundraiserDialogOpen}
+          donorIds={selectedDonorIds}
+          onComplete={() => setSelectedDonorIds([])}
         />
 
         {/* Add to List Dialog */}
