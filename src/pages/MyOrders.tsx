@@ -188,7 +188,7 @@ const MyOrders = () => {
                   You haven't placed any orders yet.
                 </p>
                 <Button asChild>
-                  <Link to="/dashboard/campaigns">Browse Campaigns</Link>
+                  <Link to="/dashboard/fundraisers">Browse Fundraisers</Link>
                 </Button>
               </div>
             ) : (

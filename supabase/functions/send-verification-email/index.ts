@@ -77,7 +77,7 @@ serve(async (req) => {
             <li>Access all platform features</li>
           </ul>
           <p style="margin-top: 20px;">
-            <a href="https://sponsorly.io/dashboard/campaigns" 
+            <a href="https://sponsorly.io/dashboard/fundraisers" 
                style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
               Get Started
             </a>

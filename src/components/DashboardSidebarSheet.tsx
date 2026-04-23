@@ -16,7 +16,7 @@ import RoleSwitcher from "@/components/RoleSwitcher";
 const getSidebarItems = (isParent: boolean) => [
   { title: "Home", icon: Home, url: isParent ? "/dashboard/family" : "/dashboard", end: true },
   { title: "My Fundraising", icon: Trophy, url: "/dashboard/my-fundraising", participantOnly: true },
-  { title: "Campaigns", icon: Target, url: "/dashboard/campaigns", managerOnly: true },
+  { title: "Fundraisers", icon: Target, url: "/dashboard/fundraisers", managerOnly: true },
   { title: "Donors", icon: Heart, url: "/dashboard/donors" },
   { title: "Businesses", icon: Building2, url: "/dashboard/businesses" },
   { title: "Reports", icon: BarChart3, url: "/dashboard/reports", managerOnly: true },
@@ -105,6 +105,10 @@ const DashboardSidebarSheet = ({
     if (path === '/dashboard/donors') {
       return location.pathname === '/dashboard/donors' ||
              location.pathname.startsWith('/dashboard/donors/');
+    }
+    if (path === '/dashboard/fundraisers') {
+      return location.pathname === '/dashboard/fundraisers' ||
+             location.pathname.startsWith('/dashboard/fundraisers/');
     }
     if (path === '/dashboard/settings') {
       return location.pathname === '/dashboard/settings' ||

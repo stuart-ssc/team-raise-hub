@@ -450,7 +450,7 @@ const CampaignOrderDetail = () => {
     return (
       <DashboardPageLayout
         segments={[
-          { label: "Campaigns", path: "/dashboard/campaigns" },
+          { label: "Fundraisers", path: "/dashboard/fundraisers" },
           { label: "Loading..." },
         ]}
       >
@@ -473,7 +473,7 @@ const CampaignOrderDetail = () => {
     return (
       <DashboardPageLayout
         segments={[
-          { label: "Campaigns", path: "/dashboard/campaigns" },
+          { label: "Fundraisers", path: "/dashboard/fundraisers" },
           { label: "Order Not Found" },
         ]}
       >
@@ -484,9 +484,9 @@ const CampaignOrderDetail = () => {
             <p className="text-muted-foreground mb-4">
               The order you're looking for doesn't exist or you don't have permission to view it.
             </p>
-            <Button onClick={() => navigate(`/dashboard/campaigns/${campaignId}/edit`)}>
+            <Button onClick={() => navigate(`/dashboard/fundraisers/${campaignId}/edit`)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Campaign
+              Back to Fundraiser
             </Button>
           </CardContent>
         </Card>
@@ -497,8 +497,8 @@ const CampaignOrderDetail = () => {
   return (
     <DashboardPageLayout
       segments={[
-        { label: "Campaigns", path: "/dashboard/campaigns" },
-        { label: order.campaign?.name || "Campaign", path: `/dashboard/campaigns/${campaignId}/edit` },
+        { label: "Fundraisers", path: "/dashboard/fundraisers" },
+        { label: order.campaign?.name || "Fundraiser", path: `/dashboard/fundraisers/${campaignId}/edit` },
         { label: `Order #${order.id.slice(0, 8).toUpperCase()}` },
       ]}
     >
@@ -928,7 +928,7 @@ const CampaignOrderDetail = () => {
         <div className="flex gap-3">
           <Button
             variant="outline"
-            onClick={() => navigate(`/dashboard/campaigns/${campaignId}/edit`)}
+            onClick={() => navigate(`/dashboard/fundraisers/${campaignId}/edit`)}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Campaign

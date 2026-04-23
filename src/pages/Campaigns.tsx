@@ -324,7 +324,7 @@ export default function Campaigns() {
   if (organizationUserLoading || loading) {
     return (
       <DashboardPageLayout 
-        segments={[{ label: "Campaigns" }]}
+        segments={[{ label: "Fundraisers" }]}
         loading={true}
       >
         <div>Loading...</div>
@@ -335,11 +335,11 @@ export default function Campaigns() {
   if (!canSeeUsers) {
     return (
       <DashboardPageLayout 
-        segments={[{ label: "Campaigns" }]}
+        segments={[{ label: "Fundraisers" }]}
       >
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
-          <p>You don't have permission to view campaigns.</p>
+          <p>You don't have permission to view fundraisers.</p>
         </div>
       </DashboardPageLayout>
     );
@@ -347,13 +347,13 @@ export default function Campaigns() {
 
   return (
     <DashboardPageLayout 
-      segments={[{ label: "Campaigns" }]}
+      segments={[{ label: "Fundraisers" }]}
     >
       <div className="space-y-8">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Campaigns</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Fundraisers</h1>
               <p className="text-muted-foreground">
-                Manage fundraising campaigns for your groups.
+                Manage fundraisers for your groups.
               </p>
             </div>
 
@@ -387,16 +387,16 @@ export default function Campaigns() {
                 <DropdownMenuTrigger asChild>
                   <Button className="flex items-center gap-2 w-full sm:w-auto">
                     <Plus className="h-4 w-4" />
-                    Add Campaign
+                    Add Fundraiser
                     <ChevronDown className="h-3 w-3 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate("/dashboard/campaigns/new")}>
+                  <DropdownMenuItem onClick={() => navigate("/dashboard/fundraisers/new")}>
                     <PenLine className="h-4 w-4 mr-2" />
                     Create manually
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/dashboard/campaigns/ai-builder")}>
+                  <DropdownMenuItem onClick={() => navigate("/dashboard/fundraisers/ai-builder")}>
                     <Sparkles className="h-4 w-4 mr-2" />
                     Create with AI
                   </DropdownMenuItem>
@@ -436,13 +436,13 @@ export default function Campaigns() {
                 {sortedCampaigns.length === 0 ? (
                   <Card>
                     <CardContent className="py-12 text-center">
-                      <p className="text-muted-foreground mb-4">No campaigns found.</p>
+                      <p className="text-muted-foreground mb-4">No fundraisers found.</p>
                       <Button 
-                        onClick={() => navigate("/dashboard/campaigns/new")}
+                        onClick={() => navigate("/dashboard/fundraisers/new")}
                         className="flex items-center gap-2"
                       >
                         <Plus className="h-4 w-4" />
-                        Let's Create a Campaign
+                        Let's Create a Fundraiser
                       </Button>
                     </CardContent>
                   </Card>
@@ -475,7 +475,7 @@ export default function Campaigns() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
+                              onClick={() => navigate(`/dashboard/fundraisers/${campaign.id}/edit`)}
                             >
                               Manage
                             </Button>
@@ -623,13 +623,13 @@ export default function Campaigns() {
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-12">
                         <div className="flex flex-col items-center space-y-4">
-                          <p className="text-muted-foreground">No campaigns found.</p>
+                          <p className="text-muted-foreground">No fundraisers found.</p>
                           <Button 
-                            onClick={() => navigate("/dashboard/campaigns/new")}
+                            onClick={() => navigate("/dashboard/fundraisers/new")}
                             className="flex items-center gap-2"
                           >
                             <Plus className="h-4 w-4" />
-                            Let's Create a Campaign
+                            Let's Create a Fundraiser
                           </Button>
                         </div>
                       </TableCell>
@@ -692,7 +692,7 @@ export default function Campaigns() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => navigate(`/dashboard/campaigns/${campaign.id}/edit`)}
+                              onClick={() => navigate(`/dashboard/fundraisers/${campaign.id}/edit`)}
                             >
                               Manage
                             </Button>

@@ -184,11 +184,17 @@ const AppContent = () => {
         <Route path="/dashboard" element={<ProtectedRoute><DashboardRedirect /></ProtectedRoute>} />
         <Route path="/dashboard/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
         <Route path="/dashboard/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
-        <Route path="/dashboard/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
-        <Route path="/dashboard/campaigns/ai-builder" element={<ProtectedRoute><AICampaignBuilder /></ProtectedRoute>} />
-        <Route path="/dashboard/campaigns/new" element={<ProtectedRoute><CampaignEditor /></ProtectedRoute>} />
-        <Route path="/dashboard/campaigns/:id/edit" element={<ProtectedRoute><CampaignEditor /></ProtectedRoute>} />
-        <Route path="/dashboard/campaigns/:campaignId/orders/:orderId" element={<ProtectedRoute><CampaignOrderDetail /></ProtectedRoute>} />
+        <Route path="/dashboard/fundraisers" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+        <Route path="/dashboard/fundraisers/ai-builder" element={<ProtectedRoute><AICampaignBuilder /></ProtectedRoute>} />
+        <Route path="/dashboard/fundraisers/new" element={<ProtectedRoute><CampaignEditor /></ProtectedRoute>} />
+        <Route path="/dashboard/fundraisers/:id/edit" element={<ProtectedRoute><CampaignEditor /></ProtectedRoute>} />
+        <Route path="/dashboard/fundraisers/:campaignId/orders/:orderId" element={<ProtectedRoute><CampaignOrderDetail /></ProtectedRoute>} />
+        {/* Legacy redirects for /dashboard/campaigns → /dashboard/fundraisers */}
+        <Route path="/dashboard/campaigns" element={<Navigate to="/dashboard/fundraisers" replace />} />
+        <Route path="/dashboard/campaigns/ai-builder" element={<Navigate to="/dashboard/fundraisers/ai-builder" replace />} />
+        <Route path="/dashboard/campaigns/new" element={<Navigate to="/dashboard/fundraisers/new" replace />} />
+        <Route path="/dashboard/campaigns/:id/edit" element={<Navigate to="/dashboard/fundraisers/:id/edit" replace />} />
+        <Route path="/dashboard/campaigns/:campaignId/orders/:orderId" element={<Navigate to="/dashboard/fundraisers/:campaignId/orders/:orderId" replace />} />
         <Route path="/dashboard/donors" element={<ProtectedRoute><Donors /></ProtectedRoute>} />
         <Route path="/dashboard/donors/:donorId" element={<ProtectedRoute><DonorProfile /></ProtectedRoute>} />
         <Route path="/dashboard/donors/analytics" element={<ProtectedRoute><DonorAnalytics /></ProtectedRoute>} />

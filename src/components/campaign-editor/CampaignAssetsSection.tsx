@@ -132,7 +132,7 @@ export function CampaignAssetsSection({ campaignId }: CampaignAssetsSectionProps
                         size="sm"
                         onClick={() =>
                           navigate(
-                            `/dashboard/campaigns/${campaignId}/orders/${order.id}`
+                            `/dashboard/fundraisers/${campaignId}/orders/${order.id}`
                           )
                         }
                       >
