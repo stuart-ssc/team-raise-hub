@@ -30,7 +30,7 @@ export function ScheduleSection({ data, onUpdate }: ScheduleSectionProps) {
           />
         </div>
         <p className="text-sm text-muted-foreground">
-          Optional fundraising target to display on your campaign page
+          Optional fundraising target to display on your fundraiser page
         </p>
       </div>
 

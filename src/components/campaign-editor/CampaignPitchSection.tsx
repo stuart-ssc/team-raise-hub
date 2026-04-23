@@ -33,7 +33,7 @@ export function CampaignPitchSection({ campaignId, initialPitch }: CampaignPitch
         onSave={() => {
           toast({
             title: "Pitch updated",
-            description: "Your campaign pitch has been saved.",
+            description: "Your fundraiser pitch has been saved.",
           });
         }}
       />
