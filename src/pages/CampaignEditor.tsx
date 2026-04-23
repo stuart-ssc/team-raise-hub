@@ -641,12 +641,23 @@ export default function CampaignEditor() {
                   const meta = SECTION_META[activeSection];
                   const Icon = meta.icon;
                   return (
-                    <div className="flex items-center gap-2 mb-4">
-                      <Icon className="h-5 w-5 text-primary" />
-                      <div>
-                        <h3 className="font-semibold">{meta.title}</h3>
-                        <p className="text-sm text-muted-foreground">{meta.subtitle}</p>
+                    <div className="flex items-start justify-between gap-2 mb-4">
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-5 w-5 text-primary" />
+                        <div>
+                          <h3 className="font-semibold">{meta.title}</h3>
+                          <p className="text-sm text-muted-foreground">{meta.subtitle}</p>
+                        </div>
                       </div>
+                      {activeSection === "items" && isEditing && id && itemsCount > 0 && (
+                        <Button
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => window.dispatchEvent(new CustomEvent("campaign-items:add"))}
+                        >
+                          <Plus className="h-4 w-4" /> Add Item
+                        </Button>
+                      )}
                     </div>
                   );
                 })()}
