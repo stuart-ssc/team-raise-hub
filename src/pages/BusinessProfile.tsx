@@ -90,6 +90,8 @@ interface LinkedDonor {
   role: string | null;
   linked_at: string;
   total_donations: number;
+  blocked_at: string | null;
+  blocked_by: string | null;
 }
 
 interface DonationHistory {
@@ -136,6 +138,8 @@ const BusinessProfile = () => {
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [unlinkingDonor, setUnlinkingDonor] = useState<LinkedDonor | null>(null);
+  const [disengagingDonor, setDisengagingDonor] = useState<{ donor: LinkedDonor; mode: "disengage" | "reengage" } | null>(null);
+  const [isSystemAdmin, setIsSystemAdmin] = useState(false);
   const [showEnrollmentDialog, setShowEnrollmentDialog] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [savingTags, setSavingTags] = useState(false);
@@ -162,6 +166,19 @@ const BusinessProfile = () => {
       fetchEnrollments();
     }
   }, [businessId, organizationUser?.organization_id, organizationUserLoading, connectionsLoading]);
+
+  useEffect(() => {
+    const checkSystemAdmin = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("system_admin")
+        .eq("id", user.id)
+        .single();
+      setIsSystemAdmin(data?.system_admin === true);
+    };
+    checkSystemAdmin();
+  }, [user?.id]);
 
   const fetchBusinessDetails = async () => {
     try {
@@ -203,7 +220,7 @@ const BusinessProfile = () => {
       // Fetch linked donors
       const { data: businessDonors, error: donorsError } = await supabase
         .from("business_donors")
-        .select("donor_id, is_primary_contact, role, linked_at")
+        .select("donor_id, is_primary_contact, role, linked_at, blocked_at, blocked_by")
         .eq("business_id", businessId)
         .eq("organization_id", organizationUser?.organization_id);
 
@@ -241,6 +258,8 @@ const BusinessProfile = () => {
               role: bd.role,
               linked_at: bd.linked_at,
               total_donations: totalDonations,
+              blocked_at: (bd as any).blocked_at || null,
+              blocked_by: (bd as any).blocked_by || null,
             };
           })
         );
