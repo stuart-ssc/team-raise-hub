@@ -708,13 +708,32 @@ const Donors = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredDonors.map((donor) => {
                       const isSelected = selectedDonorIds.includes(donor.id);
-                      
+                      const inSelectMode = selectedDonorIds.length > 0;
+                      const toggleSelect = () =>
+                        setSelectedDonorIds((prev) =>
+                          prev.includes(donor.id)
+                            ? prev.filter((id) => id !== donor.id)
+                            : [...prev, donor.id]
+                        );
+                      const handleBodyClick = () => {
+                        if (isParticipantView) {
+                          navigate(`/dashboard/donors/${donor.id}`);
+                          return;
+                        }
+                        if (inSelectMode) {
+                          toggleSelect();
+                        } else {
+                          navigate(`/dashboard/donors/${donor.id}`);
+                        }
+                      };
                       return (
                         <Card
                           key={donor.id}
                           className={`group cursor-pointer hover:shadow-md transition-all ${
                             isSelected
                               ? "border-primary ring-2 ring-primary/20"
+                              : inSelectMode
+                              ? "hover:ring-2 hover:ring-primary/30"
                               : "hover:border-primary/50"
                           }`}
                         >
@@ -733,12 +752,12 @@ const Donors = () => {
                                     }}
                                     onClick={(e) => e.stopPropagation()}
                                     aria-label={`Select ${donor.first_name || donor.email}`}
-                                    className="mt-1.5"
+                                    className="mt-1.5 h-5 w-5"
                                   />
                                 )}
                                 <div 
                                   className="flex-1 min-w-0"
-                                  onClick={() => navigate(`/dashboard/donors/${donor.id}`)}
+                                  onClick={handleBodyClick}
                                 >
                                   <h3 className="font-semibold text-lg truncate">
                                     {donor.first_name && donor.last_name
