@@ -639,11 +639,24 @@ const Donors = () => {
             {/* Donors List */}
             <Card>
               <CardHeader>
-                <div className="flex items-center gap-3">
-                  {!isParticipantView && filteredDonors.length > 0 && (
-                    <>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3">
+                      <CardTitle>Donors ({filteredDonors.length})</CardTitle>
+                      {selectedDonorIds.length > 0 && (
+                        <Badge variant="secondary" className="ml-1">
+                          {selectedDonorIds.length} selected
+                        </Badge>
+                      )}
+                    </div>
+                    <CardDescription>
+                      Click on a donor to view detailed profile and giving history
+                    </CardDescription>
+                  </div>
+                  {filteredDonors.length > 0 && (
                     <div
-                      className={`inline-flex items-center gap-2 rounded-md border shadow-sm px-2 py-1 transition-colors ${
+                      onClick={(e) => e.stopPropagation()}
+                      className={`shrink-0 inline-flex items-center gap-2 rounded-md border shadow-sm px-2 py-1 transition-colors ${
                         selectedDonorIds.length > 0
                           ? "border-primary bg-primary/10"
                           : "border-border bg-muted/60 hover:bg-muted"
@@ -678,21 +691,8 @@ const Donors = () => {
                       />
                       <span className="text-xs font-medium">Select all</span>
                     </div>
-                    <span className="hidden md:inline text-sm text-muted-foreground">
-                      Select all on this page
-                    </span>
-                    </>
-                  )}
-                  <CardTitle>Donors ({filteredDonors.length})</CardTitle>
-                  {selectedDonorIds.length > 0 && (
-                    <Badge variant="secondary" className="ml-1">
-                      {selectedDonorIds.length} selected
-                    </Badge>
                   )}
                 </div>
-                <CardDescription>
-                  Click on a donor to view detailed profile and giving history
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 {filteredDonors.length === 0 ? (
@@ -722,7 +722,11 @@ const Donors = () => {
                         );
                       const handleBodyClick = () => {
                         if (isParticipantView) {
-                          navigate(`/dashboard/donors/${donor.id}`);
+                          if (inSelectMode) {
+                            toggleSelect();
+                          } else {
+                            navigate(`/dashboard/donors/${donor.id}`);
+                          }
                           return;
                         }
                         if (inSelectMode) {
@@ -742,33 +746,9 @@ const Donors = () => {
                               : "hover:border-primary/50"
                           }`}
                         >
-                          {!isParticipantView && (
-                            <div
-                              onClick={(e) => e.stopPropagation()}
-                              className={`absolute left-3 top-3 z-10 inline-flex items-center gap-2 rounded-md border shadow-sm px-2 py-1 transition-colors ${
-                                isSelected
-                                  ? "border-primary bg-primary/10"
-                                  : "border-border bg-background hover:bg-muted"
-                              }`}
-                            >
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={(checked) => {
-                                  setSelectedDonorIds((prev) =>
-                                    checked
-                                      ? [...prev, donor.id]
-                                      : prev.filter((id) => id !== donor.id)
-                                  );
-                                }}
-                                aria-label={`Select ${donor.first_name || donor.email}`}
-                                className="h-4 w-4"
-                              />
-                              <span className="text-xs font-medium">Select</span>
-                            </div>
-                          )}
                           <CardContent className="pt-6">
                             <div className="space-y-3">
-                              <div className={`flex items-start justify-between gap-2 ${!isParticipantView ? "pt-6" : ""}`}>
+                              <div className="flex items-start justify-between gap-2">
                                 <div 
                                   className="flex-1 min-w-0"
                                   onClick={handleBodyClick}
@@ -787,7 +767,28 @@ const Donors = () => {
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    className={`rounded-md p-1 transition-colors ${
+                                      isSelected
+                                        ? "bg-primary/10"
+                                        : "hover:bg-muted"
+                                    }`}
+                                  >
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onCheckedChange={(checked) => {
+                                        setSelectedDonorIds((prev) =>
+                                          checked
+                                            ? [...prev, donor.id]
+                                            : prev.filter((id) => id !== donor.id)
+                                        );
+                                      }}
+                                      aria-label={`Select ${donor.first_name || donor.email}`}
+                                      className="h-5 w-5"
+                                    />
+                                  </div>
                                   <Badge className={getEngagementColor(donor.engagement_score)}>
                                     {getEngagementLabel(donor.engagement_score)}
                                   </Badge>
