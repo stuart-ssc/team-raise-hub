@@ -22,6 +22,7 @@ import {
   Package,
   Image as ImageIcon,
   ChevronDown,
+  Plus,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
