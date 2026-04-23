@@ -645,6 +645,7 @@ const Donors = () => {
               <CardHeader>
                 <div className="flex items-center gap-3">
                   {!isParticipantView && filteredDonors.length > 0 && (
+                    <>
                     <Checkbox
                       checked={
                         selectedDonorIds.length > 0 &&
@@ -670,7 +671,12 @@ const Donors = () => {
                         }
                       }}
                       aria-label="Select all visible donors"
+                      className="h-5 w-5"
                     />
+                    <span className="hidden md:inline text-sm text-muted-foreground">
+                      Select all on this page
+                    </span>
+                    </>
                   )}
                   <CardTitle>Donors ({filteredDonors.length})</CardTitle>
                   {selectedDonorIds.length > 0 && (
