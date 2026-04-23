@@ -38,6 +38,7 @@ import { BusinessInsightsPanel } from "@/components/BusinessInsightsPanel";
 import { BusinessCampaignAssetsList } from "@/components/BusinessCampaignAssetsList";
 import { ManualEnrollmentDialog } from "@/components/ManualEnrollmentDialog";
 import { BusinessVerificationDialog } from "@/components/BusinessVerificationDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -714,10 +715,27 @@ const BusinessProfile = () => {
     switch (status) {
       case "verified":
         return (
-          <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
-            <ShieldCheck className="h-3 w-3 mr-1" />
-            Verified
-          </Badge>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  tabIndex={0}
+                  className="bg-green-500/10 text-green-700 dark:text-green-400 cursor-help focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <ShieldCheck className="h-3 w-3 mr-1" />
+                  Verified
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="font-semibold mb-1">This business is verified</p>
+                <p className="text-xs">
+                  You can add missing details and disengage contacts, but
+                  existing values are managed by the business owner. Contact
+                  Sponsorly support to change a value that's already set.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         );
       case "blocked":
         return (
@@ -817,25 +835,6 @@ const BusinessProfile = () => {
                   <p className="font-semibold">This business is archived</p>
                   <p className="text-sm text-orange-600 dark:text-orange-500">
                     Archived on {new Date(business.archived_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Verified Info Banner */}
-        {isVerified && !isSystemAdmin && (
-          <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
-            <CardContent className="py-4">
-              <div className="flex items-start gap-2 text-green-700 dark:text-green-400">
-                <ShieldCheck className="h-5 w-5 mt-0.5" />
-                <div>
-                  <p className="font-semibold">This business is verified</p>
-                  <p className="text-sm text-green-600 dark:text-green-500">
-                    You can add missing details and disengage contacts, but
-                    existing values are managed by the business owner. Contact
-                    Sponsorly support to change a value that's already set.
                   </p>
                 </div>
               </div>
