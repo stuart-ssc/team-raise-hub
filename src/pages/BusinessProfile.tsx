@@ -660,6 +660,17 @@ const BusinessProfile = () => {
     organizationUser?.user_type?.permission_level === 'organization_admin' ||
     organizationUser?.user_type?.permission_level === 'program_manager';
 
+  const canManageBusinesses =
+    organizationUser?.user_type?.permission_level === 'organization_admin' ||
+    organizationUser?.user_type?.permission_level === 'program_manager';
+
+  const ownsBusiness =
+    !!organizationUser &&
+    !!business &&
+    business.added_by_organization_user_id === organizationUser.id;
+
+  const canEdit = canManageBusinesses || (isParticipantView && ownsBusiness);
+
   const getVerificationBadge = (status: string) => {
     switch (status) {
       case "verified":
