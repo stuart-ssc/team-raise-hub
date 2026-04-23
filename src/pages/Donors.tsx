@@ -642,33 +642,41 @@ const Donors = () => {
                 <div className="flex items-center gap-3">
                   {!isParticipantView && filteredDonors.length > 0 && (
                     <>
-                    <Checkbox
-                      checked={
-                        selectedDonorIds.length > 0 &&
-                        filteredDonors.every((d) => selectedDonorIds.includes(d.id))
-                          ? true
-                          : selectedDonorIds.some((id) =>
-                              filteredDonors.find((d) => d.id === id)
-                            )
-                          ? "indeterminate"
-                          : false
-                      }
-                      onCheckedChange={(checked) => {
-                        if (checked === true) {
-                          const visibleIds = filteredDonors.map((d) => d.id);
-                          setSelectedDonorIds((prev) =>
-                            Array.from(new Set([...prev, ...visibleIds]))
-                          );
-                        } else {
-                          const visibleIds = new Set(filteredDonors.map((d) => d.id));
-                          setSelectedDonorIds((prev) =>
-                            prev.filter((id) => !visibleIds.has(id))
-                          );
+                    <div
+                      className={`inline-flex items-center justify-center rounded-md p-1.5 transition-colors ${
+                        selectedDonorIds.length > 0
+                          ? "bg-primary/10"
+                          : "bg-muted/40 hover:bg-muted"
+                      }`}
+                    >
+                      <Checkbox
+                        checked={
+                          selectedDonorIds.length > 0 &&
+                          filteredDonors.every((d) => selectedDonorIds.includes(d.id))
+                            ? true
+                            : selectedDonorIds.some((id) =>
+                                filteredDonors.find((d) => d.id === id)
+                              )
+                            ? "indeterminate"
+                            : false
                         }
-                      }}
-                      aria-label="Select all visible donors"
-                      className="h-5 w-5"
-                    />
+                        onCheckedChange={(checked) => {
+                          if (checked === true) {
+                            const visibleIds = filteredDonors.map((d) => d.id);
+                            setSelectedDonorIds((prev) =>
+                              Array.from(new Set([...prev, ...visibleIds]))
+                            );
+                          } else {
+                            const visibleIds = new Set(filteredDonors.map((d) => d.id));
+                            setSelectedDonorIds((prev) =>
+                              prev.filter((id) => !visibleIds.has(id))
+                            );
+                          }
+                        }}
+                        aria-label="Select all visible donors"
+                        className="h-5 w-5"
+                      />
+                    </div>
                     <span className="hidden md:inline text-sm text-muted-foreground">
                       Select all on this page
                     </span>
