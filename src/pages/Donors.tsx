@@ -38,10 +38,6 @@ import {
   Zap,
   Upload,
   MoreHorizontal,
-  Tag,
-  Pencil,
-  Building2,
-  Trash2,
   List
 } from "lucide-react";
 import {
@@ -777,91 +773,6 @@ const Donors = () => {
                                   <Badge className={getEngagementColor(donor.engagement_score)}>
                                     {getEngagementLabel(donor.engagement_score)}
                                   </Badge>
-                                  <DropdownMenu>
-                                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-8 w-8 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                                        >
-                                          <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end" className="w-52">
-                                        <DropdownMenuItem
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setMenuDonor(donor);
-                                            setMenuDonorId(donor.id);
-                                            setShowSingleEmailDialog(true);
-                                          }}
-                                        >
-                                          <Mail className="mr-2 h-4 w-4" />
-                                          Send Email
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setMenuDonor(donor);
-                                            setMenuDonorId(donor.id);
-                                            setShowSingleTagDialog(true);
-                                          }}
-                                        >
-                                          <Tag className="mr-2 h-4 w-4" />
-                                          Add Tags
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setMenuDonor(donor);
-                                            setMenuDonorId(donor.id);
-                                            setShowSingleAddToListDialog(true);
-                                          }}
-                                        >
-                                          <List className="mr-2 h-4 w-4" />
-                                          Add to List
-                                        </DropdownMenuItem>
-                                        {canManageDonors() && (
-                                          <DropdownMenuItem
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setMenuDonor(donor);
-                                            setMenuDonorId(donor.id);
-                                            setShowLinkBusinessDialog(true);
-                                          }}
-                                        >
-                                          <Building2 className="mr-2 h-4 w-4" />
-                                          Link to Business
-                                        </DropdownMenuItem>
-                                        )}
-                                        <DropdownMenuItem
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setMenuDonor(donor);
-                                            setShowEditDonorDialog(true);
-                                          }}
-                                        >
-                                          <Pencil className="mr-2 h-4 w-4" />
-                                          Edit Details
-                                        </DropdownMenuItem>
-                                        {canManageDonors() && (
-                                          <>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setMenuDonor(donor);
-                                            setShowDeleteDialog(true);
-                                          }}
-                                          className="text-destructive focus:text-destructive"
-                                        >
-                                          <Trash2 className="mr-2 h-4 w-4" />
-                                          Delete
-                                        </DropdownMenuItem>
-                                          </>
-                                        )}
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
                                 </div>
                               </div>
                       
