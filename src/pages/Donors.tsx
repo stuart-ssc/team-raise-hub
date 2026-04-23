@@ -643,10 +643,10 @@ const Donors = () => {
                   {!isParticipantView && filteredDonors.length > 0 && (
                     <>
                     <div
-                      className={`inline-flex items-center justify-center rounded-md p-1.5 transition-colors ${
+                      className={`inline-flex items-center gap-2 rounded-md border shadow-sm px-2 py-1 transition-colors ${
                         selectedDonorIds.length > 0
-                          ? "bg-primary/10"
-                          : "bg-muted/40 hover:bg-muted"
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-muted/60 hover:bg-muted"
                       }`}
                     >
                       <Checkbox
@@ -676,6 +676,7 @@ const Donors = () => {
                         aria-label="Select all visible donors"
                         className="h-5 w-5"
                       />
+                      <span className="text-xs font-medium">Select all</span>
                     </div>
                     <span className="hidden md:inline text-sm text-muted-foreground">
                       Select all on this page
