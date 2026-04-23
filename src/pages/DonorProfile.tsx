@@ -83,6 +83,8 @@ interface BusinessAffiliation {
   is_primary_contact: boolean;
   auto_linked: boolean;
   linked_at: string;
+  is_verified: boolean;
+  blocked_at: string | null;
 }
 
 interface ListMembership {
@@ -243,13 +245,14 @@ const DonorProfile = () => {
           is_primary_contact,
           auto_linked,
           linked_at,
+          blocked_at,
           businesses!inner(
             business_name,
-            logo_url
+            logo_url,
+            verification_status
           )
         `)
         .eq("donor_id", donorId)
-        .is("blocked_at", null)
         .order("linked_at", { ascending: false });
 
       if (affiliationsError) throw affiliationsError;
@@ -263,6 +266,8 @@ const DonorProfile = () => {
         is_primary_contact: aff.is_primary_contact || false,
         auto_linked: aff.auto_linked || false,
         linked_at: aff.linked_at,
+        is_verified: aff.businesses?.verification_status === "verified",
+        blocked_at: aff.blocked_at || null,
       }));
 
       setBusinessAffiliations(formattedAffiliations);
