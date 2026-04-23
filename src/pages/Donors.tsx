@@ -639,11 +639,24 @@ const Donors = () => {
             {/* Donors List */}
             <Card>
               <CardHeader>
-                <div className="flex items-center gap-3">
-                  {!isParticipantView && filteredDonors.length > 0 && (
-                    <>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3">
+                      <CardTitle>Donors ({filteredDonors.length})</CardTitle>
+                      {selectedDonorIds.length > 0 && (
+                        <Badge variant="secondary" className="ml-1">
+                          {selectedDonorIds.length} selected
+                        </Badge>
+                      )}
+                    </div>
+                    <CardDescription>
+                      Click on a donor to view detailed profile and giving history
+                    </CardDescription>
+                  </div>
+                  {filteredDonors.length > 0 && (
                     <div
-                      className={`inline-flex items-center gap-2 rounded-md border shadow-sm px-2 py-1 transition-colors ${
+                      onClick={(e) => e.stopPropagation()}
+                      className={`shrink-0 inline-flex items-center gap-2 rounded-md border shadow-sm px-2 py-1 transition-colors ${
                         selectedDonorIds.length > 0
                           ? "border-primary bg-primary/10"
                           : "border-border bg-muted/60 hover:bg-muted"
@@ -678,21 +691,8 @@ const Donors = () => {
                       />
                       <span className="text-xs font-medium">Select all</span>
                     </div>
-                    <span className="hidden md:inline text-sm text-muted-foreground">
-                      Select all on this page
-                    </span>
-                    </>
-                  )}
-                  <CardTitle>Donors ({filteredDonors.length})</CardTitle>
-                  {selectedDonorIds.length > 0 && (
-                    <Badge variant="secondary" className="ml-1">
-                      {selectedDonorIds.length} selected
-                    </Badge>
                   )}
                 </div>
-                <CardDescription>
-                  Click on a donor to view detailed profile and giving history
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 {filteredDonors.length === 0 ? (
