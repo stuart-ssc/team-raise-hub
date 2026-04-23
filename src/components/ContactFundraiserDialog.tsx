@@ -146,6 +146,7 @@ export default function ContactFundraiserDialog({
         )
         .eq("publication_status", "published")
         .is("deleted_at", null)
+        .or(`end_date.is.null,end_date.gt.${new Date().toISOString()}`)
         .order("created_at", { ascending: false });
 
       if (activeGroup?.id) {
