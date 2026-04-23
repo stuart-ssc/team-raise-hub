@@ -552,10 +552,10 @@ const DonorProfile = () => {
                 </Card>
 
                 {/* AI Insights */}
-                <Card>
+                <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
                   <Collapsible open={insightsOpen} onOpenChange={setInsightsOpen}>
                     <CollapsibleTrigger asChild>
-                      <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors flex flex-row items-center justify-between space-y-0">
+                      <CardHeader className="cursor-pointer hover:bg-primary/5 transition-colors flex flex-row items-center justify-between space-y-0">
                         <div className="space-y-1.5 flex flex-row items-center gap-2">
                           <Sparkles className="h-5 w-5 text-primary" />
                           <div className="space-y-1.5">
@@ -569,9 +569,7 @@ const DonorProfile = () => {
                       </CardHeader>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <CardContent className="p-0 border-t">
-                        <DonorInsightsPanel donorId={donor.id} />
-                      </CardContent>
+                      <DonorInsightsPanel donorId={donor.id} />
                     </CollapsibleContent>
                   </Collapsible>
                 </Card>
@@ -591,8 +589,8 @@ const DonorProfile = () => {
                       </CardHeader>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <CardContent className="p-0 border-t">
-                        <DonorActivityTimeline donorId={donor.id} />
+                      <CardContent>
+                        <DonorActivityTimeline donorId={donor.id} hideHeader />
                       </CardContent>
                     </CollapsibleContent>
                   </Collapsible>
@@ -613,8 +611,8 @@ const DonorProfile = () => {
                       </CardHeader>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <CardContent className="p-0 border-t">
-                        <DonorCommunicationHistory donorEmail={donor.email} />
+                      <CardContent>
+                        <DonorCommunicationHistory donorEmail={donor.email} hideHeader />
                       </CardContent>
                     </CollapsibleContent>
                   </Collapsible>
