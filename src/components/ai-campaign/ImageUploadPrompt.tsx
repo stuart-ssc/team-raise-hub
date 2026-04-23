@@ -22,7 +22,7 @@ export default function ImageUploadPrompt({
   onSkip,
   onDismiss,
   pathPrefix,
-  label = "Upload campaign image",
+  label = "Upload fundraiser image",
 }: ImageUploadPromptProps) {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -92,7 +92,7 @@ export default function ImageUploadPrompt({
         <div className="p-3">
           <img
             src={uploadedUrl}
-            alt="Campaign"
+            alt="Fundraiser"
             className="w-full h-32 object-cover rounded-md"
           />
         </div>

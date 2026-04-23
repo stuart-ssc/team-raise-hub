@@ -52,7 +52,7 @@ function getChatPlaceholder(
     if (!next) return "Type your answer...";
     return next.placeholder.replace("{noun}", itemNoun);
   }
-  return "Describe your campaign...";
+  return "Describe your fundraiser...";
 }
 
 
@@ -95,9 +95,9 @@ export default function AICampaignBuilder() {
 
     if (knownGroup) {
       prefill.group_id = knownGroup.id;
-      greeting = `Hi! I'm here to help you set up a new campaign for **${knownGroup.group_name}**. What kind of fundraiser are you planning?`;
+      greeting = `Hi! I'm here to help you set up a new fundraiser for **${knownGroup.group_name}**. What kind of fundraiser are you planning?`;
     } else {
-      greeting = "Hi! I'm here to help you set up a new campaign. Tell me about what you're planning — what kind of fundraiser is it, and which group or team is it for?";
+      greeting = "Hi! I'm here to help you set up a new fundraiser. Tell me about what you're planning — what kind of fundraiser is it, and which group or team is it for?";
     }
 
     setCollectedFields(prefill);
@@ -108,7 +108,7 @@ export default function AICampaignBuilder() {
         suggestions: campaignTypes.length > 0 ? {
           type: "choice",
           field: "campaign_type_id",
-          label: "Campaign type",
+          label: "Fundraiser type",
           options: campaignTypes.map((t) => ({ label: t.name, value: t.id })),
         } : null,
       },
@@ -229,11 +229,11 @@ export default function AICampaignBuilder() {
         const name = data.updatedFields?.name || collectedFields.name || "your campaign";
         const transition: ChatMessage = {
           role: "assistant",
-          content: `✅ **Primary details saved!** Your draft **${name}** is ready.\n\nBefore we add items, I just need three quick things: a **campaign image**, whether to enable **roster tracking** (each player gets their own personalized fundraising URL to track their individual contributions), and any **participant directions**. Let's start with the image — want to upload one?`,
+          content: `✅ **Primary details saved!** Your draft **${name}** is ready.\n\nBefore we add items, I just need three quick things: a **fundraiser image**, whether to enable **roster tracking** (each player gets their own personalized fundraising URL to track their individual contributions), and any **participant directions**. Let's start with the image — want to upload one?`,
           suggestions: {
             type: "image_upload",
             field: "image_url",
-            label: "Campaign image",
+            label: "Fundraiser image",
             options: [],
           },
         };
@@ -372,7 +372,7 @@ export default function AICampaignBuilder() {
         if (error.message?.includes("slug") || error.code === "23505") {
           toast({
             title: "Name conflict",
-            description: "A campaign with a similar name already exists. Try a slightly different name.",
+            description: "A fundraiser with a similar name already exists. Try a slightly different name.",
             variant: "destructive",
           });
           setIsCreating(false);
@@ -395,11 +395,11 @@ export default function AICampaignBuilder() {
       // Kick off the post-draft conversation
       const transition: ChatMessage = {
         role: "assistant",
-        content: `✅ **Primary details saved!** Your draft **${collectedFields.name}** is ready.\n\nBefore we add items, I just need three quick things: a **campaign image**, whether to enable **roster tracking** (each player gets their own personalized fundraising URL to track their individual contributions), and any **participant directions**. Let's start with the image — want to upload one?`,
+        content: `✅ **Primary details saved!** Your draft **${collectedFields.name}** is ready.\n\nBefore we add items, I just need three quick things: a **fundraiser image**, whether to enable **roster tracking** (each player gets their own personalized fundraising URL to track their individual contributions), and any **participant directions**. Let's start with the image — want to upload one?`,
         suggestions: {
           type: "image_upload",
           field: "image_url",
-          label: "Campaign image",
+          label: "Fundraiser image",
           options: [],
         },
       };
@@ -477,7 +477,7 @@ export default function AICampaignBuilder() {
       {campaignId && collectedFields.group_id && (
         <CampaignPublicationControl
           campaignId={campaignId}
-          campaignName={collectedFields.name || "Campaign"}
+          campaignName={collectedFields.name || "Fundraiser"}
           groupId={collectedFields.group_id}
           currentStatus={campaignStatus}
           enableRosterAttribution={collectedFields.enable_roster_attribution || false}

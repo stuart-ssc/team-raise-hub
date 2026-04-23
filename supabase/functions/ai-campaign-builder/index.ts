@@ -330,8 +330,8 @@ interface FieldDef {
 }
 
 const FIELD_DEFS: FieldDef[] = [
-  { key: "name", label: "Campaign Name", type: "string", required: true, aiDescription: "The name/title of the campaign." },
-  { key: "campaign_type_id", label: "Campaign Type", type: "select", required: true, aiDescription: "The campaign type ID from the provided list." },
+  { key: "name", label: "Fundraiser Name", type: "string", required: true, aiDescription: "The name/title of the campaign." },
+  { key: "campaign_type_id", label: "Fundraiser Type", type: "select", required: true, aiDescription: "The campaign type ID from the provided list." },
   { key: "group_id", label: "Group", type: "select", required: true, aiDescription: "The group ID from the provided list." },
   { key: "description", label: "Description", type: "string", required: false, aiDescription: "Brief description of the campaign." },
   { key: "goal_amount", label: "Goal Amount (dollars)", type: "number", required: true, aiDescription: "Fundraising goal in WHOLE DOLLARS (e.g. 10000 = $10,000.00). Do NOT convert to cents." },
@@ -377,7 +377,7 @@ function buildItemsSystemPrompt(
     nextStep = `Wait for user input.`;
   }
 
-  return `You are a campaign creation assistant. The user just created the campaign **"${campaignName}"** and is now adding ${itemNoun}s to it.
+  return `You are a fundraiser creation assistant. The user just created the fundraiser **"${campaignName}"** and is now adding ${itemNoun}s to it.
 
 Today is **${todayIso}**.
 
@@ -481,7 +481,7 @@ function buildSystemPrompt(
 
     let nextStep: string;
     if (sponsorAssetsRequired && !sponsorAssetsComplete && !sponsorDeadlineSet) {
-      nextStep = `**Next step: sponsor asset upload deadline.** Sponsors will need to upload their assets — ask in one short sentence: "When do sponsors need to upload their assets by?" The UI will show quick-pick options (1 week before campaign end, 2 weeks before, or pick a date). When the user replies, you MUST call **update_campaign_fields** with \`asset_upload_deadline\` set to the date in YYYY-MM-DD format in the SAME turn.`;
+      nextStep = `**Next step: sponsor asset upload deadline.** Sponsors will need to upload their assets — ask in one short sentence: "When do sponsors need to upload their assets by?" The UI will show quick-pick options (1 week before fundraiser end, 2 weeks before, or pick a date). When the user replies, you MUST call **update_campaign_fields** with \`asset_upload_deadline\` set to the date in YYYY-MM-DD format in the SAME turn.`;
     } else if (sponsorAssetsRequired && !sponsorAssetsComplete) {
       const collected = pendingAssets.length > 0
         ? pendingAssets.map((a: any, i: number) => `  ${i + 1}. ${a.asset_name}`).join("\n")
@@ -492,7 +492,7 @@ function buildSystemPrompt(
         : `Acknowledge the asset just added (e.g. "Saved — ${pendingAssets[pendingAssets.length - 1]?.asset_name}.") and then ask "Anything else?"`;
       nextStep = `**Next step: required sponsor assets.** ${ack} The UI will show quick-pick buttons (Company Logo, Banner Ad, Full Page Ad, Website URL, Done). When the user picks one, you MUST call **update_campaign_fields** with \`add_required_asset\` set to one of: "logo", "banner", "fullpage", "website", OR a free-text custom name. When the user is finished, call **update_campaign_fields** with \`sponsor_assets_complete: true\`.\n\n## Assets added so far\n${collected}`;
     } else if (!hasImage && !collectedFields.image_skipped) {
-      nextStep = `**Next step: campaign image.** Briefly ask if the user wants to upload a campaign image (a hero photo for the campaign page). Keep it to one short sentence — the UI shows an upload widget below your message. Do NOT call any tool for this step yet; the upload widget will report back when done or skipped.`;
+      nextStep = `**Next step: fundraiser image.** Briefly ask if the user wants to upload a fundraiser image (a hero photo for the fundraiser page). Keep it to one short sentence — the UI shows an upload widget below your message. Do NOT call any tool for this step yet; the upload widget will report back when done or skipped.`;
     } else if (!rosterAttrAddressed) {
       if (rosters.length === 0) {
         nextStep = `**Next step: skip roster attribution.** This group has no rosters, so individual member tracking isn't available. Briefly let the user know and call update_campaign_fields with enable_roster_attribution=false to move on.`;
@@ -509,7 +509,7 @@ function buildSystemPrompt(
       nextStep = `**Setup is done — transition to items collection.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (transition + first item question): "Now let's add your first item. What's the name?"\n\nDo NOT ask about publishing or the editor — that comes later, after items are added. Do NOT call any tool.`;
     }
 
-    return `You are a campaign creation assistant for Sponsorly. The user just created a draft campaign and you're now helping them fill in a few more details.
+    return `You are a fundraiser creation assistant for Sponsorly. The user just created a draft campaign and you're now helping them fill in a few more details.
 
 Today is **${todayIso}**.
 
@@ -554,11 +554,11 @@ ${nextStep}
   }
 
   // PRE-DRAFT MODE (collecting required fields)
-  return `You are a campaign creation assistant for Sponsorly, a fundraising platform for schools and nonprofits.
+  return `You are a fundraiser creation assistant for Sponsorly, a fundraising platform for schools and nonprofits.
 
 Today's date is **${todayIso}**. Use this when interpreting relative dates ("next Friday", "in 2 weeks") or inferring missing years.
 
-Your job is to help the user set up a new fundraising campaign by collecting the required information through natural conversation.
+Your job is to help the user set up a new fundraiser by collecting the required information through natural conversation.
 
 ## Available Campaign Types
 ${typesList}
@@ -590,24 +590,24 @@ ${autoFillNote}
 9. **Walk through every field in "## Still To Ask About" — never skip one.** For each field:
    - If it's REQUIRED, the user must answer (no skipping).
    - If it's optional, tell them they can say "skip" if they don't want to provide it.
-   - For **description**, ask something like: "Want to add a short description of the campaign? You can say skip." (free text — no buttons). When the user types ANY free-text answer (e.g. "Let's cover the gym", "Raising money for new uniforms"), you MUST call **update_campaign_fields** with \`description: "<their exact text>"\` in the SAME turn. Never just say "Got it" — the tool call is required.
+   - For **description**, ask something like: "Want to add a short description of the fundraiser? You can say skip." (free text — no buttons). When the user types ANY free-text answer (e.g. "Let's cover the gym", "Raising money for new uniforms"), you MUST call **update_campaign_fields** with \`description: "<their exact text>"\` in the SAME turn. Never just say "Got it" — the tool call is required.
   - For **requires_business_info**, ask: "Will sponsors need to provide information or assets to participate? (e.g. a logo for a banner/shirt, a website link for social media recognition)" — the UI will show Yes/No buttons. When the user answers yes/no (or true/false), you MUST call **update_campaign_fields** with \`requires_business_info: true\` or \`requires_business_info: false\` in the SAME turn. **Do NOT combine this question with the "save as draft" confirmation.**
    - For **fee_model**, the server will emit a fixed 3-bubble explanation followed by Yes/No buttons. You only need to ensure that **when the user answers**, you MUST call **update_campaign_fields** with \`fee_model: "donor_covers"\` or \`fee_model: "org_absorbs"\` in the SAME turn. Do NOT write your own fee explanation — the server handles it.
    - **POST-DRAFT FIELDS — CRITICAL:** When the user answers any post-draft question (image upload/skip, roster attribution yes/no, roster pick, participant directions), you MUST call **update_campaign_fields** in the SAME turn BEFORE writing your acknowledgment. Saying "saved" or "got it" without calling the tool is a bug — the field will not be saved and the user will be stuck in a loop.
 10. **The "## Still To Ask About" list above is the source of truth for what to ask next.** Do NOT ask "Ready to save this as a draft?" — and do NOT call **create_campaign_draft** — until that list is COMPLETELY EMPTY. If even one field appears in the list, your next question MUST be about that field, in the order listed. Skipping ahead to the save confirmation is forbidden. Once the list is finally empty, in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft.
 11. Keep responses short and focused — no more than 2-3 sentences.
-12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of campaign is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
+12. When the next missing field is "campaign_type_id" or "group_id", keep your question VERY brief (e.g. "What type of fundraiser is this?" or "Which team is this for?"). The UI will show selectable buttons — do NOT list the options in your text.
 13. When the user picks or describes a campaign type, you MUST call **update_campaign_fields** with the matching campaign_type_id in the SAME response where you confirm the choice (e.g. "Great, I'll set this up as a **Merchandise Sale**."). The same applies to group selection — call update_campaign_fields with group_id in the same turn. Do NOT just acknowledge in text — the tool call is REQUIRED to record the selection. If you skip the tool call, the field will not be saved and the user will be re-asked.
 14. **NEVER invent, guess, or fabricate UUIDs.** ONLY use IDs that appear verbatim in the "## Available Groups" and "## Available Campaign Types" lists above. If the user has not yet specified a group or campaign type, leave that field empty and ask them — do NOT fill the slot with a placeholder UUID, a made-up ID, or any value not in the lists. Setting only one field per tool call is fine; do not pad the call with guessed values for other fields.
 15. **Response format — every turn after the user has provided input MUST be EXACTLY TWO paragraphs separated by a blank line. Never more, never fewer:**
-    1. **Acknowledgment paragraph FIRST** — confirm what the user just provided (e.g. "Great, I'll set this up as a **Sponsorship** campaign." / "Got it — goal of **$5,000**." / "Saved.").
+    1. **Acknowledgment paragraph FIRST** — confirm what the user just provided (e.g. "Great, I'll set this up as a **Sponsorship** fundraiser." / "Got it — goal of **$5,000**." / "Saved.").
     2. **Next question paragraph SECOND** — the next single question, on its own line.
 
     Example:
     \`\`\`
     Great, I'll set this up as a Sponsorship campaign.
 
-    What's the name of this campaign?
+    What's the name of this fundraiser?
     \`\`\`
 
     NEVER combine acknowledgment and question in one sentence. NEVER repeat the question text in both paragraphs. NEVER ask more than one question per turn. NEVER add a third paragraph (no clarifying notes, no trailing emoji-only lines, no extra commentary). (The very first greeting, with no prior user input to acknowledge, is exempt and may be a single paragraph followed by the first question on a new line.)
@@ -1184,8 +1184,8 @@ Deno.serve(async (req) => {
           console.log("[ai-campaign-builder] image-question lock tripped — re-asking");
           return new Response(
             JSON.stringify({
-              assistantMessage: "I still need an answer for the campaign image — please upload one or click Skip.",
-              assistantMessages: ["I still need an answer for the campaign image — please upload one or click Skip."],
+              assistantMessage: "I still need an answer for the fundraiser image — please upload one or click Skip.",
+              assistantMessages: ["I still need an answer for the fundraiser image — please upload one or click Skip."],
               updatedFields,
               missingRequired: REQUIRED_KEYS.filter((k) => !updatedFields[k] || updatedFields[k] === ""),
               readyToCreate: false,
@@ -1193,7 +1193,7 @@ Deno.serve(async (req) => {
               suggestions: {
                 type: "image_upload",
                 field: "image_url",
-                label: "Campaign image",
+                label: "Fundraiser image",
                 options: [],
               },
               createdCampaignId: null,
@@ -1562,7 +1562,7 @@ Deno.serve(async (req) => {
             if (insertErr) {
               console.error("create_campaign_draft insert error:", insertErr);
               if (insertErr.message?.includes("slug") || insertErr.code === "23505") {
-                createDraftError = "A campaign with a similar name already exists. Try a slightly different name.";
+                createDraftError = "A fundraiser with a similar name already exists. Try a slightly different name.";
               } else {
                 createDraftError = insertErr.message || "Failed to create draft.";
               }
@@ -1769,7 +1769,7 @@ Deno.serve(async (req) => {
           if (createDraftError) {
             assistantMessage = createDraftError;
           } else if (createdCampaignId) {
-            assistantMessage = `Your campaign is created. 🎉\n\nNow let's add your first ${itemNoun}. What's the name? (${itemExamples})`;
+            assistantMessage = `Your fundraiser is created. 🎉\n\nNow let's add your first ${itemNoun}. What's the name? (${itemExamples})`;
           } else if (savedItemId) {
             assistantMessage = `Saved.\n\nWant to add another ${itemNoun}, or are you done?`;
           } else {
@@ -2026,10 +2026,10 @@ Deno.serve(async (req) => {
         if (endDateStr) {
           const twoWk = minusDays(endDateStr, 14);
           const oneWk = minusDays(endDateStr, 7);
-          if (twoWk) opts.push({ label: "2 weeks before campaign end", value: twoWk });
-          if (oneWk) opts.push({ label: "1 week before campaign end", value: oneWk });
+          if (twoWk) opts.push({ label: "2 weeks before fundraiser end", value: twoWk });
+          if (oneWk) opts.push({ label: "1 week before fundraiser end", value: oneWk });
         }
-        opts.push({ label: "Same as campaign end date", value: endDateStr || "pick" });
+        opts.push({ label: "Same as fundraiser end date", value: endDateStr || "pick" });
         suggestions = {
           type: "choice",
           field: "asset_upload_deadline",
@@ -2057,7 +2057,7 @@ Deno.serve(async (req) => {
         suggestions = {
           type: "image_upload",
           field: "image_url",
-          label: "Campaign image",
+          label: "Fundraiser image",
           options: [],
         };
       } else if (!rosterAttrAddressed) {
@@ -2116,7 +2116,7 @@ Deno.serve(async (req) => {
         suggestions = {
           type: "choice",
           field: "campaign_type_id",
-          label: "Campaign type",
+          label: "Fundraiser type",
           options: types.map((t) => ({ label: t.name, value: t.id })),
         };
       } else if (nextField === "group_id" && grps.length > 1) {

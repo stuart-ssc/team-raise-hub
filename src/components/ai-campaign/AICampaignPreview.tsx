@@ -115,7 +115,7 @@ export default function AICampaignPreview({
   const postDraftItems = [
     {
       key: "image_url",
-      label: "Campaign image",
+      label: "Fundraiser image",
       icon: ImageIcon,
       done: !!collectedFields.image_url || !!collectedFields.image_skipped,
       value: collectedFields.image_url
@@ -155,7 +155,7 @@ export default function AICampaignPreview({
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
-        <h3 className="font-semibold text-sm">Campaign Preview</h3>
+        <h3 className="font-semibold text-sm">Fundraiser Preview</h3>
         {campaignId && (
           <Badge variant="outline" className="text-[10px]">Draft saved</Badge>
         )}
@@ -167,7 +167,7 @@ export default function AICampaignPreview({
           <div className="rounded-lg overflow-hidden border">
             <img
               src={collectedFields.image_url}
-              alt="Campaign cover"
+              alt="Fundraiser cover"
               className="w-full h-40 object-cover"
             />
           </div>
@@ -176,7 +176,7 @@ export default function AICampaignPreview({
         <div>
           <h2 className="text-xl font-bold">
             {collectedFields.name || (
-              <span className="text-muted-foreground italic">Untitled Campaign</span>
+              <span className="text-muted-foreground italic">Untitled Fundraiser</span>
             )}
           </h2>
           {collectedFields.description && (
@@ -424,7 +424,7 @@ export default function AICampaignPreview({
             <CardHeader className="pb-2 pt-3 px-4">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                 <Package className="h-3.5 w-3.5" />
-                Campaign {itemNoun}s
+                Fundraiser {itemNoun}s
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-3">
@@ -466,7 +466,7 @@ export default function AICampaignPreview({
           <div className="flex flex-wrap gap-2">
             <Button onClick={onPublishClick} className="flex-1 min-w-[140px] gap-2" size="lg">
               <Rocket className="h-4 w-4" />
-              Publish Campaign
+              Publish Fundraiser
             </Button>
             <Button onClick={onPreview} variant="outline" className="flex-1 min-w-[120px] gap-2" size="lg">
               <Eye className="h-4 w-4" />
@@ -503,7 +503,7 @@ export default function AICampaignPreview({
               ) : (
                 <>
                   <Rocket className="h-4 w-4" />
-                  Create Draft Campaign
+                  Create Draft Fundraiser
                 </>
               )}
             </Button>

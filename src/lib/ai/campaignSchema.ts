@@ -12,14 +12,14 @@ export interface CampaignFieldDef {
 export const sharedFields: CampaignFieldDef[] = [
   {
     key: "name",
-    label: "Campaign Name",
+    label: "Fundraiser Name",
     type: "string",
     required: true,
     aiDescription: "The name/title of the campaign. Should be descriptive and engaging.",
   },
   {
     key: "campaign_type_id",
-    label: "Campaign Type",
+    label: "Fundraiser Type",
     type: "select",
     required: true,
     aiDescription:
