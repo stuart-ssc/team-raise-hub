@@ -697,12 +697,18 @@ const BusinessProfile = () => {
 
   const isVerified = business?.verification_status === "verified";
   const canEditBase = canManageBusinesses || (isParticipantView && ownsBusiness);
-  // Editing details / linking / removing contacts is locked once verified (system admins bypass)
-  const canEditDetails = (canEditBase && !isVerified) || isSystemAdmin;
+  // Editing details: allowed on verified businesses too (the dialog locks already-set fields).
+  // Owners/admins can fill in missing values; system admins can change anything.
+  const canEditDetails = canEditBase || isSystemAdmin;
+  // Structural changes (linking new contacts, removing contacts) stay locked on verified
+  // businesses — the verified business owner controls their roster.
+  const canManageStructure = (canEditBase && !isVerified) || isSystemAdmin;
   // Disengage / re-engage is allowed regardless of verification status
   const canManageContactEngagement = canEditBase || isSystemAdmin;
-  // Backwards-compat alias for existing references in markup
-  const canEdit = canEditDetails;
+  // Tags were never locked by verification — owners/admins can always tag.
+  const canEditTags = canEditBase || isSystemAdmin;
+  // Backwards-compat alias used by the tag editor block below.
+  const canEdit = canEditTags;
 
   const getVerificationBadge = (status: string) => {
     switch (status) {
@@ -827,9 +833,9 @@ const BusinessProfile = () => {
                 <div>
                   <p className="font-semibold">This business is verified</p>
                   <p className="text-sm text-green-600 dark:text-green-500">
-                    Details are managed by the business owner. You can still archive
-                    it from your list and disengage individual contacts to stop
-                    outreach.
+                    You can add missing details and disengage contacts, but
+                    existing values are managed by the business owner. Contact
+                    Sponsorly support to change a value that's already set.
                   </p>
                 </div>
               </div>
@@ -874,7 +880,7 @@ const BusinessProfile = () => {
                     Edit
                   </Button>
                 )}
-                {canEditDetails && (
+                {canManageStructure && (
                   <Button onClick={() => setShowLinkDialog(true)}>
                     <UserPlus className="h-4 w-4 mr-2" />
                     Link Employee
@@ -1053,7 +1059,7 @@ const BusinessProfile = () => {
                                       Disengage
                                     </DropdownMenuItem>
                                   )}
-                                  {canEditDetails && (
+                                  {canManageStructure && (
                                     <DropdownMenuItem
                                       onClick={() => setUnlinkingDonor(donor)}
                                       className="text-destructive focus:text-destructive"
