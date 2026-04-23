@@ -814,8 +814,7 @@ const BusinessProfile = () => {
               </div>
             </div>
           </div>
-            {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
-              organizationUser?.user_type?.permission_level === 'program_manager') && (
+            {canEdit && (
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setShowEditDialog(true)}>
                   <Edit className="h-4 w-4 mr-2" />
@@ -825,46 +824,46 @@ const BusinessProfile = () => {
                   <UserPlus className="h-4 w-4 mr-2" />
                   Link Employee
                 </Button>
-                {!business.archived_at && (
+                {canManageBusinesses && !business.archived_at && (
                   <Button variant="outline" onClick={() => setShowEnrollmentDialog(true)}>
                     <UserPlus className="h-4 w-4 mr-2" />
                     Enroll in Campaign
                   </Button>
                 )}
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowVerificationDialog(true)}
-                  className={business.verification_status === 'blocked' ? 'text-red-600 hover:text-red-700' : ''}
-                >
-                  {business.verification_status === 'verified' ? (
-                    <>
-                      <ShieldCheck className="h-4 w-4 mr-2" />
-                      Verified
-                    </>
-                  ) : business.verification_status === 'blocked' ? (
-                    <>
-                      <ShieldX className="h-4 w-4 mr-2" />
-                      Blocked
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck className="h-4 w-4 mr-2" />
-                      Verify
-                    </>
-                  )}
-                </Button>
-                {organizationUser?.user_type?.permission_level === 'organization_admin' && (
-                  business?.archived_at ? (
-                    <Button variant="outline" onClick={() => setShowRestoreDialog(true)}>
-                      <ArchiveRestore className="h-4 w-4 mr-2" />
-                      Restore
-                    </Button>
-                  ) : (
-                    <Button variant="outline" onClick={() => setShowArchiveDialog(true)}>
-                      <Archive className="h-4 w-4 mr-2" />
-                      Archive
-                    </Button>
-                  )
+                {canManageBusinesses && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowVerificationDialog(true)}
+                    className={business.verification_status === 'blocked' ? 'text-red-600 hover:text-red-700' : ''}
+                  >
+                    {business.verification_status === 'verified' ? (
+                      <>
+                        <ShieldCheck className="h-4 w-4 mr-2" />
+                        Verified
+                      </>
+                    ) : business.verification_status === 'blocked' ? (
+                      <>
+                        <ShieldX className="h-4 w-4 mr-2" />
+                        Blocked
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="h-4 w-4 mr-2" />
+                        Verify
+                      </>
+                    )}
+                  </Button>
+                )}
+                {business?.archived_at ? (
+                  <Button variant="outline" onClick={() => setShowRestoreDialog(true)}>
+                    <ArchiveRestore className="h-4 w-4 mr-2" />
+                    Restore
+                  </Button>
+                ) : (
+                  <Button variant="outline" onClick={() => setShowArchiveDialog(true)}>
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archive
+                  </Button>
                 )}
               </div>
             )}
@@ -932,8 +931,7 @@ const BusinessProfile = () => {
                         <TableHead>Email</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead className="text-right">Donated</TableHead>
-                        {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
-                          organizationUser?.user_type?.permission_level === 'program_manager') && (
+                        {canEdit && (
                           <TableHead className="text-right">Actions</TableHead>
                         )}
                       </TableRow>
@@ -967,8 +965,7 @@ const BusinessProfile = () => {
                           <TableCell className="text-right font-medium">
                             ${donor.total_donations.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </TableCell>
-                          {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
-                            organizationUser?.user_type?.permission_level === 'program_manager') && (
+                          {canEdit && (
                             <TableCell
                               className="text-right"
                               onClick={(e) => e.stopPropagation()}
@@ -1344,8 +1341,7 @@ const BusinessProfile = () => {
             )}
 
             {/* Tags */}
-            {(organizationUser?.user_type?.permission_level === 'organization_admin' ||
-              organizationUser?.user_type?.permission_level === 'program_manager') && (
+            {canEdit && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
