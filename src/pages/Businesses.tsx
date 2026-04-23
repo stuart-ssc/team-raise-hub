@@ -145,7 +145,16 @@ const Businesses = () => {
 
       // For participants, filter to only connected businesses
       if (isParticipantView) {
-        if (connectedBusinessIds.length === 0) {
+        // Also include businesses the participant OWNS (added themselves)
+        const { data: ownedRows } = await supabase
+          .from("businesses")
+          .select("id")
+          .eq("added_by_organization_user_id", organizationUser?.id);
+        const ownedIds = (ownedRows || []).map(r => r.id);
+
+        const allIds = Array.from(new Set([...(connectedBusinessIds || []), ...ownedIds]));
+
+        if (allIds.length === 0) {
           setBusinesses([]);
           return;
         }
@@ -153,7 +162,7 @@ const Businesses = () => {
         const { data: businessData, error: businessError } = await supabase
           .from("businesses")
           .select("*")
-          .in("id", connectedBusinessIds);
+          .in("id", allIds);
 
         if (businessError) throw businessError;
 
@@ -606,6 +615,16 @@ const Businesses = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+              </div>
+            )}
+
+            {/* Desktop: Participant Add Business */}
+            {!isMobile && isParticipantView && (
+              <div className="flex gap-2">
+                <Button onClick={() => setShowAddDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Business
+                </Button>
               </div>
             )}
           </div>
