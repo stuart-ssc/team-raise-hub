@@ -387,9 +387,9 @@ export function EditBusinessDialog({
                 name="address_line1"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Address Line 1</FormLabel>
+                    <LockedLabel locked={lockedMap.address_line1}>Address Line 1</LockedLabel>
                     <FormControl>
-                      <Input {...field} placeholder="123 Main Street" />
+                      <Input {...field} placeholder="123 Main Street" disabled={lockedMap.address_line1} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -401,9 +401,9 @@ export function EditBusinessDialog({
                 name="address_line2"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Address Line 2</FormLabel>
+                    <LockedLabel locked={lockedMap.address_line2}>Address Line 2</LockedLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Suite 100" />
+                      <Input {...field} placeholder="Suite 100" disabled={lockedMap.address_line2} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -416,9 +416,9 @@ export function EditBusinessDialog({
                   name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City</FormLabel>
+                      <LockedLabel locked={lockedMap.city}>City</LockedLabel>
                       <FormControl>
-                        <Input {...field} placeholder="City" />
+                        <Input {...field} placeholder="City" disabled={lockedMap.city} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -430,8 +430,8 @@ export function EditBusinessDialog({
                   name="state"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>State</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <LockedLabel locked={lockedMap.state}>State</LockedLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={lockedMap.state}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="State" />
