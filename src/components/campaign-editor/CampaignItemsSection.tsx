@@ -578,7 +578,6 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 }
