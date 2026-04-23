@@ -32,7 +32,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getTagColor, getTagBgColor } from "@/lib/utils";
-import { Loader2, X, ShieldCheck } from "lucide-react";
+import { Loader2, X, ShieldCheck, Lock } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface EditBusinessDialogProps {
   open: boolean;
@@ -118,7 +119,26 @@ export function EditBusinessDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [currentTags, setCurrentTags] = useState<string[]>(business.tags || []);
-  const isVerifiedLocked = business.verification_status === "verified" && !isSystemAdmin;
+  const isVerified = business.verification_status === "verified";
+  // Verified-business field-level lock for non-system-admins:
+  // a field is locked when it already has a value. Empty fields can be filled in.
+  const fieldLocked = (value: string | null | undefined) =>
+    isVerified && !isSystemAdmin && value !== null && value !== undefined && String(value).trim() !== "";
+
+  const lockedMap: Record<string, boolean> = {
+    business_name: fieldLocked(business.business_name),
+    ein: fieldLocked(business.ein),
+    industry: fieldLocked(business.industry),
+    business_email: fieldLocked(business.business_email),
+    business_phone: fieldLocked(business.business_phone),
+    website_url: fieldLocked(business.website_url),
+    address_line1: fieldLocked(business.address_line1),
+    address_line2: fieldLocked(business.address_line2),
+    city: fieldLocked(business.city),
+    state: fieldLocked(business.state),
+    zip: fieldLocked(business.zip),
+    logo_url: fieldLocked(business.logo_url),
+  };
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -143,25 +163,40 @@ export function EditBusinessDialog({
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
+      // Build a partial update so we never re-submit locked, unchanged values
+      // (which would trip the verified-business immutability trigger).
+      const candidate: Record<string, any> = {
+        business_name: data.business_name,
+        ein: data.ein || null,
+        industry: data.industry || null,
+        business_email: data.business_email || null,
+        business_phone: data.business_phone || null,
+        website_url: data.website_url || null,
+        address_line1: data.address_line1 || null,
+        address_line2: data.address_line2 || null,
+        city: data.city || null,
+        state: data.state || null,
+        zip: data.zip || null,
+        country: data.country || "US",
+        logo_url: data.logo_url || null,
+      };
+
+      const updates: Record<string, any> = {
+        tags: currentTags,
+        updated_at: new Date().toISOString(),
+      };
+
+      const norm = (v: any) => (v === null || v === undefined ? "" : String(v));
+      for (const [key, value] of Object.entries(candidate)) {
+        const original = (business as any)[key];
+        if (norm(original) !== norm(value)) {
+          updates[key] = value;
+        }
+      }
+
       const { error } = await supabase
         .from("businesses")
-        .update({
-          business_name: data.business_name,
-          ein: data.ein || null,
-          industry: data.industry || null,
-          business_email: data.business_email || null,
-          business_phone: data.business_phone || null,
-          website_url: data.website_url || null,
-          address_line1: data.address_line1 || null,
-          address_line2: data.address_line2 || null,
-          city: data.city || null,
-          state: data.state || null,
-          zip: data.zip || null,
-          country: data.country || "US",
-          logo_url: data.logo_url || null,
-          tags: currentTags,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updates)
         .eq("id", business.id);
 
       if (error) throw error;
@@ -198,6 +233,24 @@ export function EditBusinessDialog({
     }
   };
 
+  const LockedLabel = ({ children, locked }: { children: React.ReactNode; locked: boolean }) => (
+    <FormLabel className="flex items-center gap-1.5">
+      {children}
+      {locked && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Lock className="h-3 w-3 text-muted-foreground" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs">Locked — verified value. Contact support to change.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+    </FormLabel>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -208,12 +261,12 @@ export function EditBusinessDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {isVerifiedLocked && (
+        {isVerified && !isSystemAdmin && (
           <Alert>
             <ShieldCheck className="h-4 w-4" />
             <AlertDescription>
-              This business is verified. Core details are managed by the business
-              owner and cannot be edited here. You can still update tags.
+              This business is verified. You can fill in missing details, but
+              existing values can only be changed by Sponsorly support.
             </AlertDescription>
           </Alert>
         )}
