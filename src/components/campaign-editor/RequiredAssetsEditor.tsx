@@ -52,7 +52,7 @@ const FILE_TYPE_OPTIONS = [
 const PRESET_TEMPLATES = [
   {
     name: "Company Logo",
-    description: "Your company logo for recognition in campaign materials",
+    description: "Your company logo for recognition in fundraiser materials",
     file_types: ["image/png", "image/jpeg", "image/svg+xml"],
     dimensions_hint: "400x400px minimum, transparent background preferred",
     is_required: true,
@@ -263,7 +263,7 @@ export function RequiredAssetsEditor({ assets, onChange }: RequiredAssetsEditorP
               {editingAsset?.id ? "Edit Asset Requirement" : "Add Asset Requirement"}
             </DialogTitle>
             <DialogDescription>
-              Define what file sponsors need to provide for this campaign.
+              Define what file sponsors need to provide for this fundraiser.
             </DialogDescription>
           </DialogHeader>
 

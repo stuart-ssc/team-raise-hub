@@ -46,7 +46,7 @@ export function DonorExperienceSection({
         <div className="space-y-1">
           <Label className="text-base">Platform Fee Model</Label>
           <p className="text-sm text-muted-foreground">
-            Choose who pays Sponsorly's 10% platform fee for this campaign.
+            Choose who pays Sponsorly's 10% platform fee for this fundraiser.
           </p>
         </div>
         <RadioGroup

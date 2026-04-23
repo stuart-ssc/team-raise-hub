@@ -361,7 +361,7 @@ export default function Campaigns() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search campaigns..."
+                  placeholder="Search fundraisers..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-full"
@@ -564,7 +564,7 @@ export default function Campaigns() {
                         onClick={() => handleSort("name")}
                       >
                         <div className="flex items-center gap-2">
-                          Campaign Name
+                          Fundraiser Name
                           {sortBy === "name" && (
                             sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
                           )}

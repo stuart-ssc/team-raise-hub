@@ -120,7 +120,7 @@ export function CampaignPitchEditor({
 
       toast({
         title: "Pitch saved!",
-        description: "Your campaign pitch has been updated",
+        description: "Your fundraiser pitch has been updated",
       });
       onSave();
     } catch (error) {
@@ -163,11 +163,11 @@ export function CampaignPitchEditor({
           <div className="space-y-2">
             <Label htmlFor="campaign-pitch-message" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
-              Campaign Message
+              Fundraiser Message
             </Label>
             <Textarea
               id="campaign-pitch-message"
-              placeholder="Share why this campaign matters and how supporters can make a difference..."
+              placeholder="Share why this fundraiser matters and how supporters can make a difference..."
               value={pitchMessage}
               onChange={(e) => setPitchMessage(e.target.value)}
               rows={4}
@@ -182,7 +182,7 @@ export function CampaignPitchEditor({
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Image className="h-4 w-4" />
-              Campaign Photo (optional)
+              Fundraiser Photo (optional)
             </Label>
             {pitchImageUrl ? (
               <div className="relative w-full max-w-xs">
@@ -231,7 +231,7 @@ export function CampaignPitchEditor({
           <div className="space-y-3">
             <Label className="flex items-center gap-2">
               <Video className="h-4 w-4" />
-              Campaign Video (optional)
+              Fundraiser Video (optional)
             </Label>
             
             <RadioGroup

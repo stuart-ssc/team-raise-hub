@@ -58,13 +58,13 @@ import { CampaignRecentOrdersCard } from "@/components/campaign-editor/CampaignR
 import { CampaignShareCard } from "@/components/campaign-editor/CampaignShareCard";
 
 const SECTION_META: Record<SectionKey, { icon: React.ComponentType<{ className?: string }>; title: string; subtitle: string; showSave: boolean }> = {
-  details: { icon: FileText, title: "Basic Details", subtitle: "Campaign name, URL, and description", showSave: true },
-  schedule: { icon: Calendar, title: "Schedule & Goals", subtitle: "Set your campaign timeline and fundraising goal", showSave: true },
-  items: { icon: Package, title: "Campaign Items", subtitle: "Manage what supporters can purchase", showSave: false },
+  details: { icon: FileText, title: "Basic Details", subtitle: "Fundraiser name, URL, and description", showSave: true },
+  schedule: { icon: Calendar, title: "Schedule & Goals", subtitle: "Set your fundraiser timeline and fundraising goal", showSave: true },
+  items: { icon: Package, title: "Fundraiser Items", subtitle: "Manage what supporters can purchase", showSave: false },
   experience: { icon: Heart, title: "Donor Experience", subtitle: "Thank you message and checkout options", showSave: true },
   team: { icon: Users, title: "Team Settings", subtitle: "Participant directions and roster attribution", showSave: true },
   fields: { icon: ListPlus, title: "Custom Fields", subtitle: "Add custom questions for donors at checkout", showSave: true },
-  pitch: { icon: Megaphone, title: "Campaign Pitch", subtitle: "Add a message, photo, or video for your campaign", showSave: false },
+  pitch: { icon: Megaphone, title: "Fundraiser Pitch", subtitle: "Add a message, photo, or video for your fundraiser", showSave: false },
   orders: { icon: ShoppingCart, title: "Orders", subtitle: "View purchases and track pending file uploads", showSave: false },
   assets: { icon: ImageIcon, title: "Assets", subtitle: "Track required asset uploads from supporters", showSave: false },
 };
@@ -319,7 +319,7 @@ export default function CampaignEditor() {
       console.error("Error deleting campaign:", error);
       toast({
         title: "Error",
-        description: "Failed to delete campaign",
+        description: "Failed to delete fundraiser",
         variant: "destructive",
       });
     } finally {
@@ -334,7 +334,7 @@ export default function CampaignEditor() {
     if (!campaignData.name || !campaignData.slug || !campaignData.groupId || !campaignData.campaignTypeId) {
       toast({
         title: "Missing required fields",
-        description: "Please fill in campaign name, slug, group, and type",
+        description: "Please fill in fundraiser name, slug, group, and type",
         variant: "destructive",
       });
       return;
@@ -466,7 +466,7 @@ export default function CampaignEditor() {
     } catch (error: any) {
       console.error("Error saving campaign:", error);
       toast({
-        title: "Failed to save campaign",
+        title: "Failed to save fundraiser",
         description: error?.message || "An unexpected error occurred",
         variant: "destructive",
       });
@@ -514,7 +514,7 @@ export default function CampaignEditor() {
                 </Badge>
               )}
               <p className="text-muted-foreground">
-                {isEditing ? "Manage your campaign settings and orders" : "Set up your fundraising campaign step by step"}
+                {isEditing ? "Manage your fundraiser settings and orders" : "Set up your fundraiser step by step"}
               </p>
             </div>
           </div>
@@ -526,7 +526,7 @@ export default function CampaignEditor() {
                   variant="outline"
                   size="icon"
                   onClick={() => setDeleteDialogOpen(true)}
-                  aria-label="Delete campaign"
+                  aria-label="Delete fundraiser"
                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -586,7 +586,7 @@ export default function CampaignEditor() {
 
             <Button onClick={handleSave} disabled={saving} className="gap-2 bg-foreground text-background hover:bg-foreground/90">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {saving ? "Saving..." : "Save Campaign"}
+              {saving ? "Saving..." : "Save Fundraiser"}
             </Button>
           </div>
         </div>
@@ -715,7 +715,7 @@ export default function CampaignEditor() {
               <div className="flex justify-end">
                 <Button onClick={handleSave} disabled={saving} className="gap-2 bg-foreground text-background hover:bg-foreground/90">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  {saving ? "Saving..." : "Save Campaign"}
+                  {saving ? "Saving..." : "Save Fundraiser"}
                 </Button>
               </div>
             )}
