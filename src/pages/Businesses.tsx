@@ -1027,18 +1027,6 @@ const Businesses = () => {
                             Restore
                           </DropdownMenuItem>
                         )}
-                        
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuBusinessId(business.id);
-                            setShowSingleDeleteDialog(true);
-                          }}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </CardFooter>
@@ -1081,7 +1069,6 @@ const Businesses = () => {
           onClearSelection={handleClearSelection}
           onArchive={() => setShowBulkArchiveDialog(true)}
           onRestore={() => setShowBulkRestoreDialog(true)}
-          onDelete={() => setShowBulkDeleteDialog(true)}
           onExportCsv={handleBulkExport}
           onAddTags={handleBulkTag}
           onSendEmail={handleBulkEmail}
@@ -1133,25 +1120,6 @@ const Businesses = () => {
             <AlertDialogAction onClick={handleBulkRestore}>
               <Archive className="h-4 w-4 mr-2" />
               Restore
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Businesses</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to permanently delete {selectedBusinessIds.length} business{selectedBusinessIds.length === 1 ? '' : 'es'}? 
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1263,28 +1231,6 @@ const Businesses = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Single Business Delete Dialog */}
-      <AlertDialog open={showSingleDeleteDialog} onOpenChange={setShowSingleDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Business</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to permanently delete this business? This action cannot be undone.
-              All linked donors and donation history will be preserved but the business profile will be removed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setMenuBusinessId(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleSingleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </DashboardPageLayout>
   );
 };
