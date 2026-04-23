@@ -718,6 +718,18 @@ export default function DonorSegmentation() {
         />
       )}
 
+      {/* Contact Fundraiser Dialog (from list rows) */}
+      {contactFundraiserListId && (
+        <ContactFundraiserDialog
+          open={contactFundraiserOpen}
+          onOpenChange={(o) => {
+            setContactFundraiserOpen(o);
+            if (!o) setContactFundraiserListId(null);
+          }}
+          listId={contactFundraiserListId}
+        />
+      )}
+
       {/* Send List Campaign Dialog */}
       <Dialog open={listCampaignDialogOpen} onOpenChange={setListCampaignDialogOpen}>
         <DialogContent className="max-w-2xl">
