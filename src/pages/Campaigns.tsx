@@ -1,20 +1,39 @@
+import * as React from "react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, ChevronUp, Plus, Search, ExternalLink, Globe, Eye, AlertCircle, Sparkles, PenLine, MoreHorizontal, Trash2, RotateCcw } from "lucide-react";
+import {
+  ChevronDown,
+  Plus,
+  Search,
+  ExternalLink,
+  Globe,
+  Eye,
+  AlertCircle,
+  Sparkles,
+  PenLine,
+  MoreHorizontal,
+  Trash2,
+  RotateCcw,
+  Copy,
+  QrCode,
+  Share2,
+  Link2,
+  Clock,
+} from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ShareMenu } from "@/components/ShareMenu";
+import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
