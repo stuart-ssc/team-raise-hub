@@ -243,7 +243,7 @@ export function EditBusinessDialog({
               <Lock className="h-3 w-3 text-muted-foreground" />
             </TooltipTrigger>
             <TooltipContent>
-              <p className="text-xs">Locked — verified value. Contact support to change.</p>
+              <p className="text-xs">Locked — verified value. Contact the business owner or Sponsorly support to change.</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -266,7 +266,7 @@ export function EditBusinessDialog({
             <ShieldCheck className="h-4 w-4" />
             <AlertDescription>
               This business is verified. You can fill in missing details, but
-              existing values can only be changed by Sponsorly support.
+              existing values can only be changed by the business owner or Sponsorly support.
             </AlertDescription>
           </Alert>
         )}
