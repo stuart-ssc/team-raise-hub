@@ -311,10 +311,10 @@ export default function CampaignEditor() {
 
       toast({
         title: "Campaign deleted",
-        description: "You can restore it from the Deleted filter on the Campaigns page.",
+        description: "You can restore it from the Deleted filter on the Fundraisers page.",
       });
       setDeleteDialogOpen(false);
-      navigate("/dashboard/campaigns");
+      navigate("/dashboard/fundraisers");
     } catch (error) {
       console.error("Error deleting campaign:", error);
       toast({
@@ -461,7 +461,7 @@ export default function CampaignEditor() {
 
       // If new campaign, redirect to edit mode
       if (!isEditing && campaignId) {
-        navigate(`/dashboard/campaigns/${campaignId}/edit`, { replace: true });
+        navigate(`/dashboard/fundraisers/${campaignId}/edit`, { replace: true });
       }
     } catch (error: any) {
       console.error("Error saving campaign:", error);
@@ -479,8 +479,8 @@ export default function CampaignEditor() {
     return (
       <DashboardPageLayout
         segments={[
-          { label: "Campaigns", path: "/dashboard/campaigns" },
-          { label: isEditing ? "Edit" : "New Campaign" }
+          { label: "Fundraisers", path: "/dashboard/fundraisers" },
+          { label: isEditing ? "Edit" : "New Fundraiser" }
         ]}
         loading={true}
       >
@@ -494,8 +494,8 @@ export default function CampaignEditor() {
   return (
     <DashboardPageLayout
       segments={[
-        { label: "Campaigns", path: "/dashboard/campaigns" },
-        { label: isEditing ? campaignData.name || "Edit Campaign" : "New Campaign" }
+        { label: "Fundraisers", path: "/dashboard/fundraisers" },
+        { label: isEditing ? campaignData.name || "Edit Fundraiser" : "New Fundraiser" }
       ]}
     >
       <div className="space-y-6">
@@ -504,8 +504,8 @@ export default function CampaignEditor() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
               {isEditing 
-                ? `${campaignData.name || "Edit"} Campaign` 
-                : "Create New Campaign"}
+                ? `${campaignData.name || "Edit"} Fundraiser` 
+                : "Create New Fundraiser"}
             </h1>
             <div className="flex items-center gap-2 mt-1">
               {isEditing && (
@@ -780,9 +780,9 @@ export default function CampaignEditor() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this campaign?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this fundraiser?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will move the campaign to the Deleted filter. You can restore it from the Campaigns page.
+              This will move the fundraiser to the Deleted filter. You can restore it from the Fundraisers page.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -251,7 +251,7 @@ export default function AICampaignBuilder() {
         } else if (data.finalAction === "open_editor") {
           const targetId = data.createdCampaignId || campaignId;
           if (targetId) {
-            setTimeout(() => navigate(`/dashboard/campaigns/${targetId}/edit`), 300);
+            setTimeout(() => navigate(`/dashboard/fundraisers/${targetId}/edit`), 300);
           }
         }
       }
@@ -417,7 +417,7 @@ export default function AICampaignBuilder() {
   };
 
   const handleOpenEditor = () => {
-    if (campaignId) navigate(`/dashboard/campaigns/${campaignId}/edit`);
+    if (campaignId) navigate(`/dashboard/fundraisers/${campaignId}/edit`);
   };
 
   const handlePreview = async () => {
@@ -439,7 +439,7 @@ export default function AICampaignBuilder() {
   };
 
   return (
-    <DashboardPageLayout segments={[{ label: "Campaigns", path: "/dashboard/campaigns" }, { label: "AI Builder" }]}>
+    <DashboardPageLayout segments={[{ label: "Fundraisers", path: "/dashboard/fundraisers" }, { label: "AI Builder" }]}>
       <div className="flex flex-col lg:flex-row h-[calc(100vh-10rem)] gap-0 border rounded-lg overflow-hidden bg-background">
         <div className="lg:w-3/5 w-full lg:border-r border-b lg:border-b-0 overflow-hidden flex flex-col min-h-[300px] lg:min-h-0">
           <AICampaignPreview
