@@ -11,6 +11,7 @@ export interface OutreachOwner {
   studentLastName?: string | null;
   pitchMessage?: string | null;
   pitchVideoUrl?: string | null;
+  pitchRecordedVideoUrl?: string | null;
   pitchImageUrl?: string | null;
   rosterSlug?: string | null;
 }
