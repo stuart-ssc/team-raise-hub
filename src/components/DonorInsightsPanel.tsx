@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -134,9 +134,8 @@ const DonorInsightsPanel = ({ donorId }: DonorInsightsPanelProps) => {
   };
 
   return (
-    <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-      <CardHeader>
-        <Button
+    <div className="px-6 pb-6 space-y-6">
+      <Button
             onClick={generateInsights} 
             disabled={loading}
             variant={insights ? "outline" : "default"}
@@ -159,10 +158,8 @@ const DonorInsightsPanel = ({ donorId }: DonorInsightsPanelProps) => {
                 Generate Insights
               </>
             )}
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {loading ? (
+      </Button>
+      {loading ? (
           <div className="space-y-4">
             {[1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-24 w-full" />
@@ -358,8 +355,7 @@ const DonorInsightsPanel = ({ donorId }: DonorInsightsPanelProps) => {
             </Card>
           </>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 };
 

@@ -15,9 +15,10 @@ interface ActivityLog {
 
 interface DonorActivityTimelineProps {
   donorId: string;
+  hideHeader?: boolean;
 }
 
-const DonorActivityTimeline = ({ donorId }: DonorActivityTimelineProps) => {
+const DonorActivityTimeline = ({ donorId, hideHeader }: DonorActivityTimelineProps) => {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -101,6 +102,15 @@ const DonorActivityTimeline = ({ donorId }: DonorActivityTimelineProps) => {
   };
 
   if (loading) {
+    if (hideHeader) {
+      return (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      );
+    }
     return (
       <Card>
         <CardHeader>
@@ -116,6 +126,44 @@ const DonorActivityTimeline = ({ donorId }: DonorActivityTimelineProps) => {
     );
   }
 
+  const body = activities.length === 0 ? (
+    <p className="text-sm text-muted-foreground text-center py-8">
+      No activity recorded yet
+    </p>
+  ) : (
+    <div className="relative space-y-4">
+      {/* Timeline line */}
+      <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
+
+      {activities.map((activity) => (
+        <div key={activity.id} className="relative flex gap-4 pb-4">
+          {/* Timeline dot */}
+          <div className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${getActivityColor(activity.activity_type)} text-white`}>
+            {getActivityIcon(activity.activity_type)}
+          </div>
+
+          {/* Activity content */}
+          <div className="flex-1 space-y-1 pt-1">
+            <p className="text-sm font-medium leading-none">
+              {formatActivityMessage(activity)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+            </p>
+          </div>
+
+          <Badge variant="outline" className="h-fit shrink-0">
+            {activity.activity_type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+          </Badge>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (hideHeader) {
+    return body;
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -125,39 +173,7 @@ const DonorActivityTimeline = ({ donorId }: DonorActivityTimelineProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {activities.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            No activity recorded yet
-          </p>
-        ) : (
-          <div className="relative space-y-4">
-            {/* Timeline line */}
-            <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
-            
-            {activities.map((activity, index) => (
-              <div key={activity.id} className="relative flex gap-4 pb-4">
-                {/* Timeline dot */}
-                <div className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${getActivityColor(activity.activity_type)} text-white`}>
-                  {getActivityIcon(activity.activity_type)}
-                </div>
-                
-                {/* Activity content */}
-                <div className="flex-1 space-y-1 pt-1">
-                  <p className="text-sm font-medium leading-none">
-                    {formatActivityMessage(activity)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
-                  </p>
-                </div>
-                
-                <Badge variant="outline" className="h-fit shrink-0">
-                  {activity.activity_type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        )}
+        {body}
       </CardContent>
     </Card>
   );
