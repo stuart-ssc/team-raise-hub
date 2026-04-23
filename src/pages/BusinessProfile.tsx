@@ -866,16 +866,20 @@ const BusinessProfile = () => {
               </div>
             </div>
           </div>
-            {canEdit && (
+            {(canEditDetails || canManageBusinesses || ownsBusiness || isSystemAdmin) && (
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setShowEditDialog(true)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-                <Button onClick={() => setShowLinkDialog(true)}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Link Employee
-                </Button>
+                {canEditDetails && (
+                  <Button variant="outline" onClick={() => setShowEditDialog(true)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                )}
+                {canEditDetails && (
+                  <Button onClick={() => setShowLinkDialog(true)}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Link Employee
+                  </Button>
+                )}
                 {canManageBusinesses && !business.archived_at && (
                   <Button variant="outline" onClick={() => setShowEnrollmentDialog(true)}>
                     <UserPlus className="h-4 w-4 mr-2" />
@@ -982,8 +986,8 @@ const BusinessProfile = () => {
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Role</TableHead>
-                        <TableHead className="text-right">Donated</TableHead>
-                        {canEdit && (
+                       <TableHead className="text-right">Donated</TableHead>
+                        {canManageContactEngagement && (
                           <TableHead className="text-right">Actions</TableHead>
                         )}
                       </TableRow>
@@ -1004,6 +1008,11 @@ const BusinessProfile = () => {
                                   Primary
                                 </Badge>
                               )}
+                              {donor.blocked_at && (
+                                <Badge variant="outline" className="text-xs text-muted-foreground">
+                                  Disengaged
+                                </Badge>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">{donor.donor_email}</TableCell>
@@ -1017,18 +1026,44 @@ const BusinessProfile = () => {
                           <TableCell className="text-right font-medium">
                             ${donor.total_donations.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </TableCell>
-                          {canEdit && (
+                          {canManageContactEngagement && (
                             <TableCell
                               className="text-right"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setUnlinkingDonor(donor)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {donor.blocked_at ? (
+                                    <DropdownMenuItem
+                                      onClick={() => setDisengagingDonor({ donor, mode: "reengage" })}
+                                    >
+                                      <Bell className="h-4 w-4 mr-2" />
+                                      Re-engage
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem
+                                      onClick={() => setDisengagingDonor({ donor, mode: "disengage" })}
+                                    >
+                                      <BellOff className="h-4 w-4 mr-2" />
+                                      Disengage
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canEditDetails && (
+                                    <DropdownMenuItem
+                                      onClick={() => setUnlinkingDonor(donor)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Remove link
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           )}
                         </TableRow>
@@ -1486,14 +1521,36 @@ const BusinessProfile = () => {
         businessId={businessId || ""}
         organizationId={organizationUser?.organization_id || ""}
         isPrimaryContact={unlinkingDonor?.is_primary_contact || false}
+        isBusinessVerified={isVerified && !isSystemAdmin}
+        onSwitchToDisengage={() => {
+          if (unlinkingDonor) {
+            setDisengagingDonor({ donor: unlinkingDonor, mode: "disengage" });
+            setUnlinkingDonor(null);
+          }
+        }}
         onSuccess={fetchBusinessDetails}
       />
+
+      {disengagingDonor && (
+        <DisengageContactDialog
+          open={!!disengagingDonor}
+          onOpenChange={(open) => !open && setDisengagingDonor(null)}
+          donorName={disengagingDonor.donor.donor_name}
+          businessName={business?.business_name || ""}
+          donorId={disengagingDonor.donor.donor_id}
+          businessId={businessId || ""}
+          organizationId={organizationUser?.organization_id || ""}
+          mode={disengagingDonor.mode}
+          onSuccess={fetchBusinessDetails}
+        />
+      )}
 
       {business && (
         <EditBusinessDialog
           open={showEditDialog}
           onOpenChange={setShowEditDialog}
           business={business}
+          isSystemAdmin={isSystemAdmin}
           onSuccess={fetchBusinessDetails}
         />
       )}
