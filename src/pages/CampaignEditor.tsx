@@ -23,6 +23,7 @@ import {
   Image as ImageIcon,
   ChevronDown,
   Plus,
+  DollarSign,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -47,6 +48,7 @@ import { BasicDetailsSection } from "@/components/campaign-editor/BasicDetailsSe
 import { ScheduleSection } from "@/components/campaign-editor/ScheduleSection";
 import { TeamSettingsSection } from "@/components/campaign-editor/TeamSettingsSection";
 import { DonorExperienceSection } from "@/components/campaign-editor/DonorExperienceSection";
+import { PlatformFeeSection } from "@/components/campaign-editor/PlatformFeeSection";
 import { CustomFieldsSection } from "@/components/campaign-editor/CustomFieldsSection";
 import { CampaignPitchSection } from "@/components/campaign-editor/CampaignPitchSection";
 import { CampaignItemsSection } from "@/components/campaign-editor/CampaignItemsSection";
@@ -63,6 +65,7 @@ const SECTION_META: Record<SectionKey, { icon: React.ComponentType<{ className?:
   schedule: { icon: Calendar, title: "Schedule & Goals", subtitle: "Set your fundraiser timeline and fundraising goal", showSave: true },
   items: { icon: Package, title: "Fundraiser Items", subtitle: "Manage what supporters can purchase", showSave: false },
   experience: { icon: Heart, title: "Donor Experience", subtitle: "Thank you message and checkout options", showSave: true },
+  fees: { icon: DollarSign, title: "Platform Fees", subtitle: "Choose who pays Sponsorly's 10% platform fee for this fundraiser.", showSave: true },
   team: { icon: Users, title: "Team Settings", subtitle: "Participant directions and roster attribution", showSave: true },
   fields: { icon: ListPlus, title: "Custom Fields", subtitle: "Add custom questions for donors at checkout", showSave: true },
   pitch: { icon: Megaphone, title: "Fundraiser Pitch", subtitle: "Add a message, photo, or video for your fundraiser", showSave: false },
@@ -689,6 +692,13 @@ export default function CampaignEditor() {
                     onUpdate={updateCampaignData}
                     requiredAssets={requiredAssets}
                     onRequiredAssetsChange={setRequiredAssets}
+                  />
+                )}
+
+                {activeSection === "fees" && (
+                  <PlatformFeeSection
+                    feeModel={campaignData.feeModel}
+                    onUpdate={updateCampaignData}
                   />
                 )}
 

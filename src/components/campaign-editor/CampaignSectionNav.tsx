@@ -10,6 +10,7 @@ import {
   Megaphone,
   ShoppingCart,
   ImageIcon,
+  DollarSign,
   type LucideIcon,
 } from "lucide-react";
 
@@ -18,6 +19,7 @@ export type SectionKey =
   | "schedule"
   | "items"
   | "experience"
+  | "fees"
   | "team"
   | "fields"
   | "pitch"
@@ -60,6 +62,7 @@ export function CampaignSectionNav({
       ? [{ key: "items" as const, label: "Items", icon: Package, count: counts.items }]
       : []),
     { key: "experience", label: "Experience", icon: Heart },
+    { key: "fees", label: "Fees", icon: DollarSign },
     { key: "team", label: "Team", icon: Users },
     { key: "fields", label: "Fields", icon: ListPlus, count: counts.fields },
     ...(showPitch
