@@ -40,7 +40,7 @@ export default function AIChatPanel({
   onImageSkipped,
   onItemImageUploaded,
   onItemImageSkipped,
-  placeholder = "Describe your campaign...",
+  placeholder = "Describe your fundraiser...",
 }: AIChatPanelProps) {
   const [input, setInput] = useState("");
   const [dismissedTurnStart, setDismissedTurnStart] = useState<number>(-1);
@@ -124,14 +124,14 @@ export default function AIChatPanel({
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 p-4 border-b bg-muted/30">
         <Sparkles className="h-5 w-5 text-primary" />
-        <h3 className="font-semibold text-sm">AI Campaign Assistant</h3>
+        <h3 className="font-semibold text-sm">AI Fundraiser Assistant</h3>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-center text-muted-foreground text-sm py-8">
             <Sparkles className="h-8 w-8 mx-auto mb-3 text-primary/40" />
-            <p>Tell me about the campaign you'd like to create!</p>
+            <p>Tell me about the fundraiser you'd like to create!</p>
           </div>
         )}
 
