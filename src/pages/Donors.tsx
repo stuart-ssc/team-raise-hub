@@ -884,6 +884,12 @@ const Donors = () => {
           onSendEmail={() => setBulkEmailDialogOpen(true)}
           onExportCsv={() => setCsvExportDialogOpen(true)}
           onAddToList={() => setAddToListDialogOpen(true)}
+          onContactFundraiser={() =>
+            toast({
+              title: "Contact about Fundraiser",
+              description: "Coming soon — you'll be able to message selected donors about a specific fundraiser.",
+            })
+          }
         />
 
         {/* Add to List Dialog */}
