@@ -37,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, Trash2, BarChart3, Activity, Target, MoreHorizontal, Mail, Tag, RotateCcw, CheckSquare, Square } from "lucide-react";
+import { Building2, DollarSign, Users, Handshake, Search, Download, Plus, Pencil, Upload, Archive, BarChart3, Activity, Target, MoreHorizontal, Mail, Tag, RotateCcw, CheckSquare, Square, UserCheck } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getSegmentInfo } from "@/lib/businessEngagement";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,6 +75,7 @@ interface BusinessProfile {
   tags: string[] | null;
   engagement_segment: string | null;
   engagement_score: number | null;
+  added_by_organization_user_id: string | null;
 }
 
 const Businesses = () => {
@@ -95,7 +96,6 @@ const Businesses = () => {
   const [selectedBusinessIds, setSelectedBusinessIds] = useState<string[]>([]);
   const [showBulkArchiveDialog, setShowBulkArchiveDialog] = useState(false);
   const [showBulkRestoreDialog, setShowBulkRestoreDialog] = useState(false);
-  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
   const [showBulkEmailDialog, setShowBulkEmailDialog] = useState(false);
   const [showBulkVerificationDialog, setShowBulkVerificationDialog] = useState(false);
@@ -111,7 +111,6 @@ const Businesses = () => {
   const [showSingleEnrollDialog, setShowSingleEnrollDialog] = useState(false);
   const [showSingleArchiveDialog, setShowSingleArchiveDialog] = useState(false);
   const [showSingleRestoreDialog, setShowSingleRestoreDialog] = useState(false);
-  const [showSingleDeleteDialog, setShowSingleDeleteDialog] = useState(false);
 
   const canManageBusinesses = 
     organizationUser?.user_type?.permission_level === 'organization_admin' ||
@@ -374,25 +373,6 @@ const Businesses = () => {
     }
   };
 
-  const handleBulkDelete = async () => {
-    try {
-      const { error } = await supabase
-        .from('businesses')
-        .delete()
-        .in('id', selectedBusinessIds);
-
-      if (error) throw error;
-
-      toast.success(`Deleted ${selectedBusinessIds.length} business${selectedBusinessIds.length === 1 ? '' : 'es'}`);
-      setSelectedBusinessIds([]);
-      setShowBulkDeleteDialog(false);
-      fetchBusinesses();
-    } catch (error) {
-      console.error('Error deleting businesses:', error);
-      toast.error('Failed to delete businesses');
-    }
-  };
-
   const handleBulkExport = () => {
     setShowExportDialog(true);
   };
@@ -501,27 +481,6 @@ const Businesses = () => {
     } catch (error: any) {
       console.error("Error restoring business:", error);
       toast.error("Failed to restore business");
-    }
-  };
-
-  const handleSingleDelete = async () => {
-    if (!menuBusinessId) return;
-    
-    try {
-      const { error } = await supabase
-        .from("businesses")
-        .delete()
-        .eq("id", menuBusinessId);
-
-      if (error) throw error;
-      
-      toast.success("Business deleted successfully");
-      fetchBusinesses();
-      setShowSingleDeleteDialog(false);
-      setMenuBusinessId(null);
-    } catch (error: any) {
-      console.error("Error deleting business:", error);
-      toast.error("Failed to delete business");
     }
   };
 
