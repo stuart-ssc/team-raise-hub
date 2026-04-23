@@ -1,17 +1,21 @@
 
 
 ## Goal
-On the "Contact about a Fundraiser" picker, hide ended fundraisers entirely so users only see fundraisers they can actually enroll donors into.
+Simplify the donor list card actions: remove the "Send Campaign" button and promote "Contact about Fundraiser" to the primary action style.
 
-## Changes — `src/components/ContactFundraiserDialog.tsx`
+## Changes
 
-- In `fetchCampaigns`, add a server-side filter excluding fundraisers whose `end_date` has passed: `.or('end_date.is.null,end_date.gt.<nowISO>')`. Keeps "no end date" campaigns visible (still publishable) and drops anything past its end date.
-- Remove the now-unused `isEnded()` helper and the disabled/greyed-out "Ended" card branch — every card in the list is now active and clickable.
-- Keep the `Calendar` "Ends {date}" badge (active end-dates only).
-- Keep the existing "ends too soon to schedule outreach" guard on the review step (covers campaigns ending later today).
+### Find and update the donor list card component
+Locate the card rendered on `/dashboard/donors/segmentation?tab=lists` (likely `src/components/DonorListCard.tsx` or similar within the donor segmentation/lists area).
+
+- Remove the "Send Campaign" button entirely (along with any handler/state that becomes unused, e.g. a `sendCampaignOpen` dialog state and its dialog mount if no longer referenced).
+- Change the "Contact about Fundraiser" button from its current secondary/outline variant to the default primary variant (solid blue), matching what "Send Campaign" looked like.
+- Keep the existing icon (`Megaphone`/`Send`-style) and label "Contact about Fundraiser".
+- Keep "View/Edit" and the trash/delete button unchanged.
+- Layout: the Contact button now occupies the row where Send Campaign used to sit; trash button stays inline to its right.
 
 ## Verification
-- Open dialog → list contains only fundraisers with no end date or a future end date. "Sample Golf Scramble" and "Sample Merchandise Campaign" (both Ended) no longer appear.
-- Every card in the list is fully opaque and clickable; selecting one advances to the review step.
-- Search still filters the (now active-only) list.
+- Navigate to `/dashboard/donors/segmentation?tab=lists` → each list card shows: "View/Edit", "Contact about Fundraiser" (solid primary blue), and the red trash icon. No "Send Campaign" button.
+- Clicking "Contact about Fundraiser" still opens the existing `ContactFundraiserDialog` flow.
+- No console warnings from removed-but-still-imported symbols.
 
