@@ -2110,6 +2110,158 @@ export type Database = {
           },
         ]
       }
+      fundraiser_outreach_enrollments: {
+        Row: {
+          campaign_id: string
+          completion_reason: string | null
+          created_at: string
+          donor_id: string
+          enrolled_by_organization_user_id: string | null
+          enrolled_by_user_id: string
+          id: string
+          organization_id: string
+          roster_member_id: string | null
+          roster_member_slug: string | null
+          status: string
+          student_organization_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          completion_reason?: string | null
+          created_at?: string
+          donor_id: string
+          enrolled_by_organization_user_id?: string | null
+          enrolled_by_user_id: string
+          id?: string
+          organization_id: string
+          roster_member_id?: string | null
+          roster_member_slug?: string | null
+          status?: string
+          student_organization_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          completion_reason?: string | null
+          created_at?: string
+          donor_id?: string
+          enrolled_by_organization_user_id?: string | null
+          enrolled_by_user_id?: string
+          id?: string
+          organization_id?: string
+          roster_member_id?: string | null
+          roster_member_slug?: string | null
+          status?: string
+          student_organization_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fundraiser_outreach_enrollmen_enrolled_by_organization_use_fkey"
+            columns: ["enrolled_by_organization_user_id"]
+            isOneToOne: false
+            referencedRelation: "organization_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fundraiser_outreach_enrollmen_enrolled_by_organization_use_fkey"
+            columns: ["enrolled_by_organization_user_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["roster_member_id"]
+          },
+          {
+            foreignKeyName: "fundraiser_outreach_enrollmen_student_organization_user_id_fkey"
+            columns: ["student_organization_user_id"]
+            isOneToOne: false
+            referencedRelation: "organization_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fundraiser_outreach_enrollmen_student_organization_user_id_fkey"
+            columns: ["student_organization_user_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["roster_member_id"]
+          },
+          {
+            foreignKeyName: "fundraiser_outreach_enrollments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fundraiser_outreach_enrollments_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "donor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fundraiser_outreach_enrollments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fundraiser_outreach_enrollments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fundraiser_outreach_sends: {
+        Row: {
+          created_at: string
+          enrollment_id: string
+          id: string
+          resend_email_id: string | null
+          scheduled_send_at: string
+          sent_at: string | null
+          skip_reason: string | null
+          stage: string
+          status: string
+          unsubscribe_token: string
+        }
+        Insert: {
+          created_at?: string
+          enrollment_id: string
+          id?: string
+          resend_email_id?: string | null
+          scheduled_send_at: string
+          sent_at?: string | null
+          skip_reason?: string | null
+          stage: string
+          status?: string
+          unsubscribe_token?: string
+        }
+        Update: {
+          created_at?: string
+          enrollment_id?: string
+          id?: string
+          resend_email_id?: string | null
+          scheduled_send_at?: string
+          sent_at?: string | null
+          skip_reason?: string | null
+          stage?: string
+          status?: string
+          unsubscribe_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fundraiser_outreach_sends_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "fundraiser_outreach_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_type: {
         Row: {
           created_at: string
