@@ -146,6 +146,7 @@ export default function ContactFundraiserDialog({
         )
         .eq("publication_status", "published")
         .is("deleted_at", null)
+        .or(`end_date.is.null,end_date.gt.${new Date().toISOString()}`)
         .order("created_at", { ascending: false });
 
       if (activeGroup?.id) {
@@ -221,8 +222,6 @@ export default function ContactFundraiserDialog({
     }
   };
 
-  const isEnded = (c: Campaign) => !c.end_date || new Date(c.end_date).getTime() <= Date.now();
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -263,15 +262,11 @@ export default function ContactFundraiserDialog({
             ) : (
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {filteredCampaigns.map((c) => {
-                  const ended = isEnded(c);
                   return (
                     <Card
                       key={c.id}
-                      className={`p-3 flex gap-3 items-center transition-colors ${
-                        ended ? "opacity-50" : "cursor-pointer hover:border-primary"
-                      }`}
+                      className="p-3 flex gap-3 items-center transition-colors cursor-pointer hover:border-primary"
                       onClick={() => {
-                        if (ended) return;
                         setSelected(c);
                         setStep("review");
                       }}
@@ -294,9 +289,9 @@ export default function ContactFundraiserDialog({
                         )}
                         <div className="flex gap-2 mt-1 flex-wrap">
                           {c.end_date && (
-                            <Badge variant={ended ? "secondary" : "outline"} className="text-xs">
+                            <Badge variant="outline" className="text-xs">
                               <Calendar className="h-3 w-3 mr-1" />
-                              {ended ? "Ended" : `Ends ${format(new Date(c.end_date), "MMM d")}`}
+                              Ends {format(new Date(c.end_date), "MMM d")}
                             </Badge>
                           )}
                           {c.enable_roster_attribution && (
