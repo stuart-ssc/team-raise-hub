@@ -19,7 +19,6 @@ import {
   Globe,
   Eye,
   AlertCircle,
-  Sparkles,
   PenLine,
   MoreHorizontal,
   Trash2,
@@ -375,25 +374,31 @@ export default function Campaigns() {
                 </SelectContent>
               </Select>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="flex items-center gap-2 w-full sm:w-auto">
-                    <Plus className="h-4 w-4" />
-                    Add Fundraiser
-                    <ChevronDown className="h-3 w-3 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate("/dashboard/fundraisers/new")}>
-                    <PenLine className="h-4 w-4 mr-2" />
-                    Create manually
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/dashboard/fundraisers/ai-builder")}>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Create with AI
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex w-full sm:w-auto">
+                <Button
+                  onClick={() => navigate("/dashboard/fundraisers/ai-builder")}
+                  className="flex flex-1 sm:flex-none items-center gap-2 rounded-r-none"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Fundraiser
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      aria-label="More fundraiser options"
+                      className="rounded-l-none border-l border-primary-foreground/20 px-2"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate("/dashboard/fundraisers/new")}>
+                      <PenLine className="h-4 w-4 mr-2" />
+                      Create manually
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
             {sortedCampaigns.length === 0 ? (
@@ -401,7 +406,7 @@ export default function Campaigns() {
                 <CardContent className="py-12 text-center">
                   <p className="text-muted-foreground mb-4">No fundraisers found.</p>
                   <Button
-                    onClick={() => navigate("/dashboard/fundraisers/new")}
+                    onClick={() => navigate("/dashboard/fundraisers/ai-builder")}
                     className="flex items-center gap-2 mx-auto"
                   >
                     <Plus className="h-4 w-4" />
