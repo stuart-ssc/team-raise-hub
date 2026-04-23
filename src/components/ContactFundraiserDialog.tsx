@@ -186,8 +186,6 @@ export default function ContactFundraiserDialog({
     return computeOutreachSchedule(new Date(selected.end_date));
   }, [selected]);
 
-  const recipientCount = donorIds?.length ?? null;
-
   const handleEnroll = async () => {
     if (!selected) return;
     setSubmitting(true);
