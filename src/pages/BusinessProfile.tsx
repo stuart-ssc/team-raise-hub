@@ -842,25 +842,6 @@ const BusinessProfile = () => {
           </Card>
         )}
 
-        {/* Verified Info Banner */}
-        {isVerified && !isSystemAdmin && (
-          <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
-            <CardContent className="py-4">
-              <div className="flex items-start gap-2 text-green-700 dark:text-green-400">
-                <ShieldCheck className="h-5 w-5 mt-0.5" />
-                <div>
-                  <p className="font-semibold">This business is verified</p>
-                  <p className="text-sm text-green-600 dark:text-green-500">
-                    You can add missing details and disengage contacts, but
-                    existing values are managed by the business owner. Contact
-                    Sponsorly support to change a value that's already set.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
