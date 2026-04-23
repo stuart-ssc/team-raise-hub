@@ -1059,7 +1059,7 @@ const BusinessProfile = () => {
                                       Disengage
                                     </DropdownMenuItem>
                                   )}
-                                  {canEditDetails && (
+                                  {canManageStructure && (
                                     <DropdownMenuItem
                                       onClick={() => setUnlinkingDonor(donor)}
                                       className="text-destructive focus:text-destructive"
