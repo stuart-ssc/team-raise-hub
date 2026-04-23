@@ -105,6 +105,7 @@ const Donors = () => {
   const [bulkEmailDialogOpen, setBulkEmailDialogOpen] = useState(false);
   const [csvExportDialogOpen, setCsvExportDialogOpen] = useState(false);
   const [addToListDialogOpen, setAddToListDialogOpen] = useState(false);
+  const [contactFundraiserDialogOpen, setContactFundraiserDialogOpen] = useState(false);
   
   // Single donor action states
   const [menuDonorId, setMenuDonorId] = useState<string | null>(null);
