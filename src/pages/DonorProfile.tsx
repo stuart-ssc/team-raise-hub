@@ -612,7 +612,7 @@ const DonorProfile = () => {
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <CardContent>
-                        <DonorCommunicationHistory donorEmail={donor.email} />
+                        <DonorCommunicationHistory donorEmail={donor.email} hideHeader />
                       </CardContent>
                     </CollapsibleContent>
                   </Collapsible>

@@ -20,9 +20,10 @@ interface EmailLog {
 
 interface DonorCommunicationHistoryProps {
   donorEmail: string;
+  hideHeader?: boolean;
 }
 
-const DonorCommunicationHistory = ({ donorEmail }: DonorCommunicationHistoryProps) => {
+const DonorCommunicationHistory = ({ donorEmail, hideHeader }: DonorCommunicationHistoryProps) => {
   const [emails, setEmails] = useState<EmailLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -101,6 +102,15 @@ const DonorCommunicationHistory = ({ donorEmail }: DonorCommunicationHistoryProp
   };
 
   if (loading) {
+    if (hideHeader) {
+      return (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-20 w-full" />
+          ))}
+        </div>
+      );
+    }
     return (
       <Card>
         <CardHeader>
@@ -119,6 +129,82 @@ const DonorCommunicationHistory = ({ donorEmail }: DonorCommunicationHistoryProp
   const openRate = stats.total > 0 ? ((stats.opened / stats.total) * 100).toFixed(1) : "0";
   const clickRate = stats.total > 0 ? ((stats.clicked / stats.total) * 100).toFixed(1) : "0";
 
+  const body = (
+    <>
+      {/* Engagement Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">Total Sent</p>
+          <p className="text-2xl font-bold">{stats.total}</p>
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">Open Rate</p>
+          <p className="text-2xl font-bold">{openRate}%</p>
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">Click Rate</p>
+          <p className="text-2xl font-bold">{clickRate}%</p>
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">Bounced</p>
+          <p className="text-2xl font-bold text-destructive">{stats.bounced}</p>
+        </div>
+      </div>
+
+      {/* Email List */}
+      {emails.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-8">
+          No emails sent yet
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {emails.map((email) => (
+            <div
+              key={email.id}
+              className="flex items-start gap-4 rounded-lg border p-4 hover:bg-accent/50 transition-colors"
+            >
+              <div className="mt-1">
+                {getStatusIcon(email)}
+              </div>
+
+              <div className="flex-1 space-y-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {formatEmailType(email.email_type)}
+                    </p>
+                    {email.metadata?.subject && (
+                      <p className="text-xs text-muted-foreground">
+                        {email.metadata.subject}
+                      </p>
+                    )}
+                  </div>
+                  {getStatusBadge(email)}
+                </div>
+
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  {email.sent_at && (
+                    <span>Sent {formatDistanceToNow(new Date(email.sent_at), { addSuffix: true })}</span>
+                  )}
+                  {email.opened_at && (
+                    <span>• Opened {formatDistanceToNow(new Date(email.opened_at), { addSuffix: true })}</span>
+                  )}
+                  {email.clicked_at && (
+                    <span>• Clicked {formatDistanceToNow(new Date(email.clicked_at), { addSuffix: true })}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+
+  if (hideHeader) {
+    return body;
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -128,73 +214,7 @@ const DonorCommunicationHistory = ({ donorEmail }: DonorCommunicationHistoryProp
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Engagement Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Total Sent</p>
-            <p className="text-2xl font-bold">{stats.total}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Open Rate</p>
-            <p className="text-2xl font-bold">{openRate}%</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Click Rate</p>
-            <p className="text-2xl font-bold">{clickRate}%</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Bounced</p>
-            <p className="text-2xl font-bold text-destructive">{stats.bounced}</p>
-          </div>
-        </div>
-
-        {/* Email List */}
-        {emails.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            No emails sent yet
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {emails.map((email) => (
-              <div
-                key={email.id}
-                className="flex items-start gap-4 rounded-lg border p-4 hover:bg-accent/50 transition-colors"
-              >
-                <div className="mt-1">
-                  {getStatusIcon(email)}
-                </div>
-                
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {formatEmailType(email.email_type)}
-                      </p>
-                      {email.metadata?.subject && (
-                        <p className="text-xs text-muted-foreground">
-                          {email.metadata.subject}
-                        </p>
-                      )}
-                    </div>
-                    {getStatusBadge(email)}
-                  </div>
-                  
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    {email.sent_at && (
-                      <span>Sent {formatDistanceToNow(new Date(email.sent_at), { addSuffix: true })}</span>
-                    )}
-                    {email.opened_at && (
-                      <span>• Opened {formatDistanceToNow(new Date(email.opened_at), { addSuffix: true })}</span>
-                    )}
-                    {email.clicked_at && (
-                      <span>• Clicked {formatDistanceToNow(new Date(email.clicked_at), { addSuffix: true })}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {body}
       </CardContent>
     </Card>
   );
