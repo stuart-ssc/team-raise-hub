@@ -878,7 +878,7 @@ const BusinessProfile = () => {
                     Edit
                   </Button>
                 )}
-                {canEditDetails && (
+                {canManageStructure && (
                   <Button onClick={() => setShowLinkDialog(true)}>
                     <UserPlus className="h-4 w-4 mr-2" />
                     Link Employee
