@@ -92,7 +92,7 @@ export const CampaignPublicationControl = ({
           met: isVerified,
           message: isVerified
             ? "Organization is verified"
-            : "Organization requires verification before publishing campaigns",
+            : "Organization requires verification before publishing fundraisers",
           type: 'verification',
         });
       }
@@ -115,7 +115,7 @@ export const CampaignPublicationControl = ({
         met: paymentConfigured,
         message: paymentConfigured
           ? "Payment processing is configured"
-          : "Payment account must be configured before publishing campaigns",
+          : "Payment account must be configured before publishing fundraisers",
         type: 'payment',
       });
 
@@ -130,8 +130,8 @@ export const CampaignPublicationControl = ({
         reqs.push({
           met: hasItems,
           message: hasItems
-            ? "Campaign has items configured"
-            : "Campaign should have at least one item before publishing",
+            ? "Fundraiser has items configured"
+            : "Fundraiser should have at least one item before publishing",
           type: 'content',
         });
       }
@@ -183,7 +183,7 @@ export const CampaignPublicationControl = ({
 
       toast({
         title: "Success",
-        description: `Campaign ${newStatus === 'published' ? 'published' : 'saved as draft'} successfully!`,
+        description: `Fundraiser ${newStatus === 'published' ? 'published' : 'saved as draft'} successfully!`,
       });
 
       onStatusChange();
@@ -193,7 +193,7 @@ export const CampaignPublicationControl = ({
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to update campaign status",
+        description: error.message || "Failed to update fundraiser status",
       });
     } finally {
       setLoading(false);
@@ -238,12 +238,12 @@ export const CampaignPublicationControl = ({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {currentStatus === 'published' ? 'Unpublish Campaign' : 'Publish Campaign'}
+              {currentStatus === 'published' ? 'Unpublish Fundraiser' : 'Publish Fundraiser'}
             </DialogTitle>
             <DialogDescription>
               {currentStatus === 'published'
-                ? 'This will make the campaign unavailable to the public.'
-                : 'This will make your campaign live and visible to donors.'}
+                ? 'This will make the fundraiser unavailable to the public.'
+                : 'This will make your fundraiser live and visible to donors.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -278,7 +278,7 @@ export const CampaignPublicationControl = ({
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
                       <strong>Cannot publish:</strong> Please resolve the critical issues above
-                      before publishing this campaign.
+                      before publishing this fundraiser.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -287,8 +287,8 @@ export const CampaignPublicationControl = ({
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Unpublishing will prevent new donations. Existing campaign links will show
-                  that the campaign has ended.
+                  Unpublishing will prevent new donations. Existing fundraiser links will show
+                  that the fundraiser has ended.
                 </AlertDescription>
               </Alert>
             )}
@@ -315,7 +315,7 @@ export const CampaignPublicationControl = ({
                 onClick={() => handleStatusChange('published')}
                 disabled={loading || !canPublish}
               >
-                {loading ? "Publishing..." : "Publish Campaign"}
+                {loading ? "Publishing..." : "Publish Fundraiser"}
               </Button>
             )}
           </DialogFooter>

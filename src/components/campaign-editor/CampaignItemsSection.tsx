@@ -311,8 +311,8 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
           <div className="flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
             <div>
-              <CardTitle>Campaign Items</CardTitle>
-              <CardDescription>Products or sponsorship levels for your campaign</CardDescription>
+              <CardTitle>Fundraiser Items</CardTitle>
+              <CardDescription>Products or sponsorship levels for your fundraiser</CardDescription>
             </div>
           </div>
           {!isFormVisible && items.length > 0 && (

@@ -125,10 +125,10 @@ export function BasicDetailsSection({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="name">Campaign Name *</Label>
+        <Label htmlFor="name">Fundraiser Name *</Label>
         <Input
           id="name"
-          placeholder="Enter campaign name"
+          placeholder="Enter fundraiser name"
           value={data.name}
           onChange={(e) => handleNameChange(e.target.value)}
         />
@@ -138,7 +138,7 @@ export function BasicDetailsSection({
         <Label htmlFor="slug">URL Slug *</Label>
         <Input
           id="slug"
-          placeholder="campaign-url-slug"
+          placeholder="fundraiser-url-slug"
           value={data.slug}
           className={slugExists ? "border-destructive" : ""}
           onChange={(e) => {
@@ -148,7 +148,7 @@ export function BasicDetailsSection({
           }}
         />
         <p className="text-sm text-muted-foreground">
-          Must be unique. This will be your campaign URL.
+          Must be unique. This will be your fundraiser URL.
           {checkingSlug && <span className="ml-2">Checking...</span>}
           {slugExists && <span className="ml-2 text-destructive">This slug is already taken</span>}
         </p>
@@ -158,7 +158,7 @@ export function BasicDetailsSection({
         <Label htmlFor="description">Description</Label>
         <Textarea
           id="description"
-          placeholder="Enter campaign description"
+          placeholder="Enter fundraiser description"
           rows={3}
           value={data.description}
           onChange={(e) => onUpdate({ description: e.target.value })}
@@ -166,7 +166,7 @@ export function BasicDetailsSection({
       </div>
 
       <div className="space-y-2">
-        <Label>Campaign Image</Label>
+        <Label>Fundraiser Image</Label>
         <div className="space-y-2">
           {data.imageUrl && !campaignImageFile && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -236,7 +236,7 @@ export function BasicDetailsSection({
         )}
 
         <div className={`space-y-2 ${groups.length <= 1 ? 'col-span-2' : ''}`}>
-          <Label>Campaign Type *</Label>
+          <Label>Fundraiser Type *</Label>
           <Select value={data.campaignTypeId} onValueChange={(v) => onUpdate({ campaignTypeId: v })}>
             <SelectTrigger>
               <SelectValue placeholder="Select type" />
