@@ -648,6 +648,18 @@ export default function DonorSegmentation() {
                           </Button>
                           <Button
                             size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setContactFundraiserListId(list.id);
+                              setContactFundraiserOpen(true);
+                            }}
+                            disabled={list.member_count === 0}
+                          >
+                            <Megaphone className="mr-1 h-3 w-3" />
+                            Contact about Fundraiser
+                          </Button>
+                          <Button
+                            size="sm"
                             variant="ghost"
                             onClick={() => handleDeleteList(list.id)}
                           >
