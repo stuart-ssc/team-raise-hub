@@ -340,9 +340,9 @@ export function EditBusinessDialog({
                 name="business_email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <LockedLabel locked={lockedMap.business_email}>Email</LockedLabel>
                     <FormControl>
-                      <Input {...field} type="email" placeholder="contact@business.com" />
+                      <Input {...field} type="email" placeholder="contact@business.com" disabled={lockedMap.business_email} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -354,9 +354,9 @@ export function EditBusinessDialog({
                 name="business_phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone</FormLabel>
+                    <LockedLabel locked={lockedMap.business_phone}>Phone</LockedLabel>
                     <FormControl>
-                      <Input {...field} type="tel" placeholder="(555) 123-4567" />
+                      <Input {...field} type="tel" placeholder="(555) 123-4567" disabled={lockedMap.business_phone} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -368,9 +368,9 @@ export function EditBusinessDialog({
                 name="website_url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Website</FormLabel>
+                    <LockedLabel locked={lockedMap.website_url}>Website</LockedLabel>
                     <FormControl>
-                      <Input {...field} type="url" placeholder="https://business.com" />
+                      <Input {...field} type="url" placeholder="https://business.com" disabled={lockedMap.website_url} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
