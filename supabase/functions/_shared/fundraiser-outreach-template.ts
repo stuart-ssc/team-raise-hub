@@ -254,9 +254,3 @@ export function renderOutreachHtml(args: RenderArgs): string {
 </html>`;
 }
 
-// Allow either pitch_video_url or pitch_recorded_video_url
-declare module "./fundraiser-outreach-template.ts" {
-  interface OutreachOwner {
-    pitchRecordedVideoUrl?: string | null;
-  }
-}
