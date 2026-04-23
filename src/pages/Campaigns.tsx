@@ -1,20 +1,39 @@
+import * as React from "react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, ChevronUp, Plus, Search, ExternalLink, Globe, Eye, AlertCircle, Sparkles, PenLine, MoreHorizontal, Trash2, RotateCcw } from "lucide-react";
+import {
+  ChevronDown,
+  Plus,
+  Search,
+  ExternalLink,
+  Globe,
+  Eye,
+  AlertCircle,
+  Sparkles,
+  PenLine,
+  MoreHorizontal,
+  Trash2,
+  RotateCcw,
+  Copy,
+  QrCode,
+  Share2,
+  Link2,
+  Clock,
+} from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ShareMenu } from "@/components/ShareMenu";
+import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,14 +69,12 @@ export default function Campaigns() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<keyof Campaign>("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterBy, setFilterBy] = useState("active");
   const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(null);
+  const [qrDialogCampaign, setQrDialogCampaign] = useState<Campaign | null>(null);
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup, groups } = useActiveGroup();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
 
   const permissionLevel = organizationUser?.user_type.permission_level;
   const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
@@ -246,15 +263,6 @@ export default function Campaigns() {
   const isDeletable = (c: Campaign) =>
     c.publication_status === "draft" || c.publication_status === "pending_verification";
 
-  const handleSort = (field: keyof Campaign) => {
-    if (sortBy === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortDirection("asc");
-    }
-  };
-
   const isExpired = (c: Campaign) => {
     if (c.publication_status !== 'published') return false;
     if (!c.end_date) return false;
@@ -289,24 +297,8 @@ export default function Campaigns() {
   });
 
   const sortedCampaigns = [...filteredCampaigns].sort((a, b) => {
-    const aValue = a[sortBy];
-    const bValue = b[sortBy];
-    
-    if (aValue === null && bValue === null) return 0;
-    if (aValue === null) return 1;
-    if (bValue === null) return -1;
-    
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortDirection === "asc" 
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    }
-    
-    if (typeof aValue === 'number' && typeof bValue === 'number') {
-      return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
-    }
-    
-    return 0;
+    // Default sort: alphabetical by name (stable, matches manager expectations)
+    return (a.name || "").localeCompare(b.name || "");
   });
 
   useEffect(() => {
@@ -404,332 +396,34 @@ export default function Campaigns() {
               </DropdownMenu>
             </div>
 
-            {isMobile && (
-              <div className="flex items-center gap-2">
-                <Select value={sortBy} onValueChange={(value) => setSortBy(value as keyof Campaign)}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="name">Name</SelectItem>
-                    <SelectItem value="group_name">Group</SelectItem>
-                    <SelectItem value="goal_amount">Goal Amount</SelectItem>
-                    <SelectItem value="amount_raised">Amount Raised</SelectItem>
-                    <SelectItem value="start_date">Start Date</SelectItem>
-                    <SelectItem value="end_date">End Date</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
-                  title={sortDirection === "asc" ? "Ascending" : "Descending"}
-                >
-                  {sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </Button>
-              </div>
-            )}
-
-            {isMobile ? (
-              // Mobile Card View
-              <div className="grid grid-cols-1 gap-4">
-                {sortedCampaigns.length === 0 ? (
-                  <Card>
-                    <CardContent className="py-12 text-center">
-                      <p className="text-muted-foreground mb-4">No fundraisers found.</p>
-                      <Button 
-                        onClick={() => navigate("/dashboard/fundraisers/new")}
-                        className="flex items-center gap-2"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Let's Create a Fundraiser
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  sortedCampaigns.map((campaign) => (
-                    <Card key={campaign.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <CardTitle className="text-base truncate">{campaign.name}</CardTitle>
-                              {campaign.slug && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 shrink-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    window.open(`/c/${campaign.slug}`, '_blank');
-                                  }}
-                                  title="Preview landing page"
-                                >
-                                  <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                                </Button>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">{campaign.group_name || "—"}</p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/dashboard/fundraisers/${campaign.id}/edit`)}
-                            >
-                              Manage
-                            </Button>
-                            {filterBy === "deleted" ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRestoreCampaign(campaign.id)}
-                                title="Restore campaign"
-                              >
-                                <RotateCcw className="h-4 w-4" />
-                              </Button>
-                            ) : isDeletable(campaign) ? (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="sm" className="px-2">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    className="text-destructive focus:text-destructive"
-                                    onClick={() => setCampaignToDelete(campaign)}
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            ) : null}
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <Badge variant="outline">{campaign.campaign_type_name || "—"}</Badge>
-                          <Badge 
-                            variant={isExpired(campaign) ? 'secondary' : campaign.publication_status === 'published' ? 'default' : 'outline'}
-                            className="gap-1"
-                          >
-                            {isExpired(campaign) ? (
-                              <><AlertCircle className="h-3 w-3" /> Expired</>
-                            ) : campaign.publication_status === 'published' ? (
-                              <><Globe className="h-3 w-3" /> Published</>
-                            ) : campaign.publication_status === 'pending_verification' ? (
-                              <><AlertCircle className="h-3 w-3" /> Pending</>
-                            ) : (
-                              <><Eye className="h-3 w-3" /> Draft</>
-                            )}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-baseline text-sm">
-                            <span className="text-muted-foreground">Progress</span>
-                            <span className="font-semibold">
-                              ${(campaign.amount_raised || 0).toLocaleString()} / ${campaign.goal_amount ? campaign.goal_amount.toLocaleString() : '0'}
-                            </span>
-                          </div>
-                          <Progress 
-                            value={campaign.goal_amount ? Math.min((campaign.amount_raised || 0) / campaign.goal_amount * 100, 100) : 0} 
-                          />
-                          <div className="text-sm text-muted-foreground">
-                            {campaign.start_date && campaign.end_date 
-                              ? `${new Date(campaign.start_date).toLocaleDateString()}-${new Date(campaign.end_date).toLocaleDateString()}`
-                              : campaign.start_date 
-                                ? new Date(campaign.start_date).toLocaleDateString()
-                                : campaign.end_date
-                                  ? new Date(campaign.end_date).toLocaleDateString()
-                                  : "—"
-                            }
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
+            {sortedCampaigns.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground mb-4">No fundraisers found.</p>
+                  <Button
+                    onClick={() => navigate("/dashboard/fundraisers/new")}
+                    className="flex items-center gap-2 mx-auto"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Let's Create a Fundraiser
+                  </Button>
+                </CardContent>
+              </Card>
             ) : (
-              // Desktop Table View
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead 
-                        className="cursor-pointer select-none"
-                        onClick={() => handleSort("name")}
-                      >
-                        <div className="flex items-center gap-2">
-                          Fundraiser Name
-                          {sortBy === "name" && (
-                            sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                          )}
-                        </div>
-                      </TableHead>
-                    <TableHead 
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("group_name")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Group
-                        {sortBy === "group_name" && (
-                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("campaign_type_name")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Type
-                        {sortBy === "campaign_type_name" && (
-                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("amount_raised")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Amount Raised
-                        {sortBy === "amount_raised" && (
-                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("start_date")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Dates
-                        {sortBy === "start_date" && (
-                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedCampaigns.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12">
-                        <div className="flex flex-col items-center space-y-4">
-                          <p className="text-muted-foreground">No fundraisers found.</p>
-                          <Button 
-                            onClick={() => navigate("/dashboard/fundraisers/new")}
-                            className="flex items-center gap-2"
-                          >
-                            <Plus className="h-4 w-4" />
-                            Let's Create a Fundraiser
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    sortedCampaigns.map((campaign) => (
-                      <TableRow key={campaign.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {campaign.name}
-                            {campaign.slug && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.open(`/c/${campaign.slug}`, '_blank');
-                                }}
-                                title="Preview landing page"
-                              >
-                                <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{campaign.group_name || "—"}</TableCell>
-                        <TableCell>{campaign.campaign_type_name || "—"}</TableCell>
-                        <TableCell>
-                          {`$${(campaign.amount_raised || 0).toLocaleString()}/${campaign.goal_amount ? campaign.goal_amount.toLocaleString() : '0'}`}
-                        </TableCell>
-                        <TableCell>
-                          {campaign.start_date && campaign.end_date 
-                            ? `${new Date(campaign.start_date).toLocaleDateString()}-${new Date(campaign.end_date).toLocaleDateString()}`
-                            : campaign.start_date 
-                              ? new Date(campaign.start_date).toLocaleDateString()
-                              : campaign.end_date
-                                ? new Date(campaign.end_date).toLocaleDateString()
-                                : "—"
-                          }
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={isExpired(campaign) ? 'secondary' : campaign.publication_status === 'published' ? 'default' : 'outline'}
-                            className="gap-1"
-                          >
-                            {isExpired(campaign) ? (
-                              <><AlertCircle className="h-3 w-3" /> Expired</>
-                            ) : campaign.publication_status === 'published' ? (
-                              <><Globe className="h-3 w-3" /> Published</>
-                            ) : campaign.publication_status === 'pending_verification' ? (
-                              <><AlertCircle className="h-3 w-3" /> Pending</>
-                            ) : (
-                              <><Eye className="h-3 w-3" /> Draft</>
-                            )}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/dashboard/fundraisers/${campaign.id}/edit`)}
-                            >
-                              Manage
-                            </Button>
-                            {filterBy === "deleted" ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRestoreCampaign(campaign.id)}
-                                title="Restore campaign"
-                              >
-                                <RotateCcw className="h-4 w-4" />
-                              </Button>
-                            ) : isDeletable(campaign) ? (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="sm" className="px-2">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    className="text-destructive focus:text-destructive"
-                                    onClick={() => setCampaignToDelete(campaign)}
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                  </TableBody>
-                </Table>
+              <div className="space-y-4">
+                {sortedCampaigns.map((campaign) => (
+                  <CampaignManagerCard
+                    key={campaign.id}
+                    campaign={campaign}
+                    isExpired={isExpired(campaign)}
+                    isDeletable={isDeletable(campaign)}
+                    filterBy={filterBy}
+                    onManage={() => navigate(`/dashboard/fundraisers/${campaign.id}/edit`)}
+                    onShowQR={() => setQrDialogCampaign(campaign)}
+                    onDelete={() => setCampaignToDelete(campaign)}
+                    onRestore={() => handleRestoreCampaign(campaign.id)}
+                  />
+                ))}
               </div>
             )}
         </div>
@@ -753,6 +447,314 @@ export default function Campaigns() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {qrDialogCampaign && qrDialogCampaign.slug && (
+          <QRDialog
+            open={!!qrDialogCampaign}
+            onOpenChange={(open) => !open && setQrDialogCampaign(null)}
+            url={`${window.location.origin}/c/${qrDialogCampaign.slug}`}
+            campaignName={qrDialogCampaign.name}
+            logoUrl={pickBrandLogo({ groupLogo: null, schoolLogo: null, orgLogo: null })}
+            schoolOrOrgName={null}
+            groupName={qrDialogCampaign.group_name}
+            campaignDescription={qrDialogCampaign.description}
+          />
+        )}
     </DashboardPageLayout>
+  );
+}
+
+/* ============================ Card subcomponents ============================ */
+
+function fmtMoney(n: number) {
+  return `$${n.toLocaleString("en-US", {
+    minimumFractionDigits: n % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function fmtShortDate(iso: string | null) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function daysLeft(endIso: string | null): number | null {
+  if (!endIso) return null;
+  const end = new Date(endIso).getTime();
+  if (Number.isNaN(end)) return null;
+  return Math.ceil((end - Date.now()) / (1000 * 60 * 60 * 24));
+}
+
+function DaysLeftChip({ endDate }: { endDate: string | null }) {
+  const d = daysLeft(endDate);
+  if (d === null || d < 0) return null;
+  let cls = "bg-emerald-50 text-emerald-700 border-emerald-100";
+  if (d <= 7) cls = "bg-red-50 text-red-700 border-red-100";
+  else if (d <= 14) cls = "bg-amber-50 text-amber-700 border-amber-100";
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
+        cls
+      )}
+    >
+      <Clock className="h-3 w-3" />
+      {d} day{d === 1 ? "" : "s"} left
+    </div>
+  );
+}
+
+const IconBtn = React.forwardRef<
+  HTMLButtonElement,
+  {
+    children: React.ReactNode;
+    label: string;
+    onClick?: () => void;
+  } & React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ children, label, onClick, className, ...rest }, ref) => (
+  <button
+    ref={ref}
+    type="button"
+    aria-label={label}
+    title={label}
+    onClick={onClick}
+    {...rest}
+    className={cn(
+      "inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground",
+      className
+    )}
+  >
+    {children}
+  </button>
+));
+IconBtn.displayName = "IconBtn";
+
+function StatColumn({ label, value, caption }: { label: string; value: string; caption?: string }) {
+  return (
+    <div>
+      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mt-1.5 font-serif text-lg font-semibold text-foreground">{value}</p>
+      {caption && <p className="text-xs text-muted-foreground truncate">{caption}</p>}
+    </div>
+  );
+}
+
+function CampaignManagerCard({
+  campaign,
+  isExpired,
+  isDeletable,
+  filterBy,
+  onManage,
+  onShowQR,
+  onDelete,
+  onRestore,
+}: {
+  campaign: Campaign;
+  isExpired: boolean;
+  isDeletable: boolean;
+  filterBy: string;
+  onManage: () => void;
+  onShowQR: () => void;
+  onDelete: () => void;
+  onRestore: () => void;
+}) {
+  const { toast } = useToast();
+  const isRoster = !!campaign.enable_roster_attribution;
+  const stripeColor = isRoster ? "bg-emerald-500" : "bg-sky-500";
+  const progressColor = isRoster ? "bg-emerald-500" : "bg-sky-500";
+  const typePill = isRoster
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : "border-sky-200 bg-sky-50 text-sky-700";
+
+  const hasSlug = !!campaign.slug;
+  const shareUrl = hasSlug ? `${window.location.origin}/c/${campaign.slug}` : "";
+  const displayUrl = shareUrl.replace(/^https?:\/\//, "");
+
+  const goal = campaign.goal_amount || 0;
+  const raised = campaign.amount_raised || 0;
+  const pct = goal > 0 ? Math.min(100, (raised / goal) * 100) : 0;
+
+  const startStr = fmtShortDate(campaign.start_date);
+  const endStr = fmtShortDate(campaign.end_date);
+  const dateRange =
+    startStr && endStr
+      ? `${startStr} – ${endStr}`
+      : startStr
+        ? `Starts ${startStr}`
+        : endStr
+          ? `Ends ${endStr}`
+          : "—";
+
+  const copyLink = () => {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl);
+    toast({ title: "Link copied", description: "Share it anywhere." });
+  };
+
+  const statusBadge = isExpired ? (
+    <Badge variant="secondary" className="gap-1">
+      <AlertCircle className="h-3 w-3" /> Expired
+    </Badge>
+  ) : campaign.publication_status === "published" ? (
+    <Badge variant="default" className="gap-1">
+      <Globe className="h-3 w-3" /> Published
+    </Badge>
+  ) : campaign.publication_status === "pending_verification" ? (
+    <Badge variant="outline" className="gap-1">
+      <AlertCircle className="h-3 w-3" /> Pending
+    </Badge>
+  ) : (
+    <Badge variant="outline" className="gap-1">
+      <Eye className="h-3 w-3" /> Draft
+    </Badge>
+  );
+
+  return (
+    <Card className="overflow-hidden">
+      <div className="flex">
+        <div className={cn("w-1.5 shrink-0", stripeColor)} aria-hidden />
+        <div className="flex-1 p-5 md:p-6">
+          {/* Header row */}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-serif text-2xl font-semibold leading-tight text-foreground">
+                  {campaign.name}
+                </h3>
+                {hasSlug && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(`/c/${campaign.slug}`, "_blank")}
+                    title="Preview landing page"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </button>
+                )}
+                <Badge variant="outline" className={cn("text-xs", typePill)}>
+                  {isRoster ? "Roster" : "Team"}
+                </Badge>
+                {statusBadge}
+              </div>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                {campaign.group_name && <span>{campaign.group_name}</span>}
+                {campaign.campaign_type_name && (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span>{campaign.campaign_type_name}</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <DaysLeftChip endDate={campaign.end_date} />
+          </div>
+
+          {/* Stat strip */}
+          <div className="mt-5 grid gap-5 md:grid-cols-4 md:gap-6">
+            <div className="md:col-span-1">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                GOAL
+              </p>
+              <div className="mt-1.5 flex items-baseline justify-between gap-2">
+                <span className="font-serif text-lg font-semibold text-foreground">
+                  {fmtMoney(raised)}{" "}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    / {fmtMoney(goal)}
+                  </span>
+                </span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {Math.round(pct)}%
+                </span>
+              </div>
+              <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn("h-full rounded-full transition-all", progressColor)}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+            <StatColumn label="DATES" value={dateRange} />
+            <StatColumn label="TYPE" value={campaign.campaign_type_name || "—"} />
+            <StatColumn label="GROUP" value={campaign.group_name || "—"} />
+          </div>
+
+          {/* Link bar + Manage */}
+          <div className="mt-5 flex flex-col gap-2 rounded-lg border bg-muted/40 px-3 py-2 lg:flex-row lg:items-center">
+            <div className="min-w-0 flex-1">
+              {hasSlug ? (
+                <div className="flex min-w-0 items-center gap-2 rounded-md border bg-background/80 px-3 py-2 text-sm text-muted-foreground">
+                  <Link2 className="h-4 w-4 shrink-0" />
+                  <span className="min-w-0 truncate font-mono">{displayUrl}</span>
+                </div>
+              ) : (
+                <div className="flex min-w-0 items-center gap-2 rounded-md border bg-background/80 px-3 py-2 text-sm text-muted-foreground italic">
+                  <Link2 className="h-4 w-4 shrink-0" />
+                  <span>No public link yet — publish to generate one</span>
+                </div>
+              )}
+            </div>
+            <div className="flex shrink-0 items-center justify-end gap-1">
+              {hasSlug && (
+                <>
+                  <IconBtn label="Copy link" onClick={copyLink}>
+                    <Copy className="h-4 w-4" />
+                  </IconBtn>
+                  <IconBtn label="Show QR code" onClick={onShowQR}>
+                    <QrCode className="h-4 w-4" />
+                  </IconBtn>
+                  <ShareMenu
+                    url={shareUrl}
+                    title={`Support ${campaign.name}`}
+                    text={`Help ${campaign.group_name || "us"} reach the goal for ${campaign.name}!`}
+                  >
+                    <IconBtn label="Share">
+                      <Share2 className="h-4 w-4" />
+                    </IconBtn>
+                  </ShareMenu>
+                  <IconBtn
+                    label="Open"
+                    onClick={() => window.open(shareUrl, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </IconBtn>
+                </>
+              )}
+              <Button size="sm" onClick={onManage} className="ml-1">
+                Manage
+              </Button>
+              {filterBy === "deleted" ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRestore}
+                  title="Restore campaign"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              ) : isDeletable ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="px-2">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={onDelete}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }
