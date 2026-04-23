@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
+import { DisengageContactDialog } from "@/components/DisengageContactDialog";
 import EditDonorDialog from "@/components/EditDonorDialog";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -83,6 +84,8 @@ interface BusinessAffiliation {
   is_primary_contact: boolean;
   auto_linked: boolean;
   linked_at: string;
+  is_verified: boolean;
+  blocked_at: string | null;
 }
 
 interface ListMembership {
@@ -109,6 +112,7 @@ const DonorProfile = () => {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [unlinkingAffiliation, setUnlinkingAffiliation] = useState<BusinessAffiliation | null>(null);
+  const [disengagingAffiliation, setDisengagingAffiliation] = useState<{ aff: BusinessAffiliation; mode: "disengage" | "reengage" } | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [givingOpen, setGivingOpen] = useState(true);
   const [insightsOpen, setInsightsOpen] = useState(false);
@@ -243,13 +247,14 @@ const DonorProfile = () => {
           is_primary_contact,
           auto_linked,
           linked_at,
+          blocked_at,
           businesses!inner(
             business_name,
-            logo_url
+            logo_url,
+            verification_status
           )
         `)
         .eq("donor_id", donorId)
-        .is("blocked_at", null)
         .order("linked_at", { ascending: false });
 
       if (affiliationsError) throw affiliationsError;
@@ -263,6 +268,8 @@ const DonorProfile = () => {
         is_primary_contact: aff.is_primary_contact || false,
         auto_linked: aff.auto_linked || false,
         linked_at: aff.linked_at,
+        is_verified: aff.businesses?.verification_status === "verified",
+        blocked_at: aff.blocked_at || null,
       }));
 
       setBusinessAffiliations(formattedAffiliations);
@@ -742,8 +749,22 @@ const DonorProfile = () => {
                                     size="sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setUnlinkingAffiliation(affiliation);
+                                      if (affiliation.is_verified) {
+                                        setDisengagingAffiliation({
+                                          aff: affiliation,
+                                          mode: affiliation.blocked_at ? "reengage" : "disengage",
+                                        });
+                                      } else {
+                                        setUnlinkingAffiliation(affiliation);
+                                      }
                                     }}
+                                    title={
+                                      affiliation.is_verified
+                                        ? affiliation.blocked_at
+                                          ? "Re-engage"
+                                          : "Disengage"
+                                        : "Unlink"
+                                    }
                                   >
                                     <X className="h-4 w-4" />
                                   </Button>
@@ -755,6 +776,11 @@ const DonorProfile = () => {
                                 )}
                                 {affiliation.auto_linked && (
                                   <Badge variant="secondary" className="text-xs">Auto-linked</Badge>
+                                )}
+                                {affiliation.blocked_at && (
+                                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                                    Disengaged
+                                  </Badge>
                                 )}
                                 <span className="text-xs text-muted-foreground">
                                   {format(parseISO(affiliation.linked_at), "MMM d, yyyy")}

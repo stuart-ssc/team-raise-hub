@@ -30,8 +30,9 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getTagColor, getTagBgColor } from "@/lib/utils";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, ShieldCheck } from "lucide-react";
 
 interface EditBusinessDialogProps {
   open: boolean;
@@ -52,7 +53,9 @@ interface EditBusinessDialogProps {
     country?: string | null;
     logo_url?: string | null;
     tags?: string[] | null;
+    verification_status?: string | null;
   };
+  isSystemAdmin?: boolean;
   onSuccess: () => void;
 }
 
@@ -109,11 +112,13 @@ export function EditBusinessDialog({
   open,
   onOpenChange,
   business,
+  isSystemAdmin = false,
   onSuccess,
 }: EditBusinessDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [currentTags, setCurrentTags] = useState<string[]>(business.tags || []);
+  const isVerifiedLocked = business.verification_status === "verified" && !isSystemAdmin;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -202,6 +207,16 @@ export function EditBusinessDialog({
             Update the business details below. Required fields are marked with *.
           </DialogDescription>
         </DialogHeader>
+
+        {isVerifiedLocked && (
+          <Alert>
+            <ShieldCheck className="h-4 w-4" />
+            <AlertDescription>
+              This business is verified. Core details are managed by the business
+              owner and cannot be edited here. You can still update tags.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -489,7 +504,7 @@ export function EditBusinessDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || isVerifiedLocked}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>

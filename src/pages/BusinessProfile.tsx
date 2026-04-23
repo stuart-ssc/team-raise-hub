@@ -18,14 +18,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore, TrendingUp, Activity, Play, Pause, XCircle, ChevronDown, ShieldCheck, ShieldX, Clock } from "lucide-react";
+import { Building2, Mail, Phone, Globe, MapPin, ArrowLeft, DollarSign, Users, Calendar, Star, UserPlus, X, Edit, Archive, Tag, ArchiveRestore, TrendingUp, Activity, Play, Pause, XCircle, ChevronDown, ShieldCheck, ShieldX, Clock, MoreHorizontal, BellOff, Bell, Trash2 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getSegmentInfo } from "@/lib/businessEngagement";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
+import { DisengageContactDialog } from "@/components/DisengageContactDialog";
 import { EditBusinessDialog } from "@/components/EditBusinessDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { BusinessActivityTimeline } from "@/components/BusinessActivityTimeline";
 import { BusinessInsightsPanel } from "@/components/BusinessInsightsPanel";
 import { BusinessCampaignAssetsList } from "@/components/BusinessCampaignAssetsList";
@@ -83,6 +90,8 @@ interface LinkedDonor {
   role: string | null;
   linked_at: string;
   total_donations: number;
+  blocked_at: string | null;
+  blocked_by: string | null;
 }
 
 interface DonationHistory {
@@ -129,6 +138,8 @@ const BusinessProfile = () => {
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [unlinkingDonor, setUnlinkingDonor] = useState<LinkedDonor | null>(null);
+  const [disengagingDonor, setDisengagingDonor] = useState<{ donor: LinkedDonor; mode: "disengage" | "reengage" } | null>(null);
+  const [isSystemAdmin, setIsSystemAdmin] = useState(false);
   const [showEnrollmentDialog, setShowEnrollmentDialog] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [savingTags, setSavingTags] = useState(false);
@@ -155,6 +166,19 @@ const BusinessProfile = () => {
       fetchEnrollments();
     }
   }, [businessId, organizationUser?.organization_id, organizationUserLoading, connectionsLoading]);
+
+  useEffect(() => {
+    const checkSystemAdmin = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("system_admin")
+        .eq("id", user.id)
+        .single();
+      setIsSystemAdmin(data?.system_admin === true);
+    };
+    checkSystemAdmin();
+  }, [user?.id]);
 
   const fetchBusinessDetails = async () => {
     try {
@@ -196,7 +220,7 @@ const BusinessProfile = () => {
       // Fetch linked donors
       const { data: businessDonors, error: donorsError } = await supabase
         .from("business_donors")
-        .select("donor_id, is_primary_contact, role, linked_at")
+        .select("donor_id, is_primary_contact, role, linked_at, blocked_at, blocked_by")
         .eq("business_id", businessId)
         .eq("organization_id", organizationUser?.organization_id);
 
@@ -234,6 +258,8 @@ const BusinessProfile = () => {
               role: bd.role,
               linked_at: bd.linked_at,
               total_donations: totalDonations,
+              blocked_at: (bd as any).blocked_at || null,
+              blocked_by: (bd as any).blocked_by || null,
             };
           })
         );
@@ -669,7 +695,14 @@ const BusinessProfile = () => {
     !!business &&
     business.added_by_organization_user_id === organizationUser.id;
 
-  const canEdit = canManageBusinesses || (isParticipantView && ownsBusiness);
+  const isVerified = business?.verification_status === "verified";
+  const canEditBase = canManageBusinesses || (isParticipantView && ownsBusiness);
+  // Editing details / linking / removing contacts is locked once verified (system admins bypass)
+  const canEditDetails = (canEditBase && !isVerified) || isSystemAdmin;
+  // Disengage / re-engage is allowed regardless of verification status
+  const canManageContactEngagement = canEditBase || isSystemAdmin;
+  // Backwards-compat alias for existing references in markup
+  const canEdit = canEditDetails;
 
   const getVerificationBadge = (status: string) => {
     switch (status) {
@@ -785,6 +818,25 @@ const BusinessProfile = () => {
           </Card>
         )}
 
+        {/* Verified Info Banner */}
+        {isVerified && !isSystemAdmin && (
+          <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
+            <CardContent className="py-4">
+              <div className="flex items-start gap-2 text-green-700 dark:text-green-400">
+                <ShieldCheck className="h-5 w-5 mt-0.5" />
+                <div>
+                  <p className="font-semibold">This business is verified</p>
+                  <p className="text-sm text-green-600 dark:text-green-500">
+                    Details are managed by the business owner. You can still archive
+                    it from your list and disengage individual contacts to stop
+                    outreach.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
@@ -814,16 +866,20 @@ const BusinessProfile = () => {
               </div>
             </div>
           </div>
-            {canEdit && (
+            {(canEditDetails || canManageBusinesses || ownsBusiness || isSystemAdmin) && (
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setShowEditDialog(true)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-                <Button onClick={() => setShowLinkDialog(true)}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Link Employee
-                </Button>
+                {canEditDetails && (
+                  <Button variant="outline" onClick={() => setShowEditDialog(true)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                )}
+                {canEditDetails && (
+                  <Button onClick={() => setShowLinkDialog(true)}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Link Employee
+                  </Button>
+                )}
                 {canManageBusinesses && !business.archived_at && (
                   <Button variant="outline" onClick={() => setShowEnrollmentDialog(true)}>
                     <UserPlus className="h-4 w-4 mr-2" />
@@ -930,8 +986,8 @@ const BusinessProfile = () => {
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Role</TableHead>
-                        <TableHead className="text-right">Donated</TableHead>
-                        {canEdit && (
+                       <TableHead className="text-right">Donated</TableHead>
+                        {canManageContactEngagement && (
                           <TableHead className="text-right">Actions</TableHead>
                         )}
                       </TableRow>
@@ -952,6 +1008,11 @@ const BusinessProfile = () => {
                                   Primary
                                 </Badge>
                               )}
+                              {donor.blocked_at && (
+                                <Badge variant="outline" className="text-xs text-muted-foreground">
+                                  Disengaged
+                                </Badge>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground">{donor.donor_email}</TableCell>
@@ -965,18 +1026,44 @@ const BusinessProfile = () => {
                           <TableCell className="text-right font-medium">
                             ${donor.total_donations.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </TableCell>
-                          {canEdit && (
+                          {canManageContactEngagement && (
                             <TableCell
                               className="text-right"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setUnlinkingDonor(donor)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {donor.blocked_at ? (
+                                    <DropdownMenuItem
+                                      onClick={() => setDisengagingDonor({ donor, mode: "reengage" })}
+                                    >
+                                      <Bell className="h-4 w-4 mr-2" />
+                                      Re-engage
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem
+                                      onClick={() => setDisengagingDonor({ donor, mode: "disengage" })}
+                                    >
+                                      <BellOff className="h-4 w-4 mr-2" />
+                                      Disengage
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canEditDetails && (
+                                    <DropdownMenuItem
+                                      onClick={() => setUnlinkingDonor(donor)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Remove link
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           )}
                         </TableRow>
@@ -1434,14 +1521,36 @@ const BusinessProfile = () => {
         businessId={businessId || ""}
         organizationId={organizationUser?.organization_id || ""}
         isPrimaryContact={unlinkingDonor?.is_primary_contact || false}
+        isBusinessVerified={isVerified && !isSystemAdmin}
+        onSwitchToDisengage={() => {
+          if (unlinkingDonor) {
+            setDisengagingDonor({ donor: unlinkingDonor, mode: "disengage" });
+            setUnlinkingDonor(null);
+          }
+        }}
         onSuccess={fetchBusinessDetails}
       />
+
+      {disengagingDonor && (
+        <DisengageContactDialog
+          open={!!disengagingDonor}
+          onOpenChange={(open) => !open && setDisengagingDonor(null)}
+          donorName={disengagingDonor.donor.donor_name}
+          businessName={business?.business_name || ""}
+          donorId={disengagingDonor.donor.donor_id}
+          businessId={businessId || ""}
+          organizationId={organizationUser?.organization_id || ""}
+          mode={disengagingDonor.mode}
+          onSuccess={fetchBusinessDetails}
+        />
+      )}
 
       {business && (
         <EditBusinessDialog
           open={showEditDialog}
           onOpenChange={setShowEditDialog}
           business={business}
+          isSystemAdmin={isSystemAdmin}
           onSuccess={fetchBusinessDetails}
         />
       )}

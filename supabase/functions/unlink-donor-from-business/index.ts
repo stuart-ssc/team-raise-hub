@@ -35,6 +35,31 @@ Deno.serve(async (req) => {
 
     console.log('Unlink donor from business request:', { donorId, businessId, organizationId });
 
+    // Check business verification — verified businesses can only be modified by system admins
+    const { data: businessRow, error: businessRowError } = await supabaseClient
+      .from('businesses')
+      .select('verification_status')
+      .eq('id', businessId)
+      .single();
+
+    if (businessRowError) {
+      throw new Error('Business not found');
+    }
+
+    let isSystemAdmin = false;
+    {
+      const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('system_admin')
+        .eq('id', user.id)
+        .single();
+      isSystemAdmin = profile?.system_admin === true;
+    }
+
+    if (businessRow.verification_status === 'verified' && !isSystemAdmin) {
+      throw new Error('This business is verified — use Disengage instead of removing the contact.');
+    }
+
     // Verify user has permission (organization_admin or program_manager)
     const { data: orgUser, error: orgUserError } = await supabaseClient
       .from('organization_user')
