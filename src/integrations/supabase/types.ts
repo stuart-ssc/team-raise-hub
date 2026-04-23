@@ -4719,6 +4719,10 @@ export type Database = {
       }
       is_donor_only_user: { Args: { check_user_id: string }; Returns: boolean }
       is_system_admin: { Args: { user_id: string }; Returns: boolean }
+      reassign_business_ownership: {
+        Args: { _business_id: string; _new_owner_org_user_id: string }
+        Returns: undefined
+      }
       reassign_donor_ownership: {
         Args: { _donor_id: string; _new_owner_org_user_id: string }
         Returns: undefined
