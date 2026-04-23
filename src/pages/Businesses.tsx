@@ -683,6 +683,14 @@ const Businesses = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
+          {/* Mobile: Participant Add Business */}
+          {isMobile && isParticipantView && (
+            <Button onClick={() => setShowAddDialog(true)} className="w-full">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Business
+            </Button>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -890,6 +898,12 @@ const Businesses = () => {
                                 Archived
                               </Badge>
                             )}
+                            {organizationUser && business.added_by_organization_user_id === organizationUser.id && (
+                              <Badge variant="outline" className="text-xs gap-1">
+                                <UserCheck className="h-3 w-3" />
+                                Added by you
+                              </Badge>
+                            )}
                           </div>
                           {(typeof business.engagement_score === 'number' || business.engagement_segment) && (
                             <div className="mt-1">
@@ -964,7 +978,10 @@ const Businesses = () => {
                     </div>
                   )}
                 </CardContent>
-                {canManageBusinesses && !isParticipantView && (
+                {(
+                  (canManageBusinesses && !isParticipantView) ||
+                  (isParticipantView && organizationUser && business.added_by_organization_user_id === organizationUser.id)
+                ) && (
                   <CardFooter className="pt-0 pb-4 px-6">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -989,16 +1006,18 @@ const Businesses = () => {
                           Send Email
                         </DropdownMenuItem>
                         
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuBusinessId(business.id);
-                            setShowSingleEnrollDialog(true);
-                          }}
-                        >
-                          <Target className="h-4 w-4 mr-2" />
-                          Enroll in Campaign
-                        </DropdownMenuItem>
+                        {!isParticipantView && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuBusinessId(business.id);
+                              setShowSingleEnrollDialog(true);
+                            }}
+                          >
+                            <Target className="h-4 w-4 mr-2" />
+                            Enroll in Campaign
+                          </DropdownMenuItem>
+                        )}
                         
                         <DropdownMenuItem
                           onClick={(e) => {
