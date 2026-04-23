@@ -705,8 +705,10 @@ const BusinessProfile = () => {
   const canManageStructure = (canEditBase && !isVerified) || isSystemAdmin;
   // Disengage / re-engage is allowed regardless of verification status
   const canManageContactEngagement = canEditBase || isSystemAdmin;
-  // Backwards-compat alias for existing references in markup
-  const canEdit = canManageStructure;
+  // Tags were never locked by verification — owners/admins can always tag.
+  const canEditTags = canEditBase || isSystemAdmin;
+  // Backwards-compat alias used by the tag editor block below.
+  const canEdit = canEditTags;
 
   const getVerificationBadge = (status: string) => {
     switch (status) {
