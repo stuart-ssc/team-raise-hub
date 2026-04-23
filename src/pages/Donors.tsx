@@ -867,7 +867,7 @@ const Donors = () => {
                       
                               <div 
                                 className="flex-1 cursor-pointer"
-                                onClick={() => navigate(`/dashboard/donors/${donor.id}`)}
+                                onClick={handleBodyClick}
                               >
                                 <div className="grid grid-cols-2 gap-2 pt-2 border-t">
                                   <div>
