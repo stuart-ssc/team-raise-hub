@@ -396,332 +396,34 @@ export default function Campaigns() {
               </DropdownMenu>
             </div>
 
-            {isMobile && (
-              <div className="flex items-center gap-2">
-                <Select value={sortBy} onValueChange={(value) => setSortBy(value as keyof Campaign)}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="name">Name</SelectItem>
-                    <SelectItem value="group_name">Group</SelectItem>
-                    <SelectItem value="goal_amount">Goal Amount</SelectItem>
-                    <SelectItem value="amount_raised">Amount Raised</SelectItem>
-                    <SelectItem value="start_date">Start Date</SelectItem>
-                    <SelectItem value="end_date">End Date</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
-                  title={sortDirection === "asc" ? "Ascending" : "Descending"}
-                >
-                  {sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </Button>
-              </div>
-            )}
-
-            {isMobile ? (
-              // Mobile Card View
-              <div className="grid grid-cols-1 gap-4">
-                {sortedCampaigns.length === 0 ? (
-                  <Card>
-                    <CardContent className="py-12 text-center">
-                      <p className="text-muted-foreground mb-4">No fundraisers found.</p>
-                      <Button 
-                        onClick={() => navigate("/dashboard/fundraisers/new")}
-                        className="flex items-center gap-2"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Let's Create a Fundraiser
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  sortedCampaigns.map((campaign) => (
-                    <Card key={campaign.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <CardTitle className="text-base truncate">{campaign.name}</CardTitle>
-                              {campaign.slug && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 shrink-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    window.open(`/c/${campaign.slug}`, '_blank');
-                                  }}
-                                  title="Preview landing page"
-                                >
-                                  <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                                </Button>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">{campaign.group_name || "—"}</p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/dashboard/fundraisers/${campaign.id}/edit`)}
-                            >
-                              Manage
-                            </Button>
-                            {filterBy === "deleted" ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRestoreCampaign(campaign.id)}
-                                title="Restore campaign"
-                              >
-                                <RotateCcw className="h-4 w-4" />
-                              </Button>
-                            ) : isDeletable(campaign) ? (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="sm" className="px-2">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    className="text-destructive focus:text-destructive"
-                                    onClick={() => setCampaignToDelete(campaign)}
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            ) : null}
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <Badge variant="outline">{campaign.campaign_type_name || "—"}</Badge>
-                          <Badge 
-                            variant={isExpired(campaign) ? 'secondary' : campaign.publication_status === 'published' ? 'default' : 'outline'}
-                            className="gap-1"
-                          >
-                            {isExpired(campaign) ? (
-                              <><AlertCircle className="h-3 w-3" /> Expired</>
-                            ) : campaign.publication_status === 'published' ? (
-                              <><Globe className="h-3 w-3" /> Published</>
-                            ) : campaign.publication_status === 'pending_verification' ? (
-                              <><AlertCircle className="h-3 w-3" /> Pending</>
-                            ) : (
-                              <><Eye className="h-3 w-3" /> Draft</>
-                            )}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-baseline text-sm">
-                            <span className="text-muted-foreground">Progress</span>
-                            <span className="font-semibold">
-                              ${(campaign.amount_raised || 0).toLocaleString()} / ${campaign.goal_amount ? campaign.goal_amount.toLocaleString() : '0'}
-                            </span>
-                          </div>
-                          <Progress 
-                            value={campaign.goal_amount ? Math.min((campaign.amount_raised || 0) / campaign.goal_amount * 100, 100) : 0} 
-                          />
-                          <div className="text-sm text-muted-foreground">
-                            {campaign.start_date && campaign.end_date 
-                              ? `${new Date(campaign.start_date).toLocaleDateString()}-${new Date(campaign.end_date).toLocaleDateString()}`
-                              : campaign.start_date 
-                                ? new Date(campaign.start_date).toLocaleDateString()
-                                : campaign.end_date
-                                  ? new Date(campaign.end_date).toLocaleDateString()
-                                  : "—"
-                            }
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
+            {sortedCampaigns.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground mb-4">No fundraisers found.</p>
+                  <Button
+                    onClick={() => navigate("/dashboard/fundraisers/new")}
+                    className="flex items-center gap-2 mx-auto"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Let's Create a Fundraiser
+                  </Button>
+                </CardContent>
+              </Card>
             ) : (
-              // Desktop Table View
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead 
-                        className="cursor-pointer select-none"
-                        onClick={() => handleSort("name")}
-                      >
-                        <div className="flex items-center gap-2">
-                          Fundraiser Name
-                          {sortBy === "name" && (
-                            sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                          )}
-                        </div>
-                      </TableHead>
-                    <TableHead 
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("group_name")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Group
-                        {sortBy === "group_name" && (
-                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("campaign_type_name")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Type
-                        {sortBy === "campaign_type_name" && (
-                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("amount_raised")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Amount Raised
-                        {sortBy === "amount_raised" && (
-                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer select-none"
-                      onClick={() => handleSort("start_date")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Dates
-                        {sortBy === "start_date" && (
-                          sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedCampaigns.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12">
-                        <div className="flex flex-col items-center space-y-4">
-                          <p className="text-muted-foreground">No fundraisers found.</p>
-                          <Button 
-                            onClick={() => navigate("/dashboard/fundraisers/new")}
-                            className="flex items-center gap-2"
-                          >
-                            <Plus className="h-4 w-4" />
-                            Let's Create a Fundraiser
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    sortedCampaigns.map((campaign) => (
-                      <TableRow key={campaign.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {campaign.name}
-                            {campaign.slug && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.open(`/c/${campaign.slug}`, '_blank');
-                                }}
-                                title="Preview landing page"
-                              >
-                                <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{campaign.group_name || "—"}</TableCell>
-                        <TableCell>{campaign.campaign_type_name || "—"}</TableCell>
-                        <TableCell>
-                          {`$${(campaign.amount_raised || 0).toLocaleString()}/${campaign.goal_amount ? campaign.goal_amount.toLocaleString() : '0'}`}
-                        </TableCell>
-                        <TableCell>
-                          {campaign.start_date && campaign.end_date 
-                            ? `${new Date(campaign.start_date).toLocaleDateString()}-${new Date(campaign.end_date).toLocaleDateString()}`
-                            : campaign.start_date 
-                              ? new Date(campaign.start_date).toLocaleDateString()
-                              : campaign.end_date
-                                ? new Date(campaign.end_date).toLocaleDateString()
-                                : "—"
-                          }
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={isExpired(campaign) ? 'secondary' : campaign.publication_status === 'published' ? 'default' : 'outline'}
-                            className="gap-1"
-                          >
-                            {isExpired(campaign) ? (
-                              <><AlertCircle className="h-3 w-3" /> Expired</>
-                            ) : campaign.publication_status === 'published' ? (
-                              <><Globe className="h-3 w-3" /> Published</>
-                            ) : campaign.publication_status === 'pending_verification' ? (
-                              <><AlertCircle className="h-3 w-3" /> Pending</>
-                            ) : (
-                              <><Eye className="h-3 w-3" /> Draft</>
-                            )}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/dashboard/fundraisers/${campaign.id}/edit`)}
-                            >
-                              Manage
-                            </Button>
-                            {filterBy === "deleted" ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRestoreCampaign(campaign.id)}
-                                title="Restore campaign"
-                              >
-                                <RotateCcw className="h-4 w-4" />
-                              </Button>
-                            ) : isDeletable(campaign) ? (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="sm" className="px-2">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    className="text-destructive focus:text-destructive"
-                                    onClick={() => setCampaignToDelete(campaign)}
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                  </TableBody>
-                </Table>
+              <div className="space-y-4">
+                {sortedCampaigns.map((campaign) => (
+                  <CampaignManagerCard
+                    key={campaign.id}
+                    campaign={campaign}
+                    isExpired={isExpired(campaign)}
+                    isDeletable={isDeletable(campaign)}
+                    filterBy={filterBy}
+                    onManage={() => navigate(`/dashboard/fundraisers/${campaign.id}/edit`)}
+                    onShowQR={() => setQrDialogCampaign(campaign)}
+                    onDelete={() => setCampaignToDelete(campaign)}
+                    onRestore={() => handleRestoreCampaign(campaign.id)}
+                  />
+                ))}
               </div>
             )}
         </div>
@@ -745,6 +447,19 @@ export default function Campaigns() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {qrDialogCampaign && qrDialogCampaign.slug && (
+          <QRDialog
+            open={!!qrDialogCampaign}
+            onOpenChange={(open) => !open && setQrDialogCampaign(null)}
+            url={`${window.location.origin}/c/${qrDialogCampaign.slug}`}
+            campaignName={qrDialogCampaign.name}
+            logoUrl={pickBrandLogo({ groupLogo: null, schoolLogo: null, orgLogo: null })}
+            schoolOrOrgName={null}
+            groupName={qrDialogCampaign.group_name}
+            campaignDescription={qrDialogCampaign.description}
+          />
+        )}
     </DashboardPageLayout>
   );
 }
