@@ -715,10 +715,27 @@ const BusinessProfile = () => {
     switch (status) {
       case "verified":
         return (
-          <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
-            <ShieldCheck className="h-3 w-3 mr-1" />
-            Verified
-          </Badge>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  tabIndex={0}
+                  className="bg-green-500/10 text-green-700 dark:text-green-400 cursor-help focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <ShieldCheck className="h-3 w-3 mr-1" />
+                  Verified
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="font-semibold mb-1">This business is verified</p>
+                <p className="text-xs">
+                  You can add missing details and disengage contacts, but
+                  existing values are managed by the business owner. Contact
+                  Sponsorly support to change a value that's already set.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         );
       case "blocked":
         return (
