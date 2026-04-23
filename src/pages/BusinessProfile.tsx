@@ -831,9 +831,9 @@ const BusinessProfile = () => {
                 <div>
                   <p className="font-semibold">This business is verified</p>
                   <p className="text-sm text-green-600 dark:text-green-500">
-                    Details are managed by the business owner. You can still archive
-                    it from your list and disengage individual contacts to stop
-                    outreach.
+                    You can add missing details and disengage contacts, but
+                    existing values are managed by the business owner. Contact
+                    Sponsorly support to change a value that's already set.
                   </p>
                 </div>
               </div>
