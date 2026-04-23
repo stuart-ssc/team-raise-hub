@@ -1,75 +1,73 @@
 
 
 ## Goal
-Rename the dashboard "Campaigns" surface to "Fundraisers" everywhere a user sees it — visible labels, page headings, breadcrumbs — and migrate the URL path from `/dashboard/campaigns/*` to `/dashboard/fundraisers/*`. Scope is limited to the fundraising dashboard area; "outreach campaigns" in the donor/business CRM are untouched.
-
-## Scope
-
-In scope (rename):
-- All `/dashboard/campaigns*` route paths and every `navigate(...)` / `<Link>` pointing at them.
-- Sidebar item label "Campaigns" → "Fundraisers" (desktop sidebar + mobile sheet).
-- Page titles, breadcrumb labels, headings, button labels, empty-state copy, and dropdown labels on the Campaigns / CampaignEditor / AICampaignBuilder / CampaignOrderDetail pages and the dashboard "Campaigns" card.
-- Edge function user-facing links/routes that point users back into the dashboard (`send-verification-email`, `send-donation-notification`).
-- The `MyOrders` "Browse Campaigns" CTA → "Browse Fundraisers" pointing to the new path.
-
-Out of scope (do NOT change):
-- Database table names (`campaigns`, `campaign_*`), column names, RLS policies, edge function names.
-- TypeScript types, variables, component names, file names (`Campaigns.tsx`, `CampaignEditor.tsx`, etc.) — internal-only.
-- Donor/Business "outreach campaigns" UI (segmented email campaigns), `/c/{slug}` public campaign URLs (already a different word users encounter), marketing site footer ("Campaigns" link group on `MarketingFooter`), and stat tiles on public landing pages that just say "Campaigns" as a metric label (`Nonprofits.tsx`, `PublicLandingPage.tsx`, `FamilyDashboard.tsx`, `OrganizationSettings.tsx`).
-  - These last items can be revisited later; flagging here so the user knows they were intentionally skipped.
+Sweep the remaining user-visible "Campaign" / "campaign" references inside the Fundraisers list page and the Fundraiser editor (basic details, items, pitch, schedule, donor experience, publication dialog, save buttons, etc.) and rename them to "Fundraiser" / "fundraiser". Internal code identifiers, DB tables, and the donor/business CRM "Outreach Campaigns" surface remain untouched (per the prior approved scope).
 
 ## Changes
 
-### 1. Routes (`src/App.tsx`)
-Replace the five campaign routes with `/dashboard/fundraisers/...` equivalents:
-- `/dashboard/fundraisers`
-- `/dashboard/fundraisers/ai-builder`
-- `/dashboard/fundraisers/new`
-- `/dashboard/fundraisers/:id/edit`
-- `/dashboard/fundraisers/:campaignId/orders/:orderId`
+### 1. `src/pages/Campaigns.tsx` (list page)
+- Search input placeholder: `"Search campaigns..."` → `"Search fundraisers..."`.
+- Table header `Campaign Name` → `Fundraiser Name`.
 
-Add five **redirect routes** for the old paths (using `<Navigate to="..." replace />`) so existing bookmarks, emails, and external links continue to work:
-- `/dashboard/campaigns` → `/dashboard/fundraisers`
-- `/dashboard/campaigns/ai-builder` → `/dashboard/fundraisers/ai-builder`
-- `/dashboard/campaigns/new` → `/dashboard/fundraisers/new`
-- `/dashboard/campaigns/:id/edit` → `/dashboard/fundraisers/:id/edit`
-- `/dashboard/campaigns/:campaignId/orders/:orderId` → `/dashboard/fundraisers/:campaignId/orders/:orderId`
+### 2. `src/pages/CampaignEditor.tsx` (editor)
+- `SECTION_META` subtitles/titles:
+  - details subtitle: "Campaign name, URL, and description" → "Fundraiser name, URL, and description"
+  - schedule subtitle: "Set your campaign timeline and fundraising goal" → "Set your fundraiser timeline and fundraising goal"
+  - items title: "Campaign Items" → "Fundraiser Items"
+  - pitch title: "Campaign Pitch" → "Fundraiser Pitch"; subtitle "…for your campaign" → "…for your fundraiser"
+- Header subtitle (line 517): "Manage your campaign settings and orders" → "Manage your fundraiser settings and orders"; "Set up your fundraising campaign step by step" → "Set up your fundraiser step by step"
+- Save button label (lines 589, 718): "Save Campaign" / "Saving..." → "Save Fundraiser" / "Saving..."
+- Toast/validation copy: "Please fill in campaign name, slug, group, and type" → "Please fill in fundraiser name, slug, group, and type"; "Failed to save campaign" → "Failed to save fundraiser"; delete `aria-label="Delete campaign"` → `"Delete fundraiser"`.
 
-### 2. Navigation (`DashboardSidebar.tsx`, `DashboardSidebarSheet.tsx`)
-- Sidebar item: `title: "Campaigns"` → `"Fundraisers"`, `url: "/dashboard/campaigns"` → `"/dashboard/fundraisers"`.
-- Update the `isActive` matcher in `DashboardSidebar.tsx` to recognize `/dashboard/fundraisers`.
+### 3. `src/components/campaign-editor/BasicDetailsSection.tsx`
+- Label "Campaign Name *" → "Fundraiser Name *"; placeholder "Enter campaign name" → "Enter fundraiser name".
+- URL slug placeholder `"campaign-url-slug"` → `"fundraiser-url-slug"`; helper text "This will be your campaign URL." → "This will be your fundraiser URL."
+- Description placeholder "Enter campaign description" → "Enter fundraiser description".
+- Label "Campaign Image" → "Fundraiser Image".
+- Label "Campaign Type *" → "Fundraiser Type *".
 
-### 3. In-app navigation calls (visible URL change only)
-Update every `navigate(...)`, `<Link to=...>`, and breadcrumb `path` from `/dashboard/campaigns...` to `/dashboard/fundraisers...` in:
-- `src/pages/Dashboard.tsx`
-- `src/pages/Campaigns.tsx`
-- `src/pages/CampaignEditor.tsx`
-- `src/pages/AICampaignBuilder.tsx`
-- `src/pages/CampaignOrderDetail.tsx`
-- `src/pages/MyOrders.tsx`
-- `src/components/campaign-editor/CampaignAssetsSection.tsx`
-- `src/components/campaign-editor/CampaignOrdersSection.tsx`
+### 4. `src/components/campaign-editor/CampaignItemsSection.tsx`
+- `<CardTitle>Campaign Items</CardTitle>` → "Fundraiser Items".
+- CardDescription "Products or sponsorship levels for your campaign" → "Products or sponsorship levels for your fundraiser".
 
-### 4. User-visible copy in the fundraiser surface
-- `Campaigns.tsx`: page heading "Campaigns" → "Fundraisers"; subtitle "Manage fundraising campaigns for your groups." → "Manage fundraisers for your groups."; empty-state "No campaigns found." → "No fundraisers found."; dropdown labels "Create manually" / "Create with AI" stay; breadcrumb segment "Campaigns" → "Fundraisers".
-- `CampaignEditor.tsx`, `AICampaignBuilder.tsx`, `CampaignOrderDetail.tsx`: breadcrumb segment "Campaigns" → "Fundraisers"; "New Campaign" / "Edit Campaign" → "New Fundraiser" / "Edit Fundraiser".
-- `Dashboard.tsx`: card title `<CardTitle>Campaigns</CardTitle>` → "Fundraisers"; "Manage All Campaigns" → "Manage All Fundraisers"; "Add Campaign" → "Add Fundraiser"; "Let's get started - Create a Campaign Now" → "Let's get started - Create a Fundraiser Now"; "Start fundraising by creating your first campaign" → "Start fundraising by creating your first fundraiser"; "Create Campaign" button → "Create Fundraiser".
-- `MyOrders.tsx`: "Browse Campaigns" CTA → "Browse Fundraisers".
+### 5. `src/components/campaign-editor/ScheduleSection.tsx`
+- Helper text "Optional fundraising target to display on your campaign page" → "Optional fundraising target to display on your fundraiser page".
 
-### 5. Edge functions (visible link only — no DB or function-name changes)
-- `supabase/functions/send-verification-email/index.ts`: link `https://sponsorly.io/dashboard/campaigns` → `https://sponsorly.io/dashboard/fundraisers`.
-- `supabase/functions/send-donation-notification/index.ts`: `route: '/dashboard/campaigns'` → `'/dashboard/fundraisers'`.
+### 6. `src/components/campaign-editor/DonorExperienceSection.tsx`
+- "Choose who pays Sponsorly's 10% platform fee for this campaign." → "…for this fundraiser."
+- Keep the "Sponsorship Campaign" toggle label as-is — it refers to the sponsorship campaign type concept, not the dashboard surface. (Flagging; revisit if user wants this renamed too.)
 
-## Technical notes
-- Internal symbols (`Campaigns` page component, `CampaignEditor`, `Campaign` interface, `campaigns` state, `campaign_id`, etc.) intentionally stay. The `campaigns` Supabase table and all related backend names are unchanged. This keeps the diff focused on user-facing surface area and avoids cascading changes into RLS, edge functions, types, and migrations.
-- The sidebar `isActive` matcher and `DashboardSidebar.tsx`'s special-cased prefix checks (currently for `/dashboard/donors`, `/dashboard/businesses`, `/dashboard/settings`) need a sibling entry for `/dashboard/fundraisers` so the nav highlight works on edit/order detail subpaths.
-- Redirect routes use React Router `<Navigate>` and preserve dynamic params via the route pattern (params re-resolve in the target route).
+### 7. `src/components/campaign-editor/CampaignPitchSection.tsx`
+- Toast description "Your campaign pitch has been saved." → "Your fundraiser pitch has been saved."
+- Alert copy: "This pitch will be shown to all donors. If roster attribution is enabled, individual roster members can add their own pitch which will override this on their personal links." — replace standalone "campaign" if present (currently no occurrence; no change needed beyond the toast).
+
+### 8. `src/components/CampaignPitchEditor.tsx`
+- Visible labels: "Campaign Message" → "Fundraiser Message"; "Campaign Photo (optional)" → "Fundraiser Photo (optional)"; "Campaign Video (optional)" → "Fundraiser Video (optional)".
+- Placeholder "Share why this campaign matters and how supporters can make a difference…" → "Share why this fundraiser matters and how supporters can make a difference…"
+- Toast "Your campaign pitch has been updated" → "Your fundraiser pitch has been updated".
+- (Internal `htmlFor`/`id` strings like `campaign-pitch-message`, `campaign-record` stay — not user-visible.)
+
+### 9. `src/components/CampaignPublicationControl.tsx`
+- Dialog title "Unpublish Campaign" / "Publish Campaign" → "Unpublish Fundraiser" / "Publish Fundraiser".
+- Dialog description "This will make the campaign unavailable to the public." → "…the fundraiser unavailable…"; "This will make your campaign live and visible to donors." → "…your fundraiser live…"
+- Body copy: "Organization requires verification before publishing campaigns" → "…before publishing fundraisers"; "Payment account must be configured before publishing campaigns" → "…before publishing fundraisers"; "Campaign has items configured" → "Fundraiser has items configured"; "Campaign should have at least one item before publishing" → "Fundraiser should have at least one item before publishing"; "before publishing this campaign." → "…this fundraiser."; "Existing campaign links will show that the campaign has ended." → "Existing fundraiser links will show that the fundraiser has ended."
+- Footer button: "Publish Campaign" → "Publish Fundraiser".
+- Toast: `Campaign ${newStatus === 'published' ? 'published' : 'saved as draft'} successfully!` → `Fundraiser ${...} successfully!`; "Failed to update campaign status" → "Failed to update fundraiser status".
+
+### 10. `src/components/campaign-editor/RequiredAssetsEditor.tsx`
+- DialogDescription "Define what file sponsors need to provide for this campaign." → "…for this fundraiser."
+- Default sample asset description "Your company logo for recognition in campaign materials" → "…in fundraiser materials".
+
+## Out of scope (explicitly unchanged)
+- DB tables/columns (`campaigns`, `campaign_items`, `campaign_id`, `campaign_type`), all internal TypeScript types, component names, props, file names, query keys.
+- Donor/Business CRM "Outreach Campaigns" surface (Nurture Campaigns, BusinessCampaignDialog, NewConversationDialog "Select Campaign", Reports CSV "CAMPAIGN DETAILS" header, marketing pages, AI builder chat copy).
+- The "Sponsorship Campaign" toggle in Donor Experience (refers to the sponsorship-campaign mode, not the dashboard surface).
 
 ## Verification
-- Sidebar shows "Fundraisers" (desktop + mobile); clicking it lands on `/dashboard/fundraisers` with the highlight active. Subpages (`/edit`, `/ai-builder`, order detail) keep the nav item highlighted.
-- Visiting any old `/dashboard/campaigns/...` URL silently redirects to the matching `/dashboard/fundraisers/...` URL.
-- Page heading, breadcrumbs, and buttons on the list, editor, AI builder, and order-detail pages all read "Fundraiser(s)".
-- Dashboard home card reads "Fundraisers" with "Manage All Fundraisers" / "Add Fundraiser" actions.
-- Verification email and donation notification deep links open `/dashboard/fundraisers`.
-- Donor and Business outreach-campaign UI is unchanged. `/c/{slug}` public URLs still work. Marketing footer/landing-page stat labels still say "Campaigns" (intentional, out of scope).
+- Fundraisers list: search placeholder reads "Search fundraisers…"; table column header reads "Fundraiser Name".
+- Editing a fundraiser: header subtitle reads "Manage your fundraiser settings and orders"; primary button reads "Save Fundraiser".
+- Basic Details panel labels read "Fundraiser Name", "Fundraiser Image", "Fundraiser Type"; helper text says "This will be your fundraiser URL."
+- Items panel reads "Fundraiser Items" (title + nav). Pitch panel reads "Fundraiser Pitch" with "Fundraiser Message / Photo / Video" labels.
+- Publish dialog title reads "Publish Fundraiser" with matching button text and copy throughout.
+- Donor / business outreach surfaces (NurtureCampaigns, BusinessCampaignDialog, message composer "Select Campaign") still say "Campaign" — intentional.
 
