@@ -19,6 +19,21 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Search, Send, ArrowLeft, Calendar, Mail, AlertCircle } from "lucide-react";
 import { computeOutreachSchedule } from "@/lib/fundraiserOutreachSchedule";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+interface Recipient {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+}
 
 interface Campaign {
   id: string;
@@ -57,12 +72,18 @@ export default function ContactFundraiserDialog({
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
   const [selected, setSelected] = useState<Campaign | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [loadingRecipients, setLoadingRecipients] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     if (!open) {
       setStep("pick");
       setSelected(null);
       setSearch("");
+      setRecipients([]);
+      setPage(1);
     }
   }, [open]);
 
@@ -71,6 +92,49 @@ export default function ContactFundraiserDialog({
     void fetchCampaigns();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, organizationUser?.organization_id, activeGroup?.id]);
+
+  useEffect(() => {
+    if (step !== "review" || !selected) return;
+    void fetchRecipients();
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, selected?.id]);
+
+  const fetchRecipients = async () => {
+    setLoadingRecipients(true);
+    try {
+      if (donorIds && donorIds.length > 0) {
+        const { data, error } = await supabase
+          .from("donor_profiles")
+          .select("id, first_name, last_name, email")
+          .in("id", donorIds);
+        if (error) throw error;
+        setRecipients((data || []) as Recipient[]);
+      } else if (listId) {
+        const { data, error } = await supabase
+          .from("donor_list_members")
+          .select("donor_profiles:donor_id(id, first_name, last_name, email)")
+          .eq("list_id", listId);
+        if (error) throw error;
+        const rows = (data || [])
+          .map((r: any) => r.donor_profiles)
+          .filter(Boolean) as Recipient[];
+        setRecipients(rows);
+      } else {
+        setRecipients([]);
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Failed to load recipients",
+        description: err.message,
+        variant: "destructive",
+      });
+      setRecipients([]);
+    } finally {
+      setLoadingRecipients(false);
+    }
+  };
 
   const fetchCampaigns = async () => {
     setLoadingCampaigns(true);
