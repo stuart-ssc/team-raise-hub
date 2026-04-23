@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { LinkDonorToBusinessDialog } from "@/components/LinkDonorToBusinessDialog";
 import { UnlinkDonorBusinessDialog } from "@/components/UnlinkDonorBusinessDialog";
+import { DisengageContactDialog } from "@/components/DisengageContactDialog";
 import EditDonorDialog from "@/components/EditDonorDialog";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -111,6 +112,7 @@ const DonorProfile = () => {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [unlinkingAffiliation, setUnlinkingAffiliation] = useState<BusinessAffiliation | null>(null);
+  const [disengagingAffiliation, setDisengagingAffiliation] = useState<{ aff: BusinessAffiliation; mode: "disengage" | "reengage" } | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [givingOpen, setGivingOpen] = useState(true);
   const [insightsOpen, setInsightsOpen] = useState(false);
@@ -747,8 +749,22 @@ const DonorProfile = () => {
                                     size="sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setUnlinkingAffiliation(affiliation);
+                                      if (affiliation.is_verified) {
+                                        setDisengagingAffiliation({
+                                          aff: affiliation,
+                                          mode: affiliation.blocked_at ? "reengage" : "disengage",
+                                        });
+                                      } else {
+                                        setUnlinkingAffiliation(affiliation);
+                                      }
                                     }}
+                                    title={
+                                      affiliation.is_verified
+                                        ? affiliation.blocked_at
+                                          ? "Re-engage"
+                                          : "Disengage"
+                                        : "Unlink"
+                                    }
                                   >
                                     <X className="h-4 w-4" />
                                   </Button>
@@ -760,6 +776,11 @@ const DonorProfile = () => {
                                 )}
                                 {affiliation.auto_linked && (
                                   <Badge variant="secondary" className="text-xs">Auto-linked</Badge>
+                                )}
+                                {affiliation.blocked_at && (
+                                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                                    Disengaged
+                                  </Badge>
                                 )}
                                 <span className="text-xs text-muted-foreground">
                                   {format(parseISO(affiliation.linked_at), "MMM d, yyyy")}
