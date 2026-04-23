@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Select, 
   SelectContent, 
@@ -642,7 +643,42 @@ const Donors = () => {
             {/* Donors List */}
             <Card>
               <CardHeader>
-                <CardTitle>Donors ({filteredDonors.length})</CardTitle>
+                <div className="flex items-center gap-3">
+                  {!isParticipantView && filteredDonors.length > 0 && (
+                    <Checkbox
+                      checked={
+                        selectedDonorIds.length > 0 &&
+                        filteredDonors.every((d) => selectedDonorIds.includes(d.id))
+                          ? true
+                          : selectedDonorIds.some((id) =>
+                              filteredDonors.find((d) => d.id === id)
+                            )
+                          ? "indeterminate"
+                          : false
+                      }
+                      onCheckedChange={(checked) => {
+                        if (checked === true) {
+                          const visibleIds = filteredDonors.map((d) => d.id);
+                          setSelectedDonorIds((prev) =>
+                            Array.from(new Set([...prev, ...visibleIds]))
+                          );
+                        } else {
+                          const visibleIds = new Set(filteredDonors.map((d) => d.id));
+                          setSelectedDonorIds((prev) =>
+                            prev.filter((id) => !visibleIds.has(id))
+                          );
+                        }
+                      }}
+                      aria-label="Select all visible donors"
+                    />
+                  )}
+                  <CardTitle>Donors ({filteredDonors.length})</CardTitle>
+                  {selectedDonorIds.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {selectedDonorIds.length} selected
+                    </Badge>
+                  )}
+                </div>
                 <CardDescription>
                   Click on a donor to view detailed profile and giving history
                 </CardDescription>
@@ -679,6 +715,21 @@ const Donors = () => {
                           <CardContent className="pt-6">
                             <div className="space-y-3">
                               <div className="flex items-start justify-between gap-2">
+                                {!isParticipantView && (
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={(checked) => {
+                                      setSelectedDonorIds((prev) =>
+                                        checked
+                                          ? [...prev, donor.id]
+                                          : prev.filter((id) => id !== donor.id)
+                                      );
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    aria-label={`Select ${donor.first_name || donor.email}`}
+                                    className="mt-1.5"
+                                  />
+                                )}
                                 <div 
                                   className="flex-1 min-w-0"
                                   onClick={() => navigate(`/dashboard/donors/${donor.id}`)}
@@ -698,21 +749,6 @@ const Donors = () => {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  {!isParticipantView && (
-                                    <input
-                                      type="checkbox"
-                                      checked={isSelected}
-                                      onChange={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedDonorIds(prev =>
-                                          isSelected
-                                            ? prev.filter(id => id !== donor.id)
-                                            : [...prev, donor.id]
-                                        );
-                                      }}
-                                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-                                    />
-                                  )}
                                   <Badge className={getEngagementColor(donor.engagement_score)}>
                                     {getEngagementLabel(donor.engagement_score)}
                                   </Badge>
@@ -848,6 +884,12 @@ const Donors = () => {
           onSendEmail={() => setBulkEmailDialogOpen(true)}
           onExportCsv={() => setCsvExportDialogOpen(true)}
           onAddToList={() => setAddToListDialogOpen(true)}
+          onContactFundraiser={() =>
+            toast({
+              title: "Contact about Fundraiser",
+              description: "Coming soon — you'll be able to message selected donors about a specific fundraiser.",
+            })
+          }
         />
 
         {/* Add to List Dialog */}
