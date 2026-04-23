@@ -638,18 +638,6 @@ export default function DonorSegmentation() {
                           <Button
                             size="sm"
                             onClick={() => {
-                              setSelectedListIdForCampaign(list.id);
-                              setListCampaignDialogOpen(true);
-                            }}
-                            disabled={list.member_count === 0}
-                          >
-                            <Send className="mr-1 h-3 w-3" />
-                            Send Campaign
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => {
                               setContactFundraiserListId(list.id);
                               setContactFundraiserOpen(true);
                             }}
