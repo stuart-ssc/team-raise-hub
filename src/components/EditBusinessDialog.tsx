@@ -457,9 +457,9 @@ export function EditBusinessDialog({
                   name="zip"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>ZIP Code</FormLabel>
+                      <LockedLabel locked={lockedMap.zip}>ZIP Code</LockedLabel>
                       <FormControl>
-                        <Input {...field} placeholder="12345" />
+                        <Input {...field} placeholder="12345" disabled={lockedMap.zip} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -491,9 +491,9 @@ export function EditBusinessDialog({
                 name="logo_url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Logo URL</FormLabel>
+                    <LockedLabel locked={lockedMap.logo_url}>Logo URL</LockedLabel>
                     <FormControl>
-                      <Input {...field} type="url" placeholder="https://example.com/logo.png" />
+                      <Input {...field} type="url" placeholder="https://example.com/logo.png" disabled={lockedMap.logo_url} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
