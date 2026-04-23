@@ -305,13 +305,6 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
 
   return (
     <div className="space-y-4">
-      {!isFormVisible && items.length > 0 && (
-        <div className="flex justify-end">
-          <Button onClick={handleAddNew} className="gap-2">
-            <Plus className="h-4 w-4" /> Add Item
-          </Button>
-        </div>
-      )}
       {isFormVisible ? (
           <div className="space-y-4">
             {/* Form Header */}
