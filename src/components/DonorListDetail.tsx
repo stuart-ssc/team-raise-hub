@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, UserPlus, Trash2, Loader2, Users } from "lucide-react";
+import { Megaphone } from "lucide-react";
+import ContactFundraiserDialog from "@/components/ContactFundraiserDialog";
 
 interface DonorListDetailProps {
   open: boolean;
@@ -58,6 +60,7 @@ export default function DonorListDetail({
   const [searching, setSearching] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
 
   useEffect(() => {
     if (open && listId) {
