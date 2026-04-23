@@ -58,11 +58,11 @@ export function CampaignSectionNav({
   const setupItems: NavItem[] = [
     { key: "details", label: "Details", icon: FileText },
     { key: "schedule", label: "Schedule", icon: Calendar },
+    { key: "fees", label: "Fees", icon: DollarSign },
     ...(showItems
       ? [{ key: "items" as const, label: "Items", icon: Package, count: counts.items }]
       : []),
     { key: "experience", label: "Experience", icon: Heart },
-    { key: "fees", label: "Fees", icon: DollarSign },
     { key: "team", label: "Team", icon: Users },
     { key: "fields", label: "Fields", icon: ListPlus, count: counts.fields },
     ...(showPitch
