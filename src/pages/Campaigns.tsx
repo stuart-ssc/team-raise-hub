@@ -69,14 +69,12 @@ export default function Campaigns() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<keyof Campaign>("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterBy, setFilterBy] = useState("active");
   const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(null);
+  const [qrDialogCampaign, setQrDialogCampaign] = useState<Campaign | null>(null);
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup, groups } = useActiveGroup();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
 
   const permissionLevel = organizationUser?.user_type.permission_level;
   const canSeeUsers = permissionLevel === 'organization_admin' || permissionLevel === 'program_manager';
