@@ -263,15 +263,6 @@ export default function Campaigns() {
   const isDeletable = (c: Campaign) =>
     c.publication_status === "draft" || c.publication_status === "pending_verification";
 
-  const handleSort = (field: keyof Campaign) => {
-    if (sortBy === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortDirection("asc");
-    }
-  };
-
   const isExpired = (c: Campaign) => {
     if (c.publication_status !== 'published') return false;
     if (!c.end_date) return false;
@@ -306,24 +297,8 @@ export default function Campaigns() {
   });
 
   const sortedCampaigns = [...filteredCampaigns].sort((a, b) => {
-    const aValue = a[sortBy];
-    const bValue = b[sortBy];
-    
-    if (aValue === null && bValue === null) return 0;
-    if (aValue === null) return 1;
-    if (bValue === null) return -1;
-    
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortDirection === "asc" 
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    }
-    
-    if (typeof aValue === 'number' && typeof bValue === 'number') {
-      return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
-    }
-    
-    return 0;
+    // Default sort: alphabetical by name (stable, matches manager expectations)
+    return (a.name || "").localeCompare(b.name || "");
   });
 
   useEffect(() => {
