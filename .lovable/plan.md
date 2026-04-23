@@ -1,18 +1,37 @@
 
-
 ## Goal
-Remove the redundant inner Card wrapper on the Fundraiser Items section so only the outer section panel header ("Fundraiser Items / Manage what supporters can purchase") shows, with the items table and "Add Item" button rendered directly inside it.
+Promote "Platform Fee Model" to its own section in the Fundraiser editor sub-nav, removing it from the Experience card.
 
-## Changes — `src/components/campaign-editor/CampaignItemsSection.tsx`
+## Changes
 
-- Replace the outer `<Card><CardHeader>…</CardHeader><CardContent>…</CardContent></Card>` wrapper with a simple `<div className="space-y-4">`.
-- Drop the inner `CardTitle` "Fundraiser Items" / `CardDescription` "Products or sponsorship levels for your fundraiser" / `Package` icon block — the parent section already shows this.
-- Keep the "Add Item" button, but move it to a top-right aligned row above the items table (only shown when `!isFormVisible && items.length > 0`).
-- Keep all form/table/empty-state markup and behavior unchanged.
-- Remove now-unused imports: `Card`, `CardContent`, `CardDescription`, `CardHeader`, `CardTitle`, and `Package` (only if no longer referenced elsewhere in the file — verify the form-header `<Package />` usage stays, so keep `Package`).
+### 1. `src/components/campaign-editor/CampaignSectionNav.tsx`
+- Extend `SectionKey` to include `"fees"`.
+- Add nav item `{ key: "fees", label: "Fees", icon: DollarSign }` to `setupItems`, placed between `experience` and `team` (or right after `experience`).
+
+### 2. `src/pages/CampaignEditor.tsx`
+- Add `fees` entry to `SECTION_META`:
+  - title: "Platform Fees"
+  - subtitle: "Choose who pays Sponsorly's 10% platform fee for this fundraiser."
+- Add a render branch for `fees` that mounts a new `PlatformFeeSection` component, wired to the same `feeModel` field on the campaign form state (same `onUpdate` plumbing as Experience).
+- No changes to save/validation flow — the field is already persisted.
+
+### 3. New `src/components/campaign-editor/PlatformFeeSection.tsx`
+- Extract the existing Platform Fee Model `RadioGroup` block from `DonorExperienceSection.tsx` verbatim.
+- Props: `{ feeModel?: 'donor_covers' | 'org_absorbs'; onUpdate: (updates: { feeModel: ... }) => void }`.
+- Render the two radio options ("Donor covers fees (recommended)", "Organization absorbs fees") inside the standard section content (no inner card — section panel already provides the frame, matching the Items section pattern).
+
+### 4. `src/components/campaign-editor/DonorExperienceSection.tsx`
+- Remove the Platform Fee Model block (the entire `<div className="rounded-lg border p-4 space-y-3">…RadioGroup…</div>`).
+- Remove now-unused imports: `RadioGroup`, `RadioGroupItem`.
+- Keep `feeModel` out of the local interface usage (the prop type can stay for backward compatibility, but it's no longer rendered here).
+
+## Technical notes
+- `feeModel` stays on the same campaign form state object in `CampaignEditor.tsx`; both the new `PlatformFeeSection` and the (now-trimmed) `DonorExperienceSection` receive props from the same source, so saving works without any new wiring.
+- Sub-nav order in Setup: Details → Schedule → Items → Experience → Fees → Team → Fields → Pitch.
+- Icon: `DollarSign` from lucide-react (already used elsewhere in the codebase pattern).
 
 ## Verification
-- On the Fundraiser editor → Items step, only one header reads "Fundraiser Items / Manage what supporters can purchase" (the outer section panel). No nested duplicate title/description.
-- "Add Item" button still appears top-right when items exist; the items table and the add/edit form render exactly as before.
-- Empty state, edit, delete, and variants flows are unchanged.
-
+- Fundraiser editor sub-nav shows a new "Fees" item under Setup with a dollar icon.
+- Clicking "Fees" loads a panel titled "Platform Fees" with the two radio options and current selection preserved.
+- The Experience panel no longer shows the Platform Fee Model block; Thank You Message and Sponsorship Campaign toggle remain.
+- Selecting a fee option and saving the fundraiser persists the choice (verified by reloading the editor).
