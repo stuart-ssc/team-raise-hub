@@ -1,32 +1,41 @@
 
 
 ## Goal
-Make donor selection on `/dashboard/donors` more discoverable and add a new **Contact about Fundraiser** bulk action alongside existing ones (Add Tags, Add to List, Send Email, Export CSV). The selection + Add to List flow already exists but the checkboxes are tiny shadcn-style native inputs tucked next to the engagement badge — easy to miss. We'll surface selection clearly and stub the new action so we can wire functionality next.
+Multi-select on `/dashboard/donors` already works — checkboxes per card, "select all" in the header, and a floating bottom toolbar with Add Tags · Add to List · Contact about Fundraiser · Send Email · Export CSV. The problem is **discoverability**: the checkbox is small and the card's primary click navigates to the donor detail page, so users don't realize they can select multiple donors. We'll make selection the obvious primary interaction.
 
 ## Changes
 
-### 1. `src/pages/Donors.tsx` — make selection obvious
-- Replace the small native `<input type="checkbox">` in each donor card with the shadcn `Checkbox` component, moved to the **top-left** of the card (before the name) so it's the first thing the eye lands on. Keep the engagement badge + dropdown menu on the right.
-- Add a **"Select all visible"** checkbox + count label inside the Donors card header (e.g., `Donors (12)` row), to the left of the title. Toggling it selects/deselects every donor in `filteredDonors`. Show indeterminate state when some (but not all) are selected.
-- Pass a new `onContactFundraiser` handler to `BulkActionToolbar` that opens a placeholder toast: *"Contact about Fundraiser — coming soon"* (real functionality next iteration).
-- Selection still hidden in `isParticipantView`.
+### `src/pages/Donors.tsx` — donor card interaction model
 
-### 2. `src/components/BulkActionToolbar.tsx` — add new action button
-- Add a new optional prop `onContactFundraiser?: () => void`.
-- Render a new button **"Contact about Fundraiser"** (icon: `Megaphone` from lucide-react) in the toolbar action group, positioned right after **Add to List** and before **Send Email**.
-- Keep all existing buttons and styling. Buttons only render when their handler is provided (already the pattern for `onAddToList`).
+**1. Card click behavior**
+- When **0 donors are selected**: clicking the card body navigates to the donor detail page (current behavior).
+- When **1+ donors are selected**: clicking anywhere on the card body toggles that donor's selection instead of navigating. This is the standard "select mode" pattern (Gmail, Files apps). The dropdown menu still works for per-donor actions.
 
-### 3. (Optional polish) Sticky selection summary
-- When 1+ donors are selected, scroll the page so the floating `BulkActionToolbar` (already fixed-bottom) remains visible — no code change needed; just verifying current behavior. No change.
+**2. Larger, more visible checkbox**
+- Increase the checkbox from default (`h-4 w-4`) to `h-5 w-5` and give it a clearer container so it reads as the primary card affordance.
+- Keep it in the top-left of the card.
+- Always visible (not just on hover) so users immediately understand cards are selectable.
 
-## Out of scope (next iteration)
-- The actual Contact-about-Fundraiser flow: campaign picker, message composer, email send. The button + toast stub is all this iteration ships.
+**3. Selection-mode visual cues**
+- When 1+ donors are selected, add a subtle hint to unselected cards (e.g., the cursor stays pointer but card hover preview swaps to a selection ring instead of a navigation hover).
+- Selected cards keep the existing `border-primary ring-2 ring-primary/20` treatment.
+
+**4. Header "Select all visible" polish**
+- Add a short helper text next to the select-all checkbox: e.g. *"Select all on this page"* (only shown on `md+` screens). Makes the bulk-action capability obvious before the user has clicked anything.
+
+**5. Bulk Action Toolbar visibility**
+- The toolbar already exists (`fixed bottom-6`) and shows on selection. Verified it renders with the full action set. No code change — but we'll briefly check that page padding-bottom doesn't let the toolbar overlap the last row of donor cards. If it does, add `pb-24` to the page container so the last card stays clear of the floating toolbar.
+
+## Out of scope
+- Wiring up the real "Contact about Fundraiser" flow (still a toast stub — next iteration).
+- Any change to participant view (`isParticipantView`), which intentionally hides selection.
 
 ## Verification
-- Visit `/dashboard/donors` as an org admin. Each donor card shows a clearly visible shadcn checkbox in its top-left.
-- A "Select all" checkbox in the Donors card header toggles every visible donor; indeterminate state shows when a subset is selected.
-- Selecting one or more donors reveals the floating bottom toolbar with: **Add Tags · Add to List · Contact about Fundraiser · Send Email · Export CSV · Clear**.
-- Clicking **Add to List** opens the existing `AddToListDialog` and successfully adds the selected donors to the chosen list.
-- Clicking **Contact about Fundraiser** shows a toast confirming the action was triggered (placeholder for next build).
-- Participant view (`isParticipantView`) still shows no checkboxes and no toolbar.
+- Visit `/dashboard/donors`. Each donor card shows a clearly visible checkbox in its top-left.
+- With nothing selected, clicking a card navigates to the donor's detail page (existing behavior preserved).
+- Click the checkbox on one card → that donor is selected and the floating bottom toolbar appears with: **Add Tags · Add to List · Contact about Fundraiser · Send Email · Export CSV · Clear**.
+- With at least one donor selected, clicking elsewhere on any other card toggles its selection (does NOT navigate). The dropdown menu (`⋯`) still opens per-donor actions.
+- Header "Select all on this page" checkbox toggles every visible donor; indeterminate state shows when a subset is selected.
+- The bottom toolbar never visually overlaps the last row of cards — page has enough bottom padding.
+- Clicking **Clear** in the toolbar empties the selection and restores normal click-to-navigate behavior.
 
