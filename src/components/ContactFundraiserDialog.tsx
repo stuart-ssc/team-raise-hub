@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Search, Send, ArrowLeft, Calendar, Mail, AlertCircle } from "lucide-react";
-import { computeOutreachSchedule, stageLabel, type DripStage } from "@/lib/fundraiserOutreachSchedule";
+import { computeOutreachSchedule } from "@/lib/fundraiserOutreachSchedule";
 
 interface Campaign {
   id: string;
@@ -266,38 +266,12 @@ export default function ContactFundraiserDialog({
               </div>
             </Card>
 
-            <div className="rounded-md border p-3 bg-muted/30">
-              <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                <Send className="h-4 w-4 text-primary" />
-                Drip cadence
+            {schedule.length === 0 && (
+              <p className="text-sm text-destructive flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                This fundraiser ends too soon to schedule outreach.
               </p>
-              {schedule.length === 0 ? (
-                <p className="text-sm text-destructive flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" />
-                  This fundraiser ends too soon to schedule outreach.
-                </p>
-              ) : (
-                <>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {schedule.length} email{schedule.length === 1 ? "" : "s"} per donor, ending when they donate
-                    or the fundraiser closes.
-                  </p>
-                  <ol className="space-y-1">
-                    {schedule.map((s, i) => (
-                      <li key={i} className="text-xs flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs w-6 justify-center">
-                          {i + 1}
-                        </Badge>
-                        <span className="font-medium">{stageLabel[s.stage as DripStage]}</span>
-                        <span className="text-muted-foreground">
-                          · {format(new Date(s.sendAt), "MMM d, p")}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                </>
-              )}
-            </div>
+            )}
 
             <div className="rounded-md border p-3">
               <p className="text-sm">
