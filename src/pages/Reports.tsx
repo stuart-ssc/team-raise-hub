@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, startOfMonth, startOfYear, subMonths, parseISO } from "date-fns";
-import { DollarSign, Target, TrendingUp, Users, Download, Activity, Heart } from "lucide-react";
+import { DollarSign, Target, TrendingUp, Users, Download, Activity, Heart, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 
