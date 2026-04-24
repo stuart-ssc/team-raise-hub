@@ -62,6 +62,39 @@ interface RecentDonation {
   campaign_name: string;
 }
 
+type ReportSortKey = "name" | "group_name" | "goal_amount" | "amount_raised" | "progress" | "donation_count" | "status" | "start_date";
+
+const SortableHead = ({
+  label,
+  sortKeyValue,
+  sortKey,
+  sortDir,
+  onSort,
+  align = "left",
+}: {
+  label: string;
+  sortKeyValue: ReportSortKey;
+  sortKey: ReportSortKey;
+  sortDir: "asc" | "desc";
+  onSort: (k: ReportSortKey) => void;
+  align?: "left" | "right";
+}) => {
+  const active = sortKey === sortKeyValue;
+  const Icon = active ? (sortDir === "asc" ? ChevronUp : ChevronDown) : ChevronsUpDown;
+  return (
+    <TableHead className={align === "right" ? "text-right" : undefined}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKeyValue)}
+        className={`inline-flex items-center gap-1 cursor-pointer select-none hover:text-foreground transition-colors ${align === "right" ? "justify-end w-full" : ""}`}
+      >
+        <span>{label}</span>
+        <Icon className={`h-3.5 w-3.5 ${active ? "text-foreground" : "text-muted-foreground/50"}`} />
+      </button>
+    </TableHead>
+  );
+};
+
 const Reports = () => {
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup, groups, handleGroupClick } = useActiveGroup();
