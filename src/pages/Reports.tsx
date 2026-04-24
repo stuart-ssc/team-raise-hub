@@ -587,17 +587,13 @@ const Reports = () => {
         <DashboardHeader activeGroup={activeGroup} onGroupClick={handleGroupClick} />
         <main className="flex-1 overflow-y-auto p-6">
           <div className="space-y-6">
-            <div className="flex flex-col gap-4">
-              {/* Row 1: Page Title */}
-              <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                  <Activity className="h-8 w-8 text-primary" />
-                  Analytics Dashboard
-                </h1>
-              </div>
-              
-              {/* Row 2: Controls - Stack on mobile, row on desktop */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+                <Activity className="h-8 w-8 text-primary" />
+                Analytics Dashboard
+              </h1>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary/10 border border-primary/20 w-fit">
                   <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                   <span className="text-sm font-medium text-primary">Live</span>
