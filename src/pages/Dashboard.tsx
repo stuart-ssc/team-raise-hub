@@ -749,7 +749,12 @@ const Dashboard = () => {
       });
     }
 
-    return items;
+    // Critical "Connect payment" rows always come first
+    const sorted = [
+      ...items.filter((i) => i.key.startsWith("pay-")),
+      ...items.filter((i) => !i.key.startsWith("pay-")),
+    ];
+    return sorted;
   }, [canManageUsers, pendingRequestsCount, hasRosterAttribution, playersMissingPitch, unconnectedGroups, recentDonorsCount, navigate]);
 
   const toneClass = (t: "amber" | "rose" | "blue" | "green") => {
@@ -935,28 +940,53 @@ const Dashboard = () => {
                     </div>
                   ) : (
                     <ul className="divide-y divide-border">
-                      {attentionItems.map((item) => (
-                        <li key={item.key}>
-                          <button
-                            type="button"
-                            onClick={item.onClick}
-                            className="flex w-full items-center justify-between gap-3 py-3 text-left hover:bg-muted/40 -mx-2 px-2 rounded-md transition-colors"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <span className={`p-2 rounded-md ${toneClass(item.tone)}`}>{item.icon}</span>
-                              <span className="text-sm font-medium truncate">{item.label}</span>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {item.count !== undefined && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {item.count}
-                                </Badge>
-                              )}
-                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          </button>
-                        </li>
-                      ))}
+                      {attentionItems.map((item) => {
+                        const isCritical = item.key.startsWith("pay-");
+                        return (
+                          <li key={item.key}>
+                            <button
+                              type="button"
+                              onClick={item.onClick}
+                              className={
+                                isCritical
+                                  ? "flex w-full items-center justify-between gap-3 py-3 px-3 -mx-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors border border-destructive shadow-sm"
+                                  : "flex w-full items-center justify-between gap-3 py-3 text-left hover:bg-muted/40 -mx-2 px-2 rounded-md transition-colors"
+                              }
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <span
+                                  className={
+                                    isCritical
+                                      ? "p-2 rounded-md bg-white/15 text-destructive-foreground"
+                                      : `p-2 rounded-md ${toneClass(item.tone)}`
+                                  }
+                                >
+                                  {item.icon}
+                                </span>
+                                <span className={`text-sm truncate ${isCritical ? "font-semibold" : "font-medium"}`}>
+                                  {item.label}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {isCritical ? (
+                                  <span className="bg-white/15 text-destructive-foreground text-[11px] px-2 py-0.5 rounded-full font-medium">
+                                    Action required
+                                  </span>
+                                ) : (
+                                  item.count !== undefined && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {item.count}
+                                    </Badge>
+                                  )
+                                )}
+                                <ChevronRight
+                                  className={`h-4 w-4 ${isCritical ? "text-destructive-foreground/80" : "text-muted-foreground"}`}
+                                />
+                              </div>
+                            </button>
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </CardContent>
