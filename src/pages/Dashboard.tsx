@@ -749,7 +749,12 @@ const Dashboard = () => {
       });
     }
 
-    return items;
+    // Critical "Connect payment" rows always come first
+    const sorted = [
+      ...items.filter((i) => i.key.startsWith("pay-")),
+      ...items.filter((i) => !i.key.startsWith("pay-")),
+    ];
+    return sorted;
   }, [canManageUsers, pendingRequestsCount, hasRosterAttribution, playersMissingPitch, unconnectedGroups, recentDonorsCount, navigate]);
 
   const toneClass = (t: "amber" | "rose" | "blue" | "green") => {
