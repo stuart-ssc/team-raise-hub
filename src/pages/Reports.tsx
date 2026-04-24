@@ -902,18 +902,18 @@ const Reports = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Campaign</TableHead>
-                        <TableHead>Group</TableHead>
-                        <TableHead className="text-right">Goal</TableHead>
-                        <TableHead className="text-right">Raised</TableHead>
-                        <TableHead className="text-right">Progress</TableHead>
-                        <TableHead className="text-right">Donations</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Dates</TableHead>
+                        <SortableHead label="Fundraiser" sortKeyValue="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                        <SortableHead label="Group" sortKeyValue="group_name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                        <SortableHead label="Goal" sortKeyValue="goal_amount" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
+                        <SortableHead label="Raised" sortKeyValue="amount_raised" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
+                        <SortableHead label="Progress" sortKeyValue="progress" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
+                        <SortableHead label="Donations" sortKeyValue="donation_count" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
+                        <SortableHead label="Status" sortKeyValue="status" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                        <SortableHead label="Dates" sortKeyValue="start_date" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {campaigns.map((campaign) => (
+                      {sortedCampaigns.map((campaign) => (
                         <TableRow key={campaign.id}>
                           <TableCell className="font-medium">{campaign.name}</TableCell>
                           <TableCell>{campaign.group_name}</TableCell>
