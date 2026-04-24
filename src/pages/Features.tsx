@@ -532,7 +532,8 @@ const automationCards = [
 ];
 
 const Features = () => {
-  const [seqMode, setSeqMode] = useState<"email" | "sms" | "web">("email");
+  const [seqMode, setSeqMode] = useState<SequenceMode>("email");
+  const currentSequence = sequences[seqMode];
 
   return (
     <div className="min-h-screen flex flex-col">
