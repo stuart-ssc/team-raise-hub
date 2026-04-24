@@ -472,25 +472,25 @@ const Reports = () => {
   const exportToCSV = () => {
     // Create header row with statistics summary
     const summaryRows = [
-      ['CAMPAIGN REPORTS SUMMARY'],
+      ['FUNDRAISER REPORTS SUMMARY'],
       [''],
       ['Period', dateRange === 'month' ? 'This Month' : dateRange === '3months' ? 'Last 3 Months' : dateRange === 'year' ? 'This Year' : 'All Time'],
       ['Group', activeGroup ? activeGroup.group_name : 'All Groups'],
       [''],
       ['OVERALL STATISTICS'],
-      ['Total Campaigns', stats.totalCampaigns.toString()],
-      ['Active Campaigns', stats.activeCampaigns.toString()],
+      ['Total Fundraisers', stats.totalCampaigns.toString()],
+      ['Active Fundraisers', stats.activeCampaigns.toString()],
       ['Total Raised', formatCurrency(stats.totalRaised)],
       ['Total Goal', formatCurrency(stats.totalGoal)],
       ['Total Donations', stats.totalDonations.toString()],
       ['Average Donation', formatCurrency(stats.avgDonation)],
       [''],
-      ['CAMPAIGN DETAILS'],
-      ['Campaign Name', 'Group', 'Goal', 'Amount Raised', 'Progress (%)', 'Donations', 'Status', 'Date Range']
+      ['FUNDRAISER DETAILS'],
+      ['Fundraiser Name', 'Group', 'Goal', 'Amount Raised', 'Progress (%)', 'Donations', 'Status', 'Date Range']
     ];
 
     // Add campaign data rows
-    const dataRows = campaigns.map(campaign => [
+    const dataRows = sortedCampaigns.map(campaign => [
       campaign.name,
       campaign.group_name,
       formatCurrency(campaign.goal_amount),
@@ -511,7 +511,7 @@ const Reports = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `campaign-reports-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.setAttribute('download', `fundraiser-reports-${format(new Date(), 'yyyy-MM-dd')}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
