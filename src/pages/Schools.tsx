@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
-import { StateBrowser } from "@/components/StateLandingPage/StateBrowser";
+import { allStates } from "@/lib/stateUtils";
 import heroImage from "@/assets/schools-hero.png";
 import teamImage from "@/assets/team-collaboration.jpg";
 
