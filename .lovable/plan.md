@@ -1,60 +1,61 @@
-## Goal
+# Redesign Schools page (`/schools`)
 
-Rewrite `src/pages/Features.tsx` to match the uploaded 2026 Features mockup, using the same scoped-CSS pattern, typography, and color tokens as the homepage and the just-redesigned Pricing page.
+Rebuild `src/pages/Schools.tsx` to match the new mockup and the 2026 design language already shipped on `Features.tsx` and `Pricing.tsx`. All styles will be scoped under `.sp-schools` so the dashboard/app stay untouched.
 
-The page will sit between the existing `MarketingHeader` and `MarketingFooter` and be fully self-contained (scoped under `.sp-features`) so it doesn't affect the rest of the app.
+## Design language (consistent with Features/Pricing)
+- Background: `#FAFAF7` (sp-paper) with cream alt sections `#F2F3EE` and white sections.
+- Display font: **Instrument Serif** (italic green accent for the hero phrase, blue elsewhere where appropriate).
+- UI font: **Geist**.
+- Brand tokens reused: `--sp-blue #1F5FE0`, `--sp-green #0E9F6E`, `--sp-accent #FF6B35`, `--sp-ink #0A0F1E`.
+- Pill eyebrows, pill buttons, soft shadows, 1px hairline borders — same primitives as Features.
+- `overflow-x: hidden; max-width: 100vw;` on the page wrapper to prevent horizontal scroll.
 
-## Sections (top → bottom, matching the mockup)
+## Page structure (matches mockup top → bottom)
 
-1. **Hero** — paper background with soft radial gradients.
-   - Eyebrow chip: "Features"
-   - Display headline (centered): `Everything built for the way` + italic blue `teams actually raise.`
-   - Subhead: "Built on top of Stripe. Automated email + SMS outreach. A donor CRM that turns over with your roster every season."
-   - Anchor sub-nav row: pill-style links — Payouts · Email/SMS outreach · Donor CRM that turns · Automation — that scroll to the matching sections below.
+1. **Hero** — left-aligned text + right-aligned framed image card
+   - Eyebrow chip: "Built for K-12 Schools"
+   - Headline (Instrument Serif): *"Everything your school needs to **fundraise smarter.**"* — last phrase in green italic.
+   - Subcopy + two CTAs: blue "Start free → 5 min setup" + ghost "Book a demo".
+   - Right column: existing `schools-hero.png` in a tilted card with a small floating "$2,225" stat chip.
 
-2. **"Money in your bank — as fast as tomorrow."** (Payouts)
-   - Two-column layout. Eyebrow chip "Powered by Stripe".
-   - Left: Display headline with italic blue accent on `as fast as tomorrow.` + a faux "Payout #4624" card showing $12,450.00, three green-checked recent payout rows, and a "Powered by Stripe" footer note.
-   - Right: H4 "Your Stripe account. Your bank. Your money." + 4 bullet points (Express onboarding ~5 min, Next-day payouts default, ACH transfers from Connected accounts, Per-campaign account routing).
-   - Below: 3-up small feature cards — "Bank statements", "Payout/cash review", "Receipt agreements".
-   - Bottom strip: 4 inline mini-stats with icons (Stripe Connect Express · Express onboarding · ~5 min · 100% supported).
+2. **Programs strip** ("Certified for every school program")
+   - Centered eyebrow + heading.
+   - 6-up tile row: Sports Teams, PTOs & PTAs, Music Programs, Booster Clubs, Academic Clubs, Arts Clubs — each with a colored circular icon (rotating accent colors per tile).
 
-3. **"Campaigns that follow up so you don't have to."** (Email/SMS automation)
-   - Two-column. Eyebrow chip "Email + SMS outreach".
-   - Left headline with italic accent on `follow up so you don't have to.` + supporting paragraph.
-   - Toggle pills above two faux cards: "Email sequences" (active) / "SMS reminders" / "Web forms".
-   - Two side-by-side faux UI cards: a sequence builder list (4–5 steps) and a sample email/SMS preview card (subject, body, primary CTA button).
-   - Below: 4-up KPI strip (39%, 94%, 31×, 0) with labels (Donor open rate, SMS delivery rate, Higher response, No campaigns sent without consent).
+3. **"See every dollar. Across every program."** (alt cream band)
+   - Two-column: left = heading + 4 bullet rows (Pay-as-you-play, Automated payouts, Self-serve reports, Automatic tax receipts).
+   - Right = mock dashboard card (Total Raised $82,400 / Active Campaigns 18 / line chart placeholder).
 
-4. **"One donor record that follows every athlete, every season."** (Donor CRM)
-   - Two-column. Orange eyebrow chip "Donor CRM, built in".
-   - Left headline with italic orange accent on `donor record`. Supporting copy + a 5-row vertical list of feature rows (Persistent supporter ID, Team-on-a-team rosters, 360° engagement, Inbox-grade history, Full transaction log) — each row has an orange icon tile, title, and short description.
-   - Right: faux "Your School Donor Database" UI card showing 6 supporter rows (avatar, name, email, total given, badge), then a small "Lifetime giving over time" mini-chart with 2 stat tiles ($497 / $607) below.
+4. **"Your teams raise more when they own it"** (white band)
+   - Image card on the left (existing `team-collaboration.jpg`), copy + eyebrow on the right.
+   - Below: 3 small feature cards — *Launch in minutes*, *Organize your roster*, *Look like a brand*.
 
-5. **"Every detail handled for you."** (Automation grid)
-   - Eyebrow chip "Automation".
-   - Two-column header: left big italic headline; right small "Every feature you'd expect from a modern fundraising platform — and a few you wouldn't" note.
-   - 3×3 grid of feature tiles (icon + title + description): Automated tax receipts, Matching gift engine, Live event dashboards, Fundraiser assistant, Bilingual landing pages, Role-based permissions, Built-in integrations, Custom labels & tags, Bulk import & export. One tile (Custom labels & tags) gets the highlighted "active" border.
+5. **"Support multiple programs from one account"** (alt cream band)
+   - Left: faux PTO program list card (4 rows: Lincoln Athletics, Drama Club, PTO General, Robotics Team, Theater Spring Musical) with colored category dots and amounts.
+   - Right: heading + 3 check-bullets.
 
-6. **Final CTA band** — full-width blue gradient.
-   - Tiny chip "Get started today"
-   - Display headline white: `Every feature.` + italic `Zero platform fees.`
-   - Subhead: "Every Sponsorly feature listed above is in every plan. Connect your Stripe account in 5 minutes and launch your first campaign today."
-   - Two buttons: white pill "Get started free" + outlined ghost "Schedule a demo".
+6. **Smarter. Safer. Free.** (white band)
+   - 3-column feature cards: *Setup is simple*, *Zero platform fee*, *Leaders set/already use it* — each with circled icon and 2 lines of copy.
 
-## Technical Approach
+7. **Trust band** (full-width blue gradient)
+   - Centered subtitle + 3 large stats: 500+ schools, $23M+ raised, 60,000+ supporters.
 
-- File touched: **`src/pages/Features.tsx`** (full rewrite). No other files change.
-- Wrap entire page content in `<div className="sp-features">` and inject a `SCOPED_CSS` constant via `<style>{SCOPED_CSS}</style>`, mirroring `src/pages/Index.tsx` and the new `src/pages/Pricing.tsx`.
-- Reuse the same CSS variables (`--sp-blue`, `--sp-green`, `--sp-accent`, `--sp-ink`, `--sp-paper`, etc.) and font stack (Instrument Serif display + Geist UI).
-- Reuse `MarketingHeader` and `MarketingFooter` (no changes).
-- Use `useState` to handle the small in-section toggle (Email sequences / SMS / Web forms) and the anchor sub-nav.
-- Inline SVG icons (check, chevron, mail, phone, repeat, building, etc.) — no new lucide imports needed; small inline SVGs match the homepage style.
-- Add `overflow-x: hidden; max-width: 100vw;` on the wrapper to prevent any horizontal scrollbar.
-- All anchor sub-nav links use simple hash-fragment scroll (`href="#payouts"` etc.) targeting `id`s on each section.
+8. **Browse schools by state** (white band)
+   - Eyebrow + centered heading + render existing `<StateBrowser />` (kept as-is, no logic change).
+
+9. **Final CTA** (dark navy band)
+   - Eyebrow chip on dark, large display heading: *"Ready to transform your **school's fundraising?**"* (italic green accent on the second phrase).
+   - Two buttons: white "Book a demo" + outline-on-dark "Explore features".
+
+10. **MarketingHeader / MarketingFooter** unchanged.
+
+## Technical notes
+- Single file rewrite: `src/pages/Schools.tsx`.
+- Inject a `SCOPED_CSS` string (mirroring the pattern in `Features.tsx` / `Pricing.tsx`) inside a `<style>` tag, all selectors prefixed with `.sp-schools`.
+- Keep imports for `MarketingHeader`, `MarketingFooter`, `StateBrowser`, `heroImage`, `teamImage`. Drop unused `Card`/`Button`/icon imports — replace icons with inline SVGs to match Features/Pricing convention.
+- Preserve existing `useEffect` that sets `document.title` + meta description.
+- No route changes, no data changes, no new dependencies.
 
 ## Out of scope
-
-- No backend/data changes.
-- No header/footer/route changes.
-- No new dependencies.
+- No changes to `StateBrowser`, `MarketingHeader`, `MarketingFooter`, or any other page.
+- No changes to backend, routes, or assets.
