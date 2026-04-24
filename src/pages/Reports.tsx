@@ -846,22 +846,22 @@ const Reports = () => {
             {/* Campaign Performance Table */}
             <Card>
               <CardHeader>
-                <CardTitle>Campaign Performance</CardTitle>
+                <CardTitle>Fundraiser Performance</CardTitle>
               </CardHeader>
               <CardContent>
                 {campaigns.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground mb-2">
-                      No campaigns have been created yet.
+                      No fundraisers have been created yet.
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Create your first campaign to start seeing reports!
+                      Create your first fundraiser to start seeing reports!
                     </p>
                   </div>
                 ) : isMobile ? (
                   // Mobile Card View
                   <div className="space-y-4">
-                    {campaigns.map((campaign) => (
+                    {sortedCampaigns.map((campaign) => (
                       <Card key={campaign.id}>
                         <CardHeader>
                           <div className="flex items-start justify-between gap-2">
