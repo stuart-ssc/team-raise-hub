@@ -251,8 +251,10 @@ const SCOPED_CSS = `
 .sp-home .sp-fc-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
 /* Ticker */
-.sp-home .sp-ticker { padding: 18px 0; background: var(--sp-ink); color: white; border-top: 1px solid rgba(255,255,255,0.08); overflow: hidden; }
-.sp-home .sp-ticker-track { display: flex; gap: 48px; animation: spScroll 60s linear infinite; width: max-content; }
+.sp-home .sp-ticker { padding: 18px 0; background: var(--sp-ink); color: white; border-top: 1px solid rgba(255,255,255,0.08); overflow: hidden; scrollbar-width: none; -ms-overflow-style: none; }
+.sp-home .sp-ticker::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.sp-home .sp-ticker-track { display: flex; gap: 48px; animation: spScroll 60s linear infinite; width: max-content; scrollbar-width: none; -ms-overflow-style: none; }
+.sp-home .sp-ticker-track::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .sp-home .sp-ticker-item { display: flex; align-items: center; gap: 12px; font-size: 13px; white-space: nowrap; }
 .sp-home .sp-ticker-item .amt { font-family: var(--sp-display); color: var(--sp-green); font-size: 20px; }
 .sp-home .sp-ticker-item .sep { color: rgba(255,255,255,0.2); }
