@@ -501,77 +501,104 @@ const Features = () => {
 
               <div className="sp-toggle-wrap">
                 <div className="sp-toggle" role="tablist" aria-label="Outreach mode">
-                  <button role="tab" aria-selected={seqMode === "email"} className={seqMode === "email" ? "active" : ""} onClick={() => setSeqMode("email")}>
-                    Email sequences <span className="badge">DEFAULT</span>
+                  <button
+                    role="tab"
+                    aria-selected={seqMode === "email"}
+                    className={seqMode === "email" ? "active" : ""}
+                    onClick={() => setSeqMode("email")}
+                  >
+                    <span className="ico"><Mail /></span>
+                    Email sequences
+                    <span className="count">12</span>
                   </button>
-                  <button role="tab" aria-selected={seqMode === "sms"} className={seqMode === "sms" ? "active" : ""} onClick={() => setSeqMode("sms")}>
-                    SMS reminders
+                  <button
+                    role="tab"
+                    aria-selected={seqMode === "sms"}
+                    className={seqMode === "sms" ? "active" : ""}
+                    onClick={() => setSeqMode("sms")}
+                  >
+                    <span className="ico"><Chat /></span>
+                    SMS sequences
+                    <span className="count">8</span>
                   </button>
-                  <button role="tab" aria-selected={seqMode === "web"} className={seqMode === "web" ? "active" : ""} onClick={() => setSeqMode("web")}>
-                    Web forms
+                  <button
+                    role="tab"
+                    aria-selected={seqMode === "multi"}
+                    className={seqMode === "multi" ? "active" : ""}
+                    onClick={() => setSeqMode("multi")}
+                  >
+                    <span className="ico"><Bolt /></span>
+                    Multi-channel
+                    <span className="new-badge">New</span>
                   </button>
                 </div>
               </div>
 
               <div className="sp-seq-cards">
+                {/* Left: sequence builder */}
                 <div className="sp-seq-card">
                   <div className="sp-seq-head">
-                    <h5>New donor welcome series</h5>
-                    <span className="pill">5 STEPS · ACTIVE</span>
+                    <h5>{currentSequence.title}</h5>
+                    <span className="pill">{currentSequence.statusLabel}</span>
                   </div>
-                  <div className="sp-seq-step">
-                    <span className="num">1</span>
-                    <div className="body">
-                      <div className="t">Trigger</div>
-                      <div className="d">First-time gift on any campaign</div>
-                    </div>
-                  </div>
-                  <div className="sp-seq-step">
-                    <span className="num">2</span>
-                    <div className="body">
-                      <div className="t">Welcome email — Day 0</div>
-                      <div className="d">"Thank you" + tax receipt + roster member video</div>
-                    </div>
-                  </div>
-                  <div className="sp-seq-step">
-                    <span className="num">3</span>
-                    <div className="body">
-                      <div className="t">SMS — Day 3</div>
-                      <div className="d">Optional thank-you text to mobile</div>
-                    </div>
-                  </div>
-                  <div className="sp-seq-step">
-                    <span className="num">4</span>
-                    <div className="body">
-                      <div className="t">Goal update email — Day 7</div>
-                      <div className="d">"Here's what your gift unlocked" with progress bar</div>
-                    </div>
-                  </div>
-                  <div className="sp-seq-step">
-                    <span className="num">5</span>
-                    <div className="body">
-                      <div className="t">Wrap email — final day</div>
-                      <div className="d">Recap + invite to follow next campaign</div>
-                    </div>
+                  <div className="sp-seq-list">
+                    {currentSequence.steps.map((s, i) => (
+                      <div key={i} className={`sp-seq-step ${s.highlight ? "highlight" : ""}`}>
+                        <span className={`step-icon ${s.kind}`}>
+                          {stepIcon(s.kind)}
+                        </span>
+                        <div className="body">
+                          <div className="kicker">{s.kicker}</div>
+                          <div className="t">{s.title}</div>
+                          {s.meta && <div className="meta">{s.meta}</div>}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                <div className="sp-seq-card">
-                  <div className="sp-seq-head">
-                    <h5>Sample message preview</h5>
-                    <span className="pill">EMAIL · DRAFT</span>
-                  </div>
-                  <div className="sp-mail-meta">From: Madison Booster Club &lt;hello@madisonboosters.org&gt;</div>
-                  <div className="sp-mail-from">To: Sarah Kim · sarah.kim@email.com</div>
-                  <div className="sp-mail-subject">Your gift unlocked the team van fund 🚐</div>
-                  <div className="sp-mail-body">
-                    Hi Sarah — thank you for backing our spring drive. Your $50 gift, plus 91 others like it, just pushed us past 60% of our team van goal. We sent you a tax receipt separately for your records.
-                  </div>
-                  <a className="sp-mail-cta" href="#">See campaign progress</a>
-                  <div className="sp-mail-divider" />
-                  <div className="sp-mail-tags">
-                    <span>Personalized</span><span>Auto receipt</span><span>Track open</span><span>Suppress if unsubscribed</span>
-                  </div>
+                {/* Right: preview stack (email and/or SMS depending on mode) */}
+                <div className="sp-preview-stack">
+                  {currentSequence.previews.map((p, i) =>
+                    p.kind === "email" ? (
+                      <div key={i} className="sp-mail-card">
+                        <div className="sp-mail-header">
+                          <div className="sp-mail-avatar" style={{ background: p.avatarColor }}>{p.avatarInitial}</div>
+                          <div className="info">
+                            <div className="from">{p.from}</div>
+                            <div className="preview">{p.preview}</div>
+                          </div>
+                        </div>
+                        <div className="sp-mail-body-wrap">
+                          <h4 className="sp-mail-subject">{p.subject}</h4>
+                          <p className="sp-mail-body">{p.body}</p>
+                          <a className={`sp-mail-cta ${p.ctaAccent ? "accent" : ""}`} href="#">
+                            {p.ctaText} <span aria-hidden>→</span>
+                          </a>
+                        </div>
+                        {p.foot && (
+                          <div className="sp-mail-foot">
+                            {p.foot.map((f, fi) => (
+                              <span key={fi}><strong>{f.value}</strong>{f.label}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div key={i} className="sp-sms-card">
+                        <div className="sp-sms-head">
+                          <span className="who">{p.who}</span>
+                          <span>{p.when}</span>
+                        </div>
+                        <div className="sp-sms-bubbles">
+                          {p.bubbles.map((b, bi) => (
+                            <div key={bi} className={`sp-sms-bubble ${b.dir}`}>{b.text}</div>
+                          ))}
+                        </div>
+                        <div className="sp-sms-foot">{p.delivered}</div>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
 
