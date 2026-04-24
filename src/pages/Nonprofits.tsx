@@ -297,7 +297,7 @@ const Nonprofits = () => {
                     Event Fundraising
                   </Button>
                 </Link>
-                <Link to="/campaigns-overview">
+                <Link to="/fundraisers">
                   <Button variant="ghost" size="sm" className="gap-2">
                     Explore All Campaign Types
                   </Button>

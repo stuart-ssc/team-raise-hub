@@ -66,7 +66,7 @@ const MarketingFooter = () => {
             <h5 className={colHeading}>Product</h5>
             <Link to="/features" className={colLink}>Features</Link>
             <Link to="/pricing" className={colLink}>Pricing</Link>
-            <Link to="/campaigns-overview" className={colLink}>Fundraisers</Link>
+            <Link to="/fundraisers" className={colLink}>Fundraisers</Link>
             <Link to="/donor-receipts" className={colLink}>Tax receipts</Link>
           </div>
 
