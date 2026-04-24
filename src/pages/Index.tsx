@@ -30,6 +30,8 @@ const SCOPED_CSS = `
   font-family: var(--sp-ui);
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 .sp-home .sp-display { font-family: var(--sp-display); font-weight: 400; letter-spacing: -0.01em; }
 .sp-home .sp-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sp-blue); }
@@ -347,7 +349,7 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background overflow-x-hidden max-w-[100vw]">
       <style dangerouslySetInnerHTML={{ __html: SCOPED_CSS }} />
       <MarketingHeader />
 
