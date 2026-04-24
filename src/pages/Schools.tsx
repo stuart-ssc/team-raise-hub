@@ -569,7 +569,7 @@ const Schools = () => {
             </p>
           </div>
           <div className="sp-state-wrap sp-wrap">
-            <StateBrowser />
+            <StateDirectory />
           </div>
         </section>
 
