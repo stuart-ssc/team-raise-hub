@@ -882,7 +882,7 @@ const Dashboard = () => {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
                   <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
                     <p className="text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/60 font-semibold">
-                      Active Campaigns
+                      Active Fundraisers
                     </p>
                     <p className="text-2xl md:text-3xl font-bold mt-1 text-white">{activeCampaignsCount}</p>
                     <p className="text-xs text-sidebar-foreground/60 mt-1">
