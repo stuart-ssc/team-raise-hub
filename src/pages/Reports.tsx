@@ -424,6 +424,51 @@ const Reports = () => {
     return Math.min(Math.round(((raised || 0) / goal) * 100), 100);
   };
 
+  const sortedCampaigns = useMemo(() => {
+    const arr = [...campaigns];
+    const dir = sortDir === "asc" ? 1 : -1;
+    const cmp = (a: CampaignReport, b: CampaignReport) => {
+      let av: any;
+      let bv: any;
+      switch (sortKey) {
+        case "name":
+        case "group_name":
+          av = (a[sortKey] || "").toLowerCase();
+          bv = (b[sortKey] || "").toLowerCase();
+          if (av < bv) return -1 * dir;
+          if (av > bv) return 1 * dir;
+          return 0;
+        case "progress":
+          av = calculateProgress(a.amount_raised, a.goal_amount);
+          bv = calculateProgress(b.amount_raised, b.goal_amount);
+          return (av - bv) * dir;
+        case "goal_amount":
+        case "amount_raised":
+        case "donation_count":
+          av = a[sortKey] || 0;
+          bv = b[sortKey] || 0;
+          return (av - bv) * dir;
+        case "status":
+          av = a.status ? 1 : 0;
+          bv = b.status ? 1 : 0;
+          if (av !== bv) return (av - bv) * dir;
+          // Secondary sort: amount_raised desc
+          return ((b.amount_raised || 0) - (a.amount_raised || 0));
+        case "start_date":
+          av = a.start_date ? new Date(a.start_date).getTime() : null;
+          bv = b.start_date ? new Date(b.start_date).getTime() : null;
+          if (av === null && bv === null) return 0;
+          if (av === null) return 1;
+          if (bv === null) return -1;
+          return (av - bv) * dir;
+        default:
+          return 0;
+      }
+    };
+    arr.sort(cmp);
+    return arr;
+  }, [campaigns, sortKey, sortDir]);
+
   const exportToCSV = () => {
     // Create header row with statistics summary
     const summaryRows = [
