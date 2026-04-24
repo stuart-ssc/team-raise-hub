@@ -250,15 +250,6 @@ const SCOPED_CSS = `
 .sp-home .sp-fc-inner p { color: rgba(255,255,255,0.7); max-width: 560px; margin: 0 auto 40px; font-size: 18px; }
 .sp-home .sp-fc-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
-/* Ticker */
-.sp-home .sp-ticker { padding: 18px 0; background: var(--sp-ink); color: white; border-top: 1px solid rgba(255,255,255,0.08); overflow: hidden; scrollbar-width: none; -ms-overflow-style: none; }
-.sp-home .sp-ticker::-webkit-scrollbar { display: none; width: 0; height: 0; }
-.sp-home .sp-ticker-track { display: flex; gap: 48px; animation: spScroll 60s linear infinite; width: max-content; scrollbar-width: none; -ms-overflow-style: none; }
-.sp-home .sp-ticker-track::-webkit-scrollbar { display: none; width: 0; height: 0; }
-.sp-home .sp-ticker-item { display: flex; align-items: center; gap: 12px; font-size: 13px; white-space: nowrap; }
-.sp-home .sp-ticker-item .amt { font-family: var(--sp-display); color: var(--sp-green); font-size: 20px; }
-.sp-home .sp-ticker-item .sep { color: rgba(255,255,255,0.2); }
-
 /* Responsive */
 @media (max-width: 1100px) {
   .sp-home .sp-hero-grid { grid-template-columns: 1fr; }
@@ -338,17 +329,6 @@ const Index = () => {
     { cat: "clubs", img: "https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=900&q=80", tag: "Robotics", title: "Competition Team", meta: "parts · travel · entry", raised: "$22k avg" },
   ];
   const visibleTemplates = activeTab === "all" ? templates : templates.filter((t) => t.cat === activeTab);
-
-  const tickerItems = [
-    { ago: "Just now", amt: "+$250", who: "Lincoln HS Track" },
-    { ago: "30s ago", amt: "+$100", who: "Westlake Soccer Booster" },
-    { ago: "1m ago", amt: "+$50", who: "Pinecrest Robotics" },
-    { ago: "2m ago", amt: "+$1,000", who: "North Hills Theater" },
-    { ago: "3m ago", amt: "+$75", who: "Evergreen MS Band" },
-    { ago: "4m ago", amt: "+$25", who: "Riverside PTO" },
-    { ago: "5m ago", amt: "+$500", who: "Oak Grove Wrestling" },
-    { ago: "6m ago", amt: "+$200", who: "Maple Leaf Debate" },
-  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-background overflow-x-hidden max-w-[100vw]">
@@ -843,19 +823,6 @@ const Index = () => {
           </div>
         </section>
 
-        {/* TICKER */}
-        <section className="sp-ticker">
-          <div className="sp-ticker-track">
-            {[...tickerItems, ...tickerItems].map((it, i) => (
-              <div key={i} className="sp-ticker-item">
-                <span style={{ color: "rgba(255,255,255,0.6)" }}>{it.ago}</span>
-                <span className="amt">{it.amt}</span>
-                <span>{it.who}</span>
-                <span className="sep">•</span>
-              </div>
-            ))}
-          </div>
-        </section>
       </main>
 
       <MarketingFooter />
