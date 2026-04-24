@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, startOfMonth, startOfYear, subMonths, parseISO } from "date-fns";
-import { DollarSign, Target, TrendingUp, Users, Download, Activity, Heart } from "lucide-react";
+import { DollarSign, Target, TrendingUp, Users, Download, Activity, Heart, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 
@@ -62,6 +62,39 @@ interface RecentDonation {
   campaign_name: string;
 }
 
+type ReportSortKey = "name" | "group_name" | "goal_amount" | "amount_raised" | "progress" | "donation_count" | "status" | "start_date";
+
+const SortableHead = ({
+  label,
+  sortKeyValue,
+  sortKey,
+  sortDir,
+  onSort,
+  align = "left",
+}: {
+  label: string;
+  sortKeyValue: ReportSortKey;
+  sortKey: ReportSortKey;
+  sortDir: "asc" | "desc";
+  onSort: (k: ReportSortKey) => void;
+  align?: "left" | "right";
+}) => {
+  const active = sortKey === sortKeyValue;
+  const Icon = active ? (sortDir === "asc" ? ChevronUp : ChevronDown) : ChevronsUpDown;
+  return (
+    <TableHead className={align === "right" ? "text-right" : undefined}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKeyValue)}
+        className={`inline-flex items-center gap-1 cursor-pointer select-none hover:text-foreground transition-colors ${align === "right" ? "justify-end w-full" : ""}`}
+      >
+        <span>{label}</span>
+        <Icon className={`h-3.5 w-3.5 ${active ? "text-foreground" : "text-muted-foreground/50"}`} />
+      </button>
+    </TableHead>
+  );
+};
+
 const Reports = () => {
   const { organizationUser, loading: organizationUserLoading } = useOrganizationUser();
   const { activeGroup, groups, handleGroupClick } = useActiveGroup();
@@ -81,6 +114,20 @@ const Reports = () => {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [topCampaigns, setTopCampaigns] = useState<TopCampaign[]>([]);
   const [recentDonations, setRecentDonations] = useState<RecentDonation[]>([]);
+
+  type SortKey = "name" | "group_name" | "goal_amount" | "amount_raised" | "progress" | "donation_count" | "status" | "start_date";
+  const [sortKey, setSortKey] = useState<SortKey>("status");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const numericKeys: SortKey[] = ["goal_amount", "amount_raised", "progress", "donation_count", "status", "start_date"];
+  const toggleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir(numericKeys.includes(key) ? "desc" : "asc");
+    }
+  };
 
   const getDateRangeFilter = () => {
     const now = new Date();
@@ -410,28 +457,73 @@ const Reports = () => {
     return Math.min(Math.round(((raised || 0) / goal) * 100), 100);
   };
 
+  const sortedCampaigns = useMemo(() => {
+    const arr = [...campaigns];
+    const dir = sortDir === "asc" ? 1 : -1;
+    const cmp = (a: CampaignReport, b: CampaignReport) => {
+      let av: any;
+      let bv: any;
+      switch (sortKey) {
+        case "name":
+        case "group_name":
+          av = (a[sortKey] || "").toLowerCase();
+          bv = (b[sortKey] || "").toLowerCase();
+          if (av < bv) return -1 * dir;
+          if (av > bv) return 1 * dir;
+          return 0;
+        case "progress":
+          av = calculateProgress(a.amount_raised, a.goal_amount);
+          bv = calculateProgress(b.amount_raised, b.goal_amount);
+          return (av - bv) * dir;
+        case "goal_amount":
+        case "amount_raised":
+        case "donation_count":
+          av = a[sortKey] || 0;
+          bv = b[sortKey] || 0;
+          return (av - bv) * dir;
+        case "status":
+          av = a.status ? 1 : 0;
+          bv = b.status ? 1 : 0;
+          if (av !== bv) return (av - bv) * dir;
+          // Secondary sort: amount_raised desc
+          return ((b.amount_raised || 0) - (a.amount_raised || 0));
+        case "start_date":
+          av = a.start_date ? new Date(a.start_date).getTime() : null;
+          bv = b.start_date ? new Date(b.start_date).getTime() : null;
+          if (av === null && bv === null) return 0;
+          if (av === null) return 1;
+          if (bv === null) return -1;
+          return (av - bv) * dir;
+        default:
+          return 0;
+      }
+    };
+    arr.sort(cmp);
+    return arr;
+  }, [campaigns, sortKey, sortDir]);
+
   const exportToCSV = () => {
     // Create header row with statistics summary
     const summaryRows = [
-      ['CAMPAIGN REPORTS SUMMARY'],
+      ['FUNDRAISER REPORTS SUMMARY'],
       [''],
       ['Period', dateRange === 'month' ? 'This Month' : dateRange === '3months' ? 'Last 3 Months' : dateRange === 'year' ? 'This Year' : 'All Time'],
       ['Group', activeGroup ? activeGroup.group_name : 'All Groups'],
       [''],
       ['OVERALL STATISTICS'],
-      ['Total Campaigns', stats.totalCampaigns.toString()],
-      ['Active Campaigns', stats.activeCampaigns.toString()],
+      ['Total Fundraisers', stats.totalCampaigns.toString()],
+      ['Active Fundraisers', stats.activeCampaigns.toString()],
       ['Total Raised', formatCurrency(stats.totalRaised)],
       ['Total Goal', formatCurrency(stats.totalGoal)],
       ['Total Donations', stats.totalDonations.toString()],
       ['Average Donation', formatCurrency(stats.avgDonation)],
       [''],
-      ['CAMPAIGN DETAILS'],
-      ['Campaign Name', 'Group', 'Goal', 'Amount Raised', 'Progress (%)', 'Donations', 'Status', 'Date Range']
+      ['FUNDRAISER DETAILS'],
+      ['Fundraiser Name', 'Group', 'Goal', 'Amount Raised', 'Progress (%)', 'Donations', 'Status', 'Date Range']
     ];
 
     // Add campaign data rows
-    const dataRows = campaigns.map(campaign => [
+    const dataRows = sortedCampaigns.map(campaign => [
       campaign.name,
       campaign.group_name,
       formatCurrency(campaign.goal_amount),
@@ -452,7 +544,7 @@ const Reports = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `campaign-reports-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.setAttribute('download', `fundraiser-reports-${format(new Date(), 'yyyy-MM-dd')}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -538,7 +630,7 @@ const Reports = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Fundraisers</CardTitle>
                   <Target className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
@@ -571,8 +663,8 @@ const Reports = () => {
                   <div className="text-3xl font-bold text-primary">{stats.totalDonations}</div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {campaigns.length > 0 
-                      ? `${(stats.totalDonations / campaigns.length).toFixed(1)} avg per campaign`
-                      : "No campaigns yet"}
+                      ? `${(stats.totalDonations / campaigns.length).toFixed(1)} avg per fundraiser`
+                      : "No fundraisers yet"}
                   </p>
                 </CardContent>
               </Card>
@@ -681,17 +773,17 @@ const Reports = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Activity className="h-5 w-5 text-primary" />
-                    Top Performing Campaigns
+                    Top Performing Fundraisers
                   </CardTitle>
                   <CardDescription>
-                    Campaigns with the highest donations
+                    Fundraisers with the highest donations
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {topCampaigns.length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-sm text-muted-foreground">
-                        No campaign data available yet
+                        No fundraiser data available yet
                       </p>
                     </div>
                   ) : (
@@ -787,22 +879,22 @@ const Reports = () => {
             {/* Campaign Performance Table */}
             <Card>
               <CardHeader>
-                <CardTitle>Campaign Performance</CardTitle>
+                <CardTitle>Fundraiser Performance</CardTitle>
               </CardHeader>
               <CardContent>
                 {campaigns.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground mb-2">
-                      No campaigns have been created yet.
+                      No fundraisers have been created yet.
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Create your first campaign to start seeing reports!
+                      Create your first fundraiser to start seeing reports!
                     </p>
                   </div>
                 ) : isMobile ? (
                   // Mobile Card View
                   <div className="space-y-4">
-                    {campaigns.map((campaign) => (
+                    {sortedCampaigns.map((campaign) => (
                       <Card key={campaign.id}>
                         <CardHeader>
                           <div className="flex items-start justify-between gap-2">
@@ -843,18 +935,18 @@ const Reports = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Campaign</TableHead>
-                        <TableHead>Group</TableHead>
-                        <TableHead className="text-right">Goal</TableHead>
-                        <TableHead className="text-right">Raised</TableHead>
-                        <TableHead className="text-right">Progress</TableHead>
-                        <TableHead className="text-right">Donations</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Dates</TableHead>
+                        <SortableHead label="Fundraiser" sortKeyValue="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                        <SortableHead label="Group" sortKeyValue="group_name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                        <SortableHead label="Goal" sortKeyValue="goal_amount" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
+                        <SortableHead label="Raised" sortKeyValue="amount_raised" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
+                        <SortableHead label="Progress" sortKeyValue="progress" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
+                        <SortableHead label="Donations" sortKeyValue="donation_count" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
+                        <SortableHead label="Status" sortKeyValue="status" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                        <SortableHead label="Dates" sortKeyValue="start_date" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {campaigns.map((campaign) => (
+                      {sortedCampaigns.map((campaign) => (
                         <TableRow key={campaign.id}>
                           <TableCell className="font-medium">{campaign.name}</TableCell>
                           <TableCell>{campaign.group_name}</TableCell>
