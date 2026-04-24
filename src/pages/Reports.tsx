@@ -82,6 +82,20 @@ const Reports = () => {
   const [topCampaigns, setTopCampaigns] = useState<TopCampaign[]>([]);
   const [recentDonations, setRecentDonations] = useState<RecentDonation[]>([]);
 
+  type SortKey = "name" | "group_name" | "goal_amount" | "amount_raised" | "progress" | "donation_count" | "status" | "start_date";
+  const [sortKey, setSortKey] = useState<SortKey>("status");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const numericKeys: SortKey[] = ["goal_amount", "amount_raised", "progress", "donation_count", "status", "start_date"];
+  const toggleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir(numericKeys.includes(key) ? "desc" : "asc");
+    }
+  };
+
   const getDateRangeFilter = () => {
     const now = new Date();
     switch (dateRange) {
