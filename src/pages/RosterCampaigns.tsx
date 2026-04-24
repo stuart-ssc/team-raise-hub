@@ -346,7 +346,7 @@ const RosterCampaigns = () => {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Link to="/campaigns-overview">
+            <Link to="/fundraisers">
               <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8">
                 Explore All Campaign Types
               </Button>

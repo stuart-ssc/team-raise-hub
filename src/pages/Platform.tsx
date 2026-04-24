@@ -284,7 +284,7 @@ const Platform = () => {
               Discover the different ways you can raise funds with Sponsorly
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/campaigns-overview">
+              <Link to="/fundraisers">
                 <Button size="lg" className="gap-2">
                   View All Campaign Types
                 </Button>

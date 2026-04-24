@@ -8,7 +8,7 @@ const MarketingHeader = () => {
 
   const navigation = [
     { name: 'Schools', href: '/schools' },
-    { name: 'Fundraisers', href: '/campaigns-overview' },
+    { name: 'Fundraisers', href: '/fundraisers' },
     { name: 'Features', href: '/features' },
     { name: 'Pricing', href: '/pricing' },
   ];
