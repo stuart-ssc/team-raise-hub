@@ -137,7 +137,7 @@ export function PitchWizard({
     <div className="flex flex-col max-h-[90vh]">
       {/* Header */}
       <div className="px-6 pt-6 pb-4">
-        <h2 className="font-serif text-2xl font-semibold tracking-tight">
+        <h2 className="text-2xl font-semibold tracking-tight">
           Build your pitch — {campaignName}
         </h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
@@ -282,7 +282,7 @@ function MessageStep({
   return (
     <div className="mt-2 space-y-5">
       <div>
-        <h3 className="font-serif text-xl font-semibold tracking-tight">
+        <h3 className="text-xl font-semibold tracking-tight">
           Say it in your own voice
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -340,7 +340,7 @@ function HeadshotStep({
   return (
     <div className="mt-2 space-y-5">
       <div>
-        <h3 className="font-serif text-xl font-semibold tracking-tight">
+        <h3 className="text-xl font-semibold tracking-tight">
           Put a face to the ask
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -419,7 +419,7 @@ function RecordStep({
   return (
     <div className="mt-2 space-y-5">
       <div>
-        <h3 className="font-serif text-xl font-semibold tracking-tight">
+        <h3 className="text-xl font-semibold tracking-tight">
           30–60 seconds. Be yourself.
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">

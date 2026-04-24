@@ -540,7 +540,7 @@ function StatColumn({ label, value, caption }: { label: string; value: string; c
   return (
     <div>
       <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-1.5 font-serif text-lg font-semibold text-foreground">{value}</p>
+      <p className="mt-1.5 text-lg font-semibold text-foreground">{value}</p>
       {caption && <p className="text-xs text-muted-foreground truncate">{caption}</p>}
     </div>
   );
@@ -625,7 +625,7 @@ function CampaignManagerCard({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-serif text-2xl font-semibold leading-tight text-foreground">
+                <h3 className="text-2xl font-semibold leading-tight text-foreground">
                   {campaign.name}
                 </h3>
                 {hasSlug && (
@@ -663,7 +663,7 @@ function CampaignManagerCard({
                 GOAL
               </p>
               <div className="mt-1.5 flex items-baseline justify-between gap-2">
-                <span className="font-serif text-lg font-semibold text-foreground">
+                <span className="text-lg font-semibold text-foreground">
                   {fmtMoney(raised)}{" "}
                   <span className="text-sm font-normal text-muted-foreground">
                     / {fmtMoney(goal)}
