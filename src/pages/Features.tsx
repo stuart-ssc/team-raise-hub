@@ -532,7 +532,7 @@ const automationCards = [
 ];
 
 const Features = () => {
-  const [seqMode, setSeqMode] = useState<SequenceMode>("email");
+  const [seqMode, setSeqMode] = useState<SequenceMode>("multi");
   const currentSequence = sequences[seqMode];
 
   return (
@@ -677,6 +677,16 @@ const Features = () => {
                 <div className="sp-toggle" role="tablist" aria-label="Outreach mode">
                   <button
                     role="tab"
+                    aria-selected={seqMode === "multi"}
+                    className={seqMode === "multi" ? "active" : ""}
+                    onClick={() => setSeqMode("multi")}
+                  >
+                    <span className="ico"><Bolt /></span>
+                    Multi-channel
+                    <span className="new-badge">New</span>
+                  </button>
+                  <button
+                    role="tab"
                     aria-selected={seqMode === "email"}
                     className={seqMode === "email" ? "active" : ""}
                     onClick={() => setSeqMode("email")}
@@ -694,16 +704,6 @@ const Features = () => {
                     <span className="ico"><Chat /></span>
                     SMS sequences
                     <span className="count">8</span>
-                  </button>
-                  <button
-                    role="tab"
-                    aria-selected={seqMode === "multi"}
-                    className={seqMode === "multi" ? "active" : ""}
-                    onClick={() => setSeqMode("multi")}
-                  >
-                    <span className="ico"><Bolt /></span>
-                    Multi-channel
-                    <span className="new-badge">New</span>
                   </button>
                 </div>
               </div>
