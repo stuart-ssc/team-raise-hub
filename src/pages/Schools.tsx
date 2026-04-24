@@ -167,7 +167,18 @@ const SCOPED_CSS = `
 .sp-schools .sp-trust-stat .l { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.85; margin-top: 8px; font-weight: 600; }
 
 /* Browse by state */
-.sp-schools .sp-state-wrap { max-width: 1100px; margin: 32px auto 0; }
+.sp-schools .sp-state-wrap { max-width: 1180px; margin: 40px auto 0; }
+.sp-schools .sp-state-grid { display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 56px; row-gap: 8px; align-items: start; }
+.sp-schools .sp-state-letter { font-family: var(--sp-display); font-weight: 400; font-size: 56px; line-height: 1; color: var(--sp-blue); padding: 28px 0 10px; border-bottom: 1px solid var(--sp-line); margin-bottom: 14px; }
+.sp-schools .sp-state-letter:first-child { padding-top: 0; }
+.sp-schools .sp-state-link { display: block; padding: 6px 0; font-size: 15px; color: var(--sp-ink); transition: color .15s ease; }
+.sp-schools .sp-state-link:hover { color: var(--sp-blue); }
+@media (max-width: 980px) {
+  .sp-schools .sp-state-grid { grid-template-columns: repeat(2, 1fr); column-gap: 32px; }
+}
+@media (max-width: 560px) {
+  .sp-schools .sp-state-grid { grid-template-columns: 1fr; }
+}
 
 /* Final CTA dark */
 .sp-schools .sp-cta-dark { background: #0A0F1E; color: white; padding: 96px 0; text-align: center; position: relative; overflow: hidden; }
