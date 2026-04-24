@@ -111,31 +111,66 @@ const SCOPED_CSS = `
 .sp-features .sp-strip-item svg { color: var(--sp-blue); }
 
 /* CAMPAIGNS / EMAIL */
-.sp-features .sp-toggle-wrap { display: flex; justify-content: center; margin: 28px 0 24px; }
-.sp-features .sp-toggle { display: inline-flex; padding: 4px; border-radius: 999px; background: var(--sp-paper-2); border: 1px solid var(--sp-line); }
-.sp-features .sp-toggle button { padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--sp-ink-2); background: transparent; transition: all .2s ease; display: inline-flex; align-items: center; gap: 8px; }
-.sp-features .sp-toggle button.active { background: var(--sp-ink); color: white; box-shadow: 0 4px 12px -4px rgba(10,15,30,0.25); }
-.sp-features .sp-toggle .badge { font-size: 10px; padding: 2px 6px; border-radius: 999px; background: rgba(14,159,110,0.18); color: var(--sp-green); letter-spacing: 0.04em; }
+.sp-features .sp-toggle-wrap { display: flex; justify-content: center; margin: 28px 0 28px; }
+.sp-features .sp-toggle { display: inline-flex; gap: 8px; padding: 6px; border-radius: 999px; background: transparent; }
+.sp-features .sp-toggle button { padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--sp-ink-2); background: white; border: 1px solid var(--sp-line); transition: all .2s ease; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+.sp-features .sp-toggle button:hover { border-color: rgba(10,15,30,0.18); }
+.sp-features .sp-toggle button.active { background: var(--sp-ink); color: white; border-color: var(--sp-ink); box-shadow: 0 8px 20px -8px rgba(10,15,30,0.45); }
+.sp-features .sp-toggle button .ico { display: grid; place-items: center; color: currentColor; opacity: 0.9; }
+.sp-features .sp-toggle button .count { font-size: 11px; padding: 3px 7px; border-radius: 999px; background: rgba(10,15,30,0.06); color: var(--sp-ink-2); font-weight: 700; letter-spacing: 0.02em; }
+.sp-features .sp-toggle button.active .count { background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.92); }
+.sp-features .sp-toggle button .new-badge { font-size: 10px; padding: 3px 7px; border-radius: 999px; background: rgba(14,159,110,0.18); color: var(--sp-green); font-weight: 700; letter-spacing: 0.04em; text-transform: capitalize; }
+.sp-features .sp-toggle button.active .new-badge { background: rgba(14,159,110,0.28); color: #6EE7B7; }
 
-.sp-features .sp-seq-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.sp-features .sp-seq-card { background: white; border: 1px solid var(--sp-line); border-radius: 16px; padding: 18px 20px; box-shadow: 0 16px 36px -22px rgba(10,15,30,0.18); }
-.sp-features .sp-seq-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--sp-line); margin-bottom: 12px; }
-.sp-features .sp-seq-head h5 { font-size: 14px; font-weight: 600; color: var(--sp-ink); margin: 0; }
-.sp-features .sp-seq-head .pill { font-size: 10px; padding: 3px 8px; border-radius: 999px; background: rgba(14,159,110,0.12); color: var(--sp-green); font-weight: 700; letter-spacing: 0.05em; }
-.sp-features .sp-seq-step { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; }
-.sp-features .sp-seq-step .num { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 6px; background: rgba(31,95,224,0.10); color: var(--sp-blue); display: grid; place-items: center; font-size: 11px; font-weight: 700; }
-.sp-features .sp-seq-step .body { flex: 1; font-size: 12.5px; }
-.sp-features .sp-seq-step .body .t { font-weight: 600; color: var(--sp-ink); }
-.sp-features .sp-seq-step .body .d { color: var(--sp-muted); margin-top: 1px; font-size: 11.5px; }
+/* Sequence + preview cards */
+.sp-features .sp-seq-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.sp-features .sp-seq-card { background: white; border: 1px solid var(--sp-line); border-radius: 18px; padding: 24px; box-shadow: 0 18px 40px -24px rgba(10,15,30,0.18); }
+.sp-features .sp-seq-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+.sp-features .sp-seq-head h5 { font-family: var(--sp-display); font-weight: 400; font-size: 22px; color: var(--sp-ink); margin: 0; line-height: 1.2; letter-spacing: -0.01em; }
+.sp-features .sp-seq-head .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 11px; border-radius: 999px; background: rgba(14,159,110,0.12); color: var(--sp-green); font-weight: 600; white-space: nowrap; }
+.sp-features .sp-seq-head .pill::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--sp-green); }
 
-.sp-features .sp-mail-meta { font-size: 11px; color: var(--sp-muted); margin-bottom: 6px; }
-.sp-features .sp-mail-from { font-size: 12.5px; color: var(--sp-ink-2); margin-bottom: 8px; }
-.sp-features .sp-mail-subject { font-size: 14px; font-weight: 600; color: var(--sp-ink); margin-bottom: 10px; }
-.sp-features .sp-mail-body { font-size: 12.5px; color: var(--sp-ink-2); line-height: 1.55; margin-bottom: 12px; }
-.sp-features .sp-mail-cta { display: inline-flex; padding: 8px 14px; border-radius: 8px; background: var(--sp-blue); color: white; font-size: 12px; font-weight: 600; }
-.sp-features .sp-mail-divider { height: 1px; background: var(--sp-line); margin: 14px 0; }
-.sp-features .sp-mail-tags { display: flex; gap: 6px; flex-wrap: wrap; font-size: 10.5px; }
-.sp-features .sp-mail-tags span { padding: 3px 7px; border-radius: 999px; background: var(--sp-paper-2); color: var(--sp-muted); font-weight: 600; }
+.sp-features .sp-seq-list { display: flex; flex-direction: column; gap: 8px; position: relative; }
+.sp-features .sp-seq-list::before { content: ""; position: absolute; left: 26px; top: 28px; bottom: 28px; width: 1px; background: var(--sp-line); z-index: 0; }
+.sp-features .sp-seq-step { display: flex; gap: 14px; align-items: flex-start; padding: 14px; border: 1px solid var(--sp-line); border-radius: 12px; background: white; position: relative; z-index: 1; }
+.sp-features .sp-seq-step.highlight { border-color: rgba(31,95,224,0.35); box-shadow: 0 8px 18px -12px rgba(31,95,224,0.25); }
+.sp-features .sp-seq-step .step-icon { flex: 0 0 26px; width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; }
+.sp-features .sp-seq-step .step-icon.trigger { background: rgba(255,107,53,0.14); color: var(--sp-accent); }
+.sp-features .sp-seq-step .step-icon.email { background: rgba(31,95,224,0.12); color: var(--sp-blue); }
+.sp-features .sp-seq-step .step-icon.sms { background: rgba(14,159,110,0.14); color: var(--sp-green); }
+.sp-features .sp-seq-step .step-icon.wait { background: rgba(10,15,30,0.06); color: var(--sp-ink-2); }
+.sp-features .sp-seq-step .step-icon.branch { background: rgba(10,15,30,0.06); color: var(--sp-ink-2); }
+.sp-features .sp-seq-step .body { flex: 1; min-width: 0; }
+.sp-features .sp-seq-step .body .kicker { font-size: 11px; font-weight: 700; color: var(--sp-muted); letter-spacing: 0.10em; text-transform: uppercase; margin-bottom: 4px; }
+.sp-features .sp-seq-step .body .t { font-size: 14px; color: var(--sp-ink); line-height: 1.45; }
+.sp-features .sp-seq-step .body .meta { font-size: 12px; color: var(--sp-muted); margin-top: 4px; }
+
+/* Email preview card (white) */
+.sp-features .sp-mail-card { background: white; border: 1px solid var(--sp-line); border-radius: 16px; overflow: hidden; box-shadow: 0 18px 40px -24px rgba(10,15,30,0.18); }
+.sp-features .sp-mail-header { display: flex; gap: 12px; align-items: flex-start; padding: 16px 20px; border-bottom: 1px solid var(--sp-line); }
+.sp-features .sp-mail-avatar { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; color: white; font-weight: 700; font-size: 14px; }
+.sp-features .sp-mail-header .info { flex: 1; min-width: 0; }
+.sp-features .sp-mail-header .from { font-size: 13.5px; font-weight: 600; color: var(--sp-ink); }
+.sp-features .sp-mail-header .preview { font-size: 13px; color: var(--sp-muted); margin-top: 2px; }
+.sp-features .sp-mail-body-wrap { padding: 20px; }
+.sp-features .sp-mail-subject { font-family: var(--sp-display); font-weight: 400; font-size: 22px; color: var(--sp-ink); margin: 0 0 12px; line-height: 1.25; letter-spacing: -0.01em; }
+.sp-features .sp-mail-body { font-size: 13.5px; color: var(--sp-ink-2); line-height: 1.55; margin-bottom: 16px; }
+.sp-features .sp-mail-cta { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 10px; background: var(--sp-blue); color: white; font-size: 13px; font-weight: 600; }
+.sp-features .sp-mail-cta.accent { background: var(--sp-accent); }
+.sp-features .sp-mail-foot { display: flex; gap: 18px; padding: 14px 20px; background: var(--sp-paper-2); font-size: 12px; color: var(--sp-muted); }
+.sp-features .sp-mail-foot strong { color: var(--sp-ink); font-weight: 700; margin-right: 4px; }
+
+/* SMS / dark conversation card */
+.sp-features .sp-sms-card { background: #0A0F1E; border-radius: 16px; padding: 18px 20px 14px; color: rgba(255,255,255,0.92); box-shadow: 0 18px 40px -24px rgba(10,15,30,0.5); }
+.sp-features .sp-sms-head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; letter-spacing: 0.10em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 14px; }
+.sp-features .sp-sms-head .who { color: rgba(255,255,255,0.78); font-weight: 600; }
+.sp-features .sp-sms-bubbles { display: flex; flex-direction: column; gap: 10px; }
+.sp-features .sp-sms-bubble { padding: 12px 14px; border-radius: 14px; font-size: 13.5px; line-height: 1.45; max-width: 92%; }
+.sp-features .sp-sms-bubble.out { background: #0E9F6E; color: white; align-self: flex-end; border-bottom-right-radius: 6px; }
+.sp-features .sp-sms-bubble.in { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.92); align-self: flex-start; border-bottom-left-radius: 6px; }
+.sp-features .sp-sms-foot { text-align: right; font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 10px; }
+
+.sp-features .sp-preview-stack { display: flex; flex-direction: column; gap: 16px; }
 
 .sp-features .sp-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--sp-line); }
 .sp-features .sp-kpi { }
@@ -302,6 +337,179 @@ const Sparkles = () => (
   </svg>
 );
 
+const Chat = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+  </svg>
+);
+
+const Clock = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const Branch = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <line x1="6" y1="3" x2="6" y2="15" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M18 9a9 9 0 0 1-9 9" />
+  </svg>
+);
+
+/* ---------- Outreach sequence data ---------- */
+
+type StepKind = "trigger" | "email" | "sms" | "wait" | "branch";
+type Step = { kind: StepKind; kicker: string; title: string; meta?: string; highlight?: boolean };
+type EmailPreview = {
+  kind: "email";
+  avatarInitial: string;
+  avatarColor: string;
+  from: string;
+  preview: string;
+  subject: string;
+  body: string;
+  ctaText: string;
+  ctaAccent?: boolean;
+  foot?: { value: string; label: string }[];
+};
+type SmsPreview = {
+  kind: "sms";
+  who: string;
+  when: string;
+  delivered: string;
+  bubbles: { dir: "in" | "out"; text: string }[];
+};
+type Preview = EmailPreview | SmsPreview;
+type SequenceMode = "email" | "sms" | "multi";
+type Sequence = {
+  title: string;
+  statusLabel: string;
+  steps: Step[];
+  previews: Preview[];
+};
+
+const stepIcon = (kind: StepKind) => {
+  switch (kind) {
+    case "trigger": return <Bolt />;
+    case "email": return <Mail />;
+    case "sms": return <Chat />;
+    case "wait": return <Clock />;
+    case "branch": return <Branch />;
+  }
+};
+
+const sequences: Record<SequenceMode, Sequence> = {
+  email: {
+    title: "New donor welcome series",
+    statusLabel: "Active · 284 enrolled",
+    steps: [
+      { kind: "trigger", kicker: "Trigger", title: "First-time donor completes a gift" },
+      { kind: "email", kicker: "Email · Instant", title: "\u201CThank you, {first_name}\u201D — receipt + impact story", meta: "Open rate 78% · Click rate 24%", highlight: true },
+      { kind: "wait", kicker: "Wait", title: "3 days" },
+      { kind: "email", kicker: "Email · Day 3", title: "Team captain video message — \u201Csee what you helped build\u201D", meta: "Open rate 62% · Click rate 15%" },
+      { kind: "email", kicker: "Email · Day 14", title: "Match-boosted second gift prompt (20% corporate match)", meta: "Conversion 19% · Avg $82" },
+    ],
+    previews: [
+      {
+        kind: "email",
+        avatarInitial: "W",
+        avatarColor: "#1F5FE0",
+        from: "Westlake Track <coach@westlaketrack.org>",
+        preview: "Thank you, Sarah — your $100 is already at work \uD83C\uDFC6",
+        subject: "Your gift just joined the team.",
+        body: "Your $100 covers one athlete's full travel kit for State. Coach Ramos recorded a short thank-you — and we've attached your tax receipt for your records.",
+        ctaText: "Watch the thank-you",
+        foot: [
+          { value: "78%", label: " opened" },
+          { value: "24%", label: " clicked" },
+          { value: "$8,920", label: " from 2nd gifts" },
+        ],
+      },
+      {
+        kind: "email",
+        avatarInitial: "M",
+        avatarColor: "#FF6B35",
+        from: "Match alert <hello@sponsorly.io>",
+        preview: "Your employer will double this gift — 1 click to submit",
+        subject: "We found a $100 match from Microsoft.",
+        body: "Your employer matches 100% of donations under $500. We pre-filled the form — it takes about 15 seconds.",
+        ctaText: "Submit the match",
+        ctaAccent: true,
+      },
+    ],
+  },
+  sms: {
+    title: "Goal-close push · final 48 hours",
+    statusLabel: "Active · 512 recipients",
+    steps: [
+      { kind: "trigger", kicker: "Trigger", title: "Campaign reaches 80% of goal with < 48 hours left" },
+      { kind: "sms", kicker: "SMS · Hour 0", title: "\u201CWe're $3,200 from State! 48 hrs left. Tap to push us over \uD83D\uDE80\u201D", meta: "Delivery 94% · Click rate 28%", highlight: true },
+      { kind: "wait", kicker: "Wait", title: "24 hours · skip if goal hit" },
+      { kind: "sms", kicker: "SMS · Hour 24", title: "\u201C24 hrs. $1,400 to go. Every dollar matched 2× by Nasser Auto \u2728\u201D", meta: "Reply rate 14% · Click rate 36%" },
+      { kind: "sms", kicker: "SMS · Goal hit", title: "\u201CWE DID IT \uD83C\uDF89 Thanks to you, we're going to State. Full recap Monday.\u201D", meta: "Reply rate 22% · Share rate 18%" },
+    ],
+    previews: [
+      {
+        kind: "sms",
+        who: "Westlake Track · SMS",
+        when: "Tue 6:02 PM",
+        delivered: "Delivered · 2 min",
+        bubbles: [
+          { dir: "out", text: "We're $3,200 from sending the Wildcats to State — 48 hours to go! Tap to push us over the line \uD83D\uDE80 sponsorly.io/s/K2P9" },
+          { dir: "in", text: "On it. Just did $50 \uD83D\uDC4A" },
+        ],
+      },
+      {
+        kind: "sms",
+        who: "Westlake Track · SMS",
+        when: "Thu 7:14 PM",
+        delivered: "Delivered · 1 min",
+        bubbles: [
+          { dir: "out", text: "WE DID IT \uD83C\uDF89 Thanks to 847 supporters — the Wildcats are going to State. Full recap & team photo Monday." },
+          { dir: "in", text: "LET'S GO WILDCATS \uD83D\uDC99\uD83D\uDC9A" },
+        ],
+      },
+    ],
+  },
+  multi: {
+    title: "Lapsed supporter re-engagement · cross-channel",
+    statusLabel: "Active · 142 enrolled",
+    steps: [
+      { kind: "trigger", kicker: "Trigger", title: "Donor hasn't given in 180 days" },
+      { kind: "email", kicker: "Email · Day 0", title: "\u201CWe miss you, {first_name}\u201D — here's what your giving made possible", meta: "Open rate 64% · Click rate 18%", highlight: true },
+      { kind: "branch", kicker: "Branch", title: "No email open after 3 days → escalate to SMS" },
+      { kind: "sms", kicker: "SMS · Day 3", title: "\u201C{first_name}, Spring Track is back. Tap to renew your support \uD83C\uDFC3\u201D", meta: "Reply rate 11% · Click rate 32%" },
+      { kind: "email", kicker: "Email · Day 7", title: "Team captain letter with season recap photos", meta: "Open rate 58% · Conversion 12%" },
+    ],
+    previews: [
+      {
+        kind: "email",
+        avatarInitial: "W",
+        avatarColor: "#1F5FE0",
+        from: "Westlake Track <coach@westlaketrack.org>",
+        preview: "We miss you, Sarah — look what you helped build \uD83C\uDFC6",
+        subject: "Your giving made this season possible.",
+        body: "Last spring, your gift helped send 12 athletes to State — 3 of whom podium'd for the first time in school history. We're back at it again, and we'd love to have you in the stands with us.",
+        ctaText: "Renew your support",
+        foot: [
+          { value: "64%", label: " opened" },
+          { value: "18%", label: " clicked" },
+          { value: "$4,280", label: " recovered" },
+        ],
+      },
+      {
+        kind: "sms",
+        who: "Westlake Track · SMS",
+        when: "Today 3:42 PM",
+        delivered: "Delivered · 2 min",
+        bubbles: [
+          { dir: "out", text: "Sarah — Spring Track is back! The Wildcats are chasing their 4th State title and we'd love your help again. Tap to renew \uD83C\uDFC3 sponsorly.io/s/K2P9" },
+          { dir: "in", text: "Yes! Just donated $100. Go Wildcats \uD83D\uDC99\uD83D\uDC9A" },
+        ],
+      },
+    ],
+  },
+};
+
 const supporters = [
   { initials: "JR", name: "Jamie Rodriguez", email: "jamie.rodriguez@email.com", total: "$1,240", tag: "gold", tagText: "GOLD", color: "#1F5FE0" },
   { initials: "SK", name: "Sarah Kim", email: "sarah.kim@email.com", total: "$875", tag: "gold", tagText: "GOLD", color: "#0E9F6E" },
@@ -324,7 +532,8 @@ const automationCards = [
 ];
 
 const Features = () => {
-  const [seqMode, setSeqMode] = useState<"email" | "sms" | "web">("email");
+  const [seqMode, setSeqMode] = useState<SequenceMode>("email");
+  const currentSequence = sequences[seqMode];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -466,77 +675,104 @@ const Features = () => {
 
               <div className="sp-toggle-wrap">
                 <div className="sp-toggle" role="tablist" aria-label="Outreach mode">
-                  <button role="tab" aria-selected={seqMode === "email"} className={seqMode === "email" ? "active" : ""} onClick={() => setSeqMode("email")}>
-                    Email sequences <span className="badge">DEFAULT</span>
+                  <button
+                    role="tab"
+                    aria-selected={seqMode === "email"}
+                    className={seqMode === "email" ? "active" : ""}
+                    onClick={() => setSeqMode("email")}
+                  >
+                    <span className="ico"><Mail /></span>
+                    Email sequences
+                    <span className="count">12</span>
                   </button>
-                  <button role="tab" aria-selected={seqMode === "sms"} className={seqMode === "sms" ? "active" : ""} onClick={() => setSeqMode("sms")}>
-                    SMS reminders
+                  <button
+                    role="tab"
+                    aria-selected={seqMode === "sms"}
+                    className={seqMode === "sms" ? "active" : ""}
+                    onClick={() => setSeqMode("sms")}
+                  >
+                    <span className="ico"><Chat /></span>
+                    SMS sequences
+                    <span className="count">8</span>
                   </button>
-                  <button role="tab" aria-selected={seqMode === "web"} className={seqMode === "web" ? "active" : ""} onClick={() => setSeqMode("web")}>
-                    Web forms
+                  <button
+                    role="tab"
+                    aria-selected={seqMode === "multi"}
+                    className={seqMode === "multi" ? "active" : ""}
+                    onClick={() => setSeqMode("multi")}
+                  >
+                    <span className="ico"><Bolt /></span>
+                    Multi-channel
+                    <span className="new-badge">New</span>
                   </button>
                 </div>
               </div>
 
               <div className="sp-seq-cards">
+                {/* Left: sequence builder */}
                 <div className="sp-seq-card">
                   <div className="sp-seq-head">
-                    <h5>New donor welcome series</h5>
-                    <span className="pill">5 STEPS · ACTIVE</span>
+                    <h5>{currentSequence.title}</h5>
+                    <span className="pill">{currentSequence.statusLabel}</span>
                   </div>
-                  <div className="sp-seq-step">
-                    <span className="num">1</span>
-                    <div className="body">
-                      <div className="t">Trigger</div>
-                      <div className="d">First-time gift on any campaign</div>
-                    </div>
-                  </div>
-                  <div className="sp-seq-step">
-                    <span className="num">2</span>
-                    <div className="body">
-                      <div className="t">Welcome email — Day 0</div>
-                      <div className="d">"Thank you" + tax receipt + roster member video</div>
-                    </div>
-                  </div>
-                  <div className="sp-seq-step">
-                    <span className="num">3</span>
-                    <div className="body">
-                      <div className="t">SMS — Day 3</div>
-                      <div className="d">Optional thank-you text to mobile</div>
-                    </div>
-                  </div>
-                  <div className="sp-seq-step">
-                    <span className="num">4</span>
-                    <div className="body">
-                      <div className="t">Goal update email — Day 7</div>
-                      <div className="d">"Here's what your gift unlocked" with progress bar</div>
-                    </div>
-                  </div>
-                  <div className="sp-seq-step">
-                    <span className="num">5</span>
-                    <div className="body">
-                      <div className="t">Wrap email — final day</div>
-                      <div className="d">Recap + invite to follow next campaign</div>
-                    </div>
+                  <div className="sp-seq-list">
+                    {currentSequence.steps.map((s, i) => (
+                      <div key={i} className={`sp-seq-step ${s.highlight ? "highlight" : ""}`}>
+                        <span className={`step-icon ${s.kind}`}>
+                          {stepIcon(s.kind)}
+                        </span>
+                        <div className="body">
+                          <div className="kicker">{s.kicker}</div>
+                          <div className="t">{s.title}</div>
+                          {s.meta && <div className="meta">{s.meta}</div>}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                <div className="sp-seq-card">
-                  <div className="sp-seq-head">
-                    <h5>Sample message preview</h5>
-                    <span className="pill">EMAIL · DRAFT</span>
-                  </div>
-                  <div className="sp-mail-meta">From: Madison Booster Club &lt;hello@madisonboosters.org&gt;</div>
-                  <div className="sp-mail-from">To: Sarah Kim · sarah.kim@email.com</div>
-                  <div className="sp-mail-subject">Your gift unlocked the team van fund 🚐</div>
-                  <div className="sp-mail-body">
-                    Hi Sarah — thank you for backing our spring drive. Your $50 gift, plus 91 others like it, just pushed us past 60% of our team van goal. We sent you a tax receipt separately for your records.
-                  </div>
-                  <a className="sp-mail-cta" href="#">See campaign progress</a>
-                  <div className="sp-mail-divider" />
-                  <div className="sp-mail-tags">
-                    <span>Personalized</span><span>Auto receipt</span><span>Track open</span><span>Suppress if unsubscribed</span>
-                  </div>
+                {/* Right: preview stack (email and/or SMS depending on mode) */}
+                <div className="sp-preview-stack">
+                  {currentSequence.previews.map((p, i) =>
+                    p.kind === "email" ? (
+                      <div key={i} className="sp-mail-card">
+                        <div className="sp-mail-header">
+                          <div className="sp-mail-avatar" style={{ background: p.avatarColor }}>{p.avatarInitial}</div>
+                          <div className="info">
+                            <div className="from">{p.from}</div>
+                            <div className="preview">{p.preview}</div>
+                          </div>
+                        </div>
+                        <div className="sp-mail-body-wrap">
+                          <h4 className="sp-mail-subject">{p.subject}</h4>
+                          <p className="sp-mail-body">{p.body}</p>
+                          <a className={`sp-mail-cta ${p.ctaAccent ? "accent" : ""}`} href="#">
+                            {p.ctaText} <span aria-hidden>→</span>
+                          </a>
+                        </div>
+                        {p.foot && (
+                          <div className="sp-mail-foot">
+                            {p.foot.map((f, fi) => (
+                              <span key={fi}><strong>{f.value}</strong>{f.label}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div key={i} className="sp-sms-card">
+                        <div className="sp-sms-head">
+                          <span className="who">{p.who}</span>
+                          <span>{p.when}</span>
+                        </div>
+                        <div className="sp-sms-bubbles">
+                          {p.bubbles.map((b, bi) => (
+                            <div key={bi} className={`sp-sms-bubble ${b.dir}`}>{b.text}</div>
+                          ))}
+                        </div>
+                        <div className="sp-sms-foot">{p.delivered}</div>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
 
