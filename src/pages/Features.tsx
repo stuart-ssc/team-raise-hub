@@ -337,6 +337,179 @@ const Sparkles = () => (
   </svg>
 );
 
+const Chat = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+  </svg>
+);
+
+const Clock = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const Branch = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <line x1="6" y1="3" x2="6" y2="15" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M18 9a9 9 0 0 1-9 9" />
+  </svg>
+);
+
+/* ---------- Outreach sequence data ---------- */
+
+type StepKind = "trigger" | "email" | "sms" | "wait" | "branch";
+type Step = { kind: StepKind; kicker: string; title: string; meta?: string; highlight?: boolean };
+type EmailPreview = {
+  kind: "email";
+  avatarInitial: string;
+  avatarColor: string;
+  from: string;
+  preview: string;
+  subject: string;
+  body: string;
+  ctaText: string;
+  ctaAccent?: boolean;
+  foot?: { value: string; label: string }[];
+};
+type SmsPreview = {
+  kind: "sms";
+  who: string;
+  when: string;
+  delivered: string;
+  bubbles: { dir: "in" | "out"; text: string }[];
+};
+type Preview = EmailPreview | SmsPreview;
+type SequenceMode = "email" | "sms" | "multi";
+type Sequence = {
+  title: string;
+  statusLabel: string;
+  steps: Step[];
+  previews: Preview[];
+};
+
+const stepIcon = (kind: StepKind) => {
+  switch (kind) {
+    case "trigger": return <Bolt />;
+    case "email": return <Mail />;
+    case "sms": return <Chat />;
+    case "wait": return <Clock />;
+    case "branch": return <Branch />;
+  }
+};
+
+const sequences: Record<SequenceMode, Sequence> = {
+  email: {
+    title: "New donor welcome series",
+    statusLabel: "Active · 284 enrolled",
+    steps: [
+      { kind: "trigger", kicker: "Trigger", title: "First-time donor completes a gift" },
+      { kind: "email", kicker: "Email · Instant", title: "\u201CThank you, {first_name}\u201D — receipt + impact story", meta: "Open rate 78% · Click rate 24%", highlight: true },
+      { kind: "wait", kicker: "Wait", title: "3 days" },
+      { kind: "email", kicker: "Email · Day 3", title: "Team captain video message — \u201Csee what you helped build\u201D", meta: "Open rate 62% · Click rate 15%" },
+      { kind: "email", kicker: "Email · Day 14", title: "Match-boosted second gift prompt (20% corporate match)", meta: "Conversion 19% · Avg $82" },
+    ],
+    previews: [
+      {
+        kind: "email",
+        avatarInitial: "W",
+        avatarColor: "#1F5FE0",
+        from: "Westlake Track <coach@westlaketrack.org>",
+        preview: "Thank you, Sarah — your $100 is already at work \uD83C\uDFC6",
+        subject: "Your gift just joined the team.",
+        body: "Your $100 covers one athlete's full travel kit for State. Coach Ramos recorded a short thank-you — and we've attached your tax receipt for your records.",
+        ctaText: "Watch the thank-you",
+        foot: [
+          { value: "78%", label: " opened" },
+          { value: "24%", label: " clicked" },
+          { value: "$8,920", label: " from 2nd gifts" },
+        ],
+      },
+      {
+        kind: "email",
+        avatarInitial: "M",
+        avatarColor: "#FF6B35",
+        from: "Match alert <hello@sponsorly.io>",
+        preview: "Your employer will double this gift — 1 click to submit",
+        subject: "We found a $100 match from Microsoft.",
+        body: "Your employer matches 100% of donations under $500. We pre-filled the form — it takes about 15 seconds.",
+        ctaText: "Submit the match",
+        ctaAccent: true,
+      },
+    ],
+  },
+  sms: {
+    title: "Goal-close push · final 48 hours",
+    statusLabel: "Active · 512 recipients",
+    steps: [
+      { kind: "trigger", kicker: "Trigger", title: "Campaign reaches 80% of goal with < 48 hours left" },
+      { kind: "sms", kicker: "SMS · Hour 0", title: "\u201CWe're $3,200 from State! 48 hrs left. Tap to push us over \uD83D\uDE80\u201D", meta: "Delivery 94% · Click rate 28%", highlight: true },
+      { kind: "wait", kicker: "Wait", title: "24 hours · skip if goal hit" },
+      { kind: "sms", kicker: "SMS · Hour 24", title: "\u201C24 hrs. $1,400 to go. Every dollar matched 2× by Nasser Auto \u2728\u201D", meta: "Reply rate 14% · Click rate 36%" },
+      { kind: "sms", kicker: "SMS · Goal hit", title: "\u201CWE DID IT \uD83C\uDF89 Thanks to you, we're going to State. Full recap Monday.\u201D", meta: "Reply rate 22% · Share rate 18%" },
+    ],
+    previews: [
+      {
+        kind: "sms",
+        who: "Westlake Track · SMS",
+        when: "Tue 6:02 PM",
+        delivered: "Delivered · 2 min",
+        bubbles: [
+          { dir: "out", text: "We're $3,200 from sending the Wildcats to State — 48 hours to go! Tap to push us over the line \uD83D\uDE80 sponsorly.io/s/K2P9" },
+          { dir: "in", text: "On it. Just did $50 \uD83D\uDC4A" },
+        ],
+      },
+      {
+        kind: "sms",
+        who: "Westlake Track · SMS",
+        when: "Thu 7:14 PM",
+        delivered: "Delivered · 1 min",
+        bubbles: [
+          { dir: "out", text: "WE DID IT \uD83C\uDF89 Thanks to 847 supporters — the Wildcats are going to State. Full recap & team photo Monday." },
+          { dir: "in", text: "LET'S GO WILDCATS \uD83D\uDC99\uD83D\uDC9A" },
+        ],
+      },
+    ],
+  },
+  multi: {
+    title: "Lapsed supporter re-engagement · cross-channel",
+    statusLabel: "Active · 142 enrolled",
+    steps: [
+      { kind: "trigger", kicker: "Trigger", title: "Donor hasn't given in 180 days" },
+      { kind: "email", kicker: "Email · Day 0", title: "\u201CWe miss you, {first_name}\u201D — here's what your giving made possible", meta: "Open rate 64% · Click rate 18%", highlight: true },
+      { kind: "branch", kicker: "Branch", title: "No email open after 3 days → escalate to SMS" },
+      { kind: "sms", kicker: "SMS · Day 3", title: "\u201C{first_name}, Spring Track is back. Tap to renew your support \uD83C\uDFC3\u201D", meta: "Reply rate 11% · Click rate 32%" },
+      { kind: "email", kicker: "Email · Day 7", title: "Team captain letter with season recap photos", meta: "Open rate 58% · Conversion 12%" },
+    ],
+    previews: [
+      {
+        kind: "email",
+        avatarInitial: "W",
+        avatarColor: "#1F5FE0",
+        from: "Westlake Track <coach@westlaketrack.org>",
+        preview: "We miss you, Sarah — look what you helped build \uD83C\uDFC6",
+        subject: "Your giving made this season possible.",
+        body: "Last spring, your gift helped send 12 athletes to State — 3 of whom podium'd for the first time in school history. We're back at it again, and we'd love to have you in the stands with us.",
+        ctaText: "Renew your support",
+        foot: [
+          { value: "64%", label: " opened" },
+          { value: "18%", label: " clicked" },
+          { value: "$4,280", label: " recovered" },
+        ],
+      },
+      {
+        kind: "sms",
+        who: "Westlake Track · SMS",
+        when: "Today 3:42 PM",
+        delivered: "Delivered · 2 min",
+        bubbles: [
+          { dir: "out", text: "Sarah — Spring Track is back! The Wildcats are chasing their 4th State title and we'd love your help again. Tap to renew \uD83C\uDFC3 sponsorly.io/s/K2P9" },
+          { dir: "in", text: "Yes! Just donated $100. Go Wildcats \uD83D\uDC99\uD83D\uDC9A" },
+        ],
+      },
+    ],
+  },
+};
+
 const supporters = [
   { initials: "JR", name: "Jamie Rodriguez", email: "jamie.rodriguez@email.com", total: "$1,240", tag: "gold", tagText: "GOLD", color: "#1F5FE0" },
   { initials: "SK", name: "Sarah Kim", email: "sarah.kim@email.com", total: "$875", tag: "gold", tagText: "GOLD", color: "#0E9F6E" },
