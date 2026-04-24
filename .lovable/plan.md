@@ -1,42 +1,16 @@
-## Update Pricing Page SEO Meta Tags
+## Update FAQ Text on Pricing Page
 
-### Summary
-Add SEO meta tags to the Pricing page using react-helmet-async to match the requested format.
+Update two FAQ items in `src/pages/Pricing.tsx` to match the new copy.
 
-### Changes Required
+### Changes
 
-**File: `src/pages/Pricing.tsx`**
+1. **"Can I switch fee mode?"** (line 240-242)
+   - Change question from "Can I switch fee modes?" to "Can I switch fee mode?"
+   - Update answer to: "Yes. The setting is per fundraiser. Some fundraisers it makes sense to absorb the fee (donor pays a clean $100, you net ~$90); most have donors cover it (donor pays $110, you net $100)."
 
-1. **Import Helmet** from react-helmet-async
-2. **Add Helmet component** at the top of the page with:
-   - Title: "Pricing | Sponsorly - 100% Free Fundraising for School Sports, Clubs, and PTOs"
-   - Meta description: Updated to reflect pricing page content
-   - Canonical URL: https://sponsorly.io/pricing
-   - Open Graph tags for social sharing
-   - Twitter Card tags
+2. **"How do payouts work?"** (line 248-250)
+   - Update answer to: "Funds are deposited directly to your organization's bank account through Stripe, typically in 2 business days. You can view every donation and payout in your Sponsorly dashboard. You can also confirm all transactions in your Stripe dashboard as well."
 
 ### Technical Details
-
-```tsx
-import { Helmet } from 'react-helmet-async';
-
-// Inside component return:
-<Helmet>
-  <title>Pricing | Sponsorly - 100% Free Fundraising for School Sports, Clubs, and PTOs</title>
-  <meta name="description" content="Sponsorly is 100% free for schools, sports teams, clubs, and PTOs. No monthly fees, no setup costs. Only a small platform fee per donation that donors can cover." />
-  <link rel="canonical" href="https://sponsorly.io/pricing" />
-  <meta property="og:title" content="Pricing | Sponsorly - 100% Free Fundraising for School Sports, Clubs, and PTOs" />
-  <meta property="og:description" content="Sponsorly is 100% free for schools, sports teams, clubs, and PTOs. No monthly fees, no setup costs." />
-  <meta property="og:url" content="https://sponsorly.io/pricing" />
-  <meta property="og:type" content="website" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Pricing | Sponsorly - 100% Free Fundraising for School Sports, Clubs, and PTOs" />
-  <meta name="twitter:description" content="Sponsorly is 100% free for schools, sports teams, clubs, and PTOs. No monthly fees, no setup costs." />
-</Helmet>
-```
-
-### Verification
-After implementation, verify the meta tags are correctly rendered by:
-1. Viewing page source in browser
-2. Checking the `<title>` tag shows "Pricing | Sponsorly - 100% Free Fundraising for School Sports, Clubs, and PTOs"
-3. Confirming meta description and OG tags are present
+- File: `src/pages/Pricing.tsx`
+- Simple text replacements in the `faqs` array (lines 234-267)
