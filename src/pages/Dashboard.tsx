@@ -1137,7 +1137,7 @@ const Dashboard = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[180px]">Campaign</TableHead>
+                          <TableHead className="min-w-[180px]">Fundraiser</TableHead>
                           <TableHead className="min-w-[120px]">Status</TableHead>
                           <TableHead className="min-w-[120px]">Group</TableHead>
                           <TableHead className="min-w-[180px]">Amount Raised</TableHead>
