@@ -821,7 +821,7 @@ function LifetimeRaisedCard({
                 Lifetime raised
               </span>
             </div>
-            <div className="font-serif text-4xl font-semibold leading-none">
+            <div className="text-4xl font-semibold leading-none">
               {fmtMoney(amount)}
             </div>
             <p className="text-xs text-background/60 leading-snug">
@@ -864,7 +864,7 @@ function SupportersCard({ count }: { count: number }) {
             Donors who gave
           </span>
         </div>
-        <div className="font-serif text-4xl font-semibold leading-none text-foreground">
+        <div className="text-4xl font-semibold leading-none text-foreground">
           {count}
         </div>
         <p className="text-xs text-muted-foreground">
@@ -894,7 +894,7 @@ function BestRankCard({
             Best rank
           </span>
         </div>
-        <div className="font-serif text-4xl font-semibold leading-none text-foreground">
+        <div className="text-4xl font-semibold leading-none text-foreground">
           {display}
         </div>
         <p className="truncate text-xs text-muted-foreground">
@@ -1064,7 +1064,7 @@ function CampaignCard({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-serif text-2xl font-semibold leading-tight text-foreground">
+                <h3 className="text-2xl font-semibold leading-tight text-foreground">
                   {stat.campaignName}
                 </h3>
                 <Badge variant="outline" className={cn("text-xs", typePill)}>
@@ -1129,7 +1129,7 @@ function CampaignCard({
                 {goalLabel}
               </p>
               <div className="mt-1.5 flex items-baseline justify-between gap-2">
-                <span className="font-serif text-lg font-semibold text-foreground">
+                <span className="text-lg font-semibold text-foreground">
                   {fmtMoney(stat.totalRaised)}{" "}
                   <span className="text-sm font-normal text-muted-foreground">
                     / {fmtMoney(stat.personalGoal)}
@@ -1236,7 +1236,7 @@ function StatColumn({
       <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1.5 font-serif text-lg font-semibold text-foreground">{value}</p>
+      <p className="mt-1.5 text-lg font-semibold text-foreground">{value}</p>
       {caption && <p className="text-xs text-muted-foreground">{caption}</p>}
     </div>
   );
@@ -1290,7 +1290,7 @@ function CompactCampaignRow({
         <div className={cn("h-12 w-1.5 shrink-0", stripeColor)} aria-hidden />
         <div className="flex flex-1 items-center justify-between gap-4 px-4 py-3">
           <div className="min-w-0">
-            <p className="truncate font-serif text-base font-semibold text-foreground">
+            <p className="truncate text-base font-semibold text-foreground">
               {stat.campaignName}
             </p>
             <p className="truncate text-xs text-muted-foreground">
@@ -1329,7 +1329,7 @@ function EmptyState({ isParentView }: { isParentView: boolean }) {
     <Card>
       <CardContent className="flex flex-col items-center justify-center py-14">
         <Trophy className="mb-4 h-12 w-12 text-muted-foreground" />
-        <h3 className="font-serif text-2xl font-semibold mb-2">No active campaigns</h3>
+        <h3 className="text-2xl font-semibold mb-2">No active campaigns</h3>
         <p className="max-w-md text-center text-muted-foreground">
           {isParentView
             ? "Your connected students aren't currently enrolled in any fundraising campaigns."
