@@ -255,6 +255,52 @@ const IArrow = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
 );
 
+/* State directory — 4 balanced columns, letter-grouped, matches mockup */
+const StateDirectory = () => {
+  const groups = allStates.reduce((acc, state) => {
+    const letter = state.name[0].toUpperCase();
+    if (!acc[letter]) acc[letter] = [];
+    acc[letter].push(state);
+    return acc;
+  }, {} as Record<string, typeof allStates>);
+
+  const letters = Object.keys(groups).sort();
+
+  // Balance into 4 columns by total row count (letter header counts as 1 row)
+  const columns: string[][] = [[], [], [], []];
+  const colWeight = [0, 0, 0, 0];
+  letters.forEach((l) => {
+    const weight = 1 + groups[l].length;
+    let target = 0;
+    for (let i = 1; i < 4; i++) if (colWeight[i] < colWeight[target]) target = i;
+    columns[target].push(l);
+    colWeight[target] += weight;
+  });
+
+  return (
+    <div className="sp-state-grid">
+      {columns.map((colLetters, ci) => (
+        <div key={ci}>
+          {colLetters.map((letter) => (
+            <div key={letter}>
+              <div className="sp-state-letter">{letter}</div>
+              {groups[letter].map((state) => (
+                <Link
+                  key={state.abbreviation}
+                  to={`/schools/${state.slug}`}
+                  className="sp-state-link"
+                >
+                  {state.name}
+                </Link>
+              ))}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const Schools = () => {
   useEffect(() => {
     document.title = "Sponsorly for Schools — Built for teams, clubs, and PTOs";
