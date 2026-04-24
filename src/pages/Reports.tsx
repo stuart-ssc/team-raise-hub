@@ -597,7 +597,7 @@ const Reports = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Fundraisers</CardTitle>
                   <Target className="h-5 w-5 text-primary" />
                 </CardHeader>
                 <CardContent>
@@ -630,8 +630,8 @@ const Reports = () => {
                   <div className="text-3xl font-bold text-primary">{stats.totalDonations}</div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {campaigns.length > 0 
-                      ? `${(stats.totalDonations / campaigns.length).toFixed(1)} avg per campaign`
-                      : "No campaigns yet"}
+                      ? `${(stats.totalDonations / campaigns.length).toFixed(1)} avg per fundraiser`
+                      : "No fundraisers yet"}
                   </p>
                 </CardContent>
               </Card>
@@ -740,17 +740,17 @@ const Reports = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Activity className="h-5 w-5 text-primary" />
-                    Top Performing Campaigns
+                    Top Performing Fundraisers
                   </CardTitle>
                   <CardDescription>
-                    Campaigns with the highest donations
+                    Fundraisers with the highest donations
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {topCampaigns.length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-sm text-muted-foreground">
-                        No campaign data available yet
+                        No fundraiser data available yet
                       </p>
                     </div>
                   ) : (
