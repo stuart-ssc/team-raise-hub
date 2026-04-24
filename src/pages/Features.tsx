@@ -111,31 +111,66 @@ const SCOPED_CSS = `
 .sp-features .sp-strip-item svg { color: var(--sp-blue); }
 
 /* CAMPAIGNS / EMAIL */
-.sp-features .sp-toggle-wrap { display: flex; justify-content: center; margin: 28px 0 24px; }
-.sp-features .sp-toggle { display: inline-flex; padding: 4px; border-radius: 999px; background: var(--sp-paper-2); border: 1px solid var(--sp-line); }
-.sp-features .sp-toggle button { padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--sp-ink-2); background: transparent; transition: all .2s ease; display: inline-flex; align-items: center; gap: 8px; }
-.sp-features .sp-toggle button.active { background: var(--sp-ink); color: white; box-shadow: 0 4px 12px -4px rgba(10,15,30,0.25); }
-.sp-features .sp-toggle .badge { font-size: 10px; padding: 2px 6px; border-radius: 999px; background: rgba(14,159,110,0.18); color: var(--sp-green); letter-spacing: 0.04em; }
+.sp-features .sp-toggle-wrap { display: flex; justify-content: center; margin: 28px 0 28px; }
+.sp-features .sp-toggle { display: inline-flex; gap: 8px; padding: 6px; border-radius: 999px; background: transparent; }
+.sp-features .sp-toggle button { padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--sp-ink-2); background: white; border: 1px solid var(--sp-line); transition: all .2s ease; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+.sp-features .sp-toggle button:hover { border-color: rgba(10,15,30,0.18); }
+.sp-features .sp-toggle button.active { background: var(--sp-ink); color: white; border-color: var(--sp-ink); box-shadow: 0 8px 20px -8px rgba(10,15,30,0.45); }
+.sp-features .sp-toggle button .ico { display: grid; place-items: center; color: currentColor; opacity: 0.9; }
+.sp-features .sp-toggle button .count { font-size: 11px; padding: 3px 7px; border-radius: 999px; background: rgba(10,15,30,0.06); color: var(--sp-ink-2); font-weight: 700; letter-spacing: 0.02em; }
+.sp-features .sp-toggle button.active .count { background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.92); }
+.sp-features .sp-toggle button .new-badge { font-size: 10px; padding: 3px 7px; border-radius: 999px; background: rgba(14,159,110,0.18); color: var(--sp-green); font-weight: 700; letter-spacing: 0.04em; text-transform: capitalize; }
+.sp-features .sp-toggle button.active .new-badge { background: rgba(14,159,110,0.28); color: #6EE7B7; }
 
-.sp-features .sp-seq-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.sp-features .sp-seq-card { background: white; border: 1px solid var(--sp-line); border-radius: 16px; padding: 18px 20px; box-shadow: 0 16px 36px -22px rgba(10,15,30,0.18); }
-.sp-features .sp-seq-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--sp-line); margin-bottom: 12px; }
-.sp-features .sp-seq-head h5 { font-size: 14px; font-weight: 600; color: var(--sp-ink); margin: 0; }
-.sp-features .sp-seq-head .pill { font-size: 10px; padding: 3px 8px; border-radius: 999px; background: rgba(14,159,110,0.12); color: var(--sp-green); font-weight: 700; letter-spacing: 0.05em; }
-.sp-features .sp-seq-step { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; }
-.sp-features .sp-seq-step .num { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 6px; background: rgba(31,95,224,0.10); color: var(--sp-blue); display: grid; place-items: center; font-size: 11px; font-weight: 700; }
-.sp-features .sp-seq-step .body { flex: 1; font-size: 12.5px; }
-.sp-features .sp-seq-step .body .t { font-weight: 600; color: var(--sp-ink); }
-.sp-features .sp-seq-step .body .d { color: var(--sp-muted); margin-top: 1px; font-size: 11.5px; }
+/* Sequence + preview cards */
+.sp-features .sp-seq-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.sp-features .sp-seq-card { background: white; border: 1px solid var(--sp-line); border-radius: 18px; padding: 24px; box-shadow: 0 18px 40px -24px rgba(10,15,30,0.18); }
+.sp-features .sp-seq-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+.sp-features .sp-seq-head h5 { font-family: var(--sp-display); font-weight: 400; font-size: 22px; color: var(--sp-ink); margin: 0; line-height: 1.2; letter-spacing: -0.01em; }
+.sp-features .sp-seq-head .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 11px; border-radius: 999px; background: rgba(14,159,110,0.12); color: var(--sp-green); font-weight: 600; white-space: nowrap; }
+.sp-features .sp-seq-head .pill::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--sp-green); }
 
-.sp-features .sp-mail-meta { font-size: 11px; color: var(--sp-muted); margin-bottom: 6px; }
-.sp-features .sp-mail-from { font-size: 12.5px; color: var(--sp-ink-2); margin-bottom: 8px; }
-.sp-features .sp-mail-subject { font-size: 14px; font-weight: 600; color: var(--sp-ink); margin-bottom: 10px; }
-.sp-features .sp-mail-body { font-size: 12.5px; color: var(--sp-ink-2); line-height: 1.55; margin-bottom: 12px; }
-.sp-features .sp-mail-cta { display: inline-flex; padding: 8px 14px; border-radius: 8px; background: var(--sp-blue); color: white; font-size: 12px; font-weight: 600; }
-.sp-features .sp-mail-divider { height: 1px; background: var(--sp-line); margin: 14px 0; }
-.sp-features .sp-mail-tags { display: flex; gap: 6px; flex-wrap: wrap; font-size: 10.5px; }
-.sp-features .sp-mail-tags span { padding: 3px 7px; border-radius: 999px; background: var(--sp-paper-2); color: var(--sp-muted); font-weight: 600; }
+.sp-features .sp-seq-list { display: flex; flex-direction: column; gap: 8px; position: relative; }
+.sp-features .sp-seq-list::before { content: ""; position: absolute; left: 26px; top: 28px; bottom: 28px; width: 1px; background: var(--sp-line); z-index: 0; }
+.sp-features .sp-seq-step { display: flex; gap: 14px; align-items: flex-start; padding: 14px; border: 1px solid var(--sp-line); border-radius: 12px; background: white; position: relative; z-index: 1; }
+.sp-features .sp-seq-step.highlight { border-color: rgba(31,95,224,0.35); box-shadow: 0 8px 18px -12px rgba(31,95,224,0.25); }
+.sp-features .sp-seq-step .step-icon { flex: 0 0 26px; width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; }
+.sp-features .sp-seq-step .step-icon.trigger { background: rgba(255,107,53,0.14); color: var(--sp-accent); }
+.sp-features .sp-seq-step .step-icon.email { background: rgba(31,95,224,0.12); color: var(--sp-blue); }
+.sp-features .sp-seq-step .step-icon.sms { background: rgba(14,159,110,0.14); color: var(--sp-green); }
+.sp-features .sp-seq-step .step-icon.wait { background: rgba(10,15,30,0.06); color: var(--sp-ink-2); }
+.sp-features .sp-seq-step .step-icon.branch { background: rgba(10,15,30,0.06); color: var(--sp-ink-2); }
+.sp-features .sp-seq-step .body { flex: 1; min-width: 0; }
+.sp-features .sp-seq-step .body .kicker { font-size: 11px; font-weight: 700; color: var(--sp-muted); letter-spacing: 0.10em; text-transform: uppercase; margin-bottom: 4px; }
+.sp-features .sp-seq-step .body .t { font-size: 14px; color: var(--sp-ink); line-height: 1.45; }
+.sp-features .sp-seq-step .body .meta { font-size: 12px; color: var(--sp-muted); margin-top: 4px; }
+
+/* Email preview card (white) */
+.sp-features .sp-mail-card { background: white; border: 1px solid var(--sp-line); border-radius: 16px; overflow: hidden; box-shadow: 0 18px 40px -24px rgba(10,15,30,0.18); }
+.sp-features .sp-mail-header { display: flex; gap: 12px; align-items: flex-start; padding: 16px 20px; border-bottom: 1px solid var(--sp-line); }
+.sp-features .sp-mail-avatar { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; color: white; font-weight: 700; font-size: 14px; }
+.sp-features .sp-mail-header .info { flex: 1; min-width: 0; }
+.sp-features .sp-mail-header .from { font-size: 13.5px; font-weight: 600; color: var(--sp-ink); }
+.sp-features .sp-mail-header .preview { font-size: 13px; color: var(--sp-muted); margin-top: 2px; }
+.sp-features .sp-mail-body-wrap { padding: 20px; }
+.sp-features .sp-mail-subject { font-family: var(--sp-display); font-weight: 400; font-size: 22px; color: var(--sp-ink); margin: 0 0 12px; line-height: 1.25; letter-spacing: -0.01em; }
+.sp-features .sp-mail-body { font-size: 13.5px; color: var(--sp-ink-2); line-height: 1.55; margin-bottom: 16px; }
+.sp-features .sp-mail-cta { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 10px; background: var(--sp-blue); color: white; font-size: 13px; font-weight: 600; }
+.sp-features .sp-mail-cta.accent { background: var(--sp-accent); }
+.sp-features .sp-mail-foot { display: flex; gap: 18px; padding: 14px 20px; background: var(--sp-paper-2); font-size: 12px; color: var(--sp-muted); }
+.sp-features .sp-mail-foot strong { color: var(--sp-ink); font-weight: 700; margin-right: 4px; }
+
+/* SMS / dark conversation card */
+.sp-features .sp-sms-card { background: #0A0F1E; border-radius: 16px; padding: 18px 20px 14px; color: rgba(255,255,255,0.92); box-shadow: 0 18px 40px -24px rgba(10,15,30,0.5); }
+.sp-features .sp-sms-head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; letter-spacing: 0.10em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 14px; }
+.sp-features .sp-sms-head .who { color: rgba(255,255,255,0.78); font-weight: 600; }
+.sp-features .sp-sms-bubbles { display: flex; flex-direction: column; gap: 10px; }
+.sp-features .sp-sms-bubble { padding: 12px 14px; border-radius: 14px; font-size: 13.5px; line-height: 1.45; max-width: 92%; }
+.sp-features .sp-sms-bubble.out { background: #0E9F6E; color: white; align-self: flex-end; border-bottom-right-radius: 6px; }
+.sp-features .sp-sms-bubble.in { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.92); align-self: flex-start; border-bottom-left-radius: 6px; }
+.sp-features .sp-sms-foot { text-align: right; font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 10px; }
+
+.sp-features .sp-preview-stack { display: flex; flex-direction: column; gap: 16px; }
 
 .sp-features .sp-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--sp-line); }
 .sp-features .sp-kpi { }
