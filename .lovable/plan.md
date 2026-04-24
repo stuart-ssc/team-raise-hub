@@ -1,43 +1,19 @@
 
 
 ## Goal
-Make "Connect payment for {group}" rows in the supervisor dashboard's "Needs your attention" card always render **first** in the list and as a **full red row** to signal critical action. Other items keep their current style.
+Make `/dashboard/reports` use the full content width like other dashboard pages (Campaigns, Donors, Dashboard) instead of being constrained to `max-w-7xl`.
 
-## Changes — `src/pages/Dashboard.tsx`
+## Change — `src/pages/Reports.tsx`
 
-### 1. Sort order (around line 696–753)
-After building `attentionItems`, sort so all entries with `key` starting `pay-` come first (preserving their current relative order), followed by every other item in current insertion order.
+Remove the `max-w-7xl mx-auto` wrapper in both the loading state (line 469) and the main render (line 497). Keep the `space-y-6` utility by moving it up to the parent, so the layout becomes:
 
-```ts
-const sorted = [
-  ...items.filter(i => i.key.startsWith("pay-")),
-  ...items.filter(i => !i.key.startsWith("pay-")),
-];
-return sorted;
-```
+- Loading branch: replace `<div className="max-w-7xl mx-auto space-y-6">` with `<div className="space-y-6">`.
+- Main branch: replace `<div className="max-w-7xl mx-auto space-y-6">` with `<div className="space-y-6">`.
 
-### 2. Render style for payment rows (around line 938–960)
-In the `attentionItems.map(...)` loop, branch on `item.key.startsWith("pay-")`:
-
-- **Payment rows** — full red row:
-  - Container button gets a destructive red background + border, white-on-red text, and a stronger hover state, e.g.
-    `"flex w-full items-center justify-between gap-3 py-3 px-3 -mx-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors border border-destructive shadow-sm"`.
-  - Icon chip swaps to `bg-white/15 text-destructive-foreground` instead of `toneClass(item.tone)`.
-  - Label stays `font-semibold`.
-  - Replace the secondary `Badge` (none rendered today since payment items have no `count`) with a small inline "Action required" pill: `bg-white/15 text-destructive-foreground text-[11px] px-2 py-0.5 rounded-full font-medium`.
-  - Chevron color → `text-destructive-foreground/80`.
-- **All other rows** — unchanged (current `toneClass`-based styling stays exactly as-is).
-
-### 3. Divider between rows
-Keep the existing `divide-y divide-border` on the `<ul>`, but the red row already provides its own background contrast so no further adjustment is needed.
-
-### 4. No data, no logic, no other style changes
-- `unconnectedGroups`, `tone: "rose"` value, dialog wiring, and dependency arrays stay the same — `tone` is just no longer consulted for payment rows.
-- Empty-state ("All clear") message unchanged.
-- Recent activity card unchanged.
+The outer `<main className="flex-1 overflow-y-auto p-6">` already provides the standard page padding used by other pages, so content will now stretch to fill available width.
 
 ## Verification
-- When one or more groups need a payment processor connected, those rows appear at the top of "Needs your attention", each rendered as a full red row with white text and an "Action required" pill, and clicking still opens the existing `GroupPaymentSetupDialog`.
-- Pending membership requests, pitch reminders, and donor thank-you items still render below with their current amber / blue / green icon-chip styling.
-- When no payment connection is needed, the card looks identical to today.
+- `/dashboard/reports` content (title row, KPI tiles, charts, campaign table) spans the full content area at all desktop widths, matching Campaigns / Donors / Dashboard.
+- No change to mobile layout (max-w cap had no effect there).
+- Loading skeleton also stretches full width consistently.
 
