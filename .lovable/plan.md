@@ -1,19 +1,19 @@
 
 
 ## Goal
-Make `/dashboard/reports` use the full content width like other dashboard pages (Campaigns, Donors, Dashboard) instead of being constrained to `max-w-7xl`.
+Make `/dashboard/messages` use the full content width like other dashboard pages, matching the recent Reports fix.
 
-## Change — `src/pages/Reports.tsx`
+## Change — `src/pages/Messages.tsx` (or equivalent)
 
-Remove the `max-w-7xl mx-auto` wrapper in both the loading state (line 469) and the main render (line 497). Keep the `space-y-6` utility by moving it up to the parent, so the layout becomes:
+Locate the wrapping container that constrains width (likely `max-w-7xl mx-auto` or similar) and remove the width cap, keeping vertical spacing utilities intact.
 
-- Loading branch: replace `<div className="max-w-7xl mx-auto space-y-6">` with `<div className="space-y-6">`.
-- Main branch: replace `<div className="max-w-7xl mx-auto space-y-6">` with `<div className="space-y-6">`.
+- Replace `<div className="max-w-7xl mx-auto space-y-6">` (or analogous) with `<div className="space-y-6">`.
+- Apply to both the loading skeleton branch and the main render branch if both exist.
 
-The outer `<main className="flex-1 overflow-y-auto p-6">` already provides the standard page padding used by other pages, so content will now stretch to fill available width.
+The outer `<main className="flex-1 overflow-y-auto p-6">` from `DashboardPageLayout` already provides standard page padding, so content will stretch to fill the available width.
 
 ## Verification
-- `/dashboard/reports` content (title row, KPI tiles, charts, campaign table) spans the full content area at all desktop widths, matching Campaigns / Donors / Dashboard.
-- No change to mobile layout (max-w cap had no effect there).
-- Loading skeleton also stretches full width consistently.
+- `/dashboard/messages` content (conversation list, thread view, composer) spans the full content area at desktop widths, matching Campaigns / Donors / Dashboard / Reports.
+- No change to mobile layout.
+- Loading skeleton also stretches full width.
 
