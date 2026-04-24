@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
 
@@ -271,6 +272,20 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>Pricing | Sponsorly - 100% Free Fundraising for School Sports, Clubs, and PTOs</title>
+        <meta name="description" content="Sponsorly is 100% free for schools, sports teams, clubs, and PTOs. No monthly fees, no setup, no contracts — just a small platform fee per donation that donors can cover." />
+        <link rel="canonical" href="https://sponsorly.io/pricing" />
+        <meta property="og:title" content="Pricing | Sponsorly - 100% Free Fundraising for School Sports, Clubs, and PTOs" />
+        <meta property="og:description" content="Sponsorly is 100% free for schools, sports teams, clubs, and PTOs. No monthly fees, no setup, no contracts." />
+        <meta property="og:url" content="https://sponsorly.io/pricing" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://sponsorly.io/lovable-uploads/Sponsorly-Logo.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Pricing | Sponsorly - 100% Free Fundraising for School Sports, Clubs, and PTOs" />
+        <meta name="twitter:description" content="Sponsorly is 100% free for schools, sports teams, clubs, and PTOs. No monthly fees, no setup, no contracts." />
+        <meta name="twitter:image" content="https://sponsorly.io/lovable-uploads/Sponsorly-Logo.png" />
+      </Helmet>
       <MarketingHeader />
 
       <main className="flex-1">
