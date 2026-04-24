@@ -237,8 +237,8 @@ const faqs = [
     a: "Yes. There are no monthly fees, no setup costs, and no per-campaign charges for your organization. You can launch unlimited campaigns and add unlimited admins at $0. The only fee is a 10% platform fee per donation — by default it's added on top so donors cover it and your org receives 100%, or you can absorb it per-campaign.",
   },
   {
-    q: "Can I switch fee modes?",
-    a: "Yes. The setting is per campaign and you can change it at any time. Some campaigns absorb the fee (donor pays a clean $100, you net ~$90); most have donors cover it (donor pays $110, you net $100).",
+    q: "Can I switch fee mode?",
+    a: "Yes. The setting is per fundraiser. Some fundraisers it makes sense to absorb the fee (donor pays a clean $100, you net ~$90); most have donors cover it (donor pays $110, you net $100).",
   },
   {
     q: "What about card processing fees?",
@@ -246,7 +246,7 @@ const faqs = [
   },
   {
     q: "How do payouts work?",
-    a: "Funds are deposited directly to your organization's bank account through Stripe Connect, typically in 2 business days. You can view every payout, donation, and refund in your dashboard.",
+    a: "Funds are deposited directly to your organization's bank account through Stripe, typically in 2 business days. You can view every donation and payout in your Sponsorly dashboard. You can also confirm all transactions in your Stripe dashboard as well.",
   },
   {
     q: "Is there a contract or minimum term?",
