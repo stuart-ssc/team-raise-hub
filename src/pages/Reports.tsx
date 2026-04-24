@@ -466,7 +466,7 @@ const Reports = () => {
         <div className="flex-1 flex flex-col overflow-hidden">
           <DashboardHeader activeGroup={activeGroup} onGroupClick={handleGroupClick} />
           <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <Skeleton className="h-8 w-48" />
                 <Skeleton className="h-10 w-[180px]" />
@@ -494,7 +494,7 @@ const Reports = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader activeGroup={activeGroup} onGroupClick={handleGroupClick} />
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
+          <div className="space-y-6">
             <div className="flex flex-col gap-4">
               {/* Row 1: Page Title */}
               <div className="flex items-center justify-between">
