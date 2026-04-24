@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
-import { StateBrowser } from "@/components/StateLandingPage/StateBrowser";
+import { allStates } from "@/lib/stateUtils";
 import heroImage from "@/assets/schools-hero.png";
 import teamImage from "@/assets/team-collaboration.jpg";
 
@@ -167,7 +167,18 @@ const SCOPED_CSS = `
 .sp-schools .sp-trust-stat .l { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.85; margin-top: 8px; font-weight: 600; }
 
 /* Browse by state */
-.sp-schools .sp-state-wrap { max-width: 1100px; margin: 32px auto 0; }
+.sp-schools .sp-state-wrap { max-width: 1180px; margin: 40px auto 0; }
+.sp-schools .sp-state-grid { display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 56px; row-gap: 8px; align-items: start; }
+.sp-schools .sp-state-letter { font-family: var(--sp-display); font-weight: 400; font-size: 56px; line-height: 1; color: var(--sp-blue); padding: 28px 0 10px; border-bottom: 1px solid var(--sp-line); margin-bottom: 14px; }
+.sp-schools .sp-state-letter:first-child { padding-top: 0; }
+.sp-schools .sp-state-link { display: block; padding: 6px 0; font-size: 15px; color: var(--sp-ink); transition: color .15s ease; }
+.sp-schools .sp-state-link:hover { color: var(--sp-blue); }
+@media (max-width: 980px) {
+  .sp-schools .sp-state-grid { grid-template-columns: repeat(2, 1fr); column-gap: 32px; }
+}
+@media (max-width: 560px) {
+  .sp-schools .sp-state-grid { grid-template-columns: 1fr; }
+}
 
 /* Final CTA dark */
 .sp-schools .sp-cta-dark { background: #0A0F1E; color: white; padding: 96px 0; text-align: center; position: relative; overflow: hidden; }
@@ -243,6 +254,52 @@ const IPin = () => (
 const IArrow = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
 );
+
+/* State directory — 4 balanced columns, letter-grouped, matches mockup */
+const StateDirectory = () => {
+  const groups = allStates.reduce((acc, state) => {
+    const letter = state.name[0].toUpperCase();
+    if (!acc[letter]) acc[letter] = [];
+    acc[letter].push(state);
+    return acc;
+  }, {} as Record<string, typeof allStates>);
+
+  const letters = Object.keys(groups).sort();
+
+  // Balance into 4 columns by total row count (letter header counts as 1 row)
+  const columns: string[][] = [[], [], [], []];
+  const colWeight = [0, 0, 0, 0];
+  letters.forEach((l) => {
+    const weight = 1 + groups[l].length;
+    let target = 0;
+    for (let i = 1; i < 4; i++) if (colWeight[i] < colWeight[target]) target = i;
+    columns[target].push(l);
+    colWeight[target] += weight;
+  });
+
+  return (
+    <div className="sp-state-grid">
+      {columns.map((colLetters, ci) => (
+        <div key={ci}>
+          {colLetters.map((letter) => (
+            <div key={letter}>
+              <div className="sp-state-letter">{letter}</div>
+              {groups[letter].map((state) => (
+                <Link
+                  key={state.abbreviation}
+                  to={`/schools/${state.slug}`}
+                  className="sp-state-link"
+                >
+                  {state.name}
+                </Link>
+              ))}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const Schools = () => {
   useEffect(() => {
@@ -558,7 +615,7 @@ const Schools = () => {
             </p>
           </div>
           <div className="sp-state-wrap sp-wrap">
-            <StateBrowser />
+            <StateDirectory />
           </div>
         </section>
 
