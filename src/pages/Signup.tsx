@@ -69,12 +69,11 @@ const SCOPED_CSS = `
 .sp-signup-section { margin-top: 26px; }
 
 /* OAuth */
-.sp-signup-oauth-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-@media (max-width: 520px) { .sp-signup-oauth-row { grid-template-columns: 1fr; } }
-.sp-signup-oauth-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 14px; border-radius: 14px; background: white; border: 1px solid var(--sp-line); font-size: 14px; font-weight: 600; color: var(--sp-ink); transition: border-color .15s ease, transform .15s ease, box-shadow .2s ease; cursor: pointer; }
-.sp-signup-oauth-btn:hover { border-color: #c9cfdb; box-shadow: 0 2px 8px -4px rgba(10,15,30,0.18); transform: translateY(-1px); }
+.sp-signup-oauth-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sp-signup-oauth-btn { display: inline-flex; align-items: center; justify-content: center; height: 48px; border-radius: 14px; background: white; border: 1px solid var(--sp-line); color: var(--sp-ink); transition: border-color .15s ease, transform .15s ease, box-shadow .2s ease; cursor: pointer; padding: 0; }
+.sp-signup-oauth-btn:hover:not(:disabled) { border-color: #c9cfdb; box-shadow: 0 2px 8px -4px rgba(10,15,30,0.18); transform: translateY(-1px); }
 .sp-signup-oauth-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-.sp-signup-oauth-btn svg.brand { width: 18px; height: 18px; flex: 0 0 18px; }
+.sp-signup-oauth-btn svg.brand { width: 22px; height: 22px; flex: 0 0 22px; }
 
 /* Divider */
 .sp-signup-divider { display: flex; align-items: center; gap: 14px; margin: 22px 0 18px; color: var(--sp-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; }
