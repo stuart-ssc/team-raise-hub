@@ -280,7 +280,7 @@ const Login = () => {
       {/* Top bar */}
       <header className="sp-login-topbar">
         <Link to="/" aria-label="Sponsorly home">
-          <SponsorlyLogo variant="full" theme="light" className="h-10" />
+          <SponsorlyLogo variant="full" theme="light" className="h-14 md:h-16 w-auto" />
         </Link>
         <div className="right">
           <span className="hidden sm:inline">New to Sponsorly?</span>
