@@ -132,7 +132,7 @@ const SCOPED_CSS = `
 .sp-signup-invite svg { color: var(--sp-blue); flex: 0 0 18px; margin-top: 2px; }
 
 /* RIGHT panel */
-.sp-signup-right { display: none; position: relative; background: #0A0F1E; color: white; overflow: hidden; padding: 48px 56px; }
+.sp-signup-right { display: none; position: relative; background: #0A0F1E; color: white; overflow: hidden; padding: 40px 56px 36px; }
 @media (min-width: 1024px) { .sp-signup-right { display: flex; flex-direction: column; } }
 .sp-signup-right::before { content: ""; position: absolute; inset: 0; background:
   radial-gradient(800px 400px at 0% 100%, rgba(14,159,110,0.18), transparent 60%),
@@ -745,24 +745,24 @@ const Signup = () => {
           </div>
 
           <div className="sp-signup-leaderboard-wrap">
-            <div className="sp-signup-notif top-right">
-              <div className="icon green"><Check className="h-[14px] w-[14px]" strokeWidth={3} /></div>
-              <div>
-                <div className="label">New donation</div>
-                <div className="body">$250 from the Chen family</div>
-                <div className="meta">Go Lincoln! 🏆 · 2s ago</div>
-              </div>
-            </div>
-            <div className="sp-signup-notif bottom-left">
-              <div className="icon blue"><Check className="h-[14px] w-[14px]" strokeWidth={3} /></div>
-              <div>
-                <div className="label">Payout</div>
-                <div className="body">$4,120 → Lincoln HS</div>
-                <div className="meta">Arrived 11:42 AM today</div>
-              </div>
-            </div>
-
             <div className="sp-signup-leaderboard">
+              <div className="sp-signup-notif top-right">
+                <div className="icon green"><Check className="h-[14px] w-[14px]" strokeWidth={3} /></div>
+                <div>
+                  <div className="label">New donation</div>
+                  <div className="body">$250 from the Chen family</div>
+                  <div className="meta">Go Lincoln! 🏆 · 2s ago</div>
+                </div>
+              </div>
+              <div className="sp-signup-notif bottom-left">
+                <div className="icon blue"><Check className="h-[14px] w-[14px]" strokeWidth={3} /></div>
+                <div>
+                  <div className="label">Payout</div>
+                  <div className="body">$4,120 → Lincoln HS</div>
+                  <div className="meta">Arrived 11:42 AM today</div>
+                </div>
+              </div>
+
               <div className="sp-signup-leaderboard-title">Top fundraisers · live</div>
               {leaderboard.map((r) => (
                 <div className="sp-signup-row" key={r.rank}>
