@@ -472,7 +472,7 @@ const MerchandiseCampaigns = () => {
       <section className="sp-numbers">
         <div className="sp-wrap">
           <span className="sp-eyebrow">The Numbers</span>
-          <h2>Merchandise campaigns that <span className="accent">perform.</span></h2>
+          <h2>Merchandise fundraisers that <span className="accent">perform.</span></h2>
           <p className="sub">Schools and teams running merch on Sponsorly see meaningful gains.</p>
           <div className="stats">
             <div className="stat">
