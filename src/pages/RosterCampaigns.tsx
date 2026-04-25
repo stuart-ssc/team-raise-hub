@@ -1,8 +1,8 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
 import { useLandingPageTracking } from "@/hooks/useLandingPageTracking";
+import { SeoHead } from "@/components/seo/SeoHead";
 
 /**
  * Roster Fundraisers — rebuilt 2026 to match approved mockup.
@@ -263,19 +263,13 @@ const why = [
 const RosterCampaigns = () => {
   useLandingPageTracking({ pageType: "marketing", pagePath: "/fundraisers/roster" });
 
-  useEffect(() => {
-    document.title = "Roster Fundraisers — Peer-to-Peer Team Fundraising | Sponsorly";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute(
-        "content",
-        "Give every player, student, or member their own fundraising page with personal links, a live leaderboard, and team totals. Gamify giving with roster fundraisers."
-      );
-    }
-  }, []);
-
   return (
     <div className="sp-roster">
+      <SeoHead
+        title="Roster Fundraisers — Peer-to-Peer Team Fundraising | Sponsorly"
+        description="Give every player, student, or member their own fundraising page with personal links, a live leaderboard, and team totals. Gamify giving with roster fundraisers."
+        path="/fundraisers/roster"
+      />
       <style>{SCOPED_CSS}</style>
       <MarketingHeader />
 

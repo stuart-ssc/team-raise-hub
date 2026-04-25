@@ -21,3 +21,15 @@ Disallow: /dashboard
 Disallow: /dashboard/*
 Disallow: /system-admin
 Disallow: /system-admin/*
+Disallow: /portal
+Disallow: /portal/*
+Disallow: /login
+Disallow: /signup
+Disallow: /set-password
+Disallow: /checkout/
+Disallow: /checkout/*
+Disallow: /orders/
+Disallow: /orders/*
+Disallow: /donor-receipts
+Disallow: /native-features
+Disallow: /fundraiser-unsubscribe

@@ -1,9 +1,9 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
+import { SeoHead } from "@/components/seo/SeoHead";
 import {
   Heart,
   HandHeart,
@@ -34,16 +34,13 @@ import {
 import heroImage from "@/assets/nonprofits-hero.png";
 
 const Nonprofits = () => {
-  useEffect(() => {
-    document.title = "Sponsorly for Nonprofits - Fundraising for 501(c)(3) Organizations";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute('content', 'Powerful fundraising platform for nonprofits and 501(c)(3) organizations. Automatic tax receipts, donor management, and 100% of donations go to your cause.');
-    }
-  }, []);
-
   return (
     <div className="min-h-screen bg-background">
+      <SeoHead
+        title="Sponsorly for Nonprofits — Fundraising for 501(c)(3) Organizations"
+        description="Powerful fundraising platform for nonprofits and 501(c)(3) organizations. Automatic tax receipts, donor management, and 100% of donations go to your cause."
+        path="/nonprofits"
+      />
       <MarketingHeader />
 
       {/* Hero Section */}

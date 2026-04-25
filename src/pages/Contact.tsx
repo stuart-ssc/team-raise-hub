@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { Mail, Send } from "lucide-react";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
+import { SeoHead } from "@/components/seo/SeoHead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -92,6 +93,11 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SeoHead
+        title="Contact Sponsorly — Talk to Our Fundraising Team"
+        description="Get in touch with the Sponsorly team. We typically respond within 24-48 hours and are happy to help schools, non-profits, and supporters."
+        path="/contact"
+      />
       <MarketingHeader />
 
       <main className="flex-1">

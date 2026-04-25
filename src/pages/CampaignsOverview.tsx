@@ -1,8 +1,8 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
 import { useLandingPageTracking } from "@/hooks/useLandingPageTracking";
+import { SeoHead } from "@/components/seo/SeoHead";
 
 /**
  * Sponsorly Fundraisers — rebuilt to match the approved 2026 mockup.
@@ -262,19 +262,13 @@ const compareCols = ["Donation", "Sponsorship", "Event", "Pledge", "Auction"];
 const Fundraisers = () => {
   useLandingPageTracking({ pageType: "marketing", pagePath: "/fundraisers" });
 
-  useEffect(() => {
-    document.title = "Fundraisers — Sponsorly";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute(
-        "content",
-        "Donations, sponsorships, events, pledges, and merch — all on the same zero-fee fundraising platform. Mix them, match them, run whichever works for your team."
-      );
-    }
-  }, []);
-
   return (
     <>
+      <SeoHead
+        title="Fundraiser Types — Five Ways to Raise on Sponsorly"
+        description="Donations, sponsorships, events, pledges, and merch — all on the same zero-fee fundraising platform. Mix them, match them, run whichever works for your team."
+        path="/fundraisers"
+      />
       <style dangerouslySetInnerHTML={{ __html: SCOPED_CSS }} />
       <div className="sp-fundraisers min-h-screen">
         <MarketingHeader />

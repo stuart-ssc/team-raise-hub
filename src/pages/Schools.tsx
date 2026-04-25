@@ -1,7 +1,7 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
+import { SeoHead } from "@/components/seo/SeoHead";
 import { allStates } from "@/lib/stateUtils";
 import heroImage from "@/assets/schools-hero.png";
 import teamImage from "@/assets/team-collaboration.jpg";
@@ -302,17 +302,6 @@ const StateDirectory = () => {
 };
 
 const Schools = () => {
-  useEffect(() => {
-    document.title = "Sponsorly for Schools — Built for teams, clubs, and PTOs";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute(
-        "content",
-        "Powerful fundraising platform for K-12 schools. Manage sports teams, clubs, band, theater, and PTOs all in one place. 100% of donations go to your programs."
-      );
-    }
-  }, []);
-
   const programs = [
     { Icon: ITrophy, title: "Sports Teams", sub: "Varsity & JV", bg: "rgba(31,95,224,0.10)", color: "#1F5FE0" },
     { Icon: IUsers, title: "PTOs & PTAs", sub: "Parent groups", bg: "rgba(14,159,110,0.10)", color: "#0E9F6E" },
@@ -332,6 +321,11 @@ const Schools = () => {
 
   return (
     <>
+      <SeoHead
+        title="Sponsorly for Schools — Fundraising for Teams, Clubs & PTOs"
+        description="Powerful fundraising platform for K-12 schools. Manage sports teams, clubs, band, theater, and PTOs in one place — with 100% of donations going to your programs."
+        path="/schools"
+      />
       <style dangerouslySetInnerHTML={{ __html: SCOPED_CSS }} />
       <div className="sp-schools min-h-screen">
         <MarketingHeader />

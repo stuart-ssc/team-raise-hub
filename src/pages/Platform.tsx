@@ -4,10 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import MarketingHeader from '@/components/MarketingHeader';
 import MarketingFooter from '@/components/MarketingFooter';
+import { SeoHead } from '@/components/seo/SeoHead';
 
 const Platform = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <SeoHead
+        title="Platform — All-in-One Fundraising Software | Sponsorly"
+        description="Explore the Sponsorly platform: campaigns, donor CRM, peer-to-peer rosters, business sponsorships, and reporting — built for schools and non-profits."
+        path="/platform"
+      />
       <MarketingHeader />
       
       <main className="flex-1">

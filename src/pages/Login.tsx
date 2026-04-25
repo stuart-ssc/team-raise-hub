@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { NoIndex } from "@/components/seo/NoIndex";
 
 const SCOPED_CSS = `
 .sp-login {
@@ -276,6 +277,7 @@ const Login = () => {
 
   return (
     <div className="sp-login">
+      <NoIndex />
       <style>{SCOPED_CSS}</style>
 
       <div className="sp-login-shell">

@@ -1,8 +1,8 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
 import { useLandingPageTracking } from "@/hooks/useLandingPageTracking";
+import { SeoHead } from "@/components/seo/SeoHead";
 
 /**
  * Sponsorship Fundraisers — rebuilt 2026 to match approved mockup.
@@ -212,19 +212,13 @@ const placements = [
 const SponsorshipCampaigns = () => {
   useLandingPageTracking({ pageType: "marketing", pagePath: "/fundraisers/sponsorships" });
 
-  useEffect(() => {
-    document.title = "Sponsorship Fundraisers — Turn Local Businesses Into Lasting Partners | Sponsorly";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute(
-        "content",
-        "Invite local businesses to sponsor your team or event. Tiered packages, automatic asset collection, sponsor recognition, and renewals — all in one place."
-      );
-    }
-  }, []);
-
   return (
     <>
+      <SeoHead
+        title="Sponsorship Fundraisers — Local Business Partners | Sponsorly"
+        description="Invite local businesses to sponsor your team or event. Tiered packages, automatic asset collection, sponsor recognition, and renewals — all in one place."
+        path="/fundraisers/sponsorships"
+      />
       <style dangerouslySetInnerHTML={{ __html: SCOPED_CSS }} />
       <div className="sp-sponsorships min-h-screen">
         <MarketingHeader />

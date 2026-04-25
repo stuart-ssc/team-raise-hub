@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import MarketingHeader from '@/components/MarketingHeader';
 import MarketingFooter from '@/components/MarketingFooter';
 import { useLandingPageTracking } from '@/hooks/useLandingPageTracking';
+import { SeoHead } from '@/components/seo/SeoHead';
 import {
   ArrowRight,
   Building2,
@@ -28,14 +28,6 @@ import {
 const ForBusinesses = () => {
   useLandingPageTracking({ pageType: 'marketing', pagePath: '/for-businesses' });
 
-  useEffect(() => {
-    document.title = "For Businesses - Streamline Your Community Support | Sponsorly";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute('content', 'One platform to manage all your local sponsorships and donations. Centralized dashboard, asset library, and simplified billing for community support.');
-    }
-  }, []);
-
   const portalFeatures = [
     { icon: Upload, title: 'Asset Upload', desc: 'Upload logos and files for sponsorship campaigns' },
     { icon: BarChart3, title: 'Campaign Performance', desc: 'See the impact of your sponsorships' },
@@ -45,6 +37,11 @@ const ForBusinesses = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SeoHead
+        title="For Businesses — Streamline Your Community Support | Sponsorly"
+        description="One platform to manage all your local sponsorships and donations. Centralized dashboard, asset library, and simplified billing for community support."
+        path="/for-businesses"
+      />
       <MarketingHeader />
 
       {/* Hero Section */}

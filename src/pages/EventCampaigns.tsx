@@ -1,8 +1,8 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
 import { useLandingPageTracking } from "@/hooks/useLandingPageTracking";
+import { SeoHead } from "@/components/seo/SeoHead";
 
 /**
  * Event Fundraisers — rebuilt 2026 to match approved mockup.
@@ -253,19 +253,13 @@ const sponsorPackages = [
 const EventCampaigns = () => {
   useLandingPageTracking({ pageType: "marketing", pagePath: "/fundraisers/events" });
 
-  useEffect(() => {
-    document.title = "Event Fundraisers — Ticketing & Event Fundraising | Sponsorly";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute(
-        "content",
-        "Sell tickets for golf scrambles, galas, auctions, camps, and more. Combine ticketing with sponsorship packages for unforgettable fundraising events."
-      );
-    }
-  }, []);
-
   return (
     <div className="sp-events">
+      <SeoHead
+        title="Event Fundraisers — Ticketing & Event Fundraising | Sponsorly"
+        description="Sell tickets for golf scrambles, galas, auctions, camps, and more. Combine ticketing with sponsorship packages for unforgettable fundraising events."
+        path="/fundraisers/events"
+      />
       <style>{SCOPED_CSS}</style>
       <MarketingHeader />
 

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { NoIndex } from "@/components/seo/NoIndex";
 
 export default function FundraiserUnsubscribe() {
   const [params] = useSearchParams();
@@ -38,6 +39,7 @@ export default function FundraiserUnsubscribe() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <NoIndex />
       <Card className="max-w-md w-full">
         <CardHeader>
           <CardTitle>Unsubscribe</CardTitle>

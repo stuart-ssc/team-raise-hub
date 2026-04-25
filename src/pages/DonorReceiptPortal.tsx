@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Download, FileText, Calendar, DollarSign, Building2, ArrowLeft, FileSpreadsheet } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { NoIndex } from "@/components/seo/NoIndex";
 
 const searchFormSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -174,6 +175,7 @@ const DonorReceiptPortal = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <NoIndex />
       <div className="container max-w-5xl mx-auto py-12 px-4">
         <Button
           variant="ghost"

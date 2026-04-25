@@ -8,6 +8,7 @@ import DashboardHeader from "./DashboardHeader";
 import DashboardBreadcrumbs from "./DashboardBreadcrumbs";
 import { Skeleton } from "./ui/skeleton";
 import { useActiveGroup } from "@/contexts/ActiveGroupContext";
+import { NoIndex } from "./seo/NoIndex";
 
 interface BreadcrumbSegment {
   label: string;
@@ -72,6 +73,7 @@ const DashboardPageLayout = ({
 
   return (
     <div className="flex h-screen bg-background w-full">
+      <NoIndex />
       <DashboardSidebar />
       <DashboardSidebarSheet 
         open={mobileMenuOpen} 
