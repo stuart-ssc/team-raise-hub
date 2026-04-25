@@ -570,28 +570,8 @@ const Signup = () => {
               <div className="sp-signup-divider">Or with email</div>
 
               <form onSubmit={handleSignup}>
-                {/* Fundraiser type */}
-                <label className="sp-signup-label">I'm fundraising for…</label>
-                <div className="sp-signup-cards">
-                  {fundraiserOptions.map(({ id, title, sub, Icon }) => (
-                    <button
-                      type="button"
-                      key={id}
-                      onClick={() => setFundraiserType(id)}
-                      className={`sp-signup-card ${fundraiserType === id ? "is-selected" : ""}`}
-                      aria-pressed={fundraiserType === id}
-                    >
-                      <span className="sp-signup-card-icon">
-                        <Icon className="h-[18px] w-[18px]" />
-                      </span>
-                      <span className="sp-signup-card-title">{title}</span>
-                      <span className="sp-signup-card-sub">{sub}</span>
-                    </button>
-                  ))}
-                </div>
-
                 {/* Names */}
-                <div className="sp-signup-section">
+                <div>
                   <div className="sp-signup-grid-2">
                     <div>
                       <label className="sp-signup-label" htmlFor="firstName">First name</label>
@@ -617,22 +597,6 @@ const Signup = () => {
                         required
                       />
                     </div>
-                  </div>
-                </div>
-
-                {/* Organization */}
-                <div className="sp-signup-section">
-                  <label className="sp-signup-label" htmlFor="orgName">Organization or team</label>
-                  <input
-                    id="orgName"
-                    className="sp-signup-input"
-                    placeholder="e.g. Lincoln HS Track & Field"
-                    value={organizationName}
-                    onChange={(e) => setOrganizationName(e.target.value)}
-                  />
-                  <div className="sp-signup-helper">
-                    <span className="ck"><Check className="h-[10px] w-[10px]" strokeWidth={3} /></span>
-                    We'll set up your fundraiser page under this name.
                   </div>
                 </div>
 
