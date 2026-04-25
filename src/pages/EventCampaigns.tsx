@@ -492,7 +492,7 @@ const EventCampaigns = () => {
               Get started free <IArrow />
             </Link>
             <Link to="/fundraisers" className="sp-btn sp-btn-ghost sp-btn-lg">
-              Explore all campaign types
+              Explore all fundraiser types
             </Link>
           </div>
         </div>
