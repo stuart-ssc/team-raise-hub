@@ -452,7 +452,7 @@ const MerchandiseCampaigns = () => {
               Track <span className="accent-accent">who sells</span> what.
             </h2>
             <p className="sp-lead">
-              With code-enabled merchandise campaigns, you can see exactly which team members are driving
+              With code-enabled merchandise fundraisers, you can see exactly which team members are driving
               sales — perfect for competitions and incentive programs.
             </p>
             <ul className="sp-bullets">
