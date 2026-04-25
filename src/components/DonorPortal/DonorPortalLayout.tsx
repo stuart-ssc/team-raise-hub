@@ -32,6 +32,7 @@ export function DonorPortalLayout({ children, title, subtitle }: DonorPortalLayo
   if (isLoading) {
     return (
       <div className="flex min-h-screen bg-background">
+        <NoIndex />
         <div className="hidden md:flex flex-col w-64 bg-card border-r">
           <div className="p-6">
             <Skeleton className="h-8 w-32" />
