@@ -289,7 +289,7 @@ const Platform = () => {
                   View All Campaign Types
                 </Button>
               </Link>
-              <Link to="/campaigns/roster">
+              <Link to="/fundraisers/roster">
                 <Button size="lg" variant="outline" className="gap-2">
                   <Users className="h-5 w-5" />
                   Roster-Enabled Campaigns

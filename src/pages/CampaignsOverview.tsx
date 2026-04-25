@@ -231,7 +231,7 @@ const types = [
     title: "Pledge fundraisers",
     copy: "Per-mile, per-lap, or per-rep — supporters pledge a rate and you bill at the finish. Perfect for jogathons, readathons, and seasonal challenges.",
     chips: ["Per-unit pledges", "Auto invoicing", "Roster goals", "Parent reminders"],
-    href: "/campaigns/roster",
+    href: "/fundraisers/roster",
   },
   {
     Icon: IBag, color: "#E0A21F", bg: "rgba(224,162,31,0.12)", meta: "05 / Merchandise",
@@ -245,7 +245,7 @@ const types = [
     title: "Roster-enabled campaigns",
     copy: "Every player, member, or participant gets a personal page and shareable link — with leaderboards, attribution, and team-wide goals.",
     chips: ["P2P pages", "Leaderboards", "Auto attribution", "Goal pacing"],
-    href: "/campaigns/roster",
+    href: "/fundraisers/roster",
   },
 ];
 

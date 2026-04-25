@@ -73,7 +73,7 @@ const MarketingFooter = () => {
           {/* Who it's for */}
           <div>
             <h5 className={colHeading}>Who it's for</h5>
-            <Link to="/campaigns/roster" className={colLink}>Sports teams</Link>
+            <Link to="/fundraisers/roster" className={colLink}>Sports teams</Link>
             <Link to="/schools" className={colLink}>Booster clubs</Link>
             <Link to="/schools" className={colLink}>PTOs &amp; PTAs</Link>
             <Link to="/schools" className={colLink}>Marching Bands</Link>
