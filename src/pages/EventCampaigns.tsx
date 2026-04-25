@@ -268,7 +268,7 @@ const EventCampaigns = () => {
                 ))}
               </ul>
               <div className="mt-6">
-                <Link to="/campaigns/sponsorships">
+                <Link to="/fundraisers/sponsorships">
                   <Button variant="outline">
                     Learn About Sponsorships <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>

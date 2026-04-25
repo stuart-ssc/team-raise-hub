@@ -217,7 +217,7 @@ const types = [
     title: "Sponsorship fundraisers",
     copy: "Local businesses sponsor your team or event in exchange for branded visibility. The fastest way to turn community relationships into recurring revenue.",
     chips: ["Tiered sponsors", "Logo placement", "Renewal reminders", "Business CRM"],
-    href: "/campaigns/sponsorships",
+    href: "/fundraisers/sponsorships",
   },
   {
     Icon: ICalendar, color: "#FF6B35", bg: "rgba(255,107,53,0.10)", meta: "03 / Events",

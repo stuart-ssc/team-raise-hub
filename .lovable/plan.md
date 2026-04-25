@@ -1,56 +1,63 @@
-# Rebuild Donation Fundraisers Landing Page
+# Rebuild Sponsorship Fundraisers Landing Page
 
-Rebuild `src/pages/DonationCampaigns.tsx` to match the approved mockup using the same scoped-CSS design system used in `CampaignsOverview.tsx`, `Pricing.tsx`, `Schools.tsx`, and `Features.tsx`. Move the route from `/campaigns/donations` to `/fundraisers/donations` (with a redirect from the old path).
+Rebuild `src/pages/SponsorshipCampaigns.tsx` to match the approved mockup using the same scoped-CSS design system as `CampaignsOverview.tsx`, `DonationCampaigns.tsx`, and the rest of the redesigned marketing pages. Move the route from `/campaigns/sponsorships` to `/fundraisers/sponsorships`.
 
 ## URL change
 
-- New canonical route: `/fundraisers/donations`
-- Old route `/campaigns/donations` becomes a `<Navigate to="/fundraisers/donations" replace />` redirect (so existing inbound links and tracking history still work).
-- Update internal links in `Nonprofits.tsx` and `CampaignsOverview.tsx` to point to the new path.
-- Update `useLandingPageTracking` `pagePath` to `/fundraisers/donations`.
+- New canonical route: `/fundraisers/sponsorships`
+- Old route `/campaigns/sponsorships` becomes a `<Navigate to="/fundraisers/sponsorships" replace />` redirect (preserves inbound links + tracking history).
+- Update internal `<Link>` references to point at the new path:
+  - `src/pages/CampaignsOverview.tsx`
+  - `src/pages/ForBusinesses.tsx`
+  - `src/pages/EventCampaigns.tsx`
+- Update `useLandingPageTracking` `pagePath` to `/fundraisers/sponsorships`.
 
 ## Page sections (matching mockup, top to bottom)
 
 1. **MarketingHeader** (existing, unchanged).
-2. **Hero — split two-column**
-   - Left: green eyebrow chip "Donation fundraisers", display-serif headline "Make giving easy. Keep *all of it.*" (italic accent), supporting paragraph, two CTAs ("Launch your fundraiser" primary blue pill, "See a demo" ghost), and a small row of three check items ("One-time + recurring", "Auto tax receipts", "Same-day payouts").
-   - Right: Mock donation card — campaign title "Support our Annual Fund", small "$250 from Liz Chen" pill, raised amount + green progress bar with 65% label, suggested amount chips ($25/$50/$100 selected/$250), donor avatar + "+1 to the impact, anonymous", orange "Donate $100 now" CTA.
-3. **"Everything you need for *successful* giving" feature grid** (white section)
-   - Eyebrow "Built for fundraising", centered display headline with italic accent.
-   - Asymmetric grid: a tall blue feature card on the left ("Automatic tax receipts. No paperwork.") with a small mock receipt at the bottom; right column stacked 2x2 of smaller cards: "Recurring giving" (with monthly/quarterly/annual chip mock), "Year-end summaries" (mock email row), "Goal thermometers" (mock progress bars), "Donor recognition" (colored avatar dots).
-4. **"Build *predictable* recurring giving" split section** (paper background)
-   - Left: green eyebrow "Sustainable funding", display headline with green italic accent, supporting copy, four bullet rows (push recurring opt-in at checkout; card-update emails; smart reminders before card expires; cohort analytics — MRR, churn, LTV), primary blue pill CTA "Start your recurring program".
-   - Right: Dark dashboard mock "Monthly Giving Dashboard" with two stat tiles (MRR $3,250, Active Subscribers 47) and three subscriber rows with monthly chips.
-5. **"Donations that fit any kind of campaign"** (white section)
-   - Centered eyebrow + display headline.
-   - 4-column row of subtle paper cards: Annual funds, Capital campaigns, Emergency appeals, Monthly giving. Each card has a small colored icon, title, short description, and an example line ("e.g., 'Annual Fund' · $50K goal").
-6. **"Celebrate your *donors* publicly" recognition split** (paper background)
-   - Left: orange eyebrow "Recognition", display headline with orange italic accent, supporting copy, four checkmark bullets (automatic donor wall, tiered recognition levels, anonymous option, real-time updates).
-   - Right: Mock "Our amazing donors" card with colored donor tiles + "+275 more supporters".
-7. **Final CTA — dark band**
-   - Deep navy/blue background, large display headline "Ready to launch your *donation campaign?*" with green italic accent, supporting copy, two CTAs ("Get started free" primary white pill, "Explore all fundraiser types" outline-white pill linking to `/fundraisers`).
-8. **MarketingFooter** (existing, unchanged).
+
+2. **Hero — split two-column** (paper background, soft blue + orange radial highlights)
+   - Left: orange eyebrow chip "Sponsorship fundraisers", display-serif headline "Turn local businesses into *lasting partners.*" (italic blue accent on second line), supporting paragraph, two CTAs ("Start your sponsor program" primary blue pill, "See a demo" ghost), underline check row ("Tiered packages", "Auto asset collection", "Tax-deductible").
+   - Right: Mock sponsor-package picker card — small URL crumb "sponsorly.io/c/wildcats-sponsor", title "Become a Wildcats sponsor", subtitle "Westlake HS Athletics · Fall 2026 Season", four package rows (Bronze $250 / Silver $500 / Gold $1,000 highlighted / Platinum $2,500) each with colored icon + benefit caption + "X LEFT" pill, a "RENEWAL · Joe's Pizza · 3rd year sponsor" toast at the bottom-left, "NEW SPONSOR · Acme Hardware — Gold tier" green pill at top-right, blue "Become a sponsor" CTA bar.
+
+3. **"Build *lasting* business relationships." split** (white section, reverse layout: text left, mock right)
+   - Left: blue eyebrow "For organizations", display headline with orange italic accent on "lasting", supporting copy, five green-check bullets (unlimited tiered packages; advertising placements; ongoing relationships; sponsor recognition displays; automatic season-over-season renewals).
+   - Right: 3×2 grid of subtle paper "placement" cards with small colored icons + label + tiny caption: Stadium signage, Jersey sponsors, Naming rights, Program book ads, Digital displays, PA announcements.
+
+4. **"Meaningful *community* engagement." split** (paper-2 alt section, mock left, text right)
+   - Left: White sponsor-profile mock card with green top border, big orange "A" avatar + "Acme Hardware" + "PROUD GOLD SPONSOR · CENTRAL HIGH FOOTBALL" subtitle, three small stat tiles (5K+ impressions, 12 events, 3 years), four asset-fulfillment rows (Field signage · Live, Jersey patch · Delivered, PA announcements · Weekly, Program ad · Full page) each with green check.
+   - Right: green eyebrow "For businesses", display headline with green italic accent on "community", supporting copy, five green-check bullets (local brand exposure; support causes with credibility; tax-deductible contributions; year-round visibility; auto-collected asset files for usage).
+
+5. **"How sponsorship *fundraisers* work." dark band** (deep navy)
+   - Centered eyebrow "The process", display headline with blue italic accent, supporting copy.
+   - Horizontal 4-step rail with connecting line: 1 (filled blue circle, active) Create packages, 2 Share fundraiser, 3 Businesses purchase, 4 Collect assets — each step has a numbered circle + bold serif title + short description below.
+
+6. **Final CTA — light gradient band** (paper background with soft blue/orange radial)
+   - Display headline "Ready to build your *sponsor program?*" (italic blue accent on "sponsor program?"), supporting copy "Join the schools and nonprofits raising thousands through local business partnerships.", two CTAs: primary blue pill "Get started free" → `/signup`, ghost pill "I'm a business" → `/for-businesses`.
+
+7. **MarketingFooter** (existing, unchanged).
 
 ## Design system (reused from existing redesigned pages)
 
-- Scoped class root: `.sp-donations` (mirrors `.sp-fundraisers` pattern).
-- Tokens: `--sp-blue: #1F5FE0`, `--sp-blue-deep: #0B3FB0`, `--sp-green: #0E9F6E`, `--sp-accent: #FF6B35`, `--sp-ink: #0A0F1E`, `--sp-paper: #FAFAF7`, `--sp-paper-2: #F2F3EE`, `--sp-line: #E6E9F0`.
-- Fonts: `Instrument Serif` for display headlines (italic for accent words), `Geist`/`Inter` for UI/body.
-- Buttons: `.sp-btn`, `.sp-btn-primary`, `.sp-btn-ghost`, `.sp-btn-white`, `.sp-btn-outline-white` — all pill-shaped.
-- Section primitives: `.sp-section`, `.sp-section.alt`, `.sp-section.white`.
-- Mock cards: white surface, 18px border-radius, 1px `--sp-line` border, soft shadow on hover.
+- Scoped class root: `.sp-sponsorships` (mirrors `.sp-donations` / `.sp-fundraisers`).
+- Tokens shared: `--sp-blue #1F5FE0`, `--sp-blue-deep #0B3FB0`, `--sp-green #0E9F6E`, `--sp-accent #FF6B35`, `--sp-violet #7B5BE0`, `--sp-amber #E0A21F`, `--sp-ink #0A0F1E`, `--sp-paper #FAFAF7`, `--sp-paper-2 #F2F3EE`, `--sp-line #E6E9F0`.
+- Fonts: `Instrument Serif` for display, `Geist`/`Inter` for UI.
+- Buttons: `.sp-btn-primary`, `.sp-btn-ghost`, `.sp-btn-white` — pill-shaped.
+- Section primitives: `.sp-section`, `.sp-section.alt`, `.sp-section.white`, plus dark `.sp-process` band.
+- All mock visuals are pure HTML/CSS — no images, no extra deps.
+- Lucide-style inline SVGs for icons (matching the pattern used on the donations page).
+- Responsive: hero stacks under ~960px; placement grid collapses to 2-up then 1-up; process rail stacks vertically on mobile.
 
 ## Technical notes
 
-- All page-specific CSS is injected via a single `<style>{SCOPED_CSS}</style>` element at the top of the component, scoped under `.sp-donations` so nothing leaks into the rest of the app (same approach as `CampaignsOverview.tsx`).
-- All mock visuals are pure HTML/CSS (no images required) so the page stays lightweight.
-- Responsive: hero collapses to single column under ~960px; feature grid collapses to 1 column under ~720px; "fits any kind" 4-up collapses to 2-up then 1-up.
-- Update document title to `Donation Fundraisers — One-Time & Recurring Giving | Sponsorly` and meta description (kept similar to existing).
-- Lucide icons used inline where small marks are needed (Check, Heart, Receipt, RefreshCw, Target, etc.).
+- Single `<style>{SCOPED_CSS}</style>` injection scoped under `.sp-sponsorships`.
+- Document title set to `Sponsorship Fundraisers — Turn Local Businesses Into Lasting Partners | Sponsorly`; meta description updated to match new copy.
+- Page is purely presentational — no data fetching changes required.
 
 ## Files to change
 
-- `src/pages/DonationCampaigns.tsx` — full rebuild.
-- `src/App.tsx` — add `/fundraisers/donations` route, redirect old `/campaigns/donations` path.
-- `src/pages/CampaignsOverview.tsx` — update donation card link to `/fundraisers/donations`.
-- `src/pages/Nonprofits.tsx` — update donation link to `/fundraisers/donations`.
+- `src/pages/SponsorshipCampaigns.tsx` — full rebuild.
+- `src/App.tsx` — add `/fundraisers/sponsorships` route + redirect from old path.
+- `src/pages/CampaignsOverview.tsx` — update sponsorships card link.
+- `src/pages/ForBusinesses.tsx` — update internal sponsorships link.
+- `src/pages/EventCampaigns.tsx` — update internal sponsorships link.
