@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import MarketingHeader from "@/components/MarketingHeader";
+import { SeoHead } from "@/components/seo/SeoHead";
 import MarketingFooter from "@/components/MarketingFooter";
 
 /**
@@ -537,6 +538,11 @@ const Features = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SeoHead
+        title="Features — Built for Modern Fundraising Teams | Sponsorly"
+        description="Every feature built into Sponsorly: campaign builder, donor CRM, automated outreach, peer-to-peer rosters, business sponsorships, payments, and analytics."
+        path="/features"
+      />
       <MarketingHeader />
 
       <main className="flex-1">

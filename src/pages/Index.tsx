@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
 import { useLandingPageTracking } from "@/hooks/useLandingPageTracking";
+import { SeoHead } from "@/components/seo/SeoHead";
 
 /**
  * Sponsorly homepage — rebuilt to match the approved 2026 mockup.
@@ -332,6 +333,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background overflow-x-hidden max-w-[100vw]">
+      <SeoHead
+        title="Sponsorly — 100% Fundraising for Schools, Teams & Non-Profits"
+        description="Sponsorly is the only fundraising platform where 100% of donations go directly to your organization. Built for schools, teams, clubs, PTOs, and non-profits."
+        path="/"
+      />
       <style dangerouslySetInnerHTML={{ __html: SCOPED_CSS }} />
       <MarketingHeader />
 
