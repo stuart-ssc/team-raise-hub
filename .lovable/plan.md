@@ -1,71 +1,62 @@
-## Redesign Signup Page to Match Mockup
+## Goal
 
-Rebuild `src/pages/Signup.tsx` to match the uploaded mockup, using the same `sp-*` design system already used on Pricing, Platform, Features, CampaignsOverview, Schools, and Index. All existing auth logic (email/password, invite tokens, Google/Facebook/Microsoft OAuth) is preserved.
+Fix the right-side social-proof panel on `/signup` so vertical spacing, the leaderboard placement, and the floating notification cards match the provided mockup. No left-column / form changes.
 
-### Layout
+## Current problems (vs. mockup)
 
-Two-column, full-viewport. Right column hidden below `lg`.
+1. The leaderboard uses `margin-top: auto`, which jams it against the bottom and leaves a huge empty gap below the Mrs. Patel quote.
+2. The "NEW DONATION" notification (`top: -18px; right: -16px`) currently overlaps the leaderboard title row instead of sitting cleanly above the card's top-right corner.
+3. The "PAYOUT" notification (`bottom: 100px; left: -22px`) floats in the middle of the leaderboard rows; in the mockup it sits at the bottom-left corner of the leaderboard, slightly outside it.
+4. Stats footer ($12.4M / 500+ / $0) gets pushed below the fold because the leaderboard is forced to the bottom.
+5. Panel padding is too generous at the top, pushing the quote down further than the mockup.
 
-**Left column (paper background `#FAFAF7`, ~50% width)**
+## Fix
 
-Header bar (top, full width of left column):
-- Sponsorly full-color logo (left)
-- "Already a member?  [Sign in]" — small text + dark pill button linking to `/login` (right)
+Edit only the `.sp-signup-right*` CSS rules and the notification card markup classes in `src/pages/Signup.tsx`.
 
-Form area (centered, max-width ~520px, generous padding):
-- Eyebrow: small line + "GET STARTED" (uppercase, tracked, blue)
-- Display headline (Instrument Serif): "Start raising in" then on the next line *minutes.* in italic blue with a soft peach/coral underline highlight
-- Sub-copy (muted ink): "Create your free account — no card required, no platform fees, no monthly minimum. Your first fundraiser can be live in under 5 minutes."
-- "Already have an account? Sign in →" inline link
-- **OAuth row** (two pill buttons side by side): "Continue with Google" and "Continue with Microsoft" — white background, 1px border, rounded-xl, brand SVG + label
-- Divider: "OR WITH EMAIL" centered
-- "I'm fundraising for…" label with three selectable cards (radio-style):
-  - A school team — Coach or AD (graduation-cap icon, blue tile)
-  - A club or org — Band, robotics, etc. (people icon)
-  - A PTO / PTA — School-wide drive (briefcase icon)
-  - Selected card: white bg, blue 2px border, soft shadow; unselected: paper-2 bg, line border. Stored in local state (UI only — does not affect signup payload yet).
-- First name / Last name (two-column inputs with placeholders "Jamie" / "Rivera")
-- Organization or team — single input ("e.g. Lincoln HS Track & Field") with a tiny green check + helper "We'll set up your fundraiser page under this name." (UI only — local state)
-- Email input (placeholder "coach@lincolnhs.edu")
-- Password input with "Show" toggle on the right and a 4-segment strength meter underneath (placeholder "At least 8 characters"). Strength bar fills based on length (≥8, ≥10, ≥12 + mixed chars).
-- Checkbox: "Send me fundraising tips (optional)" (UI only)
-- Primary CTA: "Create free account →" — full-width pill, `--sp-blue` background, soft glow shadow
-- Footer microcopy: "By creating an account you agree to our **Terms of Service** and **Privacy Policy**. Sponsorly never shares donor data." (links to `/terms` and `/privacy`)
-- **Facebook OAuth retained**: per requirement, also include a third "Continue with Facebook" pill button alongside Google and Microsoft (the mockup shows only Google + Microsoft, but the user explicitly requested all three providers be retained, so all three render in the OAuth row — Google, Microsoft, Facebook — same pill style).
+### CSS changes (inside `SCOPED_CSS`)
 
-**Right column (deep navy `#0A0F1E` panel, hidden below `lg`)**
+- `.sp-signup-right`: reduce vertical padding from `48px 56px` → `40px 56px 36px`; keep `display: flex; flex-direction: column`.
+- `.sp-signup-quote-block`: change `margin-top: 56px` → `margin-top: 72px` and tighten `.sp-signup-quote` line spacing if needed (keep current font sizes).
+- `.sp-signup-leaderboard-wrap`: remove `margin-top: auto`; replace with `margin-top: 56px` so it follows the quote with a balanced gap (matches mockup proportions).
+- `.sp-signup-stats`: change `margin-top: 36px` → `margin-top: auto; padding-top: 28px;` so the stats row is the element pinned to the bottom of the column (mockup shows stats hugging the panel bottom, not the leaderboard).
+- `.sp-signup-notif.top-right`: reposition to `top: -28px; right: -20px;` and add a higher `z-index: 2` so it sits clearly above the card's top edge without overlapping the "Top fundraisers · live" title.
+- `.sp-signup-notif.bottom-left`: change `bottom: 100px; left: -22px;` → `bottom: -22px; left: -22px;` so it anchors at the leaderboard's bottom-left corner (as in mockup). Add `z-index: 2`.
+- Add `.sp-signup-leaderboard { position: relative; }` (notifications already absolute) — and move the two `.sp-signup-notif` elements inside the `.sp-signup-leaderboard` div in JSX so their absolute positioning is relative to the card itself, not the wrapper. This guarantees consistent corner placement.
+- Tighten leaderboard internal spacing slightly: `.sp-signup-row` padding `10px 0` → `12px 0` and increase `.sp-signup-leaderboard` padding from `22px` → `20px 22px` (closer match to mockup density).
+- `.sp-signup-quote-mark`: increase `margin-bottom` by setting `.sp-signup-quote { margin-top: 22px; }` (was 28px) for a tighter mockup-style stack.
 
-- Top-right small label: "sponsorly.io" (white/60)
-- Top-left chip: green dot + "847 fundraisers raising right now" (rounded-full, dark green tint)
-- Large quotation mark glyph (Instrument Serif italic, green tint)
-- Display testimonial (Instrument Serif, white): "Our PTO brought in *3× more donors* than last year, with half the effort." — with "3× more donors" in italic green
-- Thin divider line, then attribution: avatar circle (purple "AP"), "Mrs. Patel", "Riverside PTO · President"
-- "Top fundraisers · live" card (dark glass — white at 4% opacity, 1px white-12 border, rounded-2xl):
-  - 4 ranked rows: Westlake Wildcats · Soccer ($48k), Evergreen MS Band ($38k), Pinecrest Robotics ($32k), Riverside PTO ($28k) — each with rank number, colored avatar tile (orange/blue/green/purple), name + "X donors · Y days", and amount on the right
-- Two floating notification cards overlapping the leaderboard:
-  - Top right: green check + "NEW DONATION — $250 from the Chen family — Go Lincoln! 🏆 · 2s ago"
-  - Bottom left: blue check + "PAYOUT — $4,120 → Lincoln HS — Arrived 11:42 AM today"
-- Footer stats row (3 columns, separated by thin divider): "$12.4M Raised this year", "500+ Schools & programs", "$0 Platform fees"
+### JSX changes (right column only, ~lines 723–795)
 
-### Technical Details
+- Move both `.sp-signup-notif.top-right` and `.sp-signup-notif.bottom-left` divs **inside** the `.sp-signup-leaderboard` div (currently siblings of it inside `.sp-signup-leaderboard-wrap`). This anchors them to the card's corners reliably.
 
-- File touched: `src/pages/Signup.tsx` only.
-- Add a scoped style block (`SCOPED_CSS` string in a `<style>` tag) inside the component, using the same token set as Pricing/Index: `--sp-blue`, `--sp-blue-deep`, `--sp-green`, `--sp-accent` (peach underline), `--sp-ink`, `--sp-ink-2`, `--sp-muted`, `--sp-line`, `--sp-paper`, `--sp-paper-2`, `--sp-display` (Instrument Serif), `--sp-ui` (Geist/Inter).
-- Wrap entire return in `<div className="sp-signup">` so styles do not leak. All custom classes prefixed `sp-signup-*`.
-- Component classes to define: `.sp-signup-input`, `.sp-signup-label`, `.sp-signup-eyebrow`, `.sp-signup-headline`, `.sp-signup-btn-primary`, `.sp-signup-oauth-btn`, `.sp-signup-divider`, `.sp-signup-fundraiser-card` (+ `--selected`), `.sp-signup-strength` (+ filled segments), `.sp-signup-panel`, `.sp-signup-quote`, `.sp-signup-leaderboard`, `.sp-signup-notif-card`, `.sp-signup-stat`.
-- Keep ALL existing hooks/state/effects: `useAuth`, `useToast`, `useNavigate`, `useSearchParams`, invitation token fetch effect, post-signup invitation acceptance effect, `handleSignup` (with password match validation), `handleGoogleSignup`, `handleFacebookSignup`, `handleMicrosoftSignup`.
-- New local UI state (does not change submission payload):
-  - `fundraiserType: 'school' | 'club' | 'pto'` (default `'school'`)
-  - `organizationName: string`
-  - `showPassword: boolean`
-  - `tipsOptIn: boolean`
-- Preserve invitation alert above the form when `invitationInfo` exists, restyled to match (rounded-xl, blue-tinted background, no shadcn Alert chrome).
-- Replace shadcn `Card`, `Alert`, `Button` chrome with native styled elements. Keep using shadcn `Input`, `Label`, `Checkbox` underneath custom classes if convenient, otherwise native elements.
-- OAuth SVGs: reuse the exact existing inline SVGs for Google, Microsoft, Facebook.
-- Mobile (<lg): hide right panel; left column fills viewport. Header bar (logo + Sign in link) stays visible at top.
-- Fonts: Instrument Serif loaded the same way as on Pricing/Index (project already pulls these in). No new dependencies.
+### Resulting vertical rhythm (desktop, top → bottom)
 
-### Out of Scope
-- No backend changes — `fundraiserType` and `organizationName` are captured in UI only and do not yet flow into signup. They can be wired into the post-signup organization-setup flow in a follow-up.
-- No changes to `useAuth`, routing, OAuth providers, or invitation logic.
-- Login page is not touched.
+```text
+[ live chip ............................ sponsorly.io ]    ← top, 40px padding
+                  (72px gap)
+,, (green quote marks)
+Our PTO brought in 3× more donors ...
+———————————
+[avatar] Mrs. Patel
+         Riverside PTO · President
+                  (56px gap)
+┌───────────────────────────────────────[NEW DONATION]┐
+│ Top fundraisers · live                              │
+│ 1  WL  Westlake Wildcats · Soccer            $48k   │
+│ 2  EV  Evergreen MS Band                     $38k   │
+│ 3  PC  Pinecrest Robotics                    $32k   │
+│ 4  RP  Riverside PTO                         $28k   │
+└[PAYOUT]─────────────────────────────────────────────┘
+                  (margin-top: auto → push stats to bottom)
+$12.4M           500+              $0
+Raised this year Schools & programs Platform fees       ← 36px from bottom
+```
+
+### Out of scope
+- No changes to the form/left column.
+- No changes to OAuth buttons, validation, or auth logic.
+- No new images or assets.
+
+### Files touched
+- `src/pages/Signup.tsx` (CSS string + right-aside JSX only)
