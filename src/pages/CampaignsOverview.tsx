@@ -205,7 +205,7 @@ const types = [
     title: "Donation fundraisers",
     copy: "One-time or recurring donations with automatic tax receipts. Ideal for annual giving, emergencies, memorial funds, and monthly supporter programs.",
     chips: ["One-time", "Built-in recurring", "Auto receipts", "5,000+ donors"],
-    href: "/campaigns/donations",
+    href: "/fundraisers/donations",
     extra: (
       <div className="sp-tiers" aria-hidden="true">
         <div className="t">$25</div><div className="t on">$100</div><div className="t">$250</div><div className="t">$500</div>
