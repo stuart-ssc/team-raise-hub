@@ -463,217 +463,336 @@ const Signup = () => {
     }
   };
 
+  const strength = passwordStrength(formData.password);
+  const fundraiserOptions = [
+    { id: "school" as const, title: "A school team", sub: "Coach or AD", Icon: GraduationCap },
+    { id: "club" as const, title: "A club or org", sub: "Band, robotics, etc.", Icon: Users },
+    { id: "pto" as const, title: "A PTO / PTA", sub: "School-wide drive", Icon: Briefcase },
+  ];
+
+  const leaderboard = [
+    { rank: 1, initials: "WL", color: "#FF6B35", name: "Westlake Wildcats · Soccer", meta: "314 donors · 11 days", amount: "$48k" },
+    { rank: 2, initials: "EV", color: "#1F5FE0", name: "Evergreen MS Band", meta: "267 donors · 8 days", amount: "$38k" },
+    { rank: 3, initials: "PC", color: "#0E9F6E", name: "Pinecrest Robotics", meta: "189 donors · 14 days", amount: "$32k" },
+    { rank: 4, initials: "RP", color: "#8b5cf6", name: "Riverside PTO", meta: "142 donors · 6 days", amount: "$28k" },
+  ];
+
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Signup Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-md space-y-8">
-          <div className="flex justify-center mb-8">
-            <SponsorlyLogo variant="full" theme="light" className="h-16" />
+    <div className="sp-signup">
+      <style dangerouslySetInnerHTML={{ __html: SCOPED_CSS }} />
+      <div className="sp-signup-shell">
+        {/* LEFT — form */}
+        <div className="sp-signup-left">
+          <div className="sp-signup-topbar">
+            <Link to="/" aria-label="Sponsorly home">
+              <SponsorlyLogo variant="full" theme="light" className="h-9 w-auto" />
+            </Link>
+            <div className="right">
+              <span className="hidden sm:inline">Already a member?</span>
+              <Link to="/login" className="sp-signup-signin">Sign in</Link>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-semibold mb-2">Sign up</h1>
-            <p className="text-muted-foreground">Create your account to get started</p>
-          </div>
 
-          {invitationInfo && (
-            <Alert className="bg-primary/5 border-primary/20">
-              <UserPlus className="h-4 w-4" />
-              <AlertDescription>
-                <strong>{invitationInfo.playerName}</strong> invited you to join{" "}
-                <strong>{invitationInfo.organizationName}</strong> as their{" "}
-                {invitationInfo.relationship.toLowerCase()}.
-              </AlertDescription>
-            </Alert>
-          )}
+          <div className="sp-signup-form-wrap">
+            <div className="sp-signup-form">
+              <span className="sp-signup-eyebrow">Get started</span>
+              <h1 className="sp-signup-headline">
+                Start raising in
+                <br />
+                <span className="accent-wrap"><span className="accent">minutes.</span></span>
+              </h1>
+              <p className="sp-signup-sub">
+                Create your free account — no card required, no platform fees, no monthly minimum.
+                Your first fundraiser can be live in under 5 minutes.
+                <br />
+                Already have an account?{" "}
+                <Link to="/login">Sign in →</Link>
+              </p>
 
-          <form onSubmit={handleSignup} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
+              {invitationInfo && (
+                <div className="sp-signup-invite" style={{ marginTop: 22 }}>
+                  <UserPlus className="h-[18px] w-[18px]" />
+                  <div>
+                    <strong>{invitationInfo.playerName}</strong> invited you to join{" "}
+                    <strong>{invitationInfo.organizationName}</strong> as their{" "}
+                    {invitationInfo.relationship.toLowerCase()}.
+                  </div>
+                </div>
+              )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
+              {/* OAuth row */}
+              <div className="sp-signup-section">
+                <div className="sp-signup-oauth-row">
+                  <button
+                    type="button"
+                    className="sp-signup-oauth-btn"
+                    onClick={handleGoogleSignup}
+                    disabled={loading}
+                  >
+                    <svg className="brand" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Continue with Google
+                  </button>
 
+                  <button
+                    type="button"
+                    className="sp-signup-oauth-btn"
+                    onClick={handleMicrosoftSignup}
+                    disabled={loading}
+                  >
+                    <svg className="brand" viewBox="0 0 21 21" aria-hidden="true">
+                      <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                      <rect x="11" y="1" width="9" height="9" fill="#00a4ef"/>
+                      <rect x="1" y="11" width="9" height="9" fill="#7fba00"/>
+                      <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                    </svg>
+                    Continue with Microsoft
+                  </button>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
-              {loading ? "Creating Account..." : "Create Account"}
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <div className="flex justify-center gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-16 w-16 p-0"
-                onClick={handleGoogleSignup}
-                disabled={loading}
-              >
-                <svg style={{ height: '2.5rem', width: '2.5rem' }} viewBox="0 0 24 24">
-                  <path
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    fill="#4285F4"
-                  />
-                  <path
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    fill="#34A853"
-                  />
-                  <path
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    fill="#FBBC05"
-                  />
-                  <path
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    fill="#EA4335"
-                  />
-                </svg>
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="h-16 w-16 p-0"
-                onClick={handleFacebookSignup}
-                disabled={loading}
-              >
-                <svg style={{ height: '2.5rem', width: '2.5rem' }} viewBox="0 0 24 24" fill="#1877F2">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="h-16 w-16 p-0"
-                onClick={handleMicrosoftSignup}
-                disabled={loading}
-              >
-                <svg style={{ height: '2.5rem', width: '2.5rem' }} viewBox="0 0 21 21">
-                  <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-                  <rect x="11" y="1" width="9" height="9" fill="#00a4ef"/>
-                  <rect x="1" y="11" width="9" height="9" fill="#7fba00"/>
-                  <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-                </svg>
-              </Button>
-            </div>
-
-            <div className="text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <button
-                type="button"
-                className="text-primary hover:underline font-medium"
-                onClick={() => navigate('/login')}
-              >
-                Log in
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      {/* Right side - Blue gradient with testimonial (hidden on mobile) */}
-      <div className="hidden md:flex w-full lg:w-1/2 bg-gradient-primary relative overflow-hidden">
-        {/* Dot pattern overlay */}
-        <div 
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px)',
-            backgroundSize: '30px 30px'
-          }}
-        />
-        
-        <div className="relative h-full flex flex-col items-center justify-center p-8 text-center">
-          {/* Headline and description */}
-          <h2 className="text-4xl font-bold text-white mb-4">
-            Join Thousands of Organizations
-          </h2>
-          <p className="text-white/90 text-lg leading-relaxed max-w-xl mb-8">
-            Schools, clubs, and non-profits across the country are already using 
-            Sponsorly to raise funds more effectively. Join them today!
-          </p>
-          
-          {/* Testimonial card */}
-          <Card className="max-w-sm bg-white/95 backdrop-blur-sm border-0 shadow-xl">
-            <CardContent className="p-6">
-              <div className="flex items-start space-x-4">
-                <Avatar className="w-12 h-12 flex-shrink-0">
-                  <AvatarImage src="/placeholder.svg" alt="Sarah Mitchell" />
-                  <AvatarFallback>SM</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm text-gray-700 mb-3 leading-relaxed">
-                    "We raised 40% more than last year with Sponsorly. 
-                    The platform made it easy to engage our community and track donations."
-                  </p>
-                  <div className="font-medium text-gray-900">Sarah Mitchell</div>
-                  <div className="text-xs text-gray-600">Executive Director, Local Food Bank</div>
+                  <button
+                    type="button"
+                    className="sp-signup-oauth-btn"
+                    onClick={handleFacebookSignup}
+                    disabled={loading}
+                  >
+                    <svg className="brand" viewBox="0 0 24 24" fill="#1877F2" aria-hidden="true">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                    Continue with Facebook
+                  </button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+
+              <div className="sp-signup-divider">Or with email</div>
+
+              <form onSubmit={handleSignup}>
+                {/* Fundraiser type */}
+                <label className="sp-signup-label">I'm fundraising for…</label>
+                <div className="sp-signup-cards">
+                  {fundraiserOptions.map(({ id, title, sub, Icon }) => (
+                    <button
+                      type="button"
+                      key={id}
+                      onClick={() => setFundraiserType(id)}
+                      className={`sp-signup-card ${fundraiserType === id ? "is-selected" : ""}`}
+                      aria-pressed={fundraiserType === id}
+                    >
+                      <span className="sp-signup-card-icon">
+                        <Icon className="h-[18px] w-[18px]" />
+                      </span>
+                      <span className="sp-signup-card-title">{title}</span>
+                      <span className="sp-signup-card-sub">{sub}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Names */}
+                <div className="sp-signup-section">
+                  <div className="sp-signup-grid-2">
+                    <div>
+                      <label className="sp-signup-label" htmlFor="firstName">First name</label>
+                      <input
+                        id="firstName"
+                        name="firstName"
+                        className="sp-signup-input"
+                        placeholder="Jamie"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="sp-signup-label" htmlFor="lastName">Last name</label>
+                      <input
+                        id="lastName"
+                        name="lastName"
+                        className="sp-signup-input"
+                        placeholder="Rivera"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Organization */}
+                <div className="sp-signup-section">
+                  <label className="sp-signup-label" htmlFor="orgName">Organization or team</label>
+                  <input
+                    id="orgName"
+                    className="sp-signup-input"
+                    placeholder="e.g. Lincoln HS Track & Field"
+                    value={organizationName}
+                    onChange={(e) => setOrganizationName(e.target.value)}
+                  />
+                  <div className="sp-signup-helper">
+                    <span className="ck"><Check className="h-[10px] w-[10px]" strokeWidth={3} /></span>
+                    We'll set up your fundraiser page under this name.
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div className="sp-signup-section">
+                  <label className="sp-signup-label" htmlFor="email">Email</label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    className="sp-signup-input"
+                    placeholder="coach@lincolnhs.edu"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                {/* Password */}
+                <div className="sp-signup-section">
+                  <label className="sp-signup-label" htmlFor="password">Password</label>
+                  <div className="sp-signup-password">
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      className="sp-signup-input"
+                      placeholder="At least 8 characters"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      style={{ paddingRight: 64 }}
+                    />
+                    <button
+                      type="button"
+                      className="toggle"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  <div className="sp-signup-strength" aria-hidden="true">
+                    {[1, 2, 3, 4].map((i) => (
+                      <span key={i} className={strength >= i ? `is-on-${strength}` : ""} />
+                    ))}
+                  </div>
+                  {/* Hidden confirm-password mirror so existing validation passes */}
+                  <input
+                    type="hidden"
+                    name="confirmPassword"
+                    value={formData.password}
+                    onChange={() => {}}
+                    readOnly
+                  />
+                </div>
+
+                {/* Tips opt-in */}
+                <div className="sp-signup-section" style={{ marginTop: 18 }}>
+                  <label className="sp-signup-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={tipsOptIn}
+                      onChange={(e) => setTipsOptIn(e.target.checked)}
+                    />
+                    Send me fundraising tips (optional)
+                  </label>
+                </div>
+
+                {/* Submit */}
+                <div className="sp-signup-section" style={{ marginTop: 18 }}>
+                  <button type="submit" className="sp-signup-btn-primary" disabled={loading}>
+                    {loading ? "Creating account…" : "Create free account"}
+                    {!loading && <ArrowRight className="h-[16px] w-[16px]" />}
+                  </button>
+                </div>
+
+                <p className="sp-signup-fineprint">
+                  By creating an account you agree to our{" "}
+                  <Link to="/terms">Terms of Service</Link> and{" "}
+                  <Link to="/privacy">Privacy Policy</Link>. Sponsorly never shares donor data.
+                </p>
+              </form>
+            </div>
+          </div>
         </div>
+
+        {/* RIGHT — social proof panel */}
+        <aside className="sp-signup-right">
+          <div className="sp-signup-right-top">
+            <span className="sp-signup-livechip">
+              <span className="dot" />
+              847 fundraisers raising right now
+            </span>
+            <span className="sp-signup-domain">sponsorly.io</span>
+          </div>
+
+          <div className="sp-signup-quote-block">
+            <div className="sp-signup-quote-mark">,,</div>
+            <p className="sp-signup-quote">
+              Our PTO brought in <em>3× more donors</em> than last year, with half the effort.
+            </p>
+            <div className="sp-signup-attr">
+              <div className="sp-signup-attr-avatar">AP</div>
+              <div>
+                <div className="sp-signup-attr-name">Mrs. Patel</div>
+                <div className="sp-signup-attr-role">Riverside PTO · President</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="sp-signup-leaderboard-wrap">
+            <div className="sp-signup-notif top-right">
+              <div className="icon green"><Check className="h-[14px] w-[14px]" strokeWidth={3} /></div>
+              <div>
+                <div className="label">New donation</div>
+                <div className="body">$250 from the Chen family</div>
+                <div className="meta">Go Lincoln! 🏆 · 2s ago</div>
+              </div>
+            </div>
+            <div className="sp-signup-notif bottom-left">
+              <div className="icon blue"><Check className="h-[14px] w-[14px]" strokeWidth={3} /></div>
+              <div>
+                <div className="label">Payout</div>
+                <div className="body">$4,120 → Lincoln HS</div>
+                <div className="meta">Arrived 11:42 AM today</div>
+              </div>
+            </div>
+
+            <div className="sp-signup-leaderboard">
+              <div className="sp-signup-leaderboard-title">Top fundraisers · live</div>
+              {leaderboard.map((r) => (
+                <div className="sp-signup-row" key={r.rank}>
+                  <div className="sp-signup-row-rank">{r.rank}</div>
+                  <div className="sp-signup-row-avatar" style={{ background: r.color }}>{r.initials}</div>
+                  <div>
+                    <div className="sp-signup-row-name">{r.name}</div>
+                    <div className="sp-signup-row-meta">{r.meta}</div>
+                  </div>
+                  <div className="sp-signup-row-amount">{r.amount}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="sp-signup-stats">
+            <div>
+              <div className="sp-signup-stat-amount">$12.4M</div>
+              <div className="sp-signup-stat-label">Raised this year</div>
+            </div>
+            <div>
+              <div className="sp-signup-stat-amount">500+</div>
+              <div className="sp-signup-stat-label">Schools & programs</div>
+            </div>
+            <div>
+              <div className="sp-signup-stat-amount">$0</div>
+              <div className="sp-signup-stat-label">Platform fees</div>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );
