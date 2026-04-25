@@ -1,8 +1,8 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
 import { useLandingPageTracking } from "@/hooks/useLandingPageTracking";
+import { SeoHead } from "@/components/seo/SeoHead";
 
 /**
  * Donation Fundraisers — rebuilt 2026 to match approved mockup.
@@ -266,19 +266,13 @@ const donors = [
 const DonationCampaigns = () => {
   useLandingPageTracking({ pageType: "marketing", pagePath: "/fundraisers/donations" });
 
-  useEffect(() => {
-    document.title = "Donation Fundraisers — One-Time & Recurring Giving | Sponsorly";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute(
-        "content",
-        "Accept one-time or recurring donations with automatic tax receipts, donor recognition, and goal tracking. Build sustainable funding — and keep all of it."
-      );
-    }
-  }, []);
-
   return (
     <>
+      <SeoHead
+        title="Donation Fundraisers — One-Time & Recurring Giving | Sponsorly"
+        description="Accept one-time or recurring donations with automatic tax receipts, donor recognition, and goal tracking. Build sustainable funding — and keep all of it."
+        path="/fundraisers/donations"
+      />
       <style dangerouslySetInnerHTML={{ __html: SCOPED_CSS }} />
       <div className="sp-donations min-h-screen">
         <MarketingHeader />

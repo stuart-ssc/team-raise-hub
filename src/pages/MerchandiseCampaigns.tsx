@@ -1,8 +1,8 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import MarketingHeader from "@/components/MarketingHeader";
 import MarketingFooter from "@/components/MarketingFooter";
 import { useLandingPageTracking } from "@/hooks/useLandingPageTracking";
+import { SeoHead } from "@/components/seo/SeoHead";
 
 /**
  * Merchandise Fundraisers — rebuilt 2026 to match approved mockup.
@@ -242,19 +242,13 @@ const sellers = [
 const MerchandiseCampaigns = () => {
   useLandingPageTracking({ pageType: "marketing", pagePath: "/fundraisers/merchandise" });
 
-  useEffect(() => {
-    document.title = "Merchandise Fundraisers — Team Stores & Spirit Wear | Sponsorly";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute(
-        "content",
-        "Spin up a beautiful storefront for spirit wear, fundraising products, and custom merchandise. Manage variants, track inventory, and attribute sales to team members."
-      );
-    }
-  }, []);
-
   return (
     <div className="sp-merch">
+      <SeoHead
+        title="Merchandise Fundraisers — Team Stores & Spirit Wear | Sponsorly"
+        description="Spin up a beautiful storefront for spirit wear, fundraising products, and custom merch. Manage variants, track inventory, and attribute sales to team members."
+        path="/fundraisers/merchandise"
+      />
       <style>{SCOPED_CSS}</style>
       <MarketingHeader />
 
