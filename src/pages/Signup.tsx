@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { UserPlus, GraduationCap, Users, Briefcase, Check, ArrowRight, Trophy } from "lucide-react";
+import { UserPlus, GraduationCap, Users, Briefcase, Check, ArrowRight } from "lucide-react";
 
 interface InvitationInfo {
   token: string;
