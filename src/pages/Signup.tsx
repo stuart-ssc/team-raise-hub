@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { UserPlus, GraduationCap, Users, Briefcase, Check, ArrowRight } from "lucide-react";
+import { UserPlus, Check, ArrowRight } from "lucide-react";
 
 interface InvitationInfo {
   token: string;
@@ -206,8 +206,6 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [invitationInfo, setInvitationInfo] = useState<InvitationInfo | null>(null);
   const [loadingInvitation, setLoadingInvitation] = useState(!!inviteToken);
-  const [fundraiserType, setFundraiserType] = useState<"school" | "club" | "pto">("school");
-  const [organizationName, setOrganizationName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [tipsOptIn, setTipsOptIn] = useState(false);
   const navigate = useNavigate();
@@ -464,11 +462,6 @@ const Signup = () => {
   };
 
   const strength = passwordStrength(formData.password);
-  const fundraiserOptions = [
-    { id: "school" as const, title: "A school team", sub: "Coach or AD", Icon: GraduationCap },
-    { id: "club" as const, title: "A club or org", sub: "Band, robotics, etc.", Icon: Users },
-    { id: "pto" as const, title: "A PTO / PTA", sub: "School-wide drive", Icon: Briefcase },
-  ];
 
   const leaderboard = [
     { rank: 1, initials: "WL", color: "#FF6B35", name: "Westlake Wildcats · Soccer", meta: "314 donors · 11 days", amount: "$48k" },
