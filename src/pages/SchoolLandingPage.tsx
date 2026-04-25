@@ -161,6 +161,7 @@ const SchoolLandingPage = () => {
           name="description"
           content={`Support ${school.school_name} in ${locationText}. Modern fundraising for sports teams, clubs, band, theater, and PTOs. 100% of donations go to your programs.`}
         />
+        <meta name="robots" content="index, follow" />
         <meta property="og:title" content={`${school.school_name} Fundraising | Sponsorly`} />
         <meta
           property="og:description"

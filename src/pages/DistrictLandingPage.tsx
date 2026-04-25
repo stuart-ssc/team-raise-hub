@@ -141,6 +141,7 @@ const DistrictLandingPage = () => {
           name="description"
           content={`Support ${district.name} schools in ${stateName}. Modern fundraising for sports teams, clubs, band, theater, and PTOs. 100% of donations go to your programs.`}
         />
+        <meta name="robots" content="index, follow" />
         <meta property="og:title" content={`${district.name} Fundraising | Sponsorly`} />
         <meta
           property="og:description"

@@ -16,6 +16,16 @@ Allow: /
 # Sitemap
 Sitemap: https://sponsorly.io/sitemap.xml
 
+# Explicitly allow lead-generation marketing pages
+# (state, district, and individual school landing pages — all SEO-indexed)
+Allow: /schools
+Allow: /schools/
+Allow: /schools/*
+Allow: /districts/
+Allow: /districts/*
+Allow: /fundraisers
+Allow: /fundraisers/*
+
 # Disallow admin and dashboard areas
 Disallow: /dashboard
 Disallow: /dashboard/*

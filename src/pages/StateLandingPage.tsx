@@ -100,6 +100,7 @@ const StateLandingPage = () => {
           name="description"
           content={`Empowering ${stateName} schools and districts with modern fundraising tools. Support sports teams, clubs, band, theater, and PTOs. 100% of donations go to your programs.`}
         />
+        <meta name="robots" content="index, follow" />
         <meta property="og:title" content={`School Fundraising in ${stateName} | Sponsorly`} />
         <meta
           property="og:description"
