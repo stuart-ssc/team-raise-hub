@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { UserPlus, GraduationCap, Users, Briefcase, Check, ArrowRight } from "lucide-react";
+import { UserPlus, Check, ArrowRight } from "lucide-react";
 
 interface InvitationInfo {
   token: string;
@@ -206,8 +206,6 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [invitationInfo, setInvitationInfo] = useState<InvitationInfo | null>(null);
   const [loadingInvitation, setLoadingInvitation] = useState(!!inviteToken);
-  const [fundraiserType, setFundraiserType] = useState<"school" | "club" | "pto">("school");
-  const [organizationName, setOrganizationName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [tipsOptIn, setTipsOptIn] = useState(false);
   const navigate = useNavigate();
@@ -464,11 +462,6 @@ const Signup = () => {
   };
 
   const strength = passwordStrength(formData.password);
-  const fundraiserOptions = [
-    { id: "school" as const, title: "A school team", sub: "Coach or AD", Icon: GraduationCap },
-    { id: "club" as const, title: "A club or org", sub: "Band, robotics, etc.", Icon: Users },
-    { id: "pto" as const, title: "A PTO / PTA", sub: "School-wide drive", Icon: Briefcase },
-  ];
 
   const leaderboard = [
     { rank: 1, initials: "WL", color: "#FF6B35", name: "Westlake Wildcats · Soccer", meta: "314 donors · 11 days", amount: "$48k" },
@@ -570,28 +563,8 @@ const Signup = () => {
               <div className="sp-signup-divider">Or with email</div>
 
               <form onSubmit={handleSignup}>
-                {/* Fundraiser type */}
-                <label className="sp-signup-label">I'm fundraising for…</label>
-                <div className="sp-signup-cards">
-                  {fundraiserOptions.map(({ id, title, sub, Icon }) => (
-                    <button
-                      type="button"
-                      key={id}
-                      onClick={() => setFundraiserType(id)}
-                      className={`sp-signup-card ${fundraiserType === id ? "is-selected" : ""}`}
-                      aria-pressed={fundraiserType === id}
-                    >
-                      <span className="sp-signup-card-icon">
-                        <Icon className="h-[18px] w-[18px]" />
-                      </span>
-                      <span className="sp-signup-card-title">{title}</span>
-                      <span className="sp-signup-card-sub">{sub}</span>
-                    </button>
-                  ))}
-                </div>
-
                 {/* Names */}
-                <div className="sp-signup-section">
+                <div>
                   <div className="sp-signup-grid-2">
                     <div>
                       <label className="sp-signup-label" htmlFor="firstName">First name</label>
@@ -617,22 +590,6 @@ const Signup = () => {
                         required
                       />
                     </div>
-                  </div>
-                </div>
-
-                {/* Organization */}
-                <div className="sp-signup-section">
-                  <label className="sp-signup-label" htmlFor="orgName">Organization or team</label>
-                  <input
-                    id="orgName"
-                    className="sp-signup-input"
-                    placeholder="e.g. Lincoln HS Track & Field"
-                    value={organizationName}
-                    onChange={(e) => setOrganizationName(e.target.value)}
-                  />
-                  <div className="sp-signup-helper">
-                    <span className="ck"><Check className="h-[10px] w-[10px]" strokeWidth={3} /></span>
-                    We'll set up your fundraiser page under this name.
                   </div>
                 </div>
 
