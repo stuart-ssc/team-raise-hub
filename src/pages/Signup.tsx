@@ -177,6 +177,21 @@ const SCOPED_CSS = `
 .sp-signup-notif.top-right { top: -28px; right: -20px; }
 .sp-signup-notif.bottom-left { bottom: -22px; left: -22px; }
 
+/* Gentle floating motion for notification cards */
+@keyframes sp-float-a {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50%      { transform: translate3d(0, -8px, 0) rotate(-0.4deg); }
+}
+@keyframes sp-float-b {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50%      { transform: translate3d(0, 6px, 0) rotate(0.5deg); }
+}
+.sp-signup-notif.top-right { animation: sp-float-a 5.5s ease-in-out infinite; will-change: transform; }
+.sp-signup-notif.bottom-left { animation: sp-float-b 6.5s ease-in-out infinite; animation-delay: -1.8s; will-change: transform; }
+@media (prefers-reduced-motion: reduce) {
+  .sp-signup-notif.top-right, .sp-signup-notif.bottom-left { animation: none; }
+}
+
 /* Stats footer */
 .sp-signup-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: auto; padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.10); }
 .sp-signup-stat-amount { font-family: var(--sp-display); font-size: 30px; line-height: 1; color: white; }
