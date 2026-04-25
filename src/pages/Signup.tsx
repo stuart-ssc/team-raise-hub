@@ -1,22 +1,196 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { UserPlus } from "lucide-react";
+import { UserPlus, GraduationCap, Users, Briefcase, Check, ArrowRight, Trophy } from "lucide-react";
 
 interface InvitationInfo {
   token: string;
   playerName: string;
   organizationName: string;
   relationship: string;
+}
+
+const SCOPED_CSS = `
+.sp-signup {
+  --sp-blue: #1F5FE0;
+  --sp-blue-deep: #0B3FB0;
+  --sp-green: #0E9F6E;
+  --sp-accent: #FF6B35;
+  --sp-ink: #0A0F1E;
+  --sp-ink-2: #2B3345;
+  --sp-muted: #6B7489;
+  --sp-line: #E6E9F0;
+  --sp-paper: #FAFAF7;
+  --sp-paper-2: #F2F3EE;
+  --sp-display: "Instrument Serif", "Cormorant Garamond", Georgia, serif;
+  --sp-ui: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  background: var(--sp-paper);
+  color: var(--sp-ink);
+  font-family: var(--sp-ui);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+.sp-signup .sp-display { font-family: var(--sp-display); font-weight: 400; letter-spacing: -0.01em; }
+.sp-signup .sp-italic { font-style: italic; }
+
+/* Layout */
+.sp-signup-shell { display: grid; grid-template-columns: 1fr; min-height: 100vh; }
+@media (min-width: 1024px) { .sp-signup-shell { grid-template-columns: 1fr 1fr; } }
+
+/* LEFT */
+.sp-signup-left { display: flex; flex-direction: column; background: var(--sp-paper); }
+.sp-signup-topbar { display: flex; align-items: center; justify-content: space-between; padding: 22px 32px; }
+@media (min-width: 1024px) { .sp-signup-topbar { padding: 28px 56px; } }
+.sp-signup-topbar .right { display: flex; align-items: center; gap: 14px; font-size: 14px; color: var(--sp-muted); }
+.sp-signup-signin { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 999px; background: var(--sp-ink); color: white; font-size: 14px; font-weight: 600; transition: background .2s ease; }
+.sp-signup-signin:hover { background: #1a2238; }
+
+.sp-signup-form-wrap { flex: 1; display: flex; justify-content: center; padding: 8px 24px 56px; }
+@media (min-width: 1024px) { .sp-signup-form-wrap { padding: 24px 56px 80px; } }
+.sp-signup-form { width: 100%; max-width: 540px; }
+
+.sp-signup-eyebrow { display: inline-flex; align-items: center; gap: 10px; color: var(--sp-blue); font-size: 11px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; }
+.sp-signup-eyebrow::before { content: ""; width: 22px; height: 2px; background: var(--sp-blue); border-radius: 2px; }
+
+.sp-signup-headline { font-family: var(--sp-display); font-weight: 400; font-size: clamp(44px, 5.4vw, 68px); line-height: 1.02; letter-spacing: -0.02em; color: var(--sp-ink); margin: 18px 0 18px; }
+.sp-signup-headline .accent { display: inline-block; color: var(--sp-blue); font-style: italic; position: relative; }
+.sp-signup-headline .accent::after { content: ""; position: absolute; left: -2px; right: -2px; bottom: 4px; height: 14px; background: rgba(255,107,53,0.28); border-radius: 4px; z-index: -1; }
+.sp-signup-headline .accent-wrap { position: relative; display: inline-block; z-index: 0; }
+
+.sp-signup-sub { color: var(--sp-ink-2); font-size: 15.5px; line-height: 1.55; max-width: 460px; }
+.sp-signup-sub a { color: var(--sp-blue); font-weight: 600; }
+.sp-signup-sub a:hover { text-decoration: underline; }
+
+.sp-signup-section { margin-top: 26px; }
+
+/* OAuth */
+.sp-signup-oauth-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+@media (max-width: 520px) { .sp-signup-oauth-row { grid-template-columns: 1fr; } }
+.sp-signup-oauth-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 14px; border-radius: 14px; background: white; border: 1px solid var(--sp-line); font-size: 14px; font-weight: 600; color: var(--sp-ink); transition: border-color .15s ease, transform .15s ease, box-shadow .2s ease; cursor: pointer; }
+.sp-signup-oauth-btn:hover { border-color: #c9cfdb; box-shadow: 0 2px 8px -4px rgba(10,15,30,0.18); transform: translateY(-1px); }
+.sp-signup-oauth-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.sp-signup-oauth-btn svg.brand { width: 18px; height: 18px; flex: 0 0 18px; }
+
+/* Divider */
+.sp-signup-divider { display: flex; align-items: center; gap: 14px; margin: 22px 0 18px; color: var(--sp-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; }
+.sp-signup-divider::before, .sp-signup-divider::after { content: ""; flex: 1; height: 1px; background: var(--sp-line); }
+
+/* Labels and inputs */
+.sp-signup-label { display: block; font-size: 13px; font-weight: 600; color: var(--sp-ink-2); margin-bottom: 8px; }
+.sp-signup-input { width: 100%; padding: 12px 14px; border-radius: 12px; background: white; border: 1px solid var(--sp-line); font-size: 14.5px; color: var(--sp-ink); font-family: inherit; transition: border-color .15s ease, box-shadow .15s ease; outline: none; }
+.sp-signup-input::placeholder { color: #9aa1b1; }
+.sp-signup-input:focus { border-color: var(--sp-blue); box-shadow: 0 0 0 3px rgba(31,95,224,0.12); }
+
+.sp-signup-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* Fundraiser-type cards */
+.sp-signup-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+@media (max-width: 520px) { .sp-signup-cards { grid-template-columns: 1fr; } }
+.sp-signup-card { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 14px 10px; border-radius: 14px; background: var(--sp-paper-2); border: 1px solid var(--sp-line); cursor: pointer; transition: all .15s ease; }
+.sp-signup-card:hover { border-color: #c9cfdb; }
+.sp-signup-card-icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: white; color: var(--sp-ink-2); margin-bottom: 8px; }
+.sp-signup-card-title { font-size: 13.5px; font-weight: 600; color: var(--sp-ink); }
+.sp-signup-card-sub { font-size: 11.5px; color: var(--sp-muted); margin-top: 2px; }
+.sp-signup-card.is-selected { background: white; border-color: var(--sp-blue); border-width: 2px; padding: 13px 9px; box-shadow: 0 6px 18px -8px rgba(31,95,224,0.35); }
+.sp-signup-card.is-selected .sp-signup-card-icon { background: var(--sp-blue); color: white; }
+
+/* Helper text */
+.sp-signup-helper { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12.5px; color: var(--sp-muted); }
+.sp-signup-helper .ck { width: 14px; height: 14px; border-radius: 999px; background: rgba(14,159,110,0.15); color: var(--sp-green); display: grid; place-items: center; flex: 0 0 14px; }
+
+/* Password */
+.sp-signup-password { position: relative; }
+.sp-signup-password .toggle { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); background: none; border: none; color: var(--sp-muted); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 4px 6px; }
+.sp-signup-password .toggle:hover { color: var(--sp-ink); }
+.sp-signup-strength { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+.sp-signup-strength span { height: 4px; border-radius: 999px; background: var(--sp-line); transition: background .2s ease; }
+.sp-signup-strength span.is-on-1 { background: #ef4444; }
+.sp-signup-strength span.is-on-2 { background: #f59e0b; }
+.sp-signup-strength span.is-on-3 { background: #f59e0b; }
+.sp-signup-strength span.is-on-4 { background: var(--sp-green); }
+
+/* Checkbox row */
+.sp-signup-checkbox { display: inline-flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--sp-ink-2); cursor: pointer; user-select: none; }
+.sp-signup-checkbox input { width: 16px; height: 16px; accent-color: var(--sp-blue); }
+
+/* Primary button */
+.sp-signup-btn-primary { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 15px 20px; border-radius: 14px; background: var(--sp-blue); color: white; font-weight: 600; font-size: 15px; border: none; cursor: pointer; transition: background .2s ease, transform .15s ease, box-shadow .2s ease; box-shadow: 0 10px 24px -10px rgba(31,95,224,0.55); }
+.sp-signup-btn-primary:hover:not(:disabled) { background: var(--sp-blue-deep); transform: translateY(-1px); }
+.sp-signup-btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.sp-signup-fineprint { margin-top: 14px; font-size: 12.5px; color: var(--sp-muted); text-align: center; line-height: 1.55; }
+.sp-signup-fineprint a { color: var(--sp-ink-2); font-weight: 600; }
+.sp-signup-fineprint a:hover { color: var(--sp-blue); text-decoration: underline; }
+
+/* Invitation alert */
+.sp-signup-invite { display: flex; gap: 12px; padding: 14px 16px; border-radius: 14px; background: rgba(31,95,224,0.06); border: 1px solid rgba(31,95,224,0.2); color: var(--sp-ink-2); font-size: 13.5px; line-height: 1.5; margin-bottom: 18px; }
+.sp-signup-invite svg { color: var(--sp-blue); flex: 0 0 18px; margin-top: 2px; }
+
+/* RIGHT panel */
+.sp-signup-right { display: none; position: relative; background: #0A0F1E; color: white; overflow: hidden; padding: 48px 56px; }
+@media (min-width: 1024px) { .sp-signup-right { display: flex; flex-direction: column; } }
+.sp-signup-right::before { content: ""; position: absolute; inset: 0; background:
+  radial-gradient(800px 400px at 0% 100%, rgba(14,159,110,0.18), transparent 60%),
+  radial-gradient(700px 360px at 100% 0%, rgba(31,95,224,0.20), transparent 60%);
+  pointer-events: none; }
+.sp-signup-right > * { position: relative; }
+
+.sp-signup-right-top { display: flex; align-items: center; justify-content: space-between; }
+.sp-signup-livechip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(14,159,110,0.14); border: 1px solid rgba(14,159,110,0.32); color: rgba(255,255,255,0.92); font-size: 12.5px; font-weight: 500; }
+.sp-signup-livechip .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--sp-green); box-shadow: 0 0 0 4px rgba(14,159,110,0.18); }
+.sp-signup-domain { font-size: 12px; color: rgba(255,255,255,0.5); }
+
+.sp-signup-quote-block { margin-top: 56px; max-width: 560px; }
+.sp-signup-quote-mark { font-family: var(--sp-display); font-style: italic; color: var(--sp-green); font-size: 64px; line-height: 0.5; letter-spacing: -0.04em; }
+.sp-signup-quote { font-family: var(--sp-display); font-weight: 400; font-size: clamp(28px, 2.6vw, 38px); line-height: 1.18; letter-spacing: -0.01em; margin-top: 28px; color: white; }
+.sp-signup-quote em { font-style: italic; color: var(--sp-green); }
+.sp-signup-attr { display: flex; align-items: center; gap: 12px; margin-top: 28px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,0.12); }
+.sp-signup-attr-avatar { width: 40px; height: 40px; border-radius: 999px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); display: grid; place-items: center; font-size: 13px; font-weight: 700; color: white; }
+.sp-signup-attr-name { font-size: 14px; font-weight: 600; color: white; }
+.sp-signup-attr-role { font-size: 12.5px; color: rgba(255,255,255,0.6); }
+
+/* Leaderboard */
+.sp-signup-leaderboard-wrap { margin-top: auto; position: relative; }
+.sp-signup-leaderboard { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); border-radius: 20px; padding: 22px; backdrop-filter: blur(8px); }
+.sp-signup-leaderboard-title { font-size: 13.5px; color: rgba(255,255,255,0.7); margin-bottom: 14px; font-weight: 500; }
+.sp-signup-row { display: grid; grid-template-columns: 18px 36px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.06); }
+.sp-signup-row:first-of-type { border-top: none; }
+.sp-signup-row-rank { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 500; }
+.sp-signup-row-avatar { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: white; }
+.sp-signup-row-name { font-size: 14px; color: white; font-weight: 500; }
+.sp-signup-row-meta { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+.sp-signup-row-amount { font-size: 14px; color: white; font-weight: 600; }
+
+/* Floating notif cards */
+.sp-signup-notif { position: absolute; background: white; color: var(--sp-ink); padding: 12px 14px; border-radius: 14px; box-shadow: 0 18px 40px -16px rgba(0,0,0,0.45); display: flex; gap: 10px; align-items: flex-start; min-width: 220px; max-width: 260px; }
+.sp-signup-notif .icon { width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; flex: 0 0 26px; }
+.sp-signup-notif .icon.green { background: var(--sp-green); color: white; }
+.sp-signup-notif .icon.blue { background: var(--sp-blue); color: white; }
+.sp-signup-notif .label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sp-muted); }
+.sp-signup-notif .body { font-size: 13px; color: var(--sp-ink); font-weight: 600; margin-top: 2px; }
+.sp-signup-notif .meta { font-size: 11.5px; color: var(--sp-muted); margin-top: 2px; }
+.sp-signup-notif.top-right { top: -18px; right: -16px; }
+.sp-signup-notif.bottom-left { bottom: 100px; left: -22px; }
+
+/* Stats footer */
+.sp-signup-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 36px; padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.10); }
+.sp-signup-stat-amount { font-family: var(--sp-display); font-size: 30px; line-height: 1; color: white; }
+.sp-signup-stat-label { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 6px; }
+`;
+
+function passwordStrength(pw: string): number {
+  if (!pw) return 0;
+  let s = 0;
+  if (pw.length >= 8) s++;
+  if (pw.length >= 10) s++;
+  if (pw.length >= 12) s++;
+  if (/[A-Z]/.test(pw) && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw)) s = Math.max(s, 4);
+  return Math.min(s, 4);
 }
 
 const Signup = () => {
@@ -32,6 +206,10 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [invitationInfo, setInvitationInfo] = useState<InvitationInfo | null>(null);
   const [loadingInvitation, setLoadingInvitation] = useState(!!inviteToken);
+  const [fundraiserType, setFundraiserType] = useState<"school" | "club" | "pto">("school");
+  const [organizationName, setOrganizationName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [tipsOptIn, setTipsOptIn] = useState(false);
   const navigate = useNavigate();
   const { signUp, signInWithGoogle, signInWithFacebook, signInWithMicrosoft, user } = useAuth();
   const { toast } = useToast();
