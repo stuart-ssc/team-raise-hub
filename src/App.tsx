@@ -162,7 +162,8 @@ const AppContent = () => {
         {/* Marketing Campaign Pages */}
         <Route path="/fundraisers" element={<CampaignsOverview />} />
         <Route path="/campaigns-overview" element={<Navigate to="/fundraisers" replace />} />
-        <Route path="/campaigns/sponsorships" element={<SponsorshipCampaigns />} />
+        <Route path="/fundraisers/sponsorships" element={<SponsorshipCampaigns />} />
+        <Route path="/campaigns/sponsorships" element={<Navigate to="/fundraisers/sponsorships" replace />} />
         <Route path="/fundraisers/donations" element={<DonationCampaigns />} />
         <Route path="/campaigns/donations" element={<Navigate to="/fundraisers/donations" replace />} />
         <Route path="/campaigns/events" element={<EventCampaigns />} />
