@@ -285,7 +285,7 @@ const Nonprofits = () => {
                 ))}
               </ul>
               <div className="flex flex-wrap gap-3 mt-8">
-                <Link to="/campaigns/donations">
+                <Link to="/fundraisers/donations">
                   <Button variant="outline" size="sm" className="gap-2">
                     <Heart className="h-4 w-4" />
                     Donation Campaigns
