@@ -61,18 +61,11 @@ const SCOPED_CSS = `
 .sp-login-section { margin-top: 26px; }
 
 /* OAuth */
-.sp-login-oauth-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-@media (max-width: 520px) { .sp-login-oauth-row { grid-template-columns: 1fr; } }
-.sp-login-oauth-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 14px; border-radius: 14px; background: white; border: 1px solid var(--sp-line); font-size: 14px; font-weight: 600; color: var(--sp-ink); transition: border-color .15s ease, transform .15s ease, box-shadow .2s ease; cursor: pointer; }
-.sp-login-oauth-btn:hover:not(:disabled) { border-color: #c9cfdb; box-shadow: 0 2px 8px -4px rgba(10,15,30,0.18); transform: translateY(-1px); }
-.sp-login-oauth-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-.sp-login-oauth-btn svg.brand { width: 18px; height: 18px; flex: 0 0 18px; }
-
-.sp-login-fb-row { display: flex; justify-content: center; margin-top: 10px; }
-.sp-login-fb-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: white; border: 1px solid var(--sp-line); font-size: 12.5px; font-weight: 600; color: var(--sp-ink-2); cursor: pointer; transition: border-color .15s ease; }
-.sp-login-fb-btn:hover:not(:disabled) { border-color: #c9cfdb; }
-.sp-login-fb-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.sp-login-fb-btn svg { width: 14px; height: 14px; }
+.sp-login-oauth-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sp-login-oauth-icon { display: inline-flex; align-items: center; justify-content: center; height: 48px; border-radius: 14px; background: white; border: 1px solid var(--sp-line); color: var(--sp-ink); transition: border-color .15s ease, transform .15s ease, box-shadow .2s ease; cursor: pointer; padding: 0; }
+.sp-login-oauth-icon:hover:not(:disabled) { border-color: #c9cfdb; box-shadow: 0 2px 8px -4px rgba(10,15,30,0.18); transform: translateY(-1px); }
+.sp-login-oauth-icon:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.sp-login-oauth-icon svg.brand { width: 22px; height: 22px; flex: 0 0 22px; }
 
 /* Divider */
 .sp-login-divider { display: flex; align-items: center; gap: 14px; margin: 22px 0 18px; color: var(--sp-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; }
