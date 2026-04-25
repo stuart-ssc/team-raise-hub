@@ -492,7 +492,7 @@ const Signup = () => {
         <div className="sp-signup-left">
           <div className="sp-signup-topbar">
             <Link to="/" aria-label="Sponsorly home">
-              <SponsorlyLogo variant="full" theme="light" className="h-9 w-auto" />
+              <SponsorlyLogo variant="full" theme="light" className="h-14 md:h-16 w-auto" />
             </Link>
             <div className="right">
               <span className="hidden sm:inline">Already a member?</span>
