@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Lock } from "lucide-react";
+import { NoIndex } from "@/components/seo/NoIndex";
 
 const SetPassword = () => {
   const [password, setPassword] = useState("");
@@ -67,6 +68,7 @@ const SetPassword = () => {
 
   return (
     <div className="min-h-screen flex">
+      <NoIndex />
       {/* Blue gradient section - hidden on mobile */}
       <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex-col items-center justify-center p-12">
         <div className="max-w-md text-center space-y-6">

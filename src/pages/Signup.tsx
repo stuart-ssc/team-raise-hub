@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { UserPlus, Check, ArrowRight } from "lucide-react";
+import { NoIndex } from "@/components/seo/NoIndex";
 
 interface InvitationInfo {
   token: string;
@@ -486,6 +487,7 @@ const Signup = () => {
 
   return (
     <div className="sp-signup">
+      <NoIndex />
       <style dangerouslySetInnerHTML={{ __html: SCOPED_CSS }} />
       <div className="sp-signup-shell">
         {/* LEFT — form */}

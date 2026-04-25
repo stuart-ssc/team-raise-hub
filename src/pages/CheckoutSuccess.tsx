@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { SponsorshipFileUploader } from "@/components/SponsorshipFileUploader";
 import SponsorlyLogo from "@/components/SponsorlyLogo";
+import { NoIndex } from "@/components/seo/NoIndex";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -245,6 +246,7 @@ const CheckoutSuccess = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <NoIndex />
         <Card className="w-full max-w-2xl">
           <CardHeader className="text-center">
             <Skeleton className="h-16 w-16 rounded-full mx-auto mb-4" />
@@ -266,6 +268,7 @@ const CheckoutSuccess = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 py-12">
+      <NoIndex />
       <div className="w-full max-w-3xl space-y-6">
         {/* Sponsorly Logo */}
         <div className="flex justify-center">
