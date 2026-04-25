@@ -278,21 +278,21 @@ const Login = () => {
     <div className="sp-login">
       <style>{SCOPED_CSS}</style>
 
-      {/* Top bar */}
-      <header className="sp-login-topbar">
-        <Link to="/" aria-label="Sponsorly home">
-          <SponsorlyLogo variant="full" theme="light" className="h-14 md:h-16 w-auto" />
-        </Link>
-        <div className="right">
-          <span className="hidden sm:inline">New to Sponsorly?</span>
-          <Link to="/signup" className="cta">Create account</Link>
-        </div>
-      </header>
-
       <div className="sp-login-shell">
         {/* LEFT */}
         <section className="sp-login-left">
-          <div className="sp-login-form">
+          <header className="sp-login-topbar">
+            <Link to="/" aria-label="Sponsorly home">
+              <SponsorlyLogo variant="full" theme="light" className="h-14 md:h-16 w-auto" />
+            </Link>
+            <div className="right">
+              <span className="hidden sm:inline">New to Sponsorly?</span>
+              <Link to="/signup" className="cta">Create account</Link>
+            </div>
+          </header>
+
+          <div className="sp-login-form-wrap">
+            <div className="sp-login-form">
             {showForgotPassword ? (
               <>
                 <span className="sp-login-eyebrow">Reset access</span>
