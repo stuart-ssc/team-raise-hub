@@ -4,6 +4,7 @@ import { SystemAdminSidebarSheet } from "./SystemAdminSidebarSheet";
 import { SystemAdminHeader } from "./SystemAdminHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { NoIndex } from "./seo/NoIndex";
 
 interface SystemAdminPageLayoutProps {
   children: ReactNode;
@@ -46,6 +47,7 @@ export const SystemAdminPageLayout = ({ children, title, subtitle }: SystemAdmin
 
   return (
     <div className="min-h-screen flex w-full">
+      <NoIndex />
       <SystemAdminSidebar />
       <SystemAdminSidebarSheet 
         open={mobileMenuOpen} 

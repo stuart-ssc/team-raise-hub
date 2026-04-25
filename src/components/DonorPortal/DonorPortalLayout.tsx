@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LayoutDashboard } from "lucide-react";
+import { NoIndex } from "@/components/seo/NoIndex";
 
 interface DonorPortalLayoutProps {
   children: React.ReactNode;
@@ -55,6 +56,7 @@ export function DonorPortalLayout({ children, title, subtitle }: DonorPortalLayo
 
   return (
     <div className="flex min-h-screen bg-background">
+      <NoIndex />
       <DonorPortalSidebar 
         hasBusinesses={linkedBusinesses.length > 0} 
         onLogout={handleLogout}
