@@ -462,7 +462,7 @@ const MerchandiseCampaigns = () => {
               <li><span className="dot"><ICheck /></span><span>Personalized links for each player</span></li>
             </ul>
             <Link to="/fundraisers" className="sp-btn sp-btn-ghost">
-              Learn about member campaigns <IArrow />
+              Learn about member fundraisers <IArrow />
             </Link>
           </div>
         </div>
