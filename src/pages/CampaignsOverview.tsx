@@ -224,7 +224,7 @@ const types = [
     title: "Event fundraisers",
     copy: "Tickets, tables, and auctions in a single checkout. Galas, golf, tournaments, and 5Ks with built-in seat assignments and check-in.",
     chips: ["Tickets", "Table sponsors", "Check-in QR", "Silent auctions"],
-    href: "/campaigns/events",
+    href: "/fundraisers/events",
   },
   {
     Icon: IFlag, color: "#7B5BE0", bg: "rgba(123,91,224,0.10)", meta: "04 / Pledges",

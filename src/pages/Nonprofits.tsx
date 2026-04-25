@@ -291,7 +291,7 @@ const Nonprofits = () => {
                     Donation Campaigns
                   </Button>
                 </Link>
-                <Link to="/campaigns/events">
+                <Link to="/fundraisers/events">
                   <Button variant="outline" size="sm" className="gap-2">
                     <Calendar className="h-4 w-4" />
                     Event Fundraising
