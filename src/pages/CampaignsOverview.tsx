@@ -238,7 +238,7 @@ const types = [
     title: "Merchandise sales",
     copy: "Spirit gear, snack stand, or branded apparel — collect orders, take payment, and track fulfillment without spreadsheets or order forms.",
     chips: ["Inventory tracking", "Variants & sizes", "Pickup or ship", "Order CSV"],
-    href: "/campaigns/merchandise",
+    href: "/fundraisers/merchandise",
   },
   {
     Icon: IGavel, color: "#E04F8B", bg: "rgba(224,79,139,0.10)", meta: "06 / Roster",
