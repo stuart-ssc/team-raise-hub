@@ -2,10 +2,16 @@ import MarketingHeader from '@/components/MarketingHeader';
 import MarketingFooter from '@/components/MarketingFooter';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { SeoHead } from '@/components/seo/SeoHead';
 
 const DataProcessingAgreement = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <SeoHead
+        title="Data Processing Agreement | Sponsorly"
+        description="The Sponsorly Data Processing Agreement (DPA) describing roles, processing terms, and security commitments for organizations using the platform."
+        path="/dpa"
+      />
       <MarketingHeader />
       
       <main className="flex-1">

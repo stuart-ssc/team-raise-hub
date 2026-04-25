@@ -2,10 +2,16 @@ import MarketingHeader from '@/components/MarketingHeader';
 import MarketingFooter from '@/components/MarketingFooter';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { SeoHead } from '@/components/seo/SeoHead';
 
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <SeoHead
+        title="Privacy Policy | Sponsorly"
+        description="Learn how Sponsorly collects, uses, and protects personal data for organizations, supporters, and donors across our fundraising platform."
+        path="/privacy"
+      />
       <MarketingHeader />
       
       <main className="flex-1">

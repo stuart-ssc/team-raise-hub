@@ -1,10 +1,16 @@
 import MarketingHeader from '@/components/MarketingHeader';
 import MarketingFooter from '@/components/MarketingFooter';
 import { Card } from '@/components/ui/card';
+import { SeoHead } from '@/components/seo/SeoHead';
 
 const Terms = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <SeoHead
+        title="Terms of Service | Sponsorly"
+        description="Read the Sponsorly Terms of Service covering platform usage, payments, donor data, and the responsibilities of organizations and supporters."
+        path="/terms"
+      />
       <MarketingHeader />
       
       <main className="flex-1">
