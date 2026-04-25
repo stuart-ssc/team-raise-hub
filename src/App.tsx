@@ -90,6 +90,7 @@ import DonationCampaigns from "./pages/DonationCampaigns";
 import EventCampaigns from "./pages/EventCampaigns";
 import MerchandiseCampaigns from "./pages/MerchandiseCampaigns";
 import RosterCampaigns from "./pages/RosterCampaigns";
+import PledgeCampaigns from "./pages/PledgeCampaigns";
 import ForBusinesses from "./pages/ForBusinesses";
 
 // Donor Portal Pages
@@ -172,6 +173,8 @@ const AppContent = () => {
         <Route path="/campaigns/merchandise" element={<Navigate to="/fundraisers/merchandise" replace />} />
         <Route path="/fundraisers/roster" element={<RosterCampaigns />} />
         <Route path="/campaigns/roster" element={<Navigate to="/fundraisers/roster" replace />} />
+        <Route path="/fundraisers/pledge" element={<PledgeCampaigns />} />
+        <Route path="/campaigns/pledge" element={<Navigate to="/fundraisers/pledge" replace />} />
         <Route path="/for-businesses" element={<ForBusinesses />} />
         <Route path="/native-features" element={<ProtectedRoute><NativeFeatures /></ProtectedRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
