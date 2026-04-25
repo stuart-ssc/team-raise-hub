@@ -1,63 +1,49 @@
-# Rebuild Sponsorship Fundraisers Landing Page
+## Rebuild Event Fundraisers page
 
-Rebuild `src/pages/SponsorshipCampaigns.tsx` to match the approved mockup using the same scoped-CSS design system as `CampaignsOverview.tsx`, `DonationCampaigns.tsx`, and the rest of the redesigned marketing pages. Move the route from `/campaigns/sponsorships` to `/fundraisers/sponsorships`.
+Rebuild `src/pages/EventCampaigns.tsx` from scratch to match the uploaded mockup and align with the 2026 redesign style used by `DonationCampaigns.tsx` and `SponsorshipCampaigns.tsx`. Move the URL from `/campaigns/events` to `/fundraisers/events` with a redirect for the legacy path.
 
-## URL change
+### Routing & navigation updates
 
-- New canonical route: `/fundraisers/sponsorships`
-- Old route `/campaigns/sponsorships` becomes a `<Navigate to="/fundraisers/sponsorships" replace />` redirect (preserves inbound links + tracking history).
-- Update internal `<Link>` references to point at the new path:
-  - `src/pages/CampaignsOverview.tsx`
-  - `src/pages/ForBusinesses.tsx`
-  - `src/pages/EventCampaigns.tsx`
-- Update `useLandingPageTracking` `pagePath` to `/fundraisers/sponsorships`.
+- `src/App.tsx` — add `/fundraisers/events` as canonical route, change `/campaigns/events` to `<Navigate to="/fundraisers/events" replace />`.
+- `src/pages/CampaignsOverview.tsx` — update href to `/fundraisers/events`.
+- `src/pages/Nonprofits.tsx` — update `<Link to>` to `/fundraisers/events`.
+- `src/pages/EventCampaigns.tsx` — update `useLandingPageTracking` pagePath, document title/meta, and replace any internal links accordingly.
 
-## Page sections (matching mockup, top to bottom)
+### Page redesign (scoped `.sp-events`)
 
-1. **MarketingHeader** (existing, unchanged).
+Use the same scoped-CSS pattern (Instrument Serif display + Geist UI, brand tokens `--sp-blue #1F5FE0`, `--sp-paper #FAFAF7`, `--sp-accent #FF6B35`, `--sp-green #0E9F6E`, `--sp-ink #0A0F1E`). Accent color for events = `--sp-accent` (orange), matching the mockup's "Get Tickets" button and italicized headline accents.
 
-2. **Hero — split two-column** (paper background, soft blue + orange radial highlights)
-   - Left: orange eyebrow chip "Sponsorship fundraisers", display-serif headline "Turn local businesses into *lasting partners.*" (italic blue accent on second line), supporting paragraph, two CTAs ("Start your sponsor program" primary blue pill, "See a demo" ghost), underline check row ("Tiered packages", "Auto asset collection", "Tax-deductible").
-   - Right: Mock sponsor-package picker card — small URL crumb "sponsorly.io/c/wildcats-sponsor", title "Become a Wildcats sponsor", subtitle "Westlake HS Athletics · Fall 2026 Season", four package rows (Bronze $250 / Silver $500 / Gold $1,000 highlighted / Platinum $2,500) each with colored icon + benefit caption + "X LEFT" pill, a "RENEWAL · Joe's Pizza · 3rd year sponsor" toast at the bottom-left, "NEW SPONSOR · Acme Hardware — Gold tier" green pill at top-right, blue "Become a sponsor" CTA bar.
+Sections (top to bottom, mirroring the mockup):
 
-3. **"Build *lasting* business relationships." split** (white section, reverse layout: text left, mock right)
-   - Left: blue eyebrow "For organizations", display headline with orange italic accent on "lasting", supporting copy, five green-check bullets (unlimited tiered packages; advertising placements; ongoing relationships; sponsor recognition displays; automatic season-over-season renewals).
-   - Right: 3×2 grid of subtle paper "placement" cards with small colored icons + label + tiny caption: Stadium signage, Jersey sponsors, Naming rights, Program book ads, Digital displays, PA announcements.
+1. **MarketingHeader** (existing component).
+2. **Hero — split two-column**
+   - Left: eyebrow "EVENT FUNDRAISERS", display headline "Host events that *raise serious money.*" (orange italic accent), supporting paragraph, primary "Plan your event" + ghost "See a demo" buttons, three checkmark trust items (Mobile check-in · Group packages · Real-time tracking).
+   - Right: mock "Annual Golf Scramble" ticket card with date/venue header, three ticket-tier rows (Individual Player, Foursome Package highlighted, Dinner Only) with quantity steppers, subtotal row, big orange "Get Tickets" CTA, plus a "57 tickets sold" toast pill.
+3. **Flexible ticketing — split** (white background)
+   - Left: eyebrow, display headline "Flexible *ticketing* for any event." (orange italic), copy, 5-item check list (Single/group, Early-bird pricing, VIP packages, Mobile check-in & QR scanning, Digital delivery via email/SMS).
+   - Right: "Ticket Dashboard" mock card with three KPI tiles (127 sold, $12.7k revenue, 68% sell-through) and three progress bars (Early Bird sold-out, General Admission, VIP).
+4. **Event types we support** (paper-2 alt background, centered)
+   - Eyebrow "ALL SHAPES & SIZES", display headline "Event *types* we support." (blue italic), 3×2 grid of cards: Golf tournaments, Skills camps, Galas & dinners, Auctions, Field trips, Performances. Each card: small icon tile, title, description, three small chip tags.
+5. **Maximize revenue with event sponsorships — split**
+   - Left: eyebrow "EVENT SPONSORSHIP", display headline "Maximize revenue with *event sponsorships.*" (green italic), copy, 4-item check list, "Learn about sponsorships →" ghost button linking to `/fundraisers/sponsorships`.
+   - Right: 2×2 grid of sponsor-package cards (Hole sponsor $500/hole, Beverage cart $1,500, Trophy presentation $750, Title sponsor $5,000) each with eyebrow micro-label and price in accent color.
+6. **Results — dark navy band** (`#0A0F1E`)
+   - Centered eyebrow "THE RESULTS", display headline "Event fundraising that *delivers.*" (orange italic), three large stat tiles (2.5× revenue increase, 40% less admin time, 95% attendee satisfaction) with colored numerals (orange/blue/green) on dark cards.
+7. **Closing CTA** (paper background, centered)
+   - Display headline "Plan your next *fundraising event.*" (orange italic), copy, primary "Get started free" + ghost "Explore all campaign types" → `/fundraisers`.
+8. **MarketingFooter**.
 
-4. **"Meaningful *community* engagement." split** (paper-2 alt section, mock left, text right)
-   - Left: White sponsor-profile mock card with green top border, big orange "A" avatar + "Acme Hardware" + "PROUD GOLD SPONSOR · CENTRAL HIGH FOOTBALL" subtitle, three small stat tiles (5K+ impressions, 12 events, 3 years), four asset-fulfillment rows (Field signage · Live, Jersey patch · Delivered, PA announcements · Weekly, Program ad · Full page) each with green check.
-   - Right: green eyebrow "For businesses", display headline with green italic accent on "community", supporting copy, five green-check bullets (local brand exposure; support causes with credibility; tax-deductible contributions; year-round visibility; auto-collected asset files for usage).
+### Technical details
 
-5. **"How sponsorship *fundraisers* work." dark band** (deep navy)
-   - Centered eyebrow "The process", display headline with blue italic accent, supporting copy.
-   - Horizontal 4-step rail with connecting line: 1 (filled blue circle, active) Create packages, 2 Share fundraiser, 3 Businesses purchase, 4 Collect assets — each step has a numbered circle + bold serif title + short description below.
+- Single scoped `<style>` block injected via constant string (same pattern as DonationCampaigns/SponsorshipCampaigns).
+- All visuals built with pure CSS + inline SVG icons; no new image assets needed.
+- Keep `useLandingPageTracking({ pageType: 'marketing', pagePath: '/fundraisers/events' })`.
+- Update `document.title` to "Event Fundraisers — Ticketing & Event Fundraising | Sponsorly" and meta description.
+- No database, edge function, or schema changes.
 
-6. **Final CTA — light gradient band** (paper background with soft blue/orange radial)
-   - Display headline "Ready to build your *sponsor program?*" (italic blue accent on "sponsor program?"), supporting copy "Join the schools and nonprofits raising thousands through local business partnerships.", two CTAs: primary blue pill "Get started free" → `/signup`, ghost pill "I'm a business" → `/for-businesses`.
+### Files to edit
 
-7. **MarketingFooter** (existing, unchanged).
-
-## Design system (reused from existing redesigned pages)
-
-- Scoped class root: `.sp-sponsorships` (mirrors `.sp-donations` / `.sp-fundraisers`).
-- Tokens shared: `--sp-blue #1F5FE0`, `--sp-blue-deep #0B3FB0`, `--sp-green #0E9F6E`, `--sp-accent #FF6B35`, `--sp-violet #7B5BE0`, `--sp-amber #E0A21F`, `--sp-ink #0A0F1E`, `--sp-paper #FAFAF7`, `--sp-paper-2 #F2F3EE`, `--sp-line #E6E9F0`.
-- Fonts: `Instrument Serif` for display, `Geist`/`Inter` for UI.
-- Buttons: `.sp-btn-primary`, `.sp-btn-ghost`, `.sp-btn-white` — pill-shaped.
-- Section primitives: `.sp-section`, `.sp-section.alt`, `.sp-section.white`, plus dark `.sp-process` band.
-- All mock visuals are pure HTML/CSS — no images, no extra deps.
-- Lucide-style inline SVGs for icons (matching the pattern used on the donations page).
-- Responsive: hero stacks under ~960px; placement grid collapses to 2-up then 1-up; process rail stacks vertically on mobile.
-
-## Technical notes
-
-- Single `<style>{SCOPED_CSS}</style>` injection scoped under `.sp-sponsorships`.
-- Document title set to `Sponsorship Fundraisers — Turn Local Businesses Into Lasting Partners | Sponsorly`; meta description updated to match new copy.
-- Page is purely presentational — no data fetching changes required.
-
-## Files to change
-
-- `src/pages/SponsorshipCampaigns.tsx` — full rebuild.
-- `src/App.tsx` — add `/fundraisers/sponsorships` route + redirect from old path.
-- `src/pages/CampaignsOverview.tsx` — update sponsorships card link.
-- `src/pages/ForBusinesses.tsx` — update internal sponsorships link.
-- `src/pages/EventCampaigns.tsx` — update internal sponsorships link.
+- `src/pages/EventCampaigns.tsx` (full rewrite)
+- `src/App.tsx`
+- `src/pages/CampaignsOverview.tsx`
+- `src/pages/Nonprofits.tsx`
