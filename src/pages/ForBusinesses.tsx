@@ -433,7 +433,7 @@ const ForBusinesses = () => {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Link to="/campaigns/sponsorships">
+            <Link to="/fundraisers/sponsorships">
               <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8">
                 Learn About Sponsorships
               </Button>
