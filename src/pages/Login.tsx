@@ -30,7 +30,7 @@ const SCOPED_CSS = `
 .sp-login .sp-display { font-family: var(--sp-display); font-weight: 400; letter-spacing: -0.01em; }
 
 /* ===== Layout ===== */
-.sp-login-shell { display: grid; grid-template-columns: 1fr; min-height: calc(100vh - 88px); }
+.sp-login-shell { display: grid; grid-template-columns: 1fr; min-height: 100vh; }
 @media (min-width: 1024px) { .sp-login-shell { grid-template-columns: 1fr 1fr; } }
 
 /* ===== Top bar ===== */
@@ -41,8 +41,9 @@ const SCOPED_CSS = `
 .sp-login-topbar a.cta:hover { background: #1a2238; }
 
 /* ===== LEFT column ===== */
-.sp-login-left { display: flex; align-items: center; justify-content: center; padding: 40px 24px 64px; }
-@media (min-width: 1024px) { .sp-login-left { padding: 24px 56px 80px; } }
+.sp-login-left { display: flex; flex-direction: column; background: var(--sp-paper); }
+.sp-login-form-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 24px 64px; }
+@media (min-width: 1024px) { .sp-login-form-wrap { padding: 24px 56px 80px; } }
 .sp-login-form { width: 100%; max-width: 520px; }
 
 .sp-login-eyebrow { display: inline-flex; align-items: center; gap: 10px; color: var(--sp-blue); font-size: 11px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; }
