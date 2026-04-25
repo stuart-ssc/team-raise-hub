@@ -231,7 +231,7 @@ const types = [
     title: "Pledge fundraisers",
     copy: "Per-mile, per-lap, or per-rep — supporters pledge a rate and you bill at the finish. Perfect for jogathons, readathons, and seasonal challenges.",
     chips: ["Per-unit pledges", "Auto invoicing", "Roster goals", "Parent reminders"],
-    href: "/fundraisers/roster",
+    href: "/fundraisers/pledge",
   },
   {
     Icon: IBag, color: "#E0A21F", bg: "rgba(224,162,31,0.12)", meta: "05 / Merchandise",
