@@ -1,53 +1,123 @@
-## Rebuild Roster Fundraisers page
+# SEO Metadata Audit + Crawler Protection
 
-Rebuild `src/pages/RosterCampaigns.tsx` from scratch to match the uploaded mockup and align with the 2026 redesign style used by the other rebuilt fundraiser pages. Move the URL from `/campaigns/roster` to `/fundraisers/roster` with a redirect for the legacy path.
+## Goals
+1. Every marketing (public) page ships unique title, description, canonical, and OG/Twitter tags.
+2. No private route (/dashboard, /system-admin, /portal, auth, checkout, orders, receipts) is crawlable — defended both by `robots.txt` and a `<meta name="robots" content="noindex, nofollow">` on the page itself.
 
-### Routing & navigation updates
+---
 
-- `src/App.tsx` — add `/fundraisers/roster` as canonical, change `/campaigns/roster` to `<Navigate to="/fundraisers/roster" replace />`.
-- `src/pages/CampaignsOverview.tsx` — update both `/campaigns/roster` href references to `/fundraisers/roster`.
-- `src/pages/Platform.tsx` — update `<Link to="/campaigns/roster">` to `/fundraisers/roster`.
-- `src/components/MarketingFooter.tsx` — update Sports teams link to `/fundraisers/roster`.
-- `src/pages/RosterCampaigns.tsx` — update tracking pagePath, document title/meta.
+## Current state
 
-### Page redesign (scoped `.sp-roster`)
+**Marketing pages with FULL `<Helmet>` metadata (good):**
+- `Pricing.tsx`, `FAQ.tsx`
 
-Same scoped-CSS pattern as other rebuilt fundraiser pages (Instrument Serif display + Geist UI, brand tokens). Roster's accent palette = **violet `--sp-violet #7B5BE0`** to match the mockup, plus warm cream paper `--sp-paper #FAF7F2`. Italic accent color in headlines is violet.
+**Marketing pages with only `document.title` (missing description/canonical/OG):**
+- `CampaignsOverview.tsx` (`/fundraisers`)
+- `SponsorshipCampaigns.tsx` (`/fundraisers/sponsorships`)
+- `DonationCampaigns.tsx` (`/fundraisers/donations`)
+- `EventCampaigns.tsx` (`/fundraisers/events`)
+- `MerchandiseCampaigns.tsx` (`/fundraisers/merchandise`)
+- `RosterCampaigns.tsx` (`/fundraisers/roster`)
+- `ForBusinesses.tsx` (`/for-businesses`)
+- `Schools.tsx` (`/schools`)
+- `Nonprofits.tsx` (`/nonprofits`)
 
-Sections (top to bottom, mirroring the mockup):
+**Marketing pages with NO metadata at all:**
+- `Index.tsx` (`/`) — relies only on `index.html` defaults
+- `Platform.tsx` (`/platform`)
+- `Features.tsx` (`/features`)
+- `Contact.tsx` (`/contact`)
+- `Terms.tsx` (`/terms`)
+- `PrivacyPolicy.tsx` (`/privacy`)
+- `DataProcessingAgreement.tsx` (`/dpa`)
 
-1. **MarketingHeader**.
-2. **Hero — split two-column** (cream paper, soft violet/blue radial glows)
-   - Left: violet eyebrow "ROSTER FUNDRAISERS", display headline "Gamify giving. Watch your team *compete.*" (violet italic), supporting paragraph ("Give every player, student, or member their own fundraising page — with personal links, a live leaderboard, and team totals. Then watch them go."), primary "Enable roster tracking" + ghost "See a demo" buttons, three checkmark trust items (Personal pages · Live leaderboard · Auto attribution).
-   - Right: mock "Team Leaderboard" card titled "Wildcats Football · 22 players" with 4 ranked rows (Jase Martinez gold #1 $1,740, Riley Williams silver #2 $980, Marcus Chen bronze #3 $675, Cara Lindstr-Davis #4 $620), each with progress bar, plus a violet "VIP Member · Jase opened the lead" toast pill.
-3. **Everything for peer-to-peer success** (centered, paper-2 alt background)
-   - Violet eyebrow "THE TOOLKIT", display headline "Everything for *peer-to-peer* success." (violet italic), copy "Roster campaigns turn the team into the marketing engine. Here's what each player gets.", 3×2 grid of 6 cards: Personal fundraising page, Real-time leaderboard, Video pitches, Personal links, Custom QR codes, Progress tracking. Each card: small icon tile, title, short description.
-4. **Player command center — split** (cream)
-   - Left: violet eyebrow "PLAYER EXPERIENCE", display headline "Every player gets their own *command center.*" (violet italic), copy "Players log in to a personal dashboard with everything they need to raise — share buttons, recent donations, suggested prospects, and tips for what to do next.", 4-item check list (Personal goals with progress visualizations · One-tap social sharing across every channel · See who donated and thank them in a tap · Smart day-of cues to ride your momentum).
-   - Right: mock player dashboard card with violet header (Jake Martinez · #11 Jr · Wildcats Football), large $1,740 with $2,500 goal progress bar, three stat tiles (16 donors / 24 shares / 87% momentum), and Share + QR code buttons.
-5. **Personal appeals that convert — split** (paper)
-   - Left: mock video card with violet thumbnail (play button center, "0:42" duration, NEW chip top-left), short caption "I'm going to D.C. for nationals — every dollar gets us closer.", attribution row ("Jake M. · 2024-04 · 14,200 views").
-   - Right: orange eyebrow "VIDEO APPEALS", display headline "Personal appeals that *convert.*" (orange italic), copy "Donors are 4× more likely to give when they see a player's face. Built-in video pitches turn empathy into action — and let supporters feel personally invested.", 4-item check list (60-second appeals shot directly from phone · Auto-embed at the top of every contact page · Players can record once and re-use · Email previews show full-engaging clip).
-6. **Why roster fundraisers work** (centered, paper-2 alt)
-   - Violet eyebrow "THE PSYCHOLOGY", display headline "Why *roster fundraisers* work." (violet italic), copy "Peer-to-peer fundraising consistently outperforms team-only campaigns.", 4-card grid (Genuine empathy violet · Extended reach blue · Friendly competition orange · Tactile reciprocity green) with iconography and short blurb each.
-7. **The numbers — dark navy band**
-   - Centered violet eyebrow "THE NUMBERS", display headline "The numbers speak for *themselves.*" (violet italic), copy "Roster campaigns out-raise team-only fundraisers, every season.", three stat tiles (3× more reach violet · 47% higher participation orange · 2.5× revenue increase green).
-8. **Final CTA** (cream/violet glow, centered)
-   - Display headline "Ready to *gamify* your fundraising?" (violet italic), copy "Turn your next campaign into a team competition. Enable roster attribution and watch engagement soar.", primary violet "Get started free" + ghost "Explore all fundraiser types" → `/fundraisers`.
-9. **MarketingFooter**.
+**robots.txt:** disallows `/dashboard*` and `/system-admin*`, but **misses** `/portal*`, `/login`, `/signup`, `/set-password`, `/checkout/*`, `/orders/*`, `/donor-receipts`, `/native-features`, `/fundraiser-unsubscribe`, `/dashboard/*` private sub-routes (covered via wildcard but worth being explicit).
 
-### Technical details
+State landing pages (`/schools/:state`), school landing pages, and campaign landing pages already use `<Helmet>` with `index, follow` — leave as-is.
 
-- Single scoped `<style>` block (same pattern as the other rebuilt pages).
-- All visuals built with pure CSS + inline SVG icons; no new image assets.
-- Update `useLandingPageTracking({ pageType: 'marketing', pagePath: '/fundraisers/roster' })`.
-- Update `document.title` to "Roster Fundraisers — Peer-to-Peer Team Fundraising | Sponsorly" and meta description.
-- No database, edge function, or schema changes.
+---
 
-### Files to edit
+## Plan
 
-- `src/pages/RosterCampaigns.tsx` (full rewrite)
-- `src/App.tsx`
-- `src/pages/CampaignsOverview.tsx`
-- `src/pages/Platform.tsx`
-- `src/components/MarketingFooter.tsx`
+### Step 1 — Add proper `<Helmet>` metadata to every public marketing page
+
+Replace `useEffect(() => { document.title = ... })` (and add where missing) with a `<Helmet>` block at the top of the JSX containing:
+- `<title>` — keyword-targeted, unique per page
+- `<meta name="description">` — 140–160 chars, page-specific
+- `<link rel="canonical" href="https://sponsorly.io{path}">`
+- `<meta name="robots" content="index, follow">`
+- OG: `og:title`, `og:description`, `og:url`, `og:type=website`, `og:image` (existing logo)
+- Twitter: `twitter:card=summary_large_image`, `twitter:title`, `twitter:description`, `twitter:image`
+
+Pages to update (titles are illustrative — final copy will mirror page content):
+
+| Page | Title | Path |
+|---|---|---|
+| `Index.tsx` | Sponsorly — 100% Fundraising for Schools, Teams & Non-Profits | `/` |
+| `Platform.tsx` | Platform — All-in-One Fundraising Software | `/platform` |
+| `Features.tsx` | Features — Built for Modern Fundraising Teams | `/features` |
+| `Schools.tsx` | Sponsorly for Schools — Fundraising for Teams, Clubs & PTOs | `/schools` |
+| `Nonprofits.tsx` | Sponsorly for Nonprofits — Fundraising for 501(c)(3)s | `/nonprofits` |
+| `ForBusinesses.tsx` | For Businesses — Local Sponsorship Network | `/for-businesses` |
+| `CampaignsOverview.tsx` | Fundraiser Types — Five Ways to Raise on Sponsorly | `/fundraisers` |
+| `SponsorshipCampaigns.tsx` | Sponsorship Fundraisers — Local Business Partners | `/fundraisers/sponsorships` |
+| `DonationCampaigns.tsx` | Donation Fundraisers — One-Time & Recurring Giving | `/fundraisers/donations` |
+| `EventCampaigns.tsx` | Event Fundraisers — Ticketing & Event Fundraising | `/fundraisers/events` |
+| `MerchandiseCampaigns.tsx` | Merchandise Fundraisers — Team Stores & Spirit Wear | `/fundraisers/merchandise` |
+| `RosterCampaigns.tsx` | Roster Fundraisers — Peer-to-Peer Team Fundraising | `/fundraisers/roster` |
+| `Contact.tsx` | Contact Sponsorly — Talk to Our Team | `/contact` |
+| `Terms.tsx` | Terms of Service | `/terms` |
+| `PrivacyPolicy.tsx` | Privacy Policy | `/privacy` |
+| `DataProcessingAgreement.tsx` | Data Processing Agreement | `/dpa` |
+
+Each description will be hand-written from the page's actual hero/value-prop content.
+
+### Step 2 — Harden crawler protection for private areas
+
+**A. Update `public/robots.txt`** to add:
+```
+Disallow: /portal
+Disallow: /portal/*
+Disallow: /login
+Disallow: /signup
+Disallow: /set-password
+Disallow: /checkout/
+Disallow: /checkout/*
+Disallow: /orders/
+Disallow: /orders/*
+Disallow: /donor-receipts
+Disallow: /native-features
+Disallow: /fundraiser-unsubscribe
+```
+
+**B. Add a small `<NoIndex>` Helmet component** at `src/components/seo/NoIndex.tsx`:
+```tsx
+<Helmet>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="googlebot" content="noindex, nofollow" />
+</Helmet>
+```
+
+**C. Render `<NoIndex />` inside the shared layouts** so every private page gets it for free, with no per-page edits:
+- `src/components/DashboardPageLayout.tsx` (covers `/dashboard/*`)
+- `src/pages/SystemAdmin/` shared layout (`SystemAdminLayout` per memory) — covers `/system-admin/*`
+- `src/pages/DonorPortal/` shared layout — covers `/portal/*`
+
+**D. Add `<NoIndex />` directly to standalone private pages** that don't use those layouts:
+- `Login.tsx`, `Signup.tsx`, `SetPassword.tsx`
+- `CheckoutSuccess.tsx`, `OrderDetails.tsx`
+- `DonorReceiptPortal.tsx`, `FundraiserUnsubscribe.tsx`
+- `NativeFeatures.tsx`
+
+### Step 3 — Verify
+
+- Spot-check 3 marketing pages in the preview to confirm `<title>` and `<meta>` render in the document head.
+- Spot-check `/dashboard` and `/portal` to confirm `noindex` meta is present.
+- Confirm `robots.txt` responds at `/robots.txt`.
+
+---
+
+## Out of scope
+- Sitemap regeneration (`sitemap-main.xml` is current — no new public marketing routes added).
+- Dynamic OG images (already handled by existing edge function for campaign/school/district pages).
+- Server-side rendering of meta tags (Cloudflare Worker already handles crawler bots per existing setup).
