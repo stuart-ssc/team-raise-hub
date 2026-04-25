@@ -132,7 +132,7 @@ const SCOPED_CSS = `
 .sp-signup-invite svg { color: var(--sp-blue); flex: 0 0 18px; margin-top: 2px; }
 
 /* RIGHT panel */
-.sp-signup-right { display: none; position: relative; background: #0A0F1E; color: white; overflow: hidden; padding: 48px 56px; }
+.sp-signup-right { display: none; position: relative; background: #0A0F1E; color: white; overflow: hidden; padding: 40px 56px 36px; }
 @media (min-width: 1024px) { .sp-signup-right { display: flex; flex-direction: column; } }
 .sp-signup-right::before { content: ""; position: absolute; inset: 0; background:
   radial-gradient(800px 400px at 0% 100%, rgba(14,159,110,0.18), transparent 60%),
@@ -145,9 +145,9 @@ const SCOPED_CSS = `
 .sp-signup-livechip .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--sp-green); box-shadow: 0 0 0 4px rgba(14,159,110,0.18); }
 .sp-signup-domain { font-size: 12px; color: rgba(255,255,255,0.5); }
 
-.sp-signup-quote-block { margin-top: 56px; max-width: 560px; }
+.sp-signup-quote-block { margin-top: 72px; max-width: 560px; }
 .sp-signup-quote-mark { font-family: var(--sp-display); font-style: italic; color: var(--sp-green); font-size: 64px; line-height: 0.5; letter-spacing: -0.04em; }
-.sp-signup-quote { font-family: var(--sp-display); font-weight: 400; font-size: clamp(28px, 2.6vw, 38px); line-height: 1.18; letter-spacing: -0.01em; margin-top: 28px; color: white; }
+.sp-signup-quote { font-family: var(--sp-display); font-weight: 400; font-size: clamp(28px, 2.6vw, 38px); line-height: 1.18; letter-spacing: -0.01em; margin-top: 22px; color: white; }
 .sp-signup-quote em { font-style: italic; color: var(--sp-green); }
 .sp-signup-attr { display: flex; align-items: center; gap: 12px; margin-top: 28px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,0.12); }
 .sp-signup-attr-avatar { width: 40px; height: 40px; border-radius: 999px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); display: grid; place-items: center; font-size: 13px; font-weight: 700; color: white; }
@@ -155,10 +155,10 @@ const SCOPED_CSS = `
 .sp-signup-attr-role { font-size: 12.5px; color: rgba(255,255,255,0.6); }
 
 /* Leaderboard */
-.sp-signup-leaderboard-wrap { margin-top: auto; position: relative; }
-.sp-signup-leaderboard { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); border-radius: 20px; padding: 22px; backdrop-filter: blur(8px); }
+.sp-signup-leaderboard-wrap { margin-top: 56px; position: relative; }
+.sp-signup-leaderboard { position: relative; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); border-radius: 20px; padding: 20px 22px; backdrop-filter: blur(8px); }
 .sp-signup-leaderboard-title { font-size: 13.5px; color: rgba(255,255,255,0.7); margin-bottom: 14px; font-weight: 500; }
-.sp-signup-row { display: grid; grid-template-columns: 18px 36px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.06); }
+.sp-signup-row { display: grid; grid-template-columns: 18px 36px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.06); }
 .sp-signup-row:first-of-type { border-top: none; }
 .sp-signup-row-rank { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 500; }
 .sp-signup-row-avatar { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: white; }
@@ -167,18 +167,18 @@ const SCOPED_CSS = `
 .sp-signup-row-amount { font-size: 14px; color: white; font-weight: 600; }
 
 /* Floating notif cards */
-.sp-signup-notif { position: absolute; background: white; color: var(--sp-ink); padding: 12px 14px; border-radius: 14px; box-shadow: 0 18px 40px -16px rgba(0,0,0,0.45); display: flex; gap: 10px; align-items: flex-start; min-width: 220px; max-width: 260px; }
+.sp-signup-notif { position: absolute; z-index: 2; background: white; color: var(--sp-ink); padding: 12px 14px; border-radius: 14px; box-shadow: 0 18px 40px -16px rgba(0,0,0,0.45); display: flex; gap: 10px; align-items: flex-start; min-width: 220px; max-width: 260px; }
 .sp-signup-notif .icon { width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; flex: 0 0 26px; }
 .sp-signup-notif .icon.green { background: var(--sp-green); color: white; }
 .sp-signup-notif .icon.blue { background: var(--sp-blue); color: white; }
 .sp-signup-notif .label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sp-muted); }
 .sp-signup-notif .body { font-size: 13px; color: var(--sp-ink); font-weight: 600; margin-top: 2px; }
 .sp-signup-notif .meta { font-size: 11.5px; color: var(--sp-muted); margin-top: 2px; }
-.sp-signup-notif.top-right { top: -18px; right: -16px; }
-.sp-signup-notif.bottom-left { bottom: 100px; left: -22px; }
+.sp-signup-notif.top-right { top: -28px; right: -20px; }
+.sp-signup-notif.bottom-left { bottom: -22px; left: -22px; }
 
 /* Stats footer */
-.sp-signup-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 36px; padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.10); }
+.sp-signup-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: auto; padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.10); }
 .sp-signup-stat-amount { font-family: var(--sp-display); font-size: 30px; line-height: 1; color: white; }
 .sp-signup-stat-label { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 6px; }
 `;
@@ -745,24 +745,24 @@ const Signup = () => {
           </div>
 
           <div className="sp-signup-leaderboard-wrap">
-            <div className="sp-signup-notif top-right">
-              <div className="icon green"><Check className="h-[14px] w-[14px]" strokeWidth={3} /></div>
-              <div>
-                <div className="label">New donation</div>
-                <div className="body">$250 from the Chen family</div>
-                <div className="meta">Go Lincoln! 🏆 · 2s ago</div>
-              </div>
-            </div>
-            <div className="sp-signup-notif bottom-left">
-              <div className="icon blue"><Check className="h-[14px] w-[14px]" strokeWidth={3} /></div>
-              <div>
-                <div className="label">Payout</div>
-                <div className="body">$4,120 → Lincoln HS</div>
-                <div className="meta">Arrived 11:42 AM today</div>
-              </div>
-            </div>
-
             <div className="sp-signup-leaderboard">
+              <div className="sp-signup-notif top-right">
+                <div className="icon green"><Check className="h-[14px] w-[14px]" strokeWidth={3} /></div>
+                <div>
+                  <div className="label">New donation</div>
+                  <div className="body">$250 from the Chen family</div>
+                  <div className="meta">Go Lincoln! 🏆 · 2s ago</div>
+                </div>
+              </div>
+              <div className="sp-signup-notif bottom-left">
+                <div className="icon blue"><Check className="h-[14px] w-[14px]" strokeWidth={3} /></div>
+                <div>
+                  <div className="label">Payout</div>
+                  <div className="body">$4,120 → Lincoln HS</div>
+                  <div className="meta">Arrived 11:42 AM today</div>
+                </div>
+              </div>
+
               <div className="sp-signup-leaderboard-title">Top fundraisers · live</div>
               {leaderboard.map((r) => (
                 <div className="sp-signup-row" key={r.rank}>
