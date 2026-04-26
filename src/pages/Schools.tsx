@@ -641,12 +641,14 @@ const Schools = () => {
                 Choose your group to see how Sponsorly fits the way you actually fundraise.
               </p>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, maxWidth: 1000, margin: "0 auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, maxWidth: 1100, margin: "0 auto" }}>
               {[
                 { to: "/schools/sports-teams", label: "Sports Teams", color: "#1F5FE0" },
                 { to: "/schools/booster-clubs", label: "Booster Clubs", color: "#0E9F6E" },
                 { to: "/schools/marching-bands", label: "Marching Bands", color: "#FF6B35" },
                 { to: "/schools/pto-pta", label: "PTOs & PTAs", color: "#7C3AED" },
+                { to: "/schools/academic-clubs", label: "Academic Clubs", color: "#0E8A8A" },
+                { to: "/schools/arts-clubs", label: "Arts Clubs", color: "#D6336C" },
               ].map((item) => (
                 <Link
                   key={item.to}
