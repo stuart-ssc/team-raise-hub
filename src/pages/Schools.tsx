@@ -630,6 +630,29 @@ const Schools = () => {
           </div>
         </section>
 
+        {/* Audience sub-page cross-links — card grid */}
+        <section className="sp-section white">
+          <div className="sp-wrap sp-center">
+            <h2 className="sp-display-h2" style={{ fontSize: "clamp(28px, 3.2vw, 40px)" }}>
+              Built for <span className="accent-blue">every group on campus.</span>
+            </h2>
+            <p className="sp-lead">
+              Choose your group to see how Sponsorly fits the way you actually fundraise.
+            </p>
+            <div className="sp-programs" style={{ marginTop: 40 }}>
+              {programs.map((p, i) => (
+                <Link to={p.to} className="sp-program" key={i} style={{ textDecoration: "none", color: "inherit" }}>
+                  <div className="ico" style={{ background: p.bg, color: p.color }}>
+                    <p.Icon />
+                  </div>
+                  <h4>{p.title}</h4>
+                  <p>{p.sub}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <MarketingFooter />
       </div>
     </>
