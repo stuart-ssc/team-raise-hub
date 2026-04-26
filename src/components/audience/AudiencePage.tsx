@@ -64,6 +64,14 @@ interface SisterLink {
   icon: string;
 }
 
+export interface SisterCard {
+  to: string;
+  title: string;
+  body: string;
+  image: string;
+  arrowColor: string;
+}
+
 export interface AudiencePageProps {
   theme: AudienceTheme;
   seo: { title: string; description: string; path: string };
@@ -126,7 +134,8 @@ export interface AudiencePageProps {
   // Sister pages
   sisterHeadline: string;
   sisterSub: string;
-  sisterLinks: SisterLink[];
+  sisterLinks?: SisterLink[];
+  sisterCards?: SisterCard[];
   // Final CTA
   ctaHeadlinePre: string;
   ctaHeadlineEm: string;
@@ -394,17 +403,44 @@ export const AudiencePage = (p: AudiencePageProps) => {
             <h3>{p.sisterHeadline}</h3>
             <p>{p.sisterSub}</p>
           </div>
-          <div className="sp-sister-grid">
-            {p.sisterLinks.map((link) => (
-              <Link to={link.to} className="sp-sister-link" key={link.to}>
-                <div className="sp-ico" style={{ background: link.iconBg, color: link.iconColor }}>
-                  <Icon d={link.icon} size={18} />
-                </div>
-                <div className="sp-nm">{link.label}</div>
-                <div className="sp-arr">→</div>
-              </Link>
-            ))}
-          </div>
+          {p.sisterCards && p.sisterCards.length > 0 ? (
+            <div className="sp-sister-cards">
+              {p.sisterCards.map((card) => (
+                <Link to={card.to} className="sp-sister-card" key={card.to}>
+                  <div
+                    className="sp-sc-img"
+                    style={{ backgroundImage: `url('${card.image}')` }}
+                    role="img"
+                    aria-label={card.title}
+                  />
+                  <div className="sp-sc-body">
+                    <div className="sp-sc-text">
+                      <h4>{card.title}</h4>
+                      <p>{card.body}</p>
+                    </div>
+                    <div className="sp-sc-arr" style={{ color: card.arrowColor }} aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                        <polyline points="13 6 19 12 13 18" />
+                      </svg>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="sp-sister-grid">
+              {(p.sisterLinks || []).map((link) => (
+                <Link to={link.to} className="sp-sister-link" key={link.to}>
+                  <div className="sp-ico" style={{ background: link.iconBg, color: link.iconColor }}>
+                    <Icon d={link.icon} size={18} />
+                  </div>
+                  <div className="sp-nm">{link.label}</div>
+                  <div className="sp-arr">→</div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
