@@ -59,3 +59,16 @@ Build a new "Who's it for?" hub page, four `/schools` sub-pages, and redesign th
 
 - No changes to dashboard or authenticated routes.
 - No new images generated; mockup imagery will be approximated with existing illustrations / Unsplash-style placeholders already used on similar marketing pages, unless the mockup HTML embeds specific image URLs we can reuse.
+
+## Status
+
+Implemented (2026-04-26):
+- ✅ `src/components/audience/audienceStyles.ts` + `AudiencePage.tsx` template
+- ✅ `/schools/sports-teams` (blue), `/schools/booster-clubs` (green), `/schools/marching-bands` (accent), `/schools/pto-pta` (violet)
+- ✅ `/nonprofits` redesigned using AudiencePage (violet)
+- ✅ `/who-its-for` hub page
+- ✅ App.tsx routes + alias redirects (`/schools/sports`, `/schools/boosters`, `/schools/band(s)`, `/schools/pto`, `/schools/pta`)
+- ✅ MarketingHeader: Schools dropdown + "Who's it for" link, mobile menu mirrored
+- ✅ Schools overview cross-links + sister-page footer cards on every audience page
+- ✅ sitemap-main.xml updated with 5 new public URLs
+- ✅ SeoHead on every new page with audience-specific title/description/canonical
