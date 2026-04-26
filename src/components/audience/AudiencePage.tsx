@@ -11,9 +11,9 @@ import { AUDIENCE_SCOPED_CSS } from "./audienceStyles";
  * audienceStyles.ts (scoped under .sp-aud).
  */
 
-export type AudienceTheme = "blue" | "green" | "accent" | "violet";
+export type AudienceTheme = "blue" | "green" | "accent" | "violet" | "teal" | "pink";
 
-type EyebrowColor = "blue" | "green" | "accent" | "violet";
+type EyebrowColor = "blue" | "green" | "accent" | "violet" | "teal" | "pink";
 
 interface Pillar {
   iconBg: string;

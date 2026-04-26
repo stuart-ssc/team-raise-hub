@@ -39,6 +39,8 @@ export const AUDIENCE_SCOPED_CSS = `
 .sp-aud.theme-green  { --sp-theme: #0E9F6E; --sp-theme-deep: #0A7A55; --sp-theme-soft: rgba(14,159,110,0.12); }
 .sp-aud.theme-accent { --sp-theme: #FF6B35; --sp-theme-deep: #E0531B; --sp-theme-soft: rgba(255,107,53,0.12); }
 .sp-aud.theme-violet { --sp-theme: #7C3AED; --sp-theme-deep: #5B21B6; --sp-theme-soft: rgba(124,58,237,0.12); }
+.sp-aud.theme-teal   { --sp-theme: #0E8A8A; --sp-theme-deep: #0A6F6F; --sp-theme-soft: rgba(14,138,138,0.12); }
+.sp-aud.theme-pink   { --sp-theme: #D6336C; --sp-theme-deep: #B02659; --sp-theme-soft: rgba(214,51,108,0.12); }
 
 .sp-aud .sp-wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
 .sp-aud .sp-wrap-wide { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
@@ -56,6 +58,8 @@ export const AUDIENCE_SCOPED_CSS = `
 .sp-aud .sp-eyebrow.accent { color: var(--sp-accent); }
 .sp-aud .sp-eyebrow.violet { color: var(--sp-violet); }
 .sp-aud .sp-eyebrow.blue { color: var(--sp-blue); }
+.sp-aud .sp-eyebrow.teal { color: #0E8A8A; }
+.sp-aud .sp-eyebrow.pink { color: #D6336C; }
 
 /* Chip */
 .sp-aud .sp-chip {
