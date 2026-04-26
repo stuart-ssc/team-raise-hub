@@ -1,63 +1,67 @@
-## Overview
+## Goal
 
-Replace the small icon-row "sister pages" section on every audience sub-page with the new image-card grid shown in the mockup. Each card shows a hero photo on top, then a bold title, a one-line description, and a colored arrow link. The current page's card is omitted on each page so users only see the *other* programs.
+Bring the `/contact` page in line with the new 2026 marketing design language used on the audience pages (Sports Teams, PTOs & PTAs, Booster Clubs, Marching Bands, Nonprofits, etc.). The current page uses generic Tailwind/HSL primary blocks and a basic two-column form — it visually clashes with the rest of the marketing site.
 
-## Card catalog (7 total — current page hides itself)
+## What the page will look like
 
-| Slug | Title | Short description | Image (Unsplash) |
-|---|---|---|---|
-| `/schools/sports-teams` | Sports Teams | Roster fundraisers, sponsor packages, pledge-per-event campaigns. | soccer-on-grass photo (matches mockup) |
-| `/schools/booster-clubs` | Booster Clubs | Tiered sponsor packages, capital campaigns, gala & auction nights. | basketball / athletics action photo |
-| `/schools/pto-pta` | PTOs & PTAs | Direct-give campaigns, jog-a-thons, spring auctions, classroom grants. | apple on books / classroom still life |
-| `/schools/marching-bands` | Marching Bands | Trip funds, uniform drives, sponsor-an-instrument, concert ticketing. | marching band / brass section photo (NEW card) |
-| `/schools/academic-clubs` | Academic Clubs | Robotics, debate, Model UN, FBLA — fund the regional-to-nationals climb. | classroom / kids raising hands |
-| `/schools/arts-clubs` | Arts Clubs | Theater, choir, orchestra, dance — production budgets and patron giving. | red-curtain silhouettes |
-| `/nonprofits` | Nonprofits | Annual appeals, peer-to-peer events, recurring giving, major-gift CRM. | volunteer / boxes photo |
+1. **Hero** (cream/paper background, serif display headline)
+   - Animated green chip: "● We typically reply in 24 hours"
+   - Headline: `Talk to the team behind` *`Sponsorly.`* (display serif with italic theme accent)
+   - Subhead: friendly one-liner about helping schools, boosters, PTOs, and nonprofits get up and running.
+   - Three "micro" check points under the subhead (Free to start · No card required · Live human reply).
+   - No hero image card — keep it focused since the form sits below.
 
-The Marching Bands card is the new addition — it uses the orange/accent theme color for its arrow to match the existing site palette.
+2. **Two-column main section** (white `alt` section)
+   - **Left column — "How can we help?"**
+     - Eyebrow: `GET IN TOUCH`
+     - Display serif H2 with italic theme word.
+     - Three info cards (rounded, bordered, hover-lift) each with an icon tile:
+       - **Email us** — `support@sponsorly.io` (mailto link)
+       - **Already a customer?** — Link to `/login`
+       - **Looking for answers fast?** — Link to `/faq`
+     - Bottom "What to expect" panel restyled as a `sp-check-list` with theme-tinted tick circles (Quick response, Personalized guidance, Setup & strategy help, Technical support).
+   - **Right column — Contact form card**
+     - White card with `sp-line` border, 18px radius, soft shadow (matches `.sp-crm-mock` / `.sp-pillar` styling).
+     - Inputs restyled to match the design system: 12px radius, light border, theme-colored focus ring, serif-free labels.
+     - Submit button uses `.sp-btn .sp-btn-primary .sp-btn-lg` (pill, theme background).
+     - Keep all existing form logic, validation (zod), Supabase insert, and edge function call exactly as-is.
 
-## Visual spec (from the mockup)
+3. **FAQ teaser strip** (cream section)
+   - Eyebrow: `COMMON QUESTIONS`
+   - Headline: `Maybe we've already` *`answered it.`*
+   - 3-card grid linking into `/faq` (Account, Campaigns, Payments) — reuses the `.sp-pillar` card pattern.
 
-- White cards with `~14px` border-radius and a subtle border, sitting on the off-white page background.
-- Cover image on top filling the full card width, fixed aspect (~16:10), `object-fit: cover`, no padding.
-- Card body: ~24px padding, bold dark title (`~18px`), muted gray one-line subtitle, and a colored right-arrow icon aligned to the bottom-right of the body. The arrow color matches the destination page's theme color (blue for sports/PTOs, green for boosters, orange for bands, teal for academic, pink for arts, violet for nonprofits).
-- Layout: 3 columns desktop → 2 columns tablet → 1 column mobile.
-- Section heading and subhead unchanged in structure but restyled to match the mockup (centered serif headline, muted subhead, generous top padding).
+4. **Final CTA** (dark stats-strip style, matches the audience pages)
+   - Green chip "Free forever. No card required."
+   - Display serif headline: `Ready to start raising more?` / *`We'll help you launch in a day.`*
+   - Two pill buttons: "Start free" (`/signup`) and "Browse the platform →" (`/platform`).
 
-## Files to change
+5. **Footer** — keep `MarketingFooter` (already used by audience pages).
 
-1. **`src/components/audience/AudiencePage.tsx`**
-   - Replace the `SisterLink` interface and the sister-pages JSX block with a new `sisterCards` prop (image, title, body, to, arrowColor).
-   - Render the new image-card grid.
+## Design tokens reused
 
-2. **`src/components/audience/audienceStyles.ts`**
-   - Replace `.sp-sister-grid` / `.sp-sister-link` styles with new `.sp-sister-card` styles (image header, body padding, hover lift, responsive breakpoints).
-
-3. **All 7 audience pages** — swap the existing `sisterLinks` array for a new `sisterCards` array containing the 6 *other* programs (current page omitted):
-   - `src/pages/schools/SportsTeams.tsx`
-   - `src/pages/schools/BoosterClubs.tsx`
-   - `src/pages/schools/PtoPta.tsx`
-   - `src/pages/schools/MarchingBands.tsx`
-   - `src/pages/schools/AcademicClubs.tsx`
-   - `src/pages/schools/ArtsClubs.tsx`
-   - `src/pages/Nonprofits.tsx`
-
-   Each page passes only the 6 other cards, in this canonical order: Sports Teams → Booster Clubs → PTOs & PTAs → Marching Bands → Academic Clubs → Arts Clubs → Nonprofits (skipping itself).
+All styling reuses the existing `AUDIENCE_SCOPED_CSS` tokens (`--sp-theme: blue`, paper background, Instrument Serif display font, pill buttons, eyebrows, `.sp-chip`, `.sp-sec-head`, `.sp-pillars`, `.sp-check-list`, `.sp-final-cta`, `.sp-stats-strip`, etc.) so the page matches the audience pages exactly. Theme is `blue` (Sponsorly primary).
 
 ## Technical notes
 
-- New prop shape:
-  ```ts
-  interface SisterCard {
-    to: string;
-    title: string;
-    body: string;
-    image: string;       // Unsplash URL
-    arrowColor: string;  // hex matching destination theme
-  }
-  sisterCards: SisterCard[];
-  ```
-- Remove the now-unused `SisterLink` type and `Icon`-based sister rendering.
-- Images are Unsplash URLs with `?w=900&q=80` query params for crisp 2x rendering at card width.
-- Section keeps its existing `sisterHeadline` / `sisterSub` props — only the grid below them changes.
-- No routing, SEO, or sitemap changes required.
+**File to edit:** `src/pages/Contact.tsx` (single file)
+
+- Wrap the page in `<div className="sp-aud theme-blue">` and inject `AUDIENCE_SCOPED_CSS` via `<style dangerouslySetInnerHTML>` — same pattern used by `AudiencePage.tsx`.
+- Add a small page-scoped `<style>` block for contact-specific bits not in the shared CSS:
+  - `.sp-contact-grid` (two-column 1fr / 1.1fr layout, collapses to single column under 900px).
+  - `.sp-info-card` (rounded card with icon tile + text + arrow, mirrors `.sp-pillar`).
+  - `.sp-form-card` (form container) and `.sp-field` / `.sp-input` overrides so the existing shadcn `Input`/`Textarea` adopt the rounded, bordered, theme-focus look. Keep using shadcn components — only override styles via className.
+- Preserve current form logic completely:
+  - `react-hook-form` + `zodResolver(contactSchema)`.
+  - `supabase.from("contact_submissions").insert(...)` then `supabase.functions.invoke("send-contact-notification", ...)`.
+  - Toast on success/error, `reset()` on success, `isSubmitting` state.
+- Replace `MarketingHeader`/`MarketingFooter` placement to match audience pages (header above the `.sp-aud` content, footer at the very bottom inside the wrapper — same as `AudiencePage.tsx`).
+- Keep the existing `<SeoHead>` with the same title/description/path so SEO is unchanged.
+- Icons: use `lucide-react` (`Mail`, `LogIn`, `HelpCircle`, `Send`, `Check`) inside themed icon tiles styled with `background: var(--sp-theme-soft); color: var(--sp-theme); border-radius: 12px`.
+- Responsive: form column stacks below info column on `<900px`; final CTA and FAQ teaser collapse to single column on mobile via existing audience CSS breakpoints + a small media query for `.sp-contact-grid`.
+
+## Out of scope
+
+- No changes to the contact submission backend, edge function, or database schema.
+- No changes to other pages, the marketing header, or the footer.
+- No new images or assets needed.
