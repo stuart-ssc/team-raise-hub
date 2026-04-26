@@ -307,8 +307,8 @@ const Schools = () => {
     { Icon: IUsers, title: "PTOs & PTAs", sub: "Parent groups", bg: "rgba(14,159,110,0.10)", color: "#0E9F6E", to: "/schools/pto-pta" },
     { Icon: IMusic, title: "Music Programs", sub: "Band & orchestra", bg: "rgba(255,107,53,0.10)", color: "#FF6B35", to: "/schools/marching-bands" },
     { Icon: IHeart, title: "Booster Clubs", sub: "Athletics & arts", bg: "rgba(123,91,224,0.10)", color: "#7B5BE0", to: "/schools/booster-clubs" },
-    { Icon: IGrad, title: "Academic Clubs", sub: "Honor & STEM", bg: "rgba(224,162,31,0.12)", color: "#E0A21F", to: "/fundraisers" },
-    { Icon: ITheater, title: "Arts Clubs", sub: "Theater & dance", bg: "rgba(224,79,139,0.10)", color: "#E04F8B", to: "/fundraisers" },
+    { Icon: IGrad, title: "Academic Clubs", sub: "Honor & STEM", bg: "rgba(14,138,138,0.12)", color: "#0E8A8A", to: "/schools/academic-clubs" },
+    { Icon: ITheater, title: "Arts Clubs", sub: "Theater & dance", bg: "rgba(214,51,108,0.12)", color: "#D6336C", to: "/schools/arts-clubs" },
   ];
 
   const programList = [
@@ -641,12 +641,14 @@ const Schools = () => {
                 Choose your group to see how Sponsorly fits the way you actually fundraise.
               </p>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, maxWidth: 1000, margin: "0 auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, maxWidth: 1100, margin: "0 auto" }}>
               {[
                 { to: "/schools/sports-teams", label: "Sports Teams", color: "#1F5FE0" },
                 { to: "/schools/booster-clubs", label: "Booster Clubs", color: "#0E9F6E" },
                 { to: "/schools/marching-bands", label: "Marching Bands", color: "#FF6B35" },
                 { to: "/schools/pto-pta", label: "PTOs & PTAs", color: "#7C3AED" },
+                { to: "/schools/academic-clubs", label: "Academic Clubs", color: "#0E8A8A" },
+                { to: "/schools/arts-clubs", label: "Arts Clubs", color: "#D6336C" },
               ].map((item) => (
                 <Link
                   key={item.to}

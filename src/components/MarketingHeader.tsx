@@ -13,6 +13,8 @@ const MarketingHeader = () => {
     { name: 'Booster Clubs', href: '/schools/booster-clubs', desc: 'Multi-team fundraising & sponsor renewals' },
     { name: 'Marching Bands', href: '/schools/marching-bands', desc: 'Trip funds, instrument sponsorships, uniforms' },
     { name: 'PTOs & PTAs', href: '/schools/pto-pta', desc: 'Annual giving, carnivals, teacher grants' },
+    { name: 'Academic Clubs', href: '/schools/academic-clubs', desc: 'Robotics, Math Team, DECA, Mock Trial & more' },
+    { name: 'Arts Clubs', href: '/schools/arts-clubs', desc: 'Theater, choir, dance, film, visual arts' },
   ];
 
   const navigation = [
