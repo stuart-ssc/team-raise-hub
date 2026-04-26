@@ -102,7 +102,7 @@ const Nonprofits = () => (
     sisterCards={[
       { to: "/schools/sports-teams", title: "Sports Teams", body: "Roster fundraisers, sponsor packages, pledge-per-event campaigns.", image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=900&q=80", arrowColor: "#1F5FE0" },
       { to: "/schools/booster-clubs", title: "Booster Clubs", body: "Tiered sponsor packages, capital campaigns, gala & auction nights.", image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=900&q=80", arrowColor: "#0E9F6E" },
-      { to: "/schools/pto-pta", title: "PTOs & PTAs", body: "Direct-give campaigns, jog-a-thons, spring auctions, classroom grants.", image: "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=900&q=80", arrowColor: "#1F5FE0" },
+      { to: "/schools/pto-pta", title: "PTOs & PTAs", body: "Direct-give campaigns, jog-a-thons, spring auctions, classroom grants.", image: "/src/assets/pto-pta-playground.jpg", arrowColor: "#1F5FE0" },
       { to: "/schools/marching-bands", title: "Marching Bands", body: "Trip funds, uniform drives, sponsor-an-instrument, concert ticketing.", image: "https://images.unsplash.com/photo-1574391891836-43b5b7c0a3a4?w=900&q=80", arrowColor: "#FF6B35" },
       { to: "/schools/academic-clubs", title: "Academic Clubs", body: "Robotics, debate, Model UN, FBLA — fund the regional-to-nationals climb.", image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=900&q=80", arrowColor: "#0E8A8A" },
       { to: "/schools/arts-clubs", title: "Arts Clubs", body: "Theater, choir, orchestra, dance — production budgets and patron giving.", image: "https://images.unsplash.com/photo-1503095396549-807759245b35?w=900&q=80", arrowColor: "#D6336C" },
