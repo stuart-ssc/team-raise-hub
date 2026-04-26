@@ -8,7 +8,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { User, Megaphone, CreditCard, Users, Building2, HandCoins } from 'lucide-react';
+import { User, Megaphone, CreditCard, Users, Building2} from 'lucide-react';
 import { AUDIENCE_SCOPED_CSS } from '@/components/audience/audienceStyles';
 
 interface FAQItem {
