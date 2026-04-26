@@ -99,6 +99,8 @@ import SportsTeams from "./pages/schools/SportsTeams";
 import BoosterClubs from "./pages/schools/BoosterClubs";
 import MarchingBands from "./pages/schools/MarchingBands";
 import PtoPta from "./pages/schools/PtoPta";
+import AcademicClubs from "./pages/schools/AcademicClubs";
+import ArtsClubs from "./pages/schools/ArtsClubs";
 
 // Donor Portal Pages
 import DonorPortalHome from "./pages/DonorPortal/Home";
@@ -167,6 +169,12 @@ const AppContent = () => {
         <Route path="/schools/pto-pta" element={<PtoPta />} />
         <Route path="/schools/pto" element={<Navigate to="/schools/pto-pta" replace />} />
         <Route path="/schools/pta" element={<Navigate to="/schools/pto-pta" replace />} />
+        <Route path="/schools/academic-clubs" element={<AcademicClubs />} />
+        <Route path="/schools/academic" element={<Navigate to="/schools/academic-clubs" replace />} />
+        <Route path="/schools/clubs" element={<Navigate to="/schools/academic-clubs" replace />} />
+        <Route path="/schools/arts-clubs" element={<ArtsClubs />} />
+        <Route path="/schools/arts" element={<Navigate to="/schools/arts-clubs" replace />} />
+        <Route path="/schools/theater" element={<Navigate to="/schools/arts-clubs" replace />} />
         <Route path="/schools/:state" element={<StateLandingPage />} />
         <Route path="/nonprofits" element={<Nonprofits />} />
         <Route path="/platform" element={<Platform />} />
