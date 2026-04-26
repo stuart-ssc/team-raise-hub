@@ -224,7 +224,7 @@ export default function Contact() {
                   <div className="sp-ico"><HelpCircle size={20} /></div>
                   <div className="sp-info-body">
                     <h4>Looking for answers fast?</h4>
-                    <p style={{ marginBottom: 4 }}>Browse the FAQ for setup, payments, and campaign help.</p>
+                    <p style={{ marginBottom: 4 }}>Browse the FAQ for setup, payments, and fundraiser help.</p>
                     <span className="sp-info-link">Visit the FAQ →</span>
                   </div>
                 </Link>
@@ -235,7 +235,7 @@ export default function Contact() {
                 <ul>
                   <li><span className="sp-tick"><Tick /></span><span><b style={{ color: "var(--sp-ink)" }}>Quick response</b> from a real human on our team.</span></li>
                   <li><span className="sp-tick"><Tick /></span><span><b style={{ color: "var(--sp-ink)" }}>Personalized guidance</b> tailored to your organization.</span></li>
-                  <li><span className="sp-tick"><Tick /></span><span><b style={{ color: "var(--sp-ink)" }}>Setup &amp; strategy</b> help to launch your first campaign.</span></li>
+                  <li><span className="sp-tick"><Tick /></span><span><b style={{ color: "var(--sp-ink)" }}>Setup &amp; strategy</b> help to launch your first fundraiser.</span></li>
                   <li><span className="sp-tick"><Tick /></span><span><b style={{ color: "var(--sp-ink)" }}>Technical support</b> whenever you need a hand.</span></li>
                 </ul>
               </div>
@@ -301,8 +301,8 @@ export default function Contact() {
               <span className="sp-faq-arr">Read more →</span>
             </Link>
             <Link to="/faq" className="sp-faq-card">
-              <h4>Campaigns</h4>
-              <p>Launching pledge, sponsorship, merchandise, and event campaigns.</p>
+              <h4>Fundraisers</h4>
+              <p>Launching pledge, sponsorship, merchandise, and event fundraisers.</p>
               <span className="sp-faq-arr">Read more →</span>
             </Link>
             <Link to="/faq" className="sp-faq-card">
