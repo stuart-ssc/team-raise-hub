@@ -29,7 +29,7 @@ const MarchingBands = () => (
     primaryCta="Start a band fundraiser — free"
     secondaryCta="See how it works"
     microPoints={["Zero platform fees", "Per-student tracking", "Trip-fund automation"]}
-    heroImage="https://images.unsplash.com/photo-1574391891836-43b5b7c0a3a4?w=1200&q=80"
+    heroImage="https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=1200&q=80"
     heroBadgeAmount="$92,400"
     heroBadgeLabel="Raised for Indianapolis trip"
     heroOrgName="Lakeside HS Marching Lions"
