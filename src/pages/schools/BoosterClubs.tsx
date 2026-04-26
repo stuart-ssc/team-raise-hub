@@ -99,11 +99,13 @@ const BoosterClubs = () => (
     ]}
     sisterHeadline="Not running a booster club? We're built for these groups too."
     sisterSub="Same platform, same zero fees — tailored for every program on campus and beyond."
-    sisterLinks={[
-      { to: "/schools/sports-teams", label: "Sports Teams", iconBg: "rgba(31,95,224,0.12)", iconColor: "#1F5FE0", icon: SVG.player },
-      { to: "/schools/pto-pta", label: "PTOs & PTAs", iconBg: "rgba(31,95,224,0.12)", iconColor: "#1F5FE0", icon: SVG.parents },
-      { to: "/schools/marching-bands", label: "Marching Bands", iconBg: "rgba(255,107,53,0.14)", iconColor: "#FF6B35", icon: SVG.star },
-      { to: "/nonprofits", label: "Nonprofits", iconBg: "rgba(124,58,237,0.14)", iconColor: "#7C3AED", icon: SVG.heart },
+    sisterCards={[
+      { to: "/schools/sports-teams", title: "Sports Teams", body: "Roster fundraisers, sponsor packages, pledge-per-event campaigns.", image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=900&q=80", arrowColor: "#1F5FE0" },
+      { to: "/schools/pto-pta", title: "PTOs & PTAs", body: "Direct-give campaigns, jog-a-thons, spring auctions, classroom grants.", image: "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=900&q=80", arrowColor: "#1F5FE0" },
+      { to: "/schools/marching-bands", title: "Marching Bands", body: "Trip funds, uniform drives, sponsor-an-instrument, concert ticketing.", image: "https://images.unsplash.com/photo-1574391891836-43b5b7c0a3a4?w=900&q=80", arrowColor: "#FF6B35" },
+      { to: "/schools/academic-clubs", title: "Academic Clubs", body: "Robotics, debate, Model UN, FBLA — fund the regional-to-nationals climb.", image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=900&q=80", arrowColor: "#0E8A8A" },
+      { to: "/schools/arts-clubs", title: "Arts Clubs", body: "Theater, choir, orchestra, dance — production budgets and patron giving.", image: "https://images.unsplash.com/photo-1503095396549-807759245b35?w=900&q=80", arrowColor: "#D6336C" },
+      { to: "/nonprofits", title: "Nonprofits", body: "Annual appeals, peer-to-peer events, recurring giving, major-gift CRM.", image: "https://images.unsplash.com/photo-1593113598332-cd288d649433?w=900&q=80", arrowColor: "#7C3AED" },
     ]}
     ctaHeadlinePre="Ready to fund every team"
     ctaHeadlineEm="under one roof?"
