@@ -5,6 +5,7 @@ import { SeoHead } from "@/components/seo/SeoHead";
 import { allStates } from "@/lib/stateUtils";
 import heroImage from "@/assets/schools-hero.png";
 import teamImage from "@/assets/team-collaboration.jpg";
+import ptoPtaPlayground from "@/assets/pto-pta-playground.jpg";
 
 /**
  * Sponsorly for Schools — rebuilt to match the approved 2026 mockup.
@@ -100,6 +101,20 @@ const SCOPED_CSS = `
 .sp-schools .sp-program .ico { width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center; margin: 0 auto 10px; }
 .sp-schools .sp-program h4 { font-size: 13px; font-weight: 600; color: var(--sp-ink); margin-bottom: 2px; }
 .sp-schools .sp-program p { font-size: 11px; color: var(--sp-muted); }
+
+/* Program image cards (sister-card style) */
+.sp-schools .sp-prog-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin: 40px auto 0; max-width: 1200px; text-align: left; }
+.sp-schools .sp-prog-card { background: white; border: 1px solid var(--sp-line); border-radius: 16px; overflow: hidden; text-decoration: none; color: inherit; display: flex; flex-direction: column; transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.sp-schools .sp-prog-card:hover { transform: translateY(-4px); box-shadow: 0 18px 42px -18px rgba(10,15,30,0.22); }
+.sp-schools .sp-prog-card .pc-img { width: 100%; aspect-ratio: 16 / 10; background-size: cover; background-position: center; background-color: var(--sp-paper-2); }
+.sp-schools .sp-prog-card .pc-body { padding: 22px 24px 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex: 1; }
+.sp-schools .sp-prog-card .pc-text { min-width: 0; }
+.sp-schools .sp-prog-card .pc-body h4 { font-size: 17px; font-weight: 700; letter-spacing: -0.005em; color: var(--sp-ink); margin: 0 0 6px; line-height: 1.25; }
+.sp-schools .sp-prog-card .pc-body p { font-size: 13.5px; line-height: 1.5; color: var(--sp-muted); margin: 0; }
+.sp-schools .sp-prog-card .pc-arr { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; transition: transform .2s ease; }
+.sp-schools .sp-prog-card:hover .pc-arr { transform: translateX(4px); }
+@media (max-width: 960px) { .sp-schools .sp-prog-cards { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px) { .sp-schools .sp-prog-cards { grid-template-columns: 1fr; } }
 
 /* Two-column section */
 .sp-schools .sp-two { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
@@ -311,6 +326,15 @@ const Schools = () => {
     { Icon: ITheater, title: "Arts Clubs", sub: "Theater & dance", bg: "rgba(214,51,108,0.12)", color: "#D6336C", to: "/schools/arts-clubs" },
   ];
 
+  const programCards = [
+    { to: "/schools/sports-teams", title: "Sports Teams", body: "Roster fundraisers, sponsor packages, pledge-per-event campaigns.", image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=900&q=80", arrowColor: "#1F5FE0" },
+    { to: "/schools/booster-clubs", title: "Booster Clubs", body: "Tiered sponsor packages, capital campaigns, gala & auction nights.", image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=900&q=80", arrowColor: "#0E9F6E" },
+    { to: "/schools/marching-bands", title: "Marching Bands", body: "Trip funds, uniform drives, sponsor-an-instrument, concert ticketing.", image: "https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=900&q=80", arrowColor: "#FF6B35" },
+    { to: "/schools/pto-pta", title: "PTOs & PTAs", body: "Direct-give campaigns, jog-a-thons, spring auctions, classroom grants.", image: ptoPtaPlayground, arrowColor: "#7C3AED" },
+    { to: "/schools/academic-clubs", title: "Academic Clubs", body: "Robotics, debate, Model UN, FBLA — fund the regional-to-nationals climb.", image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=900&q=80", arrowColor: "#0E8A8A" },
+    { to: "/schools/arts-clubs", title: "Arts Clubs", body: "Theater, choir, orchestra, dance — production budgets and patron giving.", image: "https://images.unsplash.com/photo-1503095396549-807759245b35?w=900&q=80", arrowColor: "#D6336C" },
+  ];
+
   const programList = [
     { color: "#1F5FE0", letter: "L", name: "Lincoln Athletics", sub: "All sports • 6 teams", amt: "$18,420", badge: "Active" },
     { color: "#0E9F6E", letter: "P", name: "PTO General Fund", sub: "School-wide", amt: "$11,250", badge: "Active" },
@@ -381,14 +405,27 @@ const Schools = () => {
             <p className="sp-lead">
               From varsity football to spring musicals, Sponsorly equips every team and club with the same world-class fundraising tools.
             </p>
-            <div className="sp-programs">
-              {programs.map((p, i) => (
-                <Link to={p.to} className="sp-program" key={i} style={{ textDecoration: "none", color: "inherit" }}>
-                  <div className="ico" style={{ background: p.bg, color: p.color }}>
-                    <p.Icon />
+            <div className="sp-prog-cards">
+              {programCards.map((card) => (
+                <Link to={card.to} className="sp-prog-card" key={card.to}>
+                  <div
+                    className="pc-img"
+                    style={{ backgroundImage: `url('${card.image}')` }}
+                    role="img"
+                    aria-label={card.title}
+                  />
+                  <div className="pc-body">
+                    <div className="pc-text">
+                      <h4>{card.title}</h4>
+                      <p>{card.body}</p>
+                    </div>
+                    <div className="pc-arr" style={{ color: card.arrowColor }} aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                        <polyline points="13 6 19 12 13 18" />
+                      </svg>
+                    </div>
                   </div>
-                  <h4>{p.title}</h4>
-                  <p>{p.sub}</p>
                 </Link>
               ))}
             </div>
