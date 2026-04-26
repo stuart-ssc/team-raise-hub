@@ -1,107 +1,63 @@
-# Academic Clubs & Arts Clubs landing pages
+## Overview
 
-Add two new sub-pages of `/schools` matching the supplied mockups, using the same `AudiencePage` template that powers Sports Teams, Booster Clubs, Marching Bands, and PTO/PTA. Wire them into routing, the Schools overview, the header dropdown, and the sitemap.
+Replace the small icon-row "sister pages" section on every audience sub-page with the new image-card grid shown in the mockup. Each card shows a hero photo on top, then a bold title, a one-line description, and a colored arrow link. The current page's card is omitted on each page so users only see the *other* programs.
 
-## Pages to create
+## Card catalog (7 total — current page hides itself)
 
-### 1. `/schools/academic-clubs` — `src/pages/schools/AcademicClubs.tsx`
-- Theme: **accent** (orange/teal hybrid — use `accent` for now; teal would require a new theme. Mockup uses teal, so we'll add a `teal` theme — see Technical section).
-- Hero chip: "Built for Academic Clubs"
-- Headline: *Fund the trip,* / *the team, the trophy.*
-- Sub: "Robotics, Math Team, Science Olympiad, Quiz Bowl, Model UN, DECA. The travel is real, the entry fees are real, the parts budgets are real — and Sponsorly is built for every one of them."
-- CTAs: "Start a club fundraiser — free" / "Book a 15-minute walkthrough"
-- Micro: Per-student trip ledgers · Sponsor & grant tracking · Coach + parent access
-- Hero image: robotics/STEM photo, badge `$12,540` "Raised this season", org "Westview HS Robotics", meta "Team #4126 · 32 members · Worlds bound", bar 84%
-- Pillars (3): "Per-student travel ledgers" · "Corporate sponsors that actually renew" · "Grants & STEM funding, organized" (icons: doc/bars/cash)
-- Fundraisers (4): "Scholarship funding" · "Tournament travel" · "Corporate sponsorships" · "Camp & clinic scholarships"
-- CRM: "The whole roster. The whole rolodex. One screen." — sponsor/donor table with role/trip/lifetime/status columns
-- Real campaigns (4): FIRST Worlds travel · Build-season parts & kits · Mock Trial nationals trip · Science Olympiad event kit
-- Stats strip (teal gradient): 540+ academic clubs · $14M+ raised · 91% of trips fully funded
-- Sister links: Sports Teams, Booster Clubs, Marching Bands, Arts Clubs
-- Final CTA: *Fund the season.* / *Fund every kid on the team.*
+| Slug | Title | Short description | Image (Unsplash) |
+|---|---|---|---|
+| `/schools/sports-teams` | Sports Teams | Roster fundraisers, sponsor packages, pledge-per-event campaigns. | soccer-on-grass photo (matches mockup) |
+| `/schools/booster-clubs` | Booster Clubs | Tiered sponsor packages, capital campaigns, gala & auction nights. | basketball / athletics action photo |
+| `/schools/pto-pta` | PTOs & PTAs | Direct-give campaigns, jog-a-thons, spring auctions, classroom grants. | apple on books / classroom still life |
+| `/schools/marching-bands` | Marching Bands | Trip funds, uniform drives, sponsor-an-instrument, concert ticketing. | marching band / brass section photo (NEW card) |
+| `/schools/academic-clubs` | Academic Clubs | Robotics, debate, Model UN, FBLA — fund the regional-to-nationals climb. | classroom / kids raising hands |
+| `/schools/arts-clubs` | Arts Clubs | Theater, choir, orchestra, dance — production budgets and patron giving. | red-curtain silhouettes |
+| `/nonprofits` | Nonprofits | Annual appeals, peer-to-peer events, recurring giving, major-gift CRM. | volunteer / boxes photo |
 
-### 2. `/schools/arts-clubs` — `src/pages/schools/ArtsClubs.tsx`
-- Theme: **pink** (new — see Technical section). Mockup uses magenta/pink.
-- Hero chip: "Built for Arts Clubs"
-- Headline: *Fund the show.* / *From flats to footlights.*
-- Sub: "Theater, choir, dance, film, visual arts, literary mag. Every arts program runs on ticket sales, patron gifts, and a budget tied together with hot glue. Sponsorly fixes the budget part."
-- CTAs: "Start an arts fundraiser — free" / "See a sample show →"
-- Micro: Ticketing & seating · Patron & donor CRM · Royalty-friendly receipts
-- Hero image: theater/curtain photo, badge `$28,140`, org "Lincoln HS Theater — Spring Musical", bar 89%
-- Pillars (3): "Ticketing & reserved seating, built-in" · "Patron circle & named-gift recognition" · "Show-budget bookkeeping" (icons: ticket/star/doc)
-- Fundraisers (4): "Show ticket sales" · "Program-book ad sales" · "Patron drive" · "Gallery night & auction"
-- CRM: "Every patron, every ticket, every standing ovation." — patron table
-- Real campaigns (4): Spring musical box-office · Patron circle annual drive · Black-box music-fest playlist · Visual arts gallery night
-- Stats strip (pink gradient): 480+ arts programs · $12M+ raised for theater & studios · 2.8x patron renewal vs. industry average
-- Sister links: Sports Teams, Booster Clubs, Marching Bands, Academic Clubs
-- Final CTA: *Curtain up.* / *Fund every show, every season.*
+The Marching Bands card is the new addition — it uses the orange/accent theme color for its arrow to match the existing site palette.
 
-## Wiring
+## Visual spec (from the mockup)
 
-### Routes (`src/App.tsx`)
-Add imports + routes (above `/schools/:state` so static segments win):
-```tsx
-import AcademicClubs from "./pages/schools/AcademicClubs";
-import ArtsClubs from "./pages/schools/ArtsClubs";
+- White cards with `~14px` border-radius and a subtle border, sitting on the off-white page background.
+- Cover image on top filling the full card width, fixed aspect (~16:10), `object-fit: cover`, no padding.
+- Card body: ~24px padding, bold dark title (`~18px`), muted gray one-line subtitle, and a colored right-arrow icon aligned to the bottom-right of the body. The arrow color matches the destination page's theme color (blue for sports/PTOs, green for boosters, orange for bands, teal for academic, pink for arts, violet for nonprofits).
+- Layout: 3 columns desktop → 2 columns tablet → 1 column mobile.
+- Section heading and subhead unchanged in structure but restyled to match the mockup (centered serif headline, muted subhead, generous top padding).
 
-<Route path="/schools/academic-clubs" element={<AcademicClubs />} />
-<Route path="/schools/academic" element={<Navigate to="/schools/academic-clubs" replace />} />
-<Route path="/schools/clubs" element={<Navigate to="/schools/academic-clubs" replace />} />
-<Route path="/schools/arts-clubs" element={<ArtsClubs />} />
-<Route path="/schools/arts" element={<Navigate to="/schools/arts-clubs" replace />} />
-<Route path="/schools/theater" element={<Navigate to="/schools/arts-clubs" replace />} />
-```
+## Files to change
 
-### Schools overview (`src/pages/Schools.tsx`)
-Update the two existing tiles (lines 310-311) so they no longer fall back to `/fundraisers`:
-- Academic Clubs → `/schools/academic-clubs`
-- Arts Clubs → `/schools/arts-clubs`
+1. **`src/components/audience/AudiencePage.tsx`**
+   - Replace the `SisterLink` interface and the sister-pages JSX block with a new `sisterCards` prop (image, title, body, to, arrowColor).
+   - Render the new image-card grid.
 
-Also add both to the cross-link grid further down (around line 649).
+2. **`src/components/audience/audienceStyles.ts`**
+   - Replace `.sp-sister-grid` / `.sp-sister-link` styles with new `.sp-sister-card` styles (image header, body padding, hover lift, responsive breakpoints).
 
-### Header dropdown (`src/components/MarketingHeader.tsx`)
-Add "Academic Clubs" and "Arts Clubs" entries to the existing Schools hover dropdown.
+3. **All 7 audience pages** — swap the existing `sisterLinks` array for a new `sisterCards` array containing the 6 *other* programs (current page omitted):
+   - `src/pages/schools/SportsTeams.tsx`
+   - `src/pages/schools/BoosterClubs.tsx`
+   - `src/pages/schools/PtoPta.tsx`
+   - `src/pages/schools/MarchingBands.tsx`
+   - `src/pages/schools/AcademicClubs.tsx`
+   - `src/pages/schools/ArtsClubs.tsx`
+   - `src/pages/Nonprofits.tsx`
 
-### Sitemap (`public/sitemap-main.xml`)
-Add `<url>` entries for both new paths.
+   Each page passes only the 6 other cards, in this canonical order: Sports Teams → Booster Clubs → PTOs & PTAs → Marching Bands → Academic Clubs → Arts Clubs → Nonprofits (skipping itself).
 
-### Sister links on existing pages
-Update Sports Teams, Booster Clubs, Marching Bands, PTO/PTA, and Nonprofits sister-link lists so 1–2 of them point to the new Academic/Arts pages where it makes sense (keeps the cross-link grid fresh without exceeding 4 items).
+## Technical notes
 
-## Technical details
-
-### New theme colors (`src/components/audience/audienceStyles.ts`)
-The mockups use teal (academic) and magenta/pink (arts) — neither exists today. Add two CSS theme classes alongside the existing four:
-```css
-.sp-aud.theme-teal { --sp-theme: #0E8A8A; --sp-theme-deep: #0A6F6F; --sp-theme-soft: rgba(14,138,138,0.12); }
-.sp-aud.theme-pink { --sp-theme: #D6336C; --sp-theme-deep: #B02659; --sp-theme-soft: rgba(214,51,108,0.12); }
-```
-And extend the `AudienceTheme` type in `AudiencePage.tsx` to include `"teal" | "pink"`. The existing `EyebrowColor` union (`blue | green | accent | violet`) also needs `teal` and `pink` added, plus the matching `.sp-eyebrow.teal` / `.sp-eyebrow.pink` classes in the stylesheet.
-
-### Stats-strip gradients
-- Academic: `linear-gradient(135deg, #0E8A8A 0%, #0A6F6F 100%)`
-- Arts: `linear-gradient(135deg, #D6336C 0%, #9D1F4E 100%)`
-
-### Hero images (Unsplash)
-- Academic Clubs: `https://images.unsplash.com/photo-1535378917042-10a22c95931a?w=1200&q=80` (robotics)
-- Arts Clubs: `https://images.unsplash.com/photo-1503095396549-807759245b35?w=1200&q=80` (theater curtain)
-
-### SEO
-Each page gets a `<SeoHead>` via the template's `seo` prop. Titles:
-- "Sponsorly for Academic Clubs — Fund the trip, the team, the trophy"
-- "Sponsorly for Arts Clubs — Fund the show, from flats to footlights"
-
-## Files
-
-**Create**
-- `src/pages/schools/AcademicClubs.tsx`
-- `src/pages/schools/ArtsClubs.tsx`
-
-**Edit**
-- `src/components/audience/AudiencePage.tsx` (extend `AudienceTheme` + `EyebrowColor`)
-- `src/components/audience/audienceStyles.ts` (add teal + pink theme blocks and eyebrow variants)
-- `src/App.tsx` (routes + redirects)
-- `src/pages/Schools.tsx` (tile destinations + cross-link grid)
-- `src/components/MarketingHeader.tsx` (Schools dropdown)
-- `public/sitemap-main.xml` (two new URLs)
-- `src/pages/schools/SportsTeams.tsx`, `BoosterClubs.tsx`, `MarchingBands.tsx`, `PtoPta.tsx`, `src/pages/Nonprofits.tsx` (refresh sister links — minor)
+- New prop shape:
+  ```ts
+  interface SisterCard {
+    to: string;
+    title: string;
+    body: string;
+    image: string;       // Unsplash URL
+    arrowColor: string;  // hex matching destination theme
+  }
+  sisterCards: SisterCard[];
+  ```
+- Remove the now-unused `SisterLink` type and `Icon`-based sister rendering.
+- Images are Unsplash URLs with `?w=900&q=80` query params for crisp 2x rendering at card width.
+- Section keeps its existing `sisterHeadline` / `sisterSub` props — only the grid below them changes.
+- No routing, SEO, or sitemap changes required.
