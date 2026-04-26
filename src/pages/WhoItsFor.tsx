@@ -19,49 +19,58 @@ const SVG = {
   bars: "M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z",
 };
 
+SVG.cap = "M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z";
+SVG.mask = "M12 2C7 2 3 6 3 11v3a4 4 0 004 4h1a3 3 0 003-3v-1H8.5a.5.5 0 010-1H10v-2H8.5a.5.5 0 010-1H10c0-2.5 1.5-4 2-4s2 1.5 2 4h1.5a.5.5 0 010 1H14v2h1.5a.5.5 0 010 1H14v1a3 3 0 003 3h1a4 4 0 004-4v-3c0-5-4-9-9-9z";
+
 const audiences = [
   {
     to: "/schools/sports-teams",
     title: "Sports Teams",
-    body: "Roster fundraisers, jersey sponsors, team stores, and pledge-per-event campaigns built for school and club athletics.",
+    body: "Roster fundraisers, sponsor packages, team stores, pledge-per-event fundraisers. Fund the season your team deserves.",
     photo: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=900&q=80",
     iconBg: "rgba(31,95,224,0.12)", iconColor: "#1F5FE0", icon: SVG.player,
-    wide: true,
   },
   {
     to: "/schools/booster-clubs",
     title: "Booster Clubs",
-    body: "Multi-team rosters, restricted-fund tracking, and sponsor renewals for the volunteers running the whole athletic program.",
+    body: "Tiered sponsor packages, capital fundraisers, gala & auction nights. Run the program without the binder.",
     photo: "https://images.unsplash.com/photo-1551958219-acbc608c6377?w=900&q=80",
     iconBg: "rgba(14,159,110,0.14)", iconColor: "#0E9F6E", icon: SVG.shield,
   },
   {
-    to: "/schools/marching-bands",
-    title: "Marching Bands",
-    body: "Per-student trip accounts, instrument sponsorships, and uniform drives for music programs of every size.",
-    photo: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=900&q=80",
-    iconBg: "rgba(255,107,53,0.14)", iconColor: "#FF6B35", icon: SVG.music,
-  },
-  {
     to: "/schools/pto-pta",
     title: "PTOs & PTAs",
-    body: "Annual giving drives, carnival ticketing, teacher grants, and spirit-wear stores in one volunteer-friendly platform.",
+    body: "Direct-give fundraisers, jog-a-thons, spring auctions, classroom grants. Volunteer-friendly, board-ready.",
     photo: "https://images.unsplash.com/photo-1577896851231-70ef18881754?w=900&q=80",
-    iconBg: "rgba(124,58,237,0.14)", iconColor: "#7C3AED", icon: SVG.parents,
+    iconBg: "rgba(255,107,53,0.14)", iconColor: "#FF6B35", icon: SVG.parents,
+  },
+  {
+    to: "/schools/marching-bands",
+    title: "Marching Bands",
+    body: "Per-student fair-share, BOA travel funding, program-book ads, alumni drives. Built for a marching budget.",
+    photo: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=900&q=80",
+    iconBg: "rgba(124,58,237,0.14)", iconColor: "#7C3AED", icon: SVG.music,
+  },
+  {
+    to: "/schools/academic-clubs",
+    title: "Academic Clubs",
+    body: "Robotics, debate, Science Olympiad, Model UN, FBLA, esports. Travel funds, registration fees, equipment grants — built for the regional-to-nationals climb.",
+    photo: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=900&q=80",
+    iconBg: "rgba(14,138,138,0.14)", iconColor: "#0E8A8A", icon: SVG.cap,
+  },
+  {
+    to: "/schools/arts-clubs",
+    title: "Arts Clubs",
+    body: "Theater, choir, orchestra, dance, film, visual arts. Production budgets, season subscriptions, donor lounges, program-book ads — patron culture without the binder.",
+    photo: "https://images.unsplash.com/photo-1503095396549-807759245b35?w=900&q=80",
+    iconBg: "rgba(214,51,108,0.14)", iconColor: "#D6336C", icon: SVG.mask,
   },
   {
     to: "/nonprofits",
     title: "Nonprofits",
-    body: "Donor CRM, recurring giving, peer-to-peer campaigns, and IRS-ready receipts purpose-built for 501(c)(3)s.",
+    body: "Annual appeals, peer-to-peer events, capital fundraisers, recurring giving, major-gift CRM. Big-shop tools, small-shop fees.",
     photo: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=900&q=80",
     iconBg: "rgba(124,58,237,0.14)", iconColor: "#7C3AED", icon: SVG.heart,
-  },
-  {
-    to: "/for-businesses",
-    title: "Local Businesses",
-    body: "Sponsor every team, school, and nonprofit in your community from one dashboard — with reporting your accountant will love.",
-    photo: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=900&q=80",
-    iconBg: "rgba(31,95,224,0.12)", iconColor: "#1F5FE0", icon: SVG.bars,
     wide: true,
   },
 ];
@@ -82,11 +91,11 @@ const WhoItsFor = () => (
           <span className="sp-chip-dot" /> Who's it for?
         </span>
         <h1>
-          One platform.<br />
-          <em>Every kind of fundraiser.</em>
+          Built for the people who<br />
+          <em>actually do the asking.</em>
         </h1>
         <p>
-          From varsity football to the spring book fair to a community foundation's year-end appeal — Sponsorly is built for the way each of these groups actually raises. Pick yours below.
+          Coaches, parent volunteers, band directors, robotics mentors, theater parents, executive directors, treasurers, presidents. Sponsorly is the same zero-fee platform tailored for every kind of group that raises.
         </p>
       </div>
     </section>
