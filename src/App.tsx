@@ -93,6 +93,13 @@ import RosterCampaigns from "./pages/RosterCampaigns";
 import PledgeCampaigns from "./pages/PledgeCampaigns";
 import ForBusinesses from "./pages/ForBusinesses";
 
+// Audience pages
+import WhoItsFor from "./pages/WhoItsFor";
+import SportsTeams from "./pages/schools/SportsTeams";
+import BoosterClubs from "./pages/schools/BoosterClubs";
+import MarchingBands from "./pages/schools/MarchingBands";
+import PtoPta from "./pages/schools/PtoPta";
+
 // Donor Portal Pages
 import DonorPortalHome from "./pages/DonorPortal/Home";
 import DonorPortalPurchases from "./pages/DonorPortal/Purchases";
@@ -149,9 +156,23 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/schools" element={<Schools />} />
+        {/* Schools sub-pages (static segments rank above /schools/:state) */}
+        <Route path="/schools/sports-teams" element={<SportsTeams />} />
+        <Route path="/schools/sports" element={<Navigate to="/schools/sports-teams" replace />} />
+        <Route path="/schools/booster-clubs" element={<BoosterClubs />} />
+        <Route path="/schools/boosters" element={<Navigate to="/schools/booster-clubs" replace />} />
+        <Route path="/schools/marching-bands" element={<MarchingBands />} />
+        <Route path="/schools/band" element={<Navigate to="/schools/marching-bands" replace />} />
+        <Route path="/schools/bands" element={<Navigate to="/schools/marching-bands" replace />} />
+        <Route path="/schools/pto-pta" element={<PtoPta />} />
+        <Route path="/schools/pto" element={<Navigate to="/schools/pto-pta" replace />} />
+        <Route path="/schools/pta" element={<Navigate to="/schools/pto-pta" replace />} />
         <Route path="/schools/:state" element={<StateLandingPage />} />
         <Route path="/nonprofits" element={<Nonprofits />} />
         <Route path="/platform" element={<Platform />} />
+        <Route path="/who-its-for" element={<WhoItsFor />} />
+        <Route path="/who-it-is-for" element={<Navigate to="/who-its-for" replace />} />
+        <Route path="/whoitsfor" element={<Navigate to="/who-its-for" replace />} />
         <Route path="/features" element={<Features />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />

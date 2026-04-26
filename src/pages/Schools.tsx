@@ -630,6 +630,42 @@ const Schools = () => {
           </div>
         </section>
 
+        {/* Audience sub-page cross-links */}
+        <section style={{ background: "white", borderTop: "1px solid #E6E9F0", borderBottom: "1px solid #E6E9F0", padding: "72px 0" }}>
+          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px" }}>
+            <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 32px" }}>
+              <h3 style={{ fontFamily: '"Instrument Serif", Georgia, serif', fontWeight: 400, fontSize: "clamp(28px, 3.2vw, 40px)", lineHeight: 1.1, margin: "0 0 10px", color: "#0A0F1E" }}>
+                Built for every group on campus.
+              </h3>
+              <p style={{ color: "#6B7489", fontSize: 15, margin: 0 }}>
+                Choose your group to see how Sponsorly fits the way you actually fundraise.
+              </p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, maxWidth: 1000, margin: "0 auto" }}>
+              {[
+                { to: "/schools/sports-teams", label: "Sports Teams", color: "#1F5FE0" },
+                { to: "/schools/booster-clubs", label: "Booster Clubs", color: "#0E9F6E" },
+                { to: "/schools/marching-bands", label: "Marching Bands", color: "#FF6B35" },
+                { to: "/schools/pto-pta", label: "PTOs & PTAs", color: "#7C3AED" },
+              ].map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    background: "#FAFAF7", border: "1px solid #E6E9F0", borderRadius: 14,
+                    padding: "16px 18px", color: "#0A0F1E", textDecoration: "none",
+                    fontWeight: 600, fontSize: 14, transition: "transform .2s, border-color .2s",
+                  }}
+                >
+                  <span><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 999, background: item.color, marginRight: 10, verticalAlign: "middle" }} />{item.label}</span>
+                  <span style={{ color: "#6B7489" }}>→</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <MarketingFooter />
       </div>
     </>

@@ -5,9 +5,18 @@ import SponsorlyLogo from '@/components/SponsorlyLogo';
 
 const MarketingHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [schoolsOpen, setSchoolsOpen] = useState(false);
+
+  const schoolsMenu = [
+    { name: 'Schools overview', href: '/schools', desc: 'See how Sponsorly works for the whole campus' },
+    { name: 'Sports Teams', href: '/schools/sports-teams', desc: 'Roster fundraisers, sponsors, team stores' },
+    { name: 'Booster Clubs', href: '/schools/booster-clubs', desc: 'Multi-team fundraising & sponsor renewals' },
+    { name: 'Marching Bands', href: '/schools/marching-bands', desc: 'Trip funds, instrument sponsorships, uniforms' },
+    { name: 'PTOs & PTAs', href: '/schools/pto-pta', desc: 'Annual giving, carnivals, teacher grants' },
+  ];
 
   const navigation = [
-    { name: 'Schools', href: '/schools' },
+    { name: "Who's it for", href: '/who-its-for' },
     { name: 'Fundraisers', href: '/fundraisers' },
     { name: 'Features', href: '/features' },
     { name: 'Pricing', href: '/pricing' },
@@ -29,6 +38,42 @@ const MarketingHeader = () => {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex md:items-center md:gap-9">
+            {/* Schools dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => setSchoolsOpen(true)}
+              onMouseLeave={() => setSchoolsOpen(false)}
+            >
+              <Link
+                to="/schools"
+                className={`${linkClass} inline-flex items-center gap-1`}
+                onFocus={() => setSchoolsOpen(true)}
+              >
+                Schools
+                <span aria-hidden className="text-[10px] mt-px">▾</span>
+              </Link>
+              {schoolsOpen && (
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 top-full pt-3 w-[340px]"
+                  onMouseEnter={() => setSchoolsOpen(true)}
+                  onMouseLeave={() => setSchoolsOpen(false)}
+                >
+                  <div className="rounded-2xl border border-[#0A0F1E]/[0.08] bg-white shadow-[0_20px_50px_-20px_rgba(10,15,30,0.25)] p-2">
+                    {schoolsMenu.map((item) => (
+                      <Link
+                        key={item.href}
+                        to={item.href}
+                        className="block rounded-xl px-3 py-2.5 hover:bg-[#FAFAF7] transition"
+                        onClick={() => setSchoolsOpen(false)}
+                      >
+                        <div className="text-sm font-semibold text-[#0A0F1E]">{item.name}</div>
+                        <div className="text-xs text-[#6B7489] mt-0.5">{item.desc}</div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             {navigation.map((item) => (
               <Link key={item.name} to={item.href} className={linkClass}>
                 {item.name}
@@ -61,6 +106,21 @@ const MarketingHeader = () => {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-[#0A0F1E]/[0.06] py-4">
             <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <div className="text-xs font-semibold uppercase tracking-wider text-[#6B7489]">
+                  Schools
+                </div>
+                {schoolsMenu.map((item) => (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className="text-base font-medium text-[#2B3345] hover:text-[#1F5FE0] transition-colors pl-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
               {navigation.map((item) => (
                 <Link
                   key={item.name}
