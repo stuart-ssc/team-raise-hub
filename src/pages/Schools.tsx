@@ -303,12 +303,12 @@ const StateDirectory = () => {
 
 const Schools = () => {
   const programs = [
-    { Icon: ITrophy, title: "Sports Teams", sub: "Varsity & JV", bg: "rgba(31,95,224,0.10)", color: "#1F5FE0" },
-    { Icon: IUsers, title: "PTOs & PTAs", sub: "Parent groups", bg: "rgba(14,159,110,0.10)", color: "#0E9F6E" },
-    { Icon: IMusic, title: "Music Programs", sub: "Band & orchestra", bg: "rgba(255,107,53,0.10)", color: "#FF6B35" },
-    { Icon: IHeart, title: "Booster Clubs", sub: "Athletics & arts", bg: "rgba(123,91,224,0.10)", color: "#7B5BE0" },
-    { Icon: IGrad, title: "Academic Clubs", sub: "Honor & STEM", bg: "rgba(224,162,31,0.12)", color: "#E0A21F" },
-    { Icon: ITheater, title: "Arts Clubs", sub: "Theater & dance", bg: "rgba(224,79,139,0.10)", color: "#E04F8B" },
+    { Icon: ITrophy, title: "Sports Teams", sub: "Varsity & JV", bg: "rgba(31,95,224,0.10)", color: "#1F5FE0", to: "/schools/sports-teams" },
+    { Icon: IUsers, title: "PTOs & PTAs", sub: "Parent groups", bg: "rgba(14,159,110,0.10)", color: "#0E9F6E", to: "/schools/pto-pta" },
+    { Icon: IMusic, title: "Music Programs", sub: "Band & orchestra", bg: "rgba(255,107,53,0.10)", color: "#FF6B35", to: "/schools/marching-bands" },
+    { Icon: IHeart, title: "Booster Clubs", sub: "Athletics & arts", bg: "rgba(123,91,224,0.10)", color: "#7B5BE0", to: "/schools/booster-clubs" },
+    { Icon: IGrad, title: "Academic Clubs", sub: "Honor & STEM", bg: "rgba(224,162,31,0.12)", color: "#E0A21F", to: "/fundraisers" },
+    { Icon: ITheater, title: "Arts Clubs", sub: "Theater & dance", bg: "rgba(224,79,139,0.10)", color: "#E04F8B", to: "/fundraisers" },
   ];
 
   const programList = [
@@ -383,13 +383,13 @@ const Schools = () => {
             </p>
             <div className="sp-programs">
               {programs.map((p, i) => (
-                <div className="sp-program" key={i}>
+                <Link to={p.to} className="sp-program" key={i} style={{ textDecoration: "none", color: "inherit" }}>
                   <div className="ico" style={{ background: p.bg, color: p.color }}>
                     <p.Icon />
                   </div>
                   <h4>{p.title}</h4>
                   <p>{p.sub}</p>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
