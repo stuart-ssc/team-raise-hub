@@ -8,8 +8,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
-import { User, Megaphone, CreditCard, Users, Building2 } from 'lucide-react';
+import { User, Megaphone, CreditCard, Users, Building2, HandCoins } from 'lucide-react';
+import { AUDIENCE_SCOPED_CSS } from '@/components/audience/audienceStyles';
 
 interface FAQItem {
   question: string;
@@ -52,34 +52,39 @@ const faqCategories: FAQCategory[] = [
     ],
   },
   {
-    id: 'campaigns',
-    label: 'Campaigns',
+    id: 'fundraisers',
+    label: 'Fundraisers',
     icon: <Megaphone className="h-4 w-4" />,
     questions: [
       {
-        question: 'What types of campaigns can I create?',
+        question: 'What types of fundraisers can I create?',
         answer:
-          'Sponsorly supports five campaign types: Sponsorships (business-backed funding), Donations (direct giving), Events (ticketed activities), Merchandise (product sales), and Roster-Enabled campaigns (individual fundraising pages for team members).',
+          'Sponsorly supports six fundraiser types: Sponsorships (business-backed funding), Donations (direct giving), Pledges (per-event or per-milestone giving like jog-a-thons and read-a-thons), Events (ticketed activities), Merchandise (product sales), and Roster-Enabled fundraisers (individual fundraising pages for team or club members).',
       },
       {
-        question: 'How do I create a campaign?',
+        question: 'How does a Pledge fundraiser work?',
         answer:
-          'Go to Campaigns in your Dashboard and click "New Campaign." Choose a campaign type, fill in the details — name, description, goal amount, dates — add items or tiers, and publish when you\'re ready to share.',
+          'Pledge fundraisers let supporters commit a dollar amount per unit — laps run, books read, free throws made, miles biked. Once the event wraps and totals are entered, Sponsorly automatically calculates each pledge, charges the supporter, and attributes the funds to the right participant. Perfect for jog-a-thons, read-a-thons, and bike-a-thons.',
+      },
+      {
+        question: 'How do I create a fundraiser?',
+        answer:
+          'Go to Fundraisers in your Dashboard and click "New Fundraiser." Choose a fundraiser type, fill in the details — name, description, goal amount, dates — add items, tiers, or pledge units, and publish when you\'re ready to share.',
       },
       {
         question: 'What is roster attribution?',
         answer:
-          'Roster attribution gives each team member their own personalized fundraising link. When supporters purchase through that link, the contribution is tracked to that individual — perfect for teams where members fundraise competitively.',
+          'Roster attribution gives each team member their own personalized fundraising link. When supporters pledge, donate, or purchase through that link, the contribution is tracked to that individual — perfect for teams and clubs where members fundraise competitively.',
       },
       {
-        question: 'Can I customize my campaign landing page?',
+        question: 'Can I customize my fundraiser landing page?',
         answer:
-          'Yes! Each campaign has a public landing page you can customize with images, a pitch video, descriptions, and item details. You can also record a video pitch directly from the campaign editor.',
+          'Yes! Each fundraiser has a public landing page you can customize with images, a pitch video, descriptions, and item or pledge details. You can also record a video pitch directly from the fundraiser editor.',
       },
       {
-        question: 'How do I share my campaign?',
+        question: 'How do I share my fundraiser?',
         answer:
-          'Every campaign gets a unique shareable link (sponsorly.com/c/your-slug). Share it via email, social media, or text. For roster campaigns, each member also gets their own personalized URL to share.',
+          'Every fundraiser gets a unique shareable link (sponsorly.io/c/your-slug). Share it via email, social media, or text. For roster fundraisers, each member also gets their own personalized URL to share.',
       },
     ],
   },
@@ -91,7 +96,12 @@ const faqCategories: FAQCategory[] = [
       {
         question: 'How do supporters make payments?',
         answer:
-          'Supporters pay securely through Stripe on your campaign\'s landing page. They can use credit cards, debit cards, Apple Pay, and Google Pay. No account creation is required for supporters.',
+          'Supporters pay securely through Stripe on your fundraiser\'s landing page. They can use credit cards, debit cards, Apple Pay, and Google Pay. No account creation is required for supporters.',
+      },
+      {
+        question: 'How do Pledge fundraisers get charged?',
+        answer:
+          'For Pledge fundraisers, supporters either authorize a card up front (charged automatically once final results are entered) or receive an emailed invoice after the event. Either way, the platform handles the math and the collection — you just enter the totals.',
       },
       {
         question: 'When do I receive funds?',
@@ -111,7 +121,7 @@ const faqCategories: FAQCategory[] = [
       {
         question: 'Does Sponsorly take a cut of donations?',
         answer:
-          'Sponsorly charges a 10% platform fee on donations. By default, this fee is added on top of the donation so your organization receives 100% of the intended amount. Organizations may also choose, on a per-campaign basis, to absorb the 10% fee themselves — in which case donors pay only the headline price and the fee is deducted from the payout.',
+          'Sponsorly charges a 10% platform fee on donations. By default, this fee is added on top of the donation so your organization receives 100% of the intended amount. Organizations may also choose, on a per-fundraiser basis, to absorb the 10% fee themselves — in which case donors pay only the headline price and the fee is deducted from the payout.',
       },
     ],
   },
@@ -123,12 +133,12 @@ const faqCategories: FAQCategory[] = [
       {
         question: 'What are rosters?',
         answer:
-          'Rosters are lists of team members (players, students, participants) who can each have their own personalized fundraising page within a campaign. This lets supporters contribute on behalf of a specific individual.',
+          'Rosters are lists of team members (players, students, participants) who can each have their own personalized fundraising page within a fundraiser. This lets supporters contribute on behalf of a specific individual.',
       },
       {
         question: 'How do personalized fundraising URLs work?',
         answer:
-          'When roster attribution is enabled, each member gets a unique URL (e.g., sponsorly.com/c/your-campaign/player-name). Purchases made through that link are attributed to the member, making it easy to track individual fundraising progress.',
+          'When roster attribution is enabled, each member gets a unique URL (e.g., sponsorly.io/c/your-fundraiser/player-name). Pledges, donations, and purchases made through that link are attributed to the member, making it easy to track individual fundraising progress.',
       },
       {
         question: 'Can parents track their child\'s fundraising progress?',
@@ -148,9 +158,9 @@ const faqCategories: FAQCategory[] = [
     icon: <Building2 className="h-4 w-4" />,
     questions: [
       {
-        question: 'How can a business sponsor a campaign?',
+        question: 'How can a business sponsor a fundraiser?',
         answer:
-          'Businesses can sponsor campaigns by purchasing sponsorship tiers on a campaign\'s landing page. After purchase, they may be asked to upload their logo and other brand assets that the organization will use for recognition.',
+          'Businesses can sponsor fundraisers by purchasing sponsorship tiers on a fundraiser\'s landing page. After purchase, they may be asked to upload their logo and other brand assets that the organization will use for recognition.',
       },
       {
         question: 'What is the Donor Portal?',
@@ -160,7 +170,7 @@ const faqCategories: FAQCategory[] = [
       {
         question: 'Can businesses upload logos and brand assets?',
         answer:
-          'Yes! After sponsoring a campaign, businesses can upload logos, brand guidelines, and other assets through the Donor Portal. Organizations define what assets they need, and businesses receive reminders to upload them before deadlines.',
+          'Yes! After sponsoring a fundraiser, businesses can upload logos, brand guidelines, and other assets through the Donor Portal. Organizations define what assets they need, and businesses receive reminders to upload them before deadlines.',
       },
       {
         question: 'How does business matching work?',
@@ -171,72 +181,112 @@ const faqCategories: FAQCategory[] = [
   },
 ];
 
+const FAQ_PAGE_CSS = `
+.sp-aud .sp-faq-hero { padding: 88px 0 48px; text-align: center; }
+.sp-aud .sp-faq-hero h1 { font-family: var(--sp-display); font-weight: 400; font-size: clamp(44px, 5.4vw, 68px); line-height: 1.02; letter-spacing: -0.02em; margin: 18px auto 18px; color: var(--sp-ink); max-width: 900px; }
+.sp-aud .sp-faq-hero h1 em { font-style: italic; color: var(--sp-theme); }
+.sp-aud .sp-faq-hero .sp-sub { font-size: 17px; line-height: 1.55; color: var(--sp-ink-2); max-width: 640px; margin: 0 auto; }
+
+.sp-aud .sp-faq-nav { position: sticky; top: 64px; z-index: 30; background: rgba(250,250,247,0.92); backdrop-filter: blur(10px); border-top: 1px solid var(--sp-line); border-bottom: 1px solid var(--sp-line); }
+.sp-aud .sp-faq-nav .sp-faq-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 14px 0; }
+.sp-aud .sp-faq-nav a { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; background: white; border: 1px solid var(--sp-line); color: var(--sp-ink-2); font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color .2s, color .2s, transform .2s, background .2s; }
+.sp-aud .sp-faq-nav a:hover { border-color: var(--sp-theme); color: var(--sp-theme); background: var(--sp-theme-soft); transform: translateY(-1px); }
+
+.sp-aud .sp-faq-body { padding: 72px 0 96px; }
+.sp-aud .sp-faq-section { max-width: 820px; margin: 0 auto 56px; scroll-margin-top: 140px; }
+.sp-aud .sp-faq-section:last-child { margin-bottom: 0; }
+.sp-aud .sp-faq-sec-head { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--sp-line); }
+.sp-aud .sp-faq-sec-head .sp-ico { width: 40px; height: 40px; border-radius: 12px; background: var(--sp-theme-soft); color: var(--sp-theme); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sp-aud .sp-faq-sec-head h2 { font-family: var(--sp-display); font-size: clamp(26px, 3vw, 34px); font-weight: 400; letter-spacing: -0.01em; margin: 0; color: var(--sp-ink); }
+
+.sp-aud .sp-faq-list { background: white; border: 1px solid var(--sp-line); border-radius: 16px; overflow: hidden; }
+.sp-aud .sp-faq-list [data-faq-item] { border-bottom: 1px solid var(--sp-line); }
+.sp-aud .sp-faq-list [data-faq-item]:last-child { border-bottom: none; }
+.sp-aud .sp-faq-list [data-faq-trigger] { padding: 18px 22px; font-family: var(--sp-ui); font-weight: 600; font-size: 15.5px; color: var(--sp-ink); text-align: left; line-height: 1.4; }
+.sp-aud .sp-faq-list [data-faq-trigger]:hover { color: var(--sp-theme); text-decoration: none; }
+.sp-aud .sp-faq-list [data-faq-content] { padding: 0 22px 20px; color: var(--sp-ink-2); font-size: 14.5px; line-height: 1.65; }
+
+.sp-aud .sp-final-cta { padding: 96px 0; background: linear-gradient(135deg, #0A0F1E 0%, #1a2547 100%); color: white; text-align: center; }
+.sp-aud .sp-final-cta h2 { font-family: var(--sp-display); font-weight: 400; font-size: clamp(34px, 4.4vw, 52px); line-height: 1.06; letter-spacing: -0.01em; margin: 18px 0 14px; color: white; }
+.sp-aud .sp-final-cta h2 em { font-style: italic; color: #8ab4ff; }
+.sp-aud .sp-final-cta .sp-sub { color: rgba(255,255,255,0.78); font-size: 16px; max-width: 620px; margin: 0 auto 28px; }
+.sp-aud .sp-final-cta .sp-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+@media (max-width: 720px) {
+  .sp-aud .sp-faq-nav { position: static; }
+}
+`;
+
 const FAQ = () => {
   return (
-    <>
+    <div className="sp-aud theme-blue">
       <Helmet>
         <title>FAQ – Sponsorly | Frequently Asked Questions</title>
         <meta
           name="description"
-          content="Find answers to common questions about Sponsorly — accounts, campaigns, payments, rosters, and business sponsorships."
+          content="Find answers to common questions about Sponsorly — accounts, fundraisers, pledges, payments, rosters, and business sponsorships."
         />
       </Helmet>
 
+      <style dangerouslySetInnerHTML={{ __html: AUDIENCE_SCOPED_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: FAQ_PAGE_CSS }} />
+
       <MarketingHeader />
 
-      <main className="min-h-screen bg-background">
-        {/* Hero */}
-        <section className="bg-primary text-primary-foreground py-16 sm:py-20">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-primary-foreground">
-              Frequently Asked Questions
-            </h1>
-            <p className="mt-4 text-lg text-primary-foreground/80 max-w-2xl mx-auto">
-              Everything you need to know about using Sponsorly for your fundraising campaigns.
-            </p>
-          </div>
-        </section>
+      {/* HERO */}
+      <section className="sp-faq-hero">
+        <div className="sp-wrap">
+          <span className="sp-chip green">
+            <span className="sp-chip-dot" /> Real answers from a real team
+          </span>
+          <h1>
+            Frequently asked <em>questions.</em>
+          </h1>
+          <p className="sp-sub">
+            Everything you need to know about running fundraisers on Sponsorly — accounts, pledges, payments, rosters, and business sponsorships.
+          </p>
+        </div>
+      </section>
 
-        {/* Category Nav */}
-        <nav className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-wrap items-center justify-center gap-2 py-3">
-              {faqCategories.map((cat) => (
-                <a
-                  key={cat.id}
-                  href={`#${cat.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-full border bg-primary/5 border-primary/20 px-4 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 hover:border-primary/40 transition-colors"
-                >
-                  {cat.icon}
-                  {cat.label}
-                </a>
-              ))}
-            </div>
+      {/* CATEGORY NAV */}
+      <nav className="sp-faq-nav">
+        <div className="sp-wrap">
+          <div className="sp-faq-pills">
+            {faqCategories.map((cat) => (
+              <a key={cat.id} href={`#${cat.id}`}>
+                {cat.icon}
+                {cat.label}
+              </a>
+            ))}
           </div>
-        </nav>
+        </div>
+      </nav>
 
-        {/* FAQ Sections */}
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-3xl space-y-16">
+      {/* FAQ SECTIONS */}
+      <div className="sp-faq-body">
+        <div className="sp-wrap">
           {faqCategories.map((cat) => (
-            <section
-              key={cat.id}
-              id={cat.id}
-              className="scroll-mt-32"
-            >
-              <div className="flex items-center gap-2 mb-6">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  {cat.icon}
-                </span>
-                <h2 className="text-2xl font-semibold text-foreground">{cat.label}</h2>
+            <section key={cat.id} id={cat.id} className="sp-faq-section">
+              <div className="sp-faq-sec-head">
+                <span className="sp-ico">{cat.icon}</span>
+                <h2>{cat.label}</h2>
               </div>
 
-              <Accordion type="single" collapsible className="w-full">
+              <Accordion type="single" collapsible className="sp-faq-list">
                 {cat.questions.map((q, idx) => (
-                  <AccordionItem key={idx} value={`${cat.id}-${idx}`}>
-                    <AccordionTrigger className="text-left text-base">
+                  <AccordionItem
+                    key={idx}
+                    value={`${cat.id}-${idx}`}
+                    data-faq-item=""
+                    className="border-0"
+                  >
+                    <AccordionTrigger
+                      data-faq-trigger=""
+                      className="hover:no-underline"
+                    >
                       {q.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground leading-relaxed">
+                    <AccordionContent data-faq-content="">
                       {q.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -245,23 +295,28 @@ const FAQ = () => {
             </section>
           ))}
         </div>
+      </div>
 
-        {/* CTA */}
-        <section className="bg-primary text-primary-foreground py-16">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-2xl font-semibold text-primary-foreground">Still have questions?</h2>
-            <p className="mt-2 text-primary-foreground/80">
-              Our team is here to help. Reach out and we'll get back to you as soon as possible.
-            </p>
-            <Link to="/contact" className="mt-6 inline-block">
-              <Button variant="outline" size="lg" className="bg-white text-primary hover:bg-white/90 border-white">Contact Us</Button>
-            </Link>
+      {/* FINAL CTA */}
+      <section className="sp-final-cta">
+        <div className="sp-wrap">
+          <span className="sp-chip green">
+            <span className="sp-chip-dot" /> We typically reply in 24 hours
+          </span>
+          <h2>
+            Still have questions?<br />
+            <em>We'd love to help.</em>
+          </h2>
+          <p className="sp-sub">Tell us about your organization and what you're trying to raise — our team will get back to you fast.</p>
+          <div className="sp-ctas">
+            <Link to="/contact" className="sp-btn sp-btn-primary sp-btn-lg">Contact us</Link>
+            <Link to="/signup" className="sp-btn sp-btn-on-dark sp-btn-lg">Start free →</Link>
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
 
       <MarketingFooter />
-    </>
+    </div>
   );
 };
 
