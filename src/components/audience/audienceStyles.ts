@@ -221,6 +221,78 @@ export const AUDIENCE_SCOPED_CSS = `
 .sp-aud .sp-sister-link .sp-nm { font-weight: 600; font-size: 14px; flex: 1; }
 .sp-aud .sp-sister-link .sp-arr { color: var(--sp-muted); }
 
+/* Sister cards (image-topped grid) */
+.sp-aud .sp-sister-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.sp-aud .sp-sister-card {
+  background: var(--sp-card);
+  border: 1px solid var(--sp-line);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+.sp-aud .sp-sister-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 42px -18px rgba(10,15,30,0.22);
+  border-color: var(--sp-theme-soft);
+}
+.sp-aud .sp-sister-card .sp-sc-img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--sp-paper-2);
+}
+.sp-aud .sp-sister-card .sp-sc-body {
+  padding: 22px 24px 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 1;
+}
+.sp-aud .sp-sister-card .sp-sc-text { min-width: 0; }
+.sp-aud .sp-sister-card .sp-sc-body h4 {
+  font-family: var(--sp-ui);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--sp-ink);
+  margin: 0 0 6px;
+  line-height: 1.25;
+}
+.sp-aud .sp-sister-card .sp-sc-body p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--sp-muted);
+  margin: 0;
+}
+.sp-aud .sp-sister-card .sp-sc-arr {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  transition: transform .2s ease;
+}
+.sp-aud .sp-sister-card:hover .sp-sc-arr { transform: translateX(4px); }
+@media (max-width: 960px) {
+  .sp-aud .sp-sister-cards { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 620px) {
+  .sp-aud .sp-sister-cards { grid-template-columns: 1fr; }
+}
+
 /* Final CTA */
 .sp-aud .sp-final-cta { background: var(--sp-ink); color: white; text-align: center; padding: 96px 0; }
 .sp-aud .sp-final-cta h2 { font-family: var(--sp-display); font-weight: 400; font-size: clamp(36px, 4.4vw, 56px); line-height: 1.05; margin: 14px 0 16px; }
