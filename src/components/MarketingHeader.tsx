@@ -16,7 +16,6 @@ const MarketingHeader = () => {
   ];
 
   const navigation = [
-    { name: "Who's it for", href: '/who-its-for' },
     { name: 'Fundraisers', href: '/fundraisers' },
     { name: 'Features', href: '/features' },
     { name: 'Pricing', href: '/pricing' },
