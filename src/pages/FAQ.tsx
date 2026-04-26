@@ -192,8 +192,8 @@ const FAQ_PAGE_CSS = `
 .sp-aud .sp-faq-nav a { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; background: white; border: 1px solid var(--sp-line); color: var(--sp-ink-2); font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color .2s, color .2s, transform .2s, background .2s; }
 .sp-aud .sp-faq-nav a:hover { border-color: var(--sp-theme); color: var(--sp-theme); background: var(--sp-theme-soft); transform: translateY(-1px); }
 
-.sp-aud .sp-faq-body { padding: 72px 0 96px; }
-.sp-aud .sp-faq-section { max-width: 820px; margin: 0 auto 56px; scroll-margin-top: 140px; }
+.sp-aud .sp-faq-body { padding: 56px 0 80px; }
+.sp-aud .sp-faq-section { max-width: 820px; margin: 0 auto 28px; scroll-margin-top: 140px; }
 .sp-aud .sp-faq-section:last-child { margin-bottom: 0; }
 .sp-aud .sp-faq-sec-head { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--sp-line); }
 .sp-aud .sp-faq-sec-head .sp-ico { width: 40px; height: 40px; border-radius: 12px; background: var(--sp-theme-soft); color: var(--sp-theme); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
