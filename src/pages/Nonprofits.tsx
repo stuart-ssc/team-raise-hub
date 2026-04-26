@@ -1,460 +1,116 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import MarketingHeader from "@/components/MarketingHeader";
-import MarketingFooter from "@/components/MarketingFooter";
-import { SeoHead } from "@/components/seo/SeoHead";
-import {
-  Heart,
-  HandHeart,
-  Users,
-  Leaf,
-  Building,
-  Stethoscope,
-  Palette,
-  Globe,
-  Receipt,
-  FileCheck,
-  BarChart3,
-  Shield,
-  Zap,
-  Smartphone,
-  DollarSign,
-  ArrowRight,
-  CheckCircle2,
-  Star,
-  TrendingUp,
-  UserPlus,
-  Mail,
-  Target,
-  Calendar,
-  PieChart,
-  Award,
-} from "lucide-react";
-import heroImage from "@/assets/nonprofits-hero.png";
+import AudiencePage from "@/components/audience/AudiencePage";
 
-const Nonprofits = () => {
-  return (
-    <div className="min-h-screen bg-background">
-      <SeoHead
-        title="Sponsorly for Nonprofits — Fundraising for 501(c)(3) Organizations"
-        description="Powerful fundraising platform for nonprofits and 501(c)(3) organizations. Automatic tax receipts, donor management, and 100% of donations go to your cause."
-        path="/nonprofits"
-      />
-      <MarketingHeader />
-
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-16 md:pt-28 md:pb-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/10" />
-        <div className="container mx-auto px-4 relative">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
-                <Heart className="h-4 w-4" />
-                Built for 501(c)(3) Organizations
-              </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-                Fundraising Made Simple for{" "}
-                <span className="text-primary">Nonprofits</span>
-              </h1>
-              <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-xl">
-                Empower your mission with a modern fundraising platform. Automatic tax receipts, 
-                donor management, and peer-to-peer campaigns—all while keeping 100% of donations 
-                for your cause.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" asChild>
-                  <Link to="/signup">
-                    Start Fundraising Free
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Link>
-                </Button>
-                <Button size="lg" variant="outline" asChild>
-                  <Link to="/features">See All Features</Link>
-                </Button>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur-2xl" />
-              <img
-                src={heroImage}
-                alt="Charity golf tournament with sponsor advertising"
-                className="relative rounded-2xl shadow-2xl w-full"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Nonprofit Programs Grid */}
-      <section className="py-16 md:py-24 bg-accent/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Built for Every Type of Program
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Whether you're running community outreach, youth programs, or environmental initiatives, 
-              Sponsorly adapts to your organization's unique needs.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { icon: Users, title: "Community Outreach", desc: "Food banks, shelters, and community services" },
-              { icon: Heart, title: "Youth Programs", desc: "Mentorship, after-school, and youth development" },
-              { icon: Stethoscope, title: "Health & Wellness", desc: "Medical assistance, mental health, and wellness" },
-              { icon: Palette, title: "Arts & Culture", desc: "Museums, theaters, and cultural preservation" },
-              { icon: Leaf, title: "Environmental", desc: "Conservation, sustainability, and green initiatives" },
-              { icon: Building, title: "Social Services", desc: "Housing, education, and family support" },
-            ].map((program) => (
-              <Card key={program.title} className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30">
-                <CardContent className="p-6">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <program.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">{program.title}</h3>
-                  <p className="text-muted-foreground">{program.desc}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Executive Director Features */}
-      <section className="py-16 md:py-24 bg-gradient-to-b from-background to-primary/5">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mb-4">
-                For Executive Directors
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-                Complete Visibility Across Your Organization
-              </h2>
-              <p className="text-lg text-muted-foreground mb-8">
-                Lead with confidence. Get a unified view of all programs, campaigns, and donor 
-                relationships from a single dashboard designed for nonprofit leadership.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  { icon: PieChart, text: "Organization-wide reporting and analytics" },
-                  { icon: Users, text: "Staff, board, and volunteer management" },
-                  { icon: Receipt, text: "Automatic 501(c)(3) tax receipt generation" },
-                  { icon: FileCheck, text: "IRS compliance documentation" },
-                  { icon: TrendingUp, text: "Donor lifecycle and retention insights" },
-                ].map((feature) => (
-                  <li key={feature.text} className="flex items-start gap-3">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <feature.icon className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <span className="text-foreground">{feature.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="bg-card rounded-2xl shadow-xl border border-border/50 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-foreground">Organization Dashboard</h3>
-                <span className="text-xs text-muted-foreground">All Programs</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                {[
-                  { label: "Total Raised", value: "$847,250", change: "+18%" },
-                  { label: "Active Donors", value: "2,847", change: "+12%" },
-                  { label: "Programs", value: "8", change: "" },
-                  { label: "Campaigns", value: "24", change: "+3" },
-                ].map((stat) => (
-                  <div key={stat.label} className="bg-accent/50 rounded-lg p-4">
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                    {stat.change && <p className="text-xs text-primary">{stat.change}</p>}
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-3">
-                {[
-                  { name: "Food Bank Initiative", raised: "$124,500", goal: "$150,000", pct: 83 },
-                  { name: "Youth Mentorship", raised: "$89,200", goal: "$100,000", pct: 89 },
-                  { name: "Community Garden", raised: "$45,800", goal: "$50,000", pct: 92 },
-                ].map((campaign) => (
-                  <div key={campaign.name} className="bg-background rounded-lg p-3 border border-border/50">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-foreground">{campaign.name}</span>
-                      <span className="text-xs text-muted-foreground">{campaign.raised} / {campaign.goal}</span>
-                    </div>
-                    <div className="h-2 bg-accent rounded-full overflow-hidden">
-                      <div className="h-full bg-primary rounded-full" style={{ width: `${campaign.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Program Director Features */}
-      <section className="py-16 md:py-24 bg-accent/20">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1">
-              <div className="bg-card rounded-2xl shadow-xl border border-border/50 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Target className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">Annual Giving Campaign</h3>
-                    <p className="text-sm text-muted-foreground">Youth Mentorship Program</p>
-                  </div>
-                </div>
-                <div className="space-y-4 mb-6">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Campaign Progress</span>
-                    <span className="text-foreground font-medium">$89,200 of $100,000</span>
-                  </div>
-                  <div className="h-3 bg-accent rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full" style={{ width: '89%' }} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="text-center p-3 bg-accent/50 rounded-lg">
-                    <p className="text-2xl font-bold text-foreground">156</p>
-                    <p className="text-xs text-muted-foreground">Donors</p>
-                  </div>
-                  <div className="text-center p-3 bg-accent/50 rounded-lg">
-                    <p className="text-2xl font-bold text-foreground">$572</p>
-                    <p className="text-xs text-muted-foreground">Avg Gift</p>
-                  </div>
-                  <div className="text-center p-3 bg-accent/50 rounded-lg">
-                    <p className="text-2xl font-bold text-foreground">12</p>
-                    <p className="text-xs text-muted-foreground">Days Left</p>
-                  </div>
-                </div>
-                <div className="border-t border-border/50 pt-4">
-                  <p className="text-sm font-medium text-foreground mb-3">Top Peer Fundraisers</p>
-                  <div className="space-y-2">
-                    {[
-                      { name: "Sarah M.", amount: "$4,250", rank: 1 },
-                      { name: "James T.", amount: "$3,800", rank: 2 },
-                      { name: "Emily R.", amount: "$2,950", rank: 3 },
-                    ].map((fundraiser) => (
-                      <div key={fundraiser.name} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-xs text-primary font-medium">
-                            {fundraiser.rank}
-                          </span>
-                          <span className="text-foreground">{fundraiser.name}</span>
-                        </div>
-                        <span className="text-primary font-medium">{fundraiser.amount}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mb-4">
-                For Program Directors
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-                Run Campaigns That Inspire Action
-              </h2>
-              <p className="text-lg text-muted-foreground mb-8">
-                Launch peer-to-peer campaigns, track donor engagement, and celebrate milestones—all 
-                with tools designed for program-level fundraising success.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  { icon: UserPlus, text: "Volunteer and member roster management" },
-                  { icon: Globe, text: "Peer-to-peer fundraising with personal pages" },
-                  { icon: Calendar, text: "Campaign templates for galas, giving days, and more" },
-                  { icon: Mail, text: "Automated donor communications and thank-yous" },
-                  { icon: BarChart3, text: "Real-time fundraising progress tracking" },
-                ].map((feature) => (
-                  <li key={feature.text} className="flex items-start gap-3">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <feature.icon className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <span className="text-foreground">{feature.text}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="flex flex-wrap gap-3 mt-8">
-                <Link to="/fundraisers/donations">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Heart className="h-4 w-4" />
-                    Donation Campaigns
-                  </Button>
-                </Link>
-                <Link to="/fundraisers/events">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Event Fundraising
-                  </Button>
-                </Link>
-                <Link to="/fundraisers">
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    Explore All Campaign Types
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Board & Volunteer Features */}
-      <section className="py-16 md:py-24 bg-gradient-to-b from-background to-accent/10">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mb-4">
-              For Board Members & Volunteers
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Engage Your Community
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Give board members visibility into organizational health and empower volunteers 
-              to become passionate fundraisers for your cause.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { icon: PieChart, title: "Financial Transparency", desc: "Real-time dashboards for board oversight and reporting" },
-              { icon: Smartphone, title: "Mobile-Friendly", desc: "Easy donation and fundraising from any device" },
-              { icon: Award, title: "Recognition Tools", desc: "Celebrate top fundraisers and milestone donors" },
-              { icon: HandHeart, title: "Easy Giving", desc: "One-click donations and recurring gift options" },
-            ].map((feature) => (
-              <Card key={feature.title} className="text-center border-border/50 hover:border-primary/30 transition-colors">
-                <CardContent className="p-6">
-                  <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <feature.icon className="h-7 w-7 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.desc}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Key Benefits */}
-      <section className="py-16 md:py-24 bg-accent/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Why Nonprofits Choose Sponsorly
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Focus on your mission, not administrative overhead. Our platform handles the 
-              complexity so you can focus on making an impact.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { icon: DollarSign, title: "100% to Your Cause", desc: "Every dollar donated goes directly to your organization" },
-              { icon: Zap, title: "Instant Payouts", desc: "Access your funds immediately, no waiting periods" },
-              { icon: Receipt, title: "Automatic Tax Receipts", desc: "IRS-compliant receipts with your EIN, sent automatically" },
-              { icon: BarChart3, title: "Donor Analytics", desc: "RFM segmentation and insights to maximize retention" },
-              { icon: Shield, title: "Secure & Compliant", desc: "Bank-level security with full regulatory compliance" },
-              { icon: Smartphone, title: "Mobile Optimized", desc: "Beautiful donor experience on every device" },
-            ].map((benefit) => (
-              <Card key={benefit.title} className="border-border/50">
-                <CardContent className="p-6 flex items-start gap-4">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <benefit.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">{benefit.title}</h3>
-                    <p className="text-sm text-muted-foreground">{benefit.desc}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof */}
-      <section className="py-16 md:py-24 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Trusted by Mission-Driven Organizations
-              </h2>
-              <div className="grid grid-cols-3 gap-6 mb-8">
-                {[
-                  { value: "500+", label: "Organizations" },
-                  { value: "$12M+", label: "Raised" },
-                  { value: "50K+", label: "Donors" },
-                ].map((stat) => (
-                  <div key={stat.label}>
-                    <p className="text-3xl md:text-4xl font-bold">{stat.value}</p>
-                    <p className="text-primary-foreground/80">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-2xl p-6 border border-primary-foreground/20">
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-current text-yellow-400" />
-                ))}
-              </div>
-              <p className="text-lg mb-6 text-primary-foreground/90">
-                "Sponsorly transformed how we run our annual giving campaign. The peer-to-peer 
-                tools helped us increase donations by 40%, and the automatic tax receipts saved 
-                our team countless hours."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                  <span className="text-lg font-bold">MK</span>
-                </div>
-                <div>
-                  <p className="font-semibold">Maria Kim</p>
-                  <p className="text-sm text-primary-foreground/70">Executive Director, Community Hope Foundation</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="py-16 md:py-24 bg-gradient-to-br from-primary/10 via-accent/20 to-background">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-            Ready to Transform Your Nonprofit's Fundraising?
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            Join hundreds of nonprofits using Sponsorly to engage donors, run campaigns, 
-            and maximize their impact—all while keeping 100% of donations.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild>
-              <Link to="/signup">
-                Get Started Free
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link to="/contact">Schedule a Demo</Link>
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground mt-6">
-            <CheckCircle2 className="inline h-4 w-4 mr-1 text-primary" />
-            No credit card required • Free for organizations • 100% of donations to your cause
-          </p>
-        </div>
-      </section>
-
-      <MarketingFooter />
-    </div>
-  );
+const SVG = {
+  heart: "M12 21l-1.5-1.4C5.4 15 2 11.9 2 8.1A5.1 5.1 0 017.1 3c1.7 0 3.4.8 4.4 2 1-1.2 2.7-2 4.4-2A5.1 5.1 0 0121 8.1c0 3.8-3.4 6.9-8.5 11.5L12 21z",
+  receipt: "M14 2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2V8l-6-6zm2 14H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z",
+  bars: "M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z",
+  shield: "M12 2L3 7v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V7l-9-5z",
+  parents: "M16 4a4 4 0 11-8 0 4 4 0 018 0zM12 14c-4 0-8 2-8 6v2h16v-2c0-4-4-6-8-6z",
+  cal: "M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V10h14v10z",
+  cash: "M21 7H3a1 1 0 00-1 1v8a1 1 0 001 1h18a1 1 0 001-1V8a1 1 0 00-1-1zm-9 8a3 3 0 110-6 3 3 0 010 6z",
+  mail: "M22 6c0-1.1-.9-2-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6zm-2 0l-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z",
+  player: "M12 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z",
+  star: "M12 3l3 6 6 1-4.5 4.5 1.5 6.5L12 17l-6 4 1.5-6.5L3 10l6-1z",
 };
+
+const Nonprofits = () => (
+  <AudiencePage
+    theme="violet"
+    seo={{
+      title: "Sponsorly for Nonprofits — Donor management and fundraising on one platform",
+      description: "Built for 501(c)(3) nonprofits: donor CRM, recurring giving, sponsor packages, IRS-ready receipts, peer-to-peer campaigns, and event ticketing. Zero platform fees.",
+      path: "/nonprofits",
+    }}
+    chipLabel="Built for Nonprofits"
+    heroHeadlinePre="Mission-driven fundraising,"
+    heroHeadlineEm="finally fee-free."
+    heroSub="Donor CRM, recurring giving, peer-to-peer campaigns, sponsor packages, and 501(c)(3) receipts — purpose-built for the nonprofits doing the work, not the platforms taking a cut."
+    primaryCta="Start your nonprofit — free"
+    secondaryCta="See how it works"
+    microPoints={["Zero platform fees", "501(c)(3) receipt automation", "Recurring giving built-in"]}
+    heroImage="https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=1200&q=80"
+    heroBadgeAmount="$284,000"
+    heroBadgeLabel="Raised this year"
+    heroOrgName="Riverside Community Foundation"
+    heroOrgMeta1="1,240 donors · 38 sponsors"
+    heroOrgMeta2="Goal $400,000"
+    heroBarPct={71}
+    pillarsEyebrow="Why nonprofits choose Sponsorly"
+    pillarsEyebrowColor="violet"
+    pillarsHeadline="Built for the nonprofits"
+    pillarsHeadlineEm="actually doing the work."
+    pillarsSub="Donor management, recurring giving, sponsor pipelines, and IRS-compliant receipting — all on one platform with no fees taking from your mission."
+    pillars={[
+      { iconBg: "rgba(124,58,237,0.14)", iconColor: "#7C3AED", icon: SVG.heart, title: "Donor CRM that actually works.", body: "Every donor, every gift, every interaction in one searchable timeline. Tag by program, lifetime value, or recurring status — and message the right group instantly.", bullets: ["Lifetime donor profiles", "Segmented outreach", "Smart-list automation"] },
+      { iconBg: "rgba(31,95,224,0.12)", iconColor: "#1F5FE0", icon: SVG.cash, title: "Recurring giving, on autopilot.", body: "Monthly donors are the backbone of nonprofit fundraising. Set them up once, and Sponsorly handles cards updates, retries, and renewal reminders.", bullets: ["Monthly & annual recurring", "Card-update automation", "Donor self-service portal"] },
+      { iconBg: "rgba(14,159,110,0.14)", iconColor: "#0E9F6E", icon: SVG.receipt, title: "IRS-ready receipts in seconds.", body: "Every donation generates an automatic 501(c)(3) tax letter. Annual giving statements go out in January — no spreadsheet, no manual mail-merge.", bullets: ["Per-gift tax receipts", "Annual giving statements", "Compliant with IRS Pub. 1771"] },
+    ]}
+    fundEyebrow="Every campaign type your nonprofit needs"
+    fundEyebrowColor="violet"
+    fundHeadline="One platform, every fundraiser."
+    fundSub="Annual appeals, gala events, peer-to-peer drives, corporate sponsorships, and recurring giving — all on the same platform with the same donor record."
+    fundCards={[
+      { iconBg: "rgba(124,58,237,0.14)", iconColor: "#7C3AED", icon: SVG.heart, tag: "Annual", title: "Year-end appeal", body: "Run a December giving push with personalized email outreach to last year's donors. Auto-receipts go out the same day.", stat1Value: "$84,000", stat1Label: "Avg appeal", stat2Value: "30 days", stat2Label: "Typical run" },
+      { iconBg: "rgba(31,95,224,0.12)", iconColor: "#1F5FE0", icon: SVG.cash, tag: "Always-on", title: "Monthly giving program", body: "Convert one-time donors into recurring supporters. Monthly giving compounds — small gifts become major.", stat1Value: "$3,200", stat1Label: "Avg monthly", stat2Value: "12 mo", stat2Label: "Renewal rate 89%" },
+      { iconBg: "rgba(255,107,53,0.14)", iconColor: "#FF6B35", icon: SVG.cal, tag: "Annual", title: "Gala & event ticketing", body: "Sell event tickets, sponsor tables, and silent-auction packages — all with the donor record attached.", stat1Value: "$48,000", stat1Label: "Avg gala", stat2Value: "1 night", stat2Label: "Cash in hand" },
+      { iconBg: "rgba(14,159,110,0.14)", iconColor: "#0E9F6E", icon: SVG.parents, tag: "Anytime", title: "Peer-to-peer campaigns", body: "Volunteers, board members, and ambassadors raise from their personal networks with their own pages.", stat1Value: "$22,400", stat1Label: "Avg campaign", stat2Value: "21 days", stat2Label: "Typical run" },
+    ]}
+    crmEyebrow="Donor management, simplified"
+    crmEyebrowColor="violet"
+    crmHeadline="Every donor, every program —"
+    crmHeadlineEm="in one place."
+    crmSub="Stop paying for a separate CRM, a separate giving page, and a separate email tool. Sponsorly is all three — built for the way nonprofits actually work."
+    crmChecks={[
+      { title: "Tag by program, fund, or donor type", rest: "— restricted gifts stay restricted, always" },
+      { title: "Built-in segmented email outreach", rest: "— message lapsed donors, top givers, or board only" },
+      { title: "Recurring-giving health dashboard", rest: "— see at-risk monthly donors before they churn" },
+      { title: "Annual giving statements automated", rest: "— January 31st, every donor gets their tax letter" },
+    ]}
+    crmMockTitle="Donors · Riverside Community Foundation"
+    crmMockFilter="⌕  type to search 1,240 donors"
+    crmCols={["Donor", "Type", "Lifetime", "Last gift"]}
+    crmRows={[
+      { initials: "JM", avBg: "#7C3AED", name: "Jessica Morales", role: "Monthly donor · 4 yrs", pillLabel: "Recurring", pillVariant: "violet", amount: "$2,880", trailing: "Sep 14" },
+      { initials: "MS", avBg: "#1F5FE0", name: "Main Street Foundation", role: "Grant funder · 3 yrs", pillLabel: "Foundation", pillVariant: "blue", amount: "$45,000", trailing: "Aug 30" },
+      { initials: "RG", avBg: "#0E9F6E", name: "Robert Greene Estate", role: "Major gift · planned", pillLabel: "Major", pillVariant: "green", amount: "$120,000", trailing: "Aug 12" },
+      { initials: "DA", avBg: "#FF6B35", name: "Davenport Holdings", role: "Corporate sponsor · gala", pillLabel: "Corporate", pillVariant: "orange", amount: "$18,000", trailing: "Aug 4" },
+      { initials: "AL", avBg: "#EC4899", name: "Anita Liang", role: "Board member · annual", pillLabel: "Board", pillVariant: "violet", amount: "$5,400", trailing: "Jul 28" },
+    ]}
+    campEyebrow="Real campaigns, real nonprofits"
+    campEyebrowColor="green"
+    campHeadline="What nonprofits run on Sponsorly."
+    campRows={[
+      { title: "December year-end appeal", body: "Personalized email outreach to last year's donors with one-click recurring upgrade prompts at checkout.", amount: "$98,400" },
+      { title: "Monthly giving relaunch", body: "Converted 142 one-time donors into monthly recurring supporters with a focused 30-day campaign.", amount: "$4,200/mo" },
+      { title: "Annual gala", body: "Sold tickets, table sponsorships, and silent-auction packages in one campaign with full donor records attached.", amount: "$76,000" },
+      { title: "Board peer-to-peer drive", body: "Each board member's personal page raised from their network. Funds rolled up to the general operating budget.", amount: "$32,800" },
+    ]}
+    campPhoto="https://images.unsplash.com/photo-1593113598332-cd288d649433?w=1200&q=80"
+    campQuote="We replaced four different platforms — DonorPerfect, Classy, Mailchimp, and a separate ticketing app — with Sponsorly. Same donor, same record, every channel."
+    campQuoteAuthor="Marcus Greene"
+    campQuoteOrg="Executive Director, Riverside Community Foundation"
+    statsBg="linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)"
+    statsHeadline="The platform nonprofits trust."
+    statsSub="From all-volunteer animal rescues to multi-million-dollar community foundations — Sponsorly scales with your mission."
+    stats={[
+      { value: "1,400+", label: "Nonprofits on Sponsorly" },
+      { value: "$38M+", label: "Raised for missions" },
+      { value: "89%", label: "Recurring donor retention" },
+    ]}
+    sisterHeadline="Not a nonprofit? We're built for these groups too."
+    sisterSub="Same platform, same zero fees — tailored for every organization that fundraises."
+    sisterLinks={[
+      { to: "/schools/sports-teams", label: "Sports Teams", iconBg: "rgba(31,95,224,0.12)", iconColor: "#1F5FE0", icon: SVG.player },
+      { to: "/schools/booster-clubs", label: "Booster Clubs", iconBg: "rgba(14,159,110,0.14)", iconColor: "#0E9F6E", icon: SVG.shield },
+      { to: "/schools/pto-pta", label: "PTOs & PTAs", iconBg: "rgba(31,95,224,0.12)", iconColor: "#1F5FE0", icon: SVG.parents },
+      { to: "/schools/marching-bands", label: "Marching Bands", iconBg: "rgba(255,107,53,0.14)", iconColor: "#FF6B35", icon: SVG.star },
+    ]}
+    ctaHeadlinePre="Ready to grow your mission"
+    ctaHeadlineEm="without losing to fees?"
+    ctaSub="Join 1,400+ nonprofits raising smarter on Sponsorly. Most teams migrate from legacy platforms in under 30 days."
+    ctaPrimary="Start your nonprofit — free"
+    ctaSecondary="Talk to our team"
+  />
+);
 
 export default Nonprofits;
