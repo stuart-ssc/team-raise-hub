@@ -1,67 +1,29 @@
-## Goal
+## Update WhoItsFor page to match mockup
 
-Bring the `/contact` page in line with the new 2026 marketing design language used on the audience pages (Sports Teams, PTOs & PTAs, Booster Clubs, Marching Bands, Nonprofits, etc.). The current page uses generic Tailwind/HSL primary blocks and a basic two-column form — it visually clashes with the rest of the marketing site.
+Redesign `/who-its-for` so the hero copy and audience grid match the uploaded mockup. Keep the existing final CTA section.
 
-## What the page will look like
+### Hero changes
+- Eyebrow chip: `Who Sponsorly is for` (green dot, existing `.sp-chip` style)
+- Headline: `Built for the people who` / `*actually do the asking.*` (italic second line, serif display)
+- Sub-paragraph: "Coaches, parent volunteers, band directors, robotics mentors, theater parents, executive directors, treasurers, presidents. Sponsorly is the same zero-fee platform tailored for every kind of group that raises."
 
-1. **Hero** (cream/paper background, serif display headline)
-   - Animated green chip: "● We typically reply in 24 hours"
-   - Headline: `Talk to the team behind` *`Sponsorly.`* (display serif with italic theme accent)
-   - Subhead: friendly one-liner about helping schools, boosters, PTOs, and nonprofits get up and running.
-   - Three "micro" check points under the subhead (Free to start · No card required · Live human reply).
-   - No hero image card — keep it focused since the form sits below.
+### Audience grid (7 cards, in this order)
+1. Sports Teams → `/schools/sports-teams` (blue, player icon)
+2. Booster Clubs → `/schools/booster-clubs` (green, shield icon)
+3. PTOs & PTAs → `/schools/pto-pta` (orange, parents icon)
+4. Marching Bands → `/schools/marching-bands` (violet, music icon)
+5. Academic Clubs → `/schools/academic-clubs` (teal, book/graduation icon)
+6. Arts Clubs → `/schools/arts-clubs` (pink, theater/heart icon)
+7. Nonprofits → `/nonprofits` (violet, heart icon) — rendered as a **wide** row (full-width, image right ~2/3)
 
-2. **Two-column main section** (white `alt` section)
-   - **Left column — "How can we help?"**
-     - Eyebrow: `GET IN TOUCH`
-     - Display serif H2 with italic theme word.
-     - Three info cards (rounded, bordered, hover-lift) each with an icon tile:
-       - **Email us** — `support@sponsorly.io` (mailto link)
-       - **Already a customer?** — Link to `/login`
-       - **Looking for answers fast?** — Link to `/faq`
-     - Bottom "What to expect" panel restyled as a `sp-check-list` with theme-tinted tick circles (Quick response, Personalized guidance, Setup & strategy help, Technical support).
-   - **Right column — Contact form card**
-     - White card with `sp-line` border, 18px radius, soft shadow (matches `.sp-crm-mock` / `.sp-pillar` styling).
-     - Inputs restyled to match the design system: 12px radius, light border, theme-colored focus ring, serif-free labels.
-     - Submit button uses `.sp-btn .sp-btn-primary .sp-btn-lg` (pill, theme background).
-     - Keep all existing form logic, validation (zod), Supabase insert, and edge function call exactly as-is.
+Drop **Local Businesses** from the grid. Short body copy on each card matches mockup tone (1 sentence).
 
-3. **FAQ teaser strip** (cream section)
-   - Eyebrow: `COMMON QUESTIONS`
-   - Headline: `Maybe we've already` *`answered it.`*
-   - 3-card grid linking into `/faq` (Account, Campaigns, Payments) — reuses the `.sp-pillar` card pattern.
+Each card uses existing `.sp-hub-card` styling: pastel icon tile, serif title, body, blue `Explore {title} →` link, photo right side. The `wide` modifier already exists for the Nonprofits row — no CSS changes needed.
 
-4. **Final CTA** (dark stats-strip style, matches the audience pages)
-   - Green chip "Free forever. No card required."
-   - Display serif headline: `Ready to start raising more?` / *`We'll help you launch in a day.`*
-   - Two pill buttons: "Start free" (`/signup`) and "Browse the platform →" (`/platform`).
+### Final CTA
+Keep the existing dark `sp-final-cta` section as-is.
 
-5. **Footer** — keep `MarketingFooter` (already used by audience pages).
+### Files to edit
+- `src/pages/WhoItsFor.tsx` — update hero copy, replace `audiences` array (7 entries, Nonprofits last with `wide: true`), add SVG paths for graduation cap (academic) and theater/mask (arts) icons.
 
-## Design tokens reused
-
-All styling reuses the existing `AUDIENCE_SCOPED_CSS` tokens (`--sp-theme: blue`, paper background, Instrument Serif display font, pill buttons, eyebrows, `.sp-chip`, `.sp-sec-head`, `.sp-pillars`, `.sp-check-list`, `.sp-final-cta`, `.sp-stats-strip`, etc.) so the page matches the audience pages exactly. Theme is `blue` (Sponsorly primary).
-
-## Technical notes
-
-**File to edit:** `src/pages/Contact.tsx` (single file)
-
-- Wrap the page in `<div className="sp-aud theme-blue">` and inject `AUDIENCE_SCOPED_CSS` via `<style dangerouslySetInnerHTML>` — same pattern used by `AudiencePage.tsx`.
-- Add a small page-scoped `<style>` block for contact-specific bits not in the shared CSS:
-  - `.sp-contact-grid` (two-column 1fr / 1.1fr layout, collapses to single column under 900px).
-  - `.sp-info-card` (rounded card with icon tile + text + arrow, mirrors `.sp-pillar`).
-  - `.sp-form-card` (form container) and `.sp-field` / `.sp-input` overrides so the existing shadcn `Input`/`Textarea` adopt the rounded, bordered, theme-focus look. Keep using shadcn components — only override styles via className.
-- Preserve current form logic completely:
-  - `react-hook-form` + `zodResolver(contactSchema)`.
-  - `supabase.from("contact_submissions").insert(...)` then `supabase.functions.invoke("send-contact-notification", ...)`.
-  - Toast on success/error, `reset()` on success, `isSubmitting` state.
-- Replace `MarketingHeader`/`MarketingFooter` placement to match audience pages (header above the `.sp-aud` content, footer at the very bottom inside the wrapper — same as `AudiencePage.tsx`).
-- Keep the existing `<SeoHead>` with the same title/description/path so SEO is unchanged.
-- Icons: use `lucide-react` (`Mail`, `LogIn`, `HelpCircle`, `Send`, `Check`) inside themed icon tiles styled with `background: var(--sp-theme-soft); color: var(--sp-theme); border-radius: 12px`.
-- Responsive: form column stacks below info column on `<900px`; final CTA and FAQ teaser collapse to single column on mobile via existing audience CSS breakpoints + a small media query for `.sp-contact-grid`.
-
-## Out of scope
-
-- No changes to the contact submission backend, edge function, or database schema.
-- No changes to other pages, the marketing header, or the footer.
-- No new images or assets needed.
+No new components, no CSS changes, no route changes.
