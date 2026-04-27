@@ -2007,14 +2007,20 @@ Deno.serve(async (req) => {
       const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
         (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
       const directionsDone = updatedFields.group_directions_addressed === true;
-      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone;
+      // Pledge campaigns also need their pledge-specific fields collected.
+      const resolvedTypeName =
+        types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null;
+      const isPledge = isPledgeTypeName(resolvedTypeName);
+      const pledgeDone = !isPledge || getPledgeStillToAsk(updatedFields).length === 0;
+      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone;
 
       if (exitItemsCollection) {
         phase = "complete";
       } else if (stayInItems) {
         phase = "collecting_items";
       } else if (setupDone) {
-        phase = "collecting_items";
+        // Pledge fundraisers don't use campaign_items — skip straight to complete.
+        phase = isPledge ? "complete" : "collecting_items";
       } else {
         phase = "post_draft";
       }
