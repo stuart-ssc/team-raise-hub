@@ -245,3 +245,33 @@ verify_jwt = false
 
 [functions.fundraiser-outreach-unsubscribe]
 verify_jwt = false
+
+[functions.create-pledge-setup]
+verify_jwt = false
+
+[functions.verify-pledge-setup]
+verify_jwt = false
+
+[functions.cancel-pledge]
+verify_jwt = false
+
+[functions.confirm-pledge-payment]
+verify_jwt = false
+
+[functions.charge-pledges]
+verify_jwt = false
+
+[functions.record-pledge-results]
+verify_jwt = true
+
+[functions.send-pledge-confirmation]
+verify_jwt = false
+
+[functions.send-pledge-charged-receipt]
+verify_jwt = false
+
+[functions.send-pledge-charge-failed]
+verify_jwt = false
+
+[functions.send-pledge-action-required]
+verify_jwt = false
