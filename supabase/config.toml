@@ -275,3 +275,6 @@ verify_jwt = false
 
 [functions.send-pledge-action-required]
 verify_jwt = false
+
+[functions.get-campaign-roster-members]
+verify_jwt = false
