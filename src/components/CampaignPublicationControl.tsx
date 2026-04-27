@@ -119,21 +119,55 @@ export const CampaignPublicationControl = ({
         type: 'payment',
       });
 
-      // Check if campaign has items (for campaigns that require items)
-      const { data: items, error: itemsError } = await supabase
-        .from("campaign_items")
-        .select("id")
-        .eq("campaign_id", campaignId);
+      // Pledge fundraisers have no items — they require pledge setup instead.
+      const { data: campaign, error: campaignError } = await supabase
+        .from("campaigns")
+        .select(`
+          pledge_scope,
+          pledge_unit_label,
+          pledge_event_date,
+          pledge_min_per_unit,
+          campaign_type:campaign_type_id ( campaign_type )
+        `)
+        .eq("id", campaignId)
+        .maybeSingle();
 
-      if (!itemsError) {
-        const hasItems = (items?.length || 0) > 0;
+      const typeName = (campaign as any)?.campaign_type?.campaign_type || "";
+      const isPledge = typeof typeName === "string" && typeName.toLowerCase().includes("pledge");
+
+      if (isPledge && !campaignError && campaign) {
+        const c = campaign as any;
+        const missing: string[] = [];
+        if (!c.pledge_scope) missing.push("pledge scope");
+        if (!c.pledge_unit_label) missing.push("unit label");
+        if (!c.pledge_event_date) missing.push("event date");
+        if (c.pledge_min_per_unit === null || c.pledge_min_per_unit === undefined) {
+          missing.push("minimum per unit");
+        }
+        const configured = missing.length === 0;
         reqs.push({
-          met: hasItems,
-          message: hasItems
-            ? "Fundraiser has items configured"
-            : "Fundraiser should have at least one item before publishing",
+          met: configured,
+          message: configured
+            ? "Pledge setup is configured"
+            : `Pledge setup needs: ${missing.join(", ")}`,
           type: 'content',
         });
+      } else {
+        const { data: items, error: itemsError } = await supabase
+          .from("campaign_items")
+          .select("id")
+          .eq("campaign_id", campaignId);
+
+        if (!itemsError) {
+          const hasItems = (items?.length || 0) > 0;
+          reqs.push({
+            met: hasItems,
+            message: hasItems
+              ? "Fundraiser has items configured"
+              : "Fundraiser should have at least one item before publishing",
+            type: 'content',
+          });
+        }
       }
 
       setRequirements(reqs);
