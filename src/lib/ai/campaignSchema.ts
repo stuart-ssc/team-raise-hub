@@ -336,5 +336,12 @@ export function formatFieldValue(key: string, value: any): string {
     if (value === "donor_covers") return "Donor covers fee";
     if (value === "org_absorbs") return "Organization absorbs fee";
   }
+  if (key === "pledge_scope") {
+    if (value === "team") return "Team total";
+    if (value === "participant") return "Per participant";
+  }
+  if (key === "pledge_min_per_unit") {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value));
+  }
   return String(value);
 }
