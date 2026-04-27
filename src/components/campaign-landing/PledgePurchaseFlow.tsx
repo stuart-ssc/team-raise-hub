@@ -79,48 +79,17 @@ export function PledgePurchaseFlow({
 
   // Fetch active roster members for this campaign's group when picker is needed
   useEffect(() => {
-    if (!needsParticipantPick || !campaign.group_id) return;
+    if (!needsParticipantPick || !campaign.id) return;
     let cancelled = false;
     (async () => {
       setParticipantsLoading(true);
       try {
-        const { data: rosters, error: rErr } = await supabase
-          .from("rosters")
-          .select("id")
-          .eq("group_id", campaign.group_id);
-        if (rErr) throw rErr;
-        const rosterIds = (rosters || []).map((r: any) => r.id);
-        if (rosterIds.length === 0) {
-          if (!cancelled) setParticipants([]);
-          return;
-        }
-        const { data: members, error: mErr } = await supabase
-          .from("organization_user")
-          .select("id, user_id")
-          .in("roster_id", rosterIds)
-          .eq("active_user", true);
-        if (mErr) throw mErr;
-        const userIds = (members || []).map((m: any) => m.user_id).filter(Boolean);
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name")
-          .in("id", userIds);
-        const profMap: Record<string, { first_name: string | null; last_name: string | null }> = {};
-        profiles?.forEach((p: any) => { profMap[p.id] = p; });
-        const list: ParticipantOption[] = (members || [])
-          .map((m: any) => {
-            const p = profMap[m.user_id];
-            if (!p) return null;
-            return {
-              id: m.id,
-              firstName: p.first_name || "",
-              lastName: p.last_name || "",
-            };
-          })
-          .filter(Boolean) as ParticipantOption[];
-        list.sort((a, b) =>
-          (a.firstName + a.lastName).localeCompare(b.firstName + b.lastName)
+        const { data, error } = await supabase.functions.invoke(
+          "get-campaign-roster-members",
+          { body: { campaignId: campaign.id } }
         );
+        if (error) throw error;
+        const list: ParticipantOption[] = (data?.members || []) as ParticipantOption[];
         if (!cancelled) setParticipants(list);
       } catch (err) {
         console.error("Error loading participants:", err);
@@ -130,7 +99,7 @@ export function PledgePurchaseFlow({
       }
     })();
     return () => { cancelled = true; };
-  }, [needsParticipantPick, campaign.group_id]);
+  }, [needsParticipantPick, campaign.id]);
 
   const amountNum = parseFloat(amountPerUnit) || 0;
   const maxNum = hasCap ? parseFloat(maxTotal) || 0 : 0;
