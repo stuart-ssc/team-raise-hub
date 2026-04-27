@@ -495,6 +495,13 @@ function buildSystemPrompt(
       sponsorAssetsPhase === "complete" ||
       !sponsorAssetsRequired;
 
+    // Pledge-specific post-draft state.
+    const resolvedTypeName =
+      campaignTypes.find((t) => t.id === collectedFields.campaign_type_id)?.name || null;
+    const isPledge = isPledgeTypeName(resolvedTypeName);
+    const pledgeStillToAsk = isPledge ? getPledgeStillToAsk(collectedFields) : [];
+    const pledgeFieldsDone = !isPledge || pledgeStillToAsk.length === 0;
+
     const rostersList = rosters.length > 0
       ? rosters.map((r) => `  - "${r.roster_year}${r.current_roster ? " (Current)" : ""}" → id: ${r.id}`).join("\n")
       : "  (no rosters available for this group)";
@@ -525,8 +532,23 @@ function buildSystemPrompt(
       nextStep = `**Next step: pick a roster.** Ask which roster to use for attribution. The UI will show the available rosters as numbered buttons. Available rosters:\n${rostersList}`;
     } else if (!directionsAddressed) {
       nextStep = `**Next step: participant directions.** Ask if they'd like to add internal-only instructions for their team (e.g., "Each player should sell 10 items by Nov 15"). One short sentence. They can type directions or say "skip". When they reply, call the update_campaign_fields tool with group_directions (or set group_directions_addressed=true if skipped).`;
+    } else if (isPledge && !pledgeFieldsDone) {
+      const nextPledgeKey = pledgeStillToAsk[0];
+      if (nextPledgeKey === "pledge_unit_label") {
+        nextStep = `**Next step: pledge unit.** This is a Pledge fundraiser, so supporters pledge a dollar amount per unit. Ask in one short sentence: "What will supporters pledge per? (for example: lap, mile, book read, pushup)". When the user answers, you MUST call **update_campaign_fields** with \`pledge_unit_label\` set to the singular word (lowercase) in the SAME turn.`;
+      } else if (nextPledgeKey === "pledge_scope") {
+        nextStep = `**Next step: pledge scope.** Ask in one short sentence: "Should pledges count team-wide or per participant?". The UI will show two buttons (Team total / Per participant). When the user answers, you MUST call **update_campaign_fields** with \`pledge_scope\` set to exactly "team" or "participant" in the SAME turn.`;
+      } else if (nextPledgeKey === "pledge_event_date") {
+        nextStep = `**Next step: pledge event date.** Ask in one short sentence: "When is the event happening? (charges go out on or after this date)". Accept any natural date format and normalize to YYYY-MM-DD. When the user answers, you MUST call **update_campaign_fields** with \`pledge_event_date\` set to YYYY-MM-DD in the SAME turn.`;
+      } else {
+        nextStep = `**Next step: continue pledge setup.** Ask the user about ${nextPledgeKey}.`;
+      }
     } else {
-      nextStep = `**Setup is done — transition to items collection.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (transition + first item question): "Now let's add your first item. What's the name?"\n\nDo NOT ask about publishing or the editor — that comes later, after items are added. Do NOT call any tool.`;
+      if (isPledge) {
+        nextStep = `**Setup is done — Pledge fundraiser is fully configured.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (wrap-up): "Your pledge fundraiser is set up. You can preview it, publish it, or fine-tune anything in the editor whenever you're ready." Do NOT mention adding items — Pledge fundraisers don't use items. Do NOT call any tool.`;
+      } else {
+        nextStep = `**Setup is done — transition to items collection.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (transition + first item question): "Now let's add your first item. What's the name?"\n\nDo NOT ask about publishing or the editor — that comes later, after items are added. Do NOT call any tool.`;
+      }
     }
 
     return `You are a fundraiser creation assistant for Sponsorly. The user just created a draft campaign and you're now helping them fill in a few more details.
