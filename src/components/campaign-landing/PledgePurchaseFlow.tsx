@@ -14,7 +14,7 @@ interface PledgePurchaseFlowProps {
   campaign: {
     id: string;
     name: string;
-    group_id: number;
+    group_id: string;
     pledge_unit_label: string | null;
     pledge_unit_label_plural: string | null;
     pledge_scope: 'team' | 'participant' | null;
