@@ -1324,6 +1324,8 @@ const CampaignLanding = () => {
             </CardContent>
           </Card>
         )}
+        </>
+        )}
       </div>
       <SimpleFooter />
     </div>
