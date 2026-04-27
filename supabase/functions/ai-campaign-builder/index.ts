@@ -1698,6 +1698,30 @@ Deno.serve(async (req) => {
         if (persistFields.group_directions !== undefined) dbUpdate.group_directions = persistFields.group_directions;
         if (persistFields.asset_upload_deadline) dbUpdate.asset_upload_deadline = persistFields.asset_upload_deadline;
 
+        // Pledge fields — persist only those the user provided this turn.
+        if (persistFields.pledge_unit_label !== undefined)
+          dbUpdate.pledge_unit_label = persistFields.pledge_unit_label;
+        if (persistFields.pledge_scope !== undefined)
+          dbUpdate.pledge_scope = persistFields.pledge_scope;
+        if (persistFields.pledge_event_date !== undefined)
+          dbUpdate.pledge_event_date = persistFields.pledge_event_date;
+        if (persistFields.pledge_min_per_unit !== undefined)
+          dbUpdate.pledge_min_per_unit = persistFields.pledge_min_per_unit;
+        if (persistFields.pledge_suggested_unit_amounts !== undefined) {
+          // Accept either a comma-separated string or an array; store as numeric array.
+          const raw = persistFields.pledge_suggested_unit_amounts;
+          let arr: number[] = [];
+          if (Array.isArray(raw)) {
+            arr = raw.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0);
+          } else if (typeof raw === "string") {
+            arr = raw
+              .split(",")
+              .map((s) => Number(s.trim()))
+              .filter((n) => Number.isFinite(n) && n > 0);
+          }
+          if (arr.length > 0) dbUpdate.pledge_suggested_unit_amounts = arr;
+        }
+
         if (Object.keys(dbUpdate).length > 0) {
           const { error: updErr } = await adminSb.from("campaigns").update(dbUpdate).eq("id", campaignId);
           if (updErr) console.error("Failed to persist post-draft fields:", updErr);
