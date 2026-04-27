@@ -1346,6 +1346,12 @@ Deno.serve(async (req) => {
               asset_upload_deadline: { type: "string", description: "Deadline for sponsors to upload assets, in YYYY-MM-DD format" },
               add_required_asset: { type: "string", description: "Add one required sponsor asset. Use 'logo', 'banner', 'fullpage', 'website', or a free-text custom name." },
               sponsor_assets_complete: { type: "boolean", description: "True once the user has finished adding required sponsor assets" },
+              // Pledge fundraiser fields (only used when campaign_type is Pledge):
+              pledge_unit_label: { type: "string", description: "Singular unit supporters pledge per (e.g. 'lap', 'mile', 'book'). Lowercase." },
+              pledge_scope: { type: "string", enum: ["team", "participant"], description: "'team' = one shared total. 'participant' = each roster member tracked separately." },
+              pledge_event_date: { type: "string", description: "Date the pledge event happens (charging window opens). YYYY-MM-DD." },
+              pledge_min_per_unit: { type: "number", description: "Optional minimum dollar amount per unit (e.g. 0.25)." },
+              pledge_suggested_unit_amounts: { type: "string", description: "Optional comma-separated suggested per-unit amounts (e.g. '0.5, 1, 2, 5')." },
             },
             additionalProperties: false,
           },
