@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search, ChevronRight } from "lucide-react";
 import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ interface PledgePurchaseFlowProps {
   campaign: {
     id: string;
     name: string;
+    group_id: string;
     pledge_unit_label: string | null;
     pledge_unit_label_plural: string | null;
     pledge_scope: 'team' | 'participant' | null;
@@ -33,6 +34,12 @@ interface PledgePurchaseFlowProps {
 
 const PLATFORM_FEE = 0.10;
 
+interface ParticipantOption {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
 export function PledgePurchaseFlow({
   campaign,
   organizationName,
@@ -50,12 +57,84 @@ export function PledgePurchaseFlow({
       })
     : "the event date";
 
-  const [step, setStep] = useState<'amount' | 'donor' | 'review'>('amount');
+  const needsParticipantPick = isParticipantScope && !attributedRosterMember;
+  const [step, setStep] = useState<'participant' | 'amount' | 'donor' | 'review'>(
+    needsParticipantPick ? 'participant' : 'amount'
+  );
+  const [selectedRosterMember, setSelectedRosterMember] = useState<ParticipantOption | null>(
+    attributedRosterMember
+  );
+  const [participants, setParticipants] = useState<ParticipantOption[]>([]);
+  const [participantsLoading, setParticipantsLoading] = useState(false);
+  const [participantSearch, setParticipantSearch] = useState("");
   const [amountPerUnit, setAmountPerUnit] = useState<string>("");
   const [hasCap, setHasCap] = useState(false);
   const [maxTotal, setMaxTotal] = useState<string>("");
   const [donorInfo, setDonorInfo] = useState<DonorInfo | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Fetch active roster members for this campaign's group when picker is needed
+  useEffect(() => {
+    if (!needsParticipantPick || !campaign.group_id) return;
+    let cancelled = false;
+    (async () => {
+      setParticipantsLoading(true);
+      try {
+        const { data: rosters, error: rErr } = await supabase
+          .from("rosters")
+          .select("id")
+          .eq("group_id", campaign.group_id);
+        if (rErr) throw rErr;
+        const rosterIds = (rosters || []).map((r: any) => r.id);
+        if (rosterIds.length === 0) {
+          if (!cancelled) setParticipants([]);
+          return;
+        }
+        const { data: members, error: mErr } = await supabase
+          .from("organization_user")
+          .select("id, user_id")
+          .in("roster_id", rosterIds)
+          .eq("active_user", true);
+        if (mErr) throw mErr;
+        const userIds = (members || []).map((m: any) => m.user_id).filter(Boolean);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name")
+          .in("id", userIds);
+        const profMap: Record<string, { first_name: string | null; last_name: string | null }> = {};
+        profiles?.forEach((p: any) => { profMap[p.id] = p; });
+        const list: ParticipantOption[] = (members || [])
+          .map((m: any) => {
+            const p = profMap[m.user_id];
+            if (!p) return null;
+            return {
+              id: m.id,
+              firstName: p.first_name || "",
+              lastName: p.last_name || "",
+            };
+          })
+          .filter(Boolean) as ParticipantOption[];
+        list.sort((a, b) =>
+          (a.firstName + a.lastName).localeCompare(b.firstName + b.lastName)
+        );
+        if (!cancelled) setParticipants(list);
+      } catch (err) {
+        console.error("Error loading participants:", err);
+        if (!cancelled) setParticipants([]);
+      } finally {
+        if (!cancelled) setParticipantsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [needsParticipantPick, campaign.group_id]);
+
+  const filteredParticipants = useMemo(() => {
+    const q = participantSearch.trim().toLowerCase();
+    if (!q) return participants;
+    return participants.filter((p) =>
+      `${p.firstName} ${p.lastName}`.toLowerCase().includes(q)
+    );
+  }, [participants, participantSearch]);
 
   const amountNum = parseFloat(amountPerUnit) || 0;
   const maxNum = hasCap ? parseFloat(maxTotal) || 0 : 0;
@@ -86,7 +165,7 @@ export function PledgePurchaseFlow({
           campaign_id: campaign.id,
           amount_per_unit: amountNum,
           max_total_amount: hasCap && maxNum > 0 ? maxNum : null,
-          attributed_roster_member_id: attributedRosterMember?.id || null,
+          attributed_roster_member_id: selectedRosterMember?.id || null,
           donor: donorInfo,
           mandate_text: mandateText,
           success_url: `${window.location.origin}/pledge/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -115,16 +194,67 @@ export function PledgePurchaseFlow({
         <CardHeader>
           <CardTitle>Pledge to {organizationName}</CardTitle>
           <CardDescription>
-            {isParticipantScope && attributedRosterMember
-              ? `You're supporting ${attributedRosterMember.firstName} ${attributedRosterMember.lastName}. `
+            {isParticipantScope && selectedRosterMember
+              ? `You're supporting ${selectedRosterMember.firstName} ${selectedRosterMember.lastName}. `
               : ""}
             Pledge an amount per {unitLabel}. Your card won't be charged until after {eventDateStr}.
           </CardDescription>
+          {isParticipantScope && selectedRosterMember && !attributedRosterMember && step !== 'participant' && (
+            <button
+              type="button"
+              className="text-sm text-primary hover:underline self-start"
+              onClick={() => setStep('participant')}
+            >
+              Change participant
+            </button>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
-          {isParticipantScope && !attributedRosterMember && (
-            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-              This fundraiser supports specific participants. Please use a participant's personal link to pledge.
+          {step === 'participant' && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-base">Who are you pledging for?</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Select the participant you want to support.
+                </p>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name…"
+                  className="pl-9"
+                  value={participantSearch}
+                  onChange={(e) => setParticipantSearch(e.target.value)}
+                />
+              </div>
+              <div className="border rounded-md max-h-80 overflow-y-auto divide-y">
+                {participantsLoading ? (
+                  <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading participants…
+                  </div>
+                ) : filteredParticipants.length === 0 ? (
+                  <div className="p-4 text-sm text-muted-foreground">
+                    {participants.length === 0
+                      ? "No participants found for this fundraiser."
+                      : "No matches for your search."}
+                  </div>
+                ) : (
+                  filteredParticipants.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedRosterMember(p);
+                        setStep('amount');
+                      }}
+                      className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="font-medium">{p.firstName} {p.lastName}</span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
           )}
 
@@ -206,7 +336,7 @@ export function PledgePurchaseFlow({
               <div className="flex justify-end">
                 <Button
                   onClick={() => setStep('donor')}
-                  disabled={!canContinueAmount || (isParticipantScope && !attributedRosterMember)}
+                  disabled={!canContinueAmount || (isParticipantScope && !selectedRosterMember)}
                 >
                   Continue
                 </Button>
@@ -244,10 +374,10 @@ export function PledgePurchaseFlow({
                   <span className="text-muted-foreground">Donor</span>
                   <span className="font-medium">{donorInfo.firstName} {donorInfo.lastName}</span>
                 </div>
-                {attributedRosterMember && (
+                {selectedRosterMember && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Supporting</span>
-                    <span className="font-medium">{attributedRosterMember.firstName} {attributedRosterMember.lastName}</span>
+                    <span className="font-medium">{selectedRosterMember.firstName} {selectedRosterMember.lastName}</span>
                   </div>
                 )}
               </div>
