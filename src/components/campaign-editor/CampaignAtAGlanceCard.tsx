@@ -25,6 +25,10 @@ interface CampaignAtAGlanceCardProps {
   startDate?: string;
   pitch?: CampaignPitch | null;
   itemsCount?: number;
+  isPledge?: boolean;
+  pledgeUnitLabel?: string | null;
+  pledgeScope?: string | null;
+  pledgeEventDate?: string | null;
 }
 
 export function CampaignAtAGlanceCard({
@@ -38,6 +42,10 @@ export function CampaignAtAGlanceCard({
   startDate,
   pitch,
   itemsCount = 0,
+  isPledge = false,
+  pledgeUnitLabel,
+  pledgeScope,
+  pledgeEventDate,
 }: CampaignAtAGlanceCardProps) {
   const isPublished = publicationStatus === "published";
 
@@ -71,7 +79,12 @@ export function CampaignAtAGlanceCard({
 
     const checklist = [
       { label: "Basic details added", done: !!(name && description) },
-      { label: "Campaign items defined", done: itemsCount > 0 },
+      isPledge
+        ? {
+            label: "Pledge setup configured",
+            done: !!(pledgeUnitLabel && pledgeScope && pledgeEventDate),
+          }
+        : { label: "Campaign items defined", done: itemsCount > 0 },
       { label: "Campaign image uploaded", done: !!imageUrl },
       { label: "Schedule set", done: !!(startDate && endDate) },
       { label: "Pitch written", done: hasPitch },
