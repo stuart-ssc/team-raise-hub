@@ -198,18 +198,29 @@ export function BasicDetailsSection({
       <div className="space-y-2">
         <Label>Fundraiser Image</Label>
         <div className="space-y-2">
-          {data.imageUrl && !campaignImageFile && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Current: {data.imageUrl.split('/').pop()}</span>
-              <Button 
-                type="button" 
-                variant="link" 
-                size="sm" 
-                className="h-auto p-0"
-                onClick={() => document.getElementById('campaign-image-upload')?.click()}
-              >
-                Replace
-              </Button>
+          {(campaignImageFile || data.imageUrl) && (
+            <div className="flex items-start gap-3">
+              <img
+                src={campaignImageFile ? URL.createObjectURL(campaignImageFile) : data.imageUrl}
+                alt="Fundraiser preview"
+                className="h-20 w-20 rounded-md border object-cover"
+              />
+              <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                <span className="truncate max-w-[260px]">
+                  {campaignImageFile
+                    ? `Selected: ${campaignImageFile.name}`
+                    : `Current: ${data.imageUrl.split('/').pop()}`}
+                </span>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 self-start"
+                  onClick={() => document.getElementById('campaign-image-upload')?.click()}
+                >
+                  Replace image
+                </Button>
+              </div>
             </div>
           )}
           <div 
