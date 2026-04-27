@@ -2165,6 +2165,23 @@ Deno.serve(async (req) => {
           label: "Participant directions",
           options: [{ label: "Skip — no directions", value: "skip" }],
         };
+      } else if (
+        isPledgeTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name) &&
+        getPledgeStillToAsk(updatedFields).length > 0
+      ) {
+        const nextPledge = getPledgeStillToAsk(updatedFields)[0];
+        if (nextPledge === "pledge_scope") {
+          suggestions = {
+            type: "choice",
+            field: "pledge_scope",
+            label: "Pledge scope",
+            options: [
+              { label: "Team total", value: "team" },
+              { label: "Per participant", value: "participant" },
+            ],
+          };
+        }
+        // pledge_unit_label and pledge_event_date are free-text — no chips needed.
       } else {
         // Phase === "complete" — offer the final choice
         suggestions = {
