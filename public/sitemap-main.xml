@@ -31,6 +31,41 @@
     <priority>0.85</priority>
   </url>
   <url>
+    <loc>https://sponsorly.io/fundraisers</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://sponsorly.io/fundraisers/donations</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://sponsorly.io/fundraisers/sponsorships</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://sponsorly.io/fundraisers/events</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://sponsorly.io/fundraisers/pledge</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://sponsorly.io/fundraisers/merchandise</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://sponsorly.io/fundraisers/roster</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://sponsorly.io/schools/sports-teams</loc>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
