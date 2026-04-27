@@ -242,7 +242,7 @@ export function PledgePurchaseFlow({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Donor</span>
-                  <span className="font-medium">{donorInfo.first_name} {donorInfo.last_name}</span>
+                  <span className="font-medium">{donorInfo.firstName} {donorInfo.lastName}</span>
                 </div>
                 {attributedRosterMember && (
                   <div className="flex justify-between">
