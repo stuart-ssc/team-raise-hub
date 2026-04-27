@@ -508,6 +508,11 @@ export default function CampaignEditor() {
         }
       }
 
+      // Sync local state with persisted values so the AtAGlance checklist
+      // and image preview reflect the freshly uploaded image.
+      setCampaignData((prev) => ({ ...prev, imageUrl: imageUrl || "" }));
+      setCampaignImageFile(null);
+
       toast({
         title: "Success",
         description: isEditing ? "Campaign updated successfully" : "Campaign created successfully",
