@@ -16,6 +16,7 @@ import { BusinessInfoForm } from "@/components/BusinessInfoForm";
 import { CustomFieldsRenderer } from "@/components/CustomFieldsRenderer";
 import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
 import SimpleFooter from "@/components/SimpleFooter";
+import { PledgePurchaseFlow } from "@/components/campaign-landing/PledgePurchaseFlow";
 
 interface CampaignData {
   id: string;
