@@ -781,6 +781,30 @@ export default function CampaignEditor() {
                 {activeSection === "assets" && isEditing && id && (
                   <CampaignAssetsSection campaignId={id} />
                 )}
+
+                {activeSection === "pledgeSettings" && (
+                  <PledgeSettingsSection
+                    data={{
+                      pledgeUnitLabel: campaignData.pledgeUnitLabel,
+                      pledgeUnitLabelPlural: campaignData.pledgeUnitLabelPlural,
+                      pledgeScope: campaignData.pledgeScope,
+                      pledgeEventDate: campaignData.pledgeEventDate,
+                      pledgeMinPerUnit: campaignData.pledgeMinPerUnit,
+                      pledgeSuggestedUnitAmounts: campaignData.pledgeSuggestedUnitAmounts,
+                      enableRosterAttribution: campaignData.enableRosterAttribution,
+                    }}
+                    onUpdate={updateCampaignData}
+                  />
+                )}
+
+                {activeSection === "pledgeResults" && isEditing && id && (
+                  <PledgeResultsSection
+                    campaignId={id}
+                    pledgeScope={campaignData.pledgeScope}
+                    pledgeUnitLabel={campaignData.pledgeUnitLabel}
+                    pledgeUnitLabelPlural={campaignData.pledgeUnitLabelPlural}
+                  />
+                )}
               </CardContent>
             </Card>
 
