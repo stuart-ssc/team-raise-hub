@@ -1009,6 +1009,12 @@ export type Database = {
           pitch_message: string | null
           pitch_recorded_video_url: string | null
           pitch_video_url: string | null
+          pledge_event_date: string | null
+          pledge_min_per_unit: number | null
+          pledge_scope: string | null
+          pledge_suggested_unit_amounts: Json | null
+          pledge_unit_label: string | null
+          pledge_unit_label_plural: string | null
           publication_status: string | null
           requires_business_info: boolean | null
           roster_id: number | null
@@ -1039,6 +1045,12 @@ export type Database = {
           pitch_message?: string | null
           pitch_recorded_video_url?: string | null
           pitch_video_url?: string | null
+          pledge_event_date?: string | null
+          pledge_min_per_unit?: number | null
+          pledge_scope?: string | null
+          pledge_suggested_unit_amounts?: Json | null
+          pledge_unit_label?: string | null
+          pledge_unit_label_plural?: string | null
           publication_status?: string | null
           requires_business_info?: boolean | null
           roster_id?: number | null
@@ -1069,6 +1081,12 @@ export type Database = {
           pitch_message?: string | null
           pitch_recorded_video_url?: string | null
           pitch_video_url?: string | null
+          pledge_event_date?: string | null
+          pledge_min_per_unit?: number | null
+          pledge_scope?: string | null
+          pledge_suggested_unit_amounts?: Json | null
+          pledge_unit_label?: string | null
+          pledge_unit_label_plural?: string | null
           publication_status?: string | null
           requires_business_info?: boolean | null
           roster_id?: number | null
@@ -3377,6 +3395,7 @@ export type Database = {
           payment_received_at: string | null
           payment_received_by: string | null
           platform_fee_amount: number | null
+          pledge_id: string | null
           processor_session_id: string | null
           processor_transaction_id: string | null
           shipping_address: Json | null
@@ -3417,6 +3436,7 @@ export type Database = {
           payment_received_at?: string | null
           payment_received_by?: string | null
           platform_fee_amount?: number | null
+          pledge_id?: string | null
           processor_session_id?: string | null
           processor_transaction_id?: string | null
           shipping_address?: Json | null
@@ -3457,6 +3477,7 @@ export type Database = {
           payment_received_at?: string | null
           payment_received_by?: string | null
           platform_fee_amount?: number | null
+          pledge_id?: string | null
           processor_session_id?: string | null
           processor_transaction_id?: string | null
           shipping_address?: Json | null
@@ -3833,6 +3854,183 @@ export type Database = {
             columns: ["roster_id"]
             isOneToOne: false
             referencedRelation: "rosters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pledge_results: {
+        Row: {
+          attributed_roster_member_id: string | null
+          campaign_id: string
+          charge_status: string
+          created_at: string
+          id: string
+          recorded_at: string
+          recorded_by: string | null
+          total_amount_charged: number
+          total_pledges_charged: number
+          total_pledges_count: number
+          total_pledges_failed: number
+          units_completed: number
+          updated_at: string
+        }
+        Insert: {
+          attributed_roster_member_id?: string | null
+          campaign_id: string
+          charge_status?: string
+          created_at?: string
+          id?: string
+          recorded_at?: string
+          recorded_by?: string | null
+          total_amount_charged?: number
+          total_pledges_charged?: number
+          total_pledges_count?: number
+          total_pledges_failed?: number
+          units_completed: number
+          updated_at?: string
+        }
+        Update: {
+          attributed_roster_member_id?: string | null
+          campaign_id?: string
+          charge_status?: string
+          created_at?: string
+          id?: string
+          recorded_at?: string
+          recorded_by?: string | null
+          total_amount_charged?: number
+          total_pledges_charged?: number
+          total_pledges_count?: number
+          total_pledges_failed?: number
+          units_completed?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pledge_results_attributed_roster_member_id_fkey"
+            columns: ["attributed_roster_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pledge_results_attributed_roster_member_id_fkey"
+            columns: ["attributed_roster_member_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["roster_member_id"]
+          },
+          {
+            foreignKeyName: "pledge_results_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pledges: {
+        Row: {
+          amount_per_unit: number
+          attributed_roster_member_id: string | null
+          calculated_charge_amount: number | null
+          campaign_id: string
+          cancel_token: string | null
+          cancel_token_expires_at: string | null
+          charge_failure_code: string | null
+          charge_failure_reason: string | null
+          charged_at: string | null
+          created_at: string
+          final_charge_amount: number | null
+          id: string
+          mandate_text_shown: string
+          max_total_amount: number | null
+          order_id: string
+          sca_confirm_token: string | null
+          sca_confirm_token_expires_at: string | null
+          status: string
+          stripe_customer_id: string
+          stripe_payment_method_id: string | null
+          stripe_setup_intent_id: string | null
+          units_charged_for: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount_per_unit: number
+          attributed_roster_member_id?: string | null
+          calculated_charge_amount?: number | null
+          campaign_id: string
+          cancel_token?: string | null
+          cancel_token_expires_at?: string | null
+          charge_failure_code?: string | null
+          charge_failure_reason?: string | null
+          charged_at?: string | null
+          created_at?: string
+          final_charge_amount?: number | null
+          id?: string
+          mandate_text_shown: string
+          max_total_amount?: number | null
+          order_id: string
+          sca_confirm_token?: string | null
+          sca_confirm_token_expires_at?: string | null
+          status?: string
+          stripe_customer_id: string
+          stripe_payment_method_id?: string | null
+          stripe_setup_intent_id?: string | null
+          units_charged_for?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount_per_unit?: number
+          attributed_roster_member_id?: string | null
+          calculated_charge_amount?: number | null
+          campaign_id?: string
+          cancel_token?: string | null
+          cancel_token_expires_at?: string | null
+          charge_failure_code?: string | null
+          charge_failure_reason?: string | null
+          charged_at?: string | null
+          created_at?: string
+          final_charge_amount?: number | null
+          id?: string
+          mandate_text_shown?: string
+          max_total_amount?: number | null
+          order_id?: string
+          sca_confirm_token?: string | null
+          sca_confirm_token_expires_at?: string | null
+          status?: string
+          stripe_customer_id?: string
+          stripe_payment_method_id?: string | null
+          stripe_setup_intent_id?: string | null
+          units_charged_for?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pledges_attributed_roster_member_id_fkey"
+            columns: ["attributed_roster_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pledges_attributed_roster_member_id_fkey"
+            columns: ["attributed_roster_member_id"]
+            isOneToOne: false
+            referencedRelation: "roster_member_fundraising_stats"
+            referencedColumns: ["roster_member_id"]
+          },
+          {
+            foreignKeyName: "pledges_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pledges_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -4812,6 +5010,10 @@ export type Database = {
         Returns: number
       }
       calculate_rfm_scores: { Args: { org_id: string }; Returns: undefined }
+      can_manage_campaign_pledges: {
+        Args: { _campaign_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_update_organization_user: {
         Args: { target_org_user_id: string }
         Returns: boolean
