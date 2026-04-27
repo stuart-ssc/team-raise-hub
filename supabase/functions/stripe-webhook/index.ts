@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import Stripe from 'https://esm.sh/stripe@14.21.0';
+import { finalizePledgeSetup, generateToken } from '../_shared/pledge-helpers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -66,6 +67,16 @@ Deno.serve(async (req) => {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         console.log('Processing checkout.session.completed:', session.id);
+
+        // Pledge setup branch — no order processing needed beyond finalize helper
+        if (session.mode === 'setup' && session.metadata?.is_pledge === 'true') {
+          try {
+            await finalizePledgeSetup({ session, supabaseAdmin, stripe });
+          } catch (err) {
+            console.error('Pledge setup finalize failed:', err);
+          }
+          break;
+        }
 
         const orderId = session.metadata?.order_id;
         if (!orderId) {
@@ -491,7 +502,45 @@ Deno.serve(async (req) => {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         console.log('Processing payment_intent.succeeded:', paymentIntent.id);
-        
+
+        // Pledge charge succeeded (covers SCA reauth path too)
+        if (paymentIntent.metadata?.is_pledge === 'true') {
+          const pledgeId = paymentIntent.metadata?.pledge_id;
+          const orderId = paymentIntent.metadata?.order_id;
+          if (pledgeId) {
+            const { data: pledge } = await supabaseAdmin
+              .from('pledges')
+              .select('id, status, final_charge_amount, amount_per_unit, units_charged_for')
+              .eq('id', pledgeId)
+              .maybeSingle();
+            if (pledge && pledge.status !== 'charged') {
+              await supabaseAdmin.from('pledges').update({
+                status: 'charged',
+                charged_at: new Date().toISOString(),
+                sca_confirm_token: null,
+                sca_confirm_token_expires_at: null,
+                updated_at: new Date().toISOString(),
+              }).eq('id', pledgeId);
+
+              if (orderId) {
+                const finalAmount = Number(pledge.final_charge_amount || 0);
+                await supabaseAdmin.from('orders').update({
+                  status: 'succeeded',
+                  total_amount: paymentIntent.amount / 100,
+                  items_total: finalAmount,
+                  stripe_payment_intent_id: paymentIntent.id,
+                  updated_at: new Date().toISOString(),
+                }).eq('id', orderId);
+              }
+
+              try {
+                await supabaseAdmin.functions.invoke('send-pledge-charged-receipt', { body: { pledgeId } });
+              } catch (e) { console.error('receipt email failed:', e); }
+            }
+          }
+          break;
+        }
+
         const orderId = paymentIntent.metadata?.order_id;
         if (orderId) {
           await supabaseAdmin
@@ -501,6 +550,54 @@ Deno.serve(async (req) => {
               updated_at: new Date().toISOString(),
             })
             .eq('id', orderId);
+        }
+        break;
+      }
+
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        console.log('Processing payment_intent.payment_failed:', paymentIntent.id);
+
+        if (paymentIntent.metadata?.is_pledge === 'true') {
+          const pledgeId = paymentIntent.metadata?.pledge_id;
+          const orderId = paymentIntent.metadata?.order_id;
+          const lastError = paymentIntent.last_payment_error;
+          const code = lastError?.code || null;
+          const message = lastError?.message || 'Payment failed';
+
+          if (pledgeId) {
+            if (code === 'authentication_required') {
+              const scaToken = generateToken(16);
+              const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString();
+              await supabaseAdmin.from('pledges').update({
+                status: 'requires_action',
+                charge_failure_code: code,
+                charge_failure_reason: message,
+                sca_confirm_token: scaToken,
+                sca_confirm_token_expires_at: expires,
+                updated_at: new Date().toISOString(),
+              }).eq('id', pledgeId);
+              try {
+                await supabaseAdmin.functions.invoke('send-pledge-action-required', { body: { pledgeId } });
+              } catch (e) { console.error('action-required email failed:', e); }
+            } else {
+              await supabaseAdmin.from('pledges').update({
+                status: 'failed',
+                charge_failure_code: code,
+                charge_failure_reason: message,
+                updated_at: new Date().toISOString(),
+              }).eq('id', pledgeId);
+              if (orderId) {
+                await supabaseAdmin.from('orders').update({
+                  status: 'pledge_failed',
+                  updated_at: new Date().toISOString(),
+                }).eq('id', orderId);
+              }
+              try {
+                await supabaseAdmin.functions.invoke('send-pledge-charge-failed', { body: { pledgeId } });
+              } catch (e) { console.error('failed email failed:', e); }
+            }
+          }
         }
         break;
       }
