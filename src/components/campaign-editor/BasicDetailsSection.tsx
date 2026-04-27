@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,8 @@ interface CampaignData {
   imageUrl: string;
   groupId: string;
   campaignTypeId: string;
+  endDate?: string;
+  pledgeEventDate?: string;
 }
 
 interface BasicDetailsSectionProps {
@@ -49,6 +51,8 @@ export function BasicDetailsSection({
   const [groups, setGroups] = useState<Group[]>([]);
   const [campaignTypes, setCampaignTypes] = useState<CampaignType[]>([]);
   const [checkingSlug, setCheckingSlug] = useState(false);
+  // Tracks whether end_date was set automatically by us (so we don't clobber a manual edit).
+  const endDateAutoSetRef = useRef(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,6 +86,32 @@ export function BasicDetailsSection({
 
     fetchData();
   }, [organizationUser]);
+
+  // Auto-suggest end_date = pledge_event_date - 1 day when type is Pledge.
+  useEffect(() => {
+    const typeName = campaignTypes.find((t) => t.id === data.campaignTypeId)?.name?.toLowerCase() || "";
+    const isPledge = typeName.includes("pledge");
+    if (!isPledge) return;
+    if (!data.pledgeEventDate) return;
+
+    // Compute the day before the event, treating values as plain dates (YYYY-MM-DD)
+    // to avoid timezone drift.
+    const [y, m, d] = data.pledgeEventDate.split("-").map((n) => parseInt(n, 10));
+    if (!y || !m || !d) return;
+    const eventUtc = new Date(Date.UTC(y, m - 1, d));
+    eventUtc.setUTCDate(eventUtc.getUTCDate() - 1);
+    const suggested = eventUtc.toISOString().slice(0, 10);
+
+    // Only auto-fill if end_date is empty OR was previously set by us.
+    if (!data.endDate || endDateAutoSetRef.current) {
+      if (data.endDate !== suggested) {
+        endDateAutoSetRef.current = true;
+        onUpdate({ endDate: suggested } as any);
+      }
+    }
+    // Intentionally exclude data.endDate from deps — we only react to event-date / type changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.pledgeEventDate, data.campaignTypeId, campaignTypes]);
 
   const generateSlugFromName = (name: string): string => {
     return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');

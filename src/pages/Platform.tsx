@@ -301,6 +301,12 @@ const Platform = () => {
                   Roster-Enabled Campaigns
                 </Button>
               </Link>
+              <Link to="/fundraisers/pledge">
+                <Button size="lg" variant="outline" className="gap-2">
+                  <Heart className="h-5 w-5" />
+                  Pledge Fundraisers
+                </Button>
+              </Link>
             </div>
           </div>
         </section>

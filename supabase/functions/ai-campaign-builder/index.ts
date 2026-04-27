@@ -339,7 +339,27 @@ const FIELD_DEFS: FieldDef[] = [
   { key: "end_date", label: "End Date", type: "date", required: true, aiDescription: "End date in YYYY-MM-DD format." },
   { key: "requires_business_info", label: "Sponsors Provide Info/Assets", type: "boolean", required: true, aiDescription: "Whether sponsors must provide information or assets to participate (e.g. a logo for a banner/shirt, a website link for social media recognition)." },
   { key: "fee_model", label: "Platform Fee Model", type: "select", required: true, aiDescription: "Who pays the 10% Sponsorly platform fee. Must be exactly 'donor_covers' (donor pays the fee on top of the item price) or 'org_absorbs' (organization absorbs the fee out of the item price the donor sees)." },
+  // Pledge-only fields. Required for Pledge campaigns; ignored otherwise.
+  { key: "pledge_unit_label", label: "Pledge Unit", type: "string", required: false, aiDescription: "Singular unit supporters pledge per (e.g. 'lap', 'mile', 'book'). REQUIRED for Pledge campaigns." },
+  { key: "pledge_scope", label: "Pledge Scope", type: "select", required: false, aiDescription: "'team' = one shared total. 'participant' = each roster member tracked separately. REQUIRED for Pledge campaigns." },
+  { key: "pledge_event_date", label: "Pledge Event Date", type: "date", required: false, aiDescription: "Date the activity happens (charging window opens this day). YYYY-MM-DD. REQUIRED for Pledge campaigns." },
+  { key: "pledge_min_per_unit", label: "Min per Unit", type: "number", required: false, aiDescription: "Optional minimum dollar amount per unit (e.g. 0.25)." },
+  { key: "pledge_suggested_unit_amounts", label: "Suggested per-Unit Amounts", type: "string", required: false, aiDescription: "Optional comma-separated suggested per-unit amounts (e.g. '0.5, 1, 2, 5')." },
 ];
+
+/** True when the resolved campaign type name is a Pledge fundraiser. */
+function isPledgeTypeName(typeName?: string | null): boolean {
+  return (typeName || "").toLowerCase().includes("pledge");
+}
+
+/** Pledge-specific post-draft fields the AI must collect, in order. */
+function getPledgeStillToAsk(collected: Record<string, any>): string[] {
+  const order = ["pledge_unit_label", "pledge_scope", "pledge_event_date"];
+  return order.filter((k) => {
+    const v = collected[k];
+    return v === undefined || v === null || v === "";
+  });
+}
 
 function buildItemsSystemPrompt(
   campaignName: string,
@@ -475,6 +495,13 @@ function buildSystemPrompt(
       sponsorAssetsPhase === "complete" ||
       !sponsorAssetsRequired;
 
+    // Pledge-specific post-draft state.
+    const resolvedTypeName =
+      campaignTypes.find((t) => t.id === collectedFields.campaign_type_id)?.name || null;
+    const isPledge = isPledgeTypeName(resolvedTypeName);
+    const pledgeStillToAsk = isPledge ? getPledgeStillToAsk(collectedFields) : [];
+    const pledgeFieldsDone = !isPledge || pledgeStillToAsk.length === 0;
+
     const rostersList = rosters.length > 0
       ? rosters.map((r) => `  - "${r.roster_year}${r.current_roster ? " (Current)" : ""}" → id: ${r.id}`).join("\n")
       : "  (no rosters available for this group)";
@@ -505,8 +532,23 @@ function buildSystemPrompt(
       nextStep = `**Next step: pick a roster.** Ask which roster to use for attribution. The UI will show the available rosters as numbered buttons. Available rosters:\n${rostersList}`;
     } else if (!directionsAddressed) {
       nextStep = `**Next step: participant directions.** Ask if they'd like to add internal-only instructions for their team (e.g., "Each player should sell 10 items by Nov 15"). One short sentence. They can type directions or say "skip". When they reply, call the update_campaign_fields tool with group_directions (or set group_directions_addressed=true if skipped).`;
+    } else if (isPledge && !pledgeFieldsDone) {
+      const nextPledgeKey = pledgeStillToAsk[0];
+      if (nextPledgeKey === "pledge_unit_label") {
+        nextStep = `**Next step: pledge unit.** This is a Pledge fundraiser, so supporters pledge a dollar amount per unit. Ask in one short sentence: "What will supporters pledge per? (for example: lap, mile, book read, pushup)". When the user answers, you MUST call **update_campaign_fields** with \`pledge_unit_label\` set to the singular word (lowercase) in the SAME turn.`;
+      } else if (nextPledgeKey === "pledge_scope") {
+        nextStep = `**Next step: pledge scope.** Ask in one short sentence: "Should pledges count team-wide or per participant?". The UI will show two buttons (Team total / Per participant). When the user answers, you MUST call **update_campaign_fields** with \`pledge_scope\` set to exactly "team" or "participant" in the SAME turn.`;
+      } else if (nextPledgeKey === "pledge_event_date") {
+        nextStep = `**Next step: pledge event date.** Ask in one short sentence: "When is the event happening? (charges go out on or after this date)". Accept any natural date format and normalize to YYYY-MM-DD. When the user answers, you MUST call **update_campaign_fields** with \`pledge_event_date\` set to YYYY-MM-DD in the SAME turn.`;
+      } else {
+        nextStep = `**Next step: continue pledge setup.** Ask the user about ${nextPledgeKey}.`;
+      }
     } else {
-      nextStep = `**Setup is done — transition to items collection.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (transition + first item question): "Now let's add your first item. What's the name?"\n\nDo NOT ask about publishing or the editor — that comes later, after items are added. Do NOT call any tool.`;
+      if (isPledge) {
+        nextStep = `**Setup is done — Pledge fundraiser is fully configured.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (wrap-up): "Your pledge fundraiser is set up. You can preview it, publish it, or fine-tune anything in the editor whenever you're ready." Do NOT mention adding items — Pledge fundraisers don't use items. Do NOT call any tool.`;
+      } else {
+        nextStep = `**Setup is done — transition to items collection.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (transition + first item question): "Now let's add your first item. What's the name?"\n\nDo NOT ask about publishing or the editor — that comes later, after items are added. Do NOT call any tool.`;
+      }
     }
 
     return `You are a fundraiser creation assistant for Sponsorly. The user just created a draft campaign and you're now helping them fill in a few more details.
@@ -1304,6 +1346,12 @@ Deno.serve(async (req) => {
               asset_upload_deadline: { type: "string", description: "Deadline for sponsors to upload assets, in YYYY-MM-DD format" },
               add_required_asset: { type: "string", description: "Add one required sponsor asset. Use 'logo', 'banner', 'fullpage', 'website', or a free-text custom name." },
               sponsor_assets_complete: { type: "boolean", description: "True once the user has finished adding required sponsor assets" },
+              // Pledge fundraiser fields (only used when campaign_type is Pledge):
+              pledge_unit_label: { type: "string", description: "Singular unit supporters pledge per (e.g. 'lap', 'mile', 'book'). Lowercase." },
+              pledge_scope: { type: "string", enum: ["team", "participant"], description: "'team' = one shared total. 'participant' = each roster member tracked separately." },
+              pledge_event_date: { type: "string", description: "Date the pledge event happens (charging window opens). YYYY-MM-DD." },
+              pledge_min_per_unit: { type: "number", description: "Optional minimum dollar amount per unit (e.g. 0.25)." },
+              pledge_suggested_unit_amounts: { type: "string", description: "Optional comma-separated suggested per-unit amounts (e.g. '0.5, 1, 2, 5')." },
             },
             additionalProperties: false,
           },
@@ -1650,6 +1698,30 @@ Deno.serve(async (req) => {
         if (persistFields.group_directions !== undefined) dbUpdate.group_directions = persistFields.group_directions;
         if (persistFields.asset_upload_deadline) dbUpdate.asset_upload_deadline = persistFields.asset_upload_deadline;
 
+        // Pledge fields — persist only those the user provided this turn.
+        if (persistFields.pledge_unit_label !== undefined)
+          dbUpdate.pledge_unit_label = persistFields.pledge_unit_label;
+        if (persistFields.pledge_scope !== undefined)
+          dbUpdate.pledge_scope = persistFields.pledge_scope;
+        if (persistFields.pledge_event_date !== undefined)
+          dbUpdate.pledge_event_date = persistFields.pledge_event_date;
+        if (persistFields.pledge_min_per_unit !== undefined)
+          dbUpdate.pledge_min_per_unit = persistFields.pledge_min_per_unit;
+        if (persistFields.pledge_suggested_unit_amounts !== undefined) {
+          // Accept either a comma-separated string or an array; store as numeric array.
+          const raw = persistFields.pledge_suggested_unit_amounts;
+          let arr: number[] = [];
+          if (Array.isArray(raw)) {
+            arr = raw.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0);
+          } else if (typeof raw === "string") {
+            arr = raw
+              .split(",")
+              .map((s) => Number(s.trim()))
+              .filter((n) => Number.isFinite(n) && n > 0);
+          }
+          if (arr.length > 0) dbUpdate.pledge_suggested_unit_amounts = arr;
+        }
+
         if (Object.keys(dbUpdate).length > 0) {
           const { error: updErr } = await adminSb.from("campaigns").update(dbUpdate).eq("id", campaignId);
           if (updErr) console.error("Failed to persist post-draft fields:", updErr);
@@ -1935,14 +2007,20 @@ Deno.serve(async (req) => {
       const rosterDone = updatedFields.enable_roster_attribution !== undefined &&
         (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
       const directionsDone = updatedFields.group_directions_addressed === true;
-      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone;
+      // Pledge campaigns also need their pledge-specific fields collected.
+      const resolvedTypeName =
+        types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null;
+      const isPledge = isPledgeTypeName(resolvedTypeName);
+      const pledgeDone = !isPledge || getPledgeStillToAsk(updatedFields).length === 0;
+      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone;
 
       if (exitItemsCollection) {
         phase = "complete";
       } else if (stayInItems) {
         phase = "collecting_items";
       } else if (setupDone) {
-        phase = "collecting_items";
+        // Pledge fundraisers don't use campaign_items — skip straight to complete.
+        phase = isPledge ? "complete" : "collecting_items";
       } else {
         phase = "post_draft";
       }
@@ -2087,6 +2165,23 @@ Deno.serve(async (req) => {
           label: "Participant directions",
           options: [{ label: "Skip — no directions", value: "skip" }],
         };
+      } else if (
+        isPledgeTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name) &&
+        getPledgeStillToAsk(updatedFields).length > 0
+      ) {
+        const nextPledge = getPledgeStillToAsk(updatedFields)[0];
+        if (nextPledge === "pledge_scope") {
+          suggestions = {
+            type: "choice",
+            field: "pledge_scope",
+            label: "Pledge scope",
+            options: [
+              { label: "Team total", value: "team" },
+              { label: "Per participant", value: "participant" },
+            ],
+          };
+        }
+        // pledge_unit_label and pledge_event_date are free-text — no chips needed.
       } else {
         // Phase === "complete" — offer the final choice
         suggestions = {

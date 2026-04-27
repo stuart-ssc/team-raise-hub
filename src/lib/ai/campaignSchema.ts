@@ -88,20 +88,84 @@ export const sharedFields: CampaignFieldDef[] = [
 ];
 
 // All fields combined for easy lookup
-export const allFields = [...sharedFields];
+export const pledgeFields: CampaignFieldDef[] = [
+  {
+    key: "pledge_unit_label",
+    label: "Unit Label",
+    type: "string",
+    required: true,
+    aiDescription:
+      "The thing supporters pledge per (singular). Examples: 'lap', 'mile', 'book read', 'pushup'. Required for Pledge fundraisers.",
+  },
+  {
+    key: "pledge_scope",
+    label: "Pledge Scope",
+    type: "select",
+    required: true,
+    options: ["team", "participant"],
+    aiDescription:
+      "Whether pledges count team-wide ('team' — one shared total) or per roster member ('participant' — each player has their own count). Required for Pledge fundraisers.",
+  },
+  {
+    key: "pledge_event_date",
+    label: "Event Date",
+    type: "date",
+    required: true,
+    aiDescription:
+      "The date of the pledge event (e.g. the jogathon, readathon). Charges happen on or after this date. ISO 8601 (YYYY-MM-DD). Required for Pledge fundraisers.",
+  },
+  {
+    key: "pledge_min_per_unit",
+    label: "Minimum per unit",
+    type: "number",
+    required: false,
+    aiDescription:
+      "Optional minimum dollar amount per unit a supporter can pledge (e.g. 0.25 means $0.25 per lap minimum).",
+  },
+  {
+    key: "pledge_suggested_unit_amounts",
+    label: "Suggested per-unit amounts",
+    type: "string",
+    required: false,
+    aiDescription:
+      "Optional comma-separated list of suggested per-unit amounts (e.g. '0.5, 1, 2, 5'). Will be parsed into a numeric array.",
+  },
+];
+
+export const allFields = [...sharedFields, ...pledgeFields];
 
 export const fieldMap = new Map(allFields.map((f) => [f.key, f]));
 
-// Required field keys
-export const requiredFieldKeys = allFields
+// Base required field keys (apply to every campaign type).
+export const requiredFieldKeys = sharedFields
   .filter((f) => f.required)
   .map((f) => f.key);
 
-// Get missing required fields given collected data
+const pledgeRequiredKeys = pledgeFields
+  .filter((f) => f.required)
+  .map((f) => f.key);
+
+/** Returns true when the given campaign type name is a Pledge fundraiser. */
+export function isPledgeType(typeName?: string | null): boolean {
+  return (typeName || "").toLowerCase().includes("pledge");
+}
+
+/**
+ * Returns the required field keys for a given campaign type. Pledge campaigns
+ * also require the pledge-specific fields (unit label, scope, event date).
+ */
+export function getRequiredFieldsForType(typeName?: string | null): string[] {
+  if (isPledgeType(typeName)) return [...requiredFieldKeys, ...pledgeRequiredKeys];
+  return requiredFieldKeys;
+}
+
+// Get missing required fields given collected data. Optionally pass the chosen
+// campaign type name so pledge-specific fields are included when applicable.
 export function getMissingRequiredFields(
-  collected: Record<string, any>
+  collected: Record<string, any>,
+  typeName?: string | null,
 ): string[] {
-  return requiredFieldKeys.filter(
+  return getRequiredFieldsForType(typeName).filter(
     (key) =>
       collected[key] === undefined ||
       collected[key] === null ||
@@ -109,9 +173,12 @@ export function getMissingRequiredFields(
   );
 }
 
-// Check if all required fields are filled
-export function isReadyToCreate(collected: Record<string, any>): boolean {
-  return getMissingRequiredFields(collected).length === 0;
+// Check if all required fields are filled.
+export function isReadyToCreate(
+  collected: Record<string, any>,
+  typeName?: string | null,
+): boolean {
+  return getMissingRequiredFields(collected, typeName).length === 0;
 }
 
 // =====================================================================
@@ -268,6 +335,13 @@ export function formatFieldValue(key: string, value: any): string {
   if (key === "fee_model") {
     if (value === "donor_covers") return "Donor covers fee";
     if (value === "org_absorbs") return "Organization absorbs fee";
+  }
+  if (key === "pledge_scope") {
+    if (value === "team") return "Team total";
+    if (value === "participant") return "Per participant";
+  }
+  if (key === "pledge_min_per_unit") {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value));
   }
   return String(value);
 }

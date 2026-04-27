@@ -56,7 +56,8 @@ export default function AICampaignPreview({
   itemsAdded = 0,
   itemNoun = "item",
 }: AICampaignPreviewProps) {
-  const missingRequired = getMissingRequiredFields(collectedFields);
+  const resolvedTypeNameForReq = campaignTypes.find((t) => t.id === collectedFields.campaign_type_id)?.name;
+  const missingRequired = getMissingRequiredFields(collectedFields, resolvedTypeNameForReq);
   const filledCount = allFields.filter(
     (f) =>
       collectedFields[f.key] !== undefined &&
@@ -65,7 +66,7 @@ export default function AICampaignPreview({
   ).length;
   const progressPercent = Math.round((filledCount / allFields.length) * 100);
 
-  const resolvedTypeName = campaignTypes.find((t) => t.id === collectedFields.campaign_type_id)?.name;
+  const resolvedTypeName = resolvedTypeNameForReq;
   const resolvedGroupName = groups.find((g) => g.id === collectedFields.group_id)?.group_name;
 
   const isPostDraft = phase === "post_draft" || phase === "complete";
