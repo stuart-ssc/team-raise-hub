@@ -662,7 +662,9 @@ export default function CampaignEditor() {
                   }}
                   showManage={!!(isEditing && id)}
                   showPitch={!!(isEditing && id)}
-                  showItems={!!(isEditing && id)}
+                  showItems={!!(isEditing && id) && !isPledgeCampaign}
+                  isPledge={isPledgeCampaign}
+                  showPledgeResults={!!(isEditing && id) && isPledgeCampaign}
                 />
               </CardContent>
             </Card>
