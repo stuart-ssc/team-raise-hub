@@ -5,7 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Search, ChevronRight } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -58,15 +65,12 @@ export function PledgePurchaseFlow({
     : "the event date";
 
   const needsParticipantPick = isParticipantScope && !attributedRosterMember;
-  const [step, setStep] = useState<'participant' | 'amount' | 'donor' | 'review'>(
-    needsParticipantPick ? 'participant' : 'amount'
-  );
+  const [step, setStep] = useState<'amount' | 'donor' | 'review'>('amount');
   const [selectedRosterMember, setSelectedRosterMember] = useState<ParticipantOption | null>(
     attributedRosterMember
   );
   const [participants, setParticipants] = useState<ParticipantOption[]>([]);
   const [participantsLoading, setParticipantsLoading] = useState(false);
-  const [participantSearch, setParticipantSearch] = useState("");
   const [amountPerUnit, setAmountPerUnit] = useState<string>("");
   const [hasCap, setHasCap] = useState(false);
   const [maxTotal, setMaxTotal] = useState<string>("");
@@ -127,14 +131,6 @@ export function PledgePurchaseFlow({
     })();
     return () => { cancelled = true; };
   }, [needsParticipantPick, campaign.group_id]);
-
-  const filteredParticipants = useMemo(() => {
-    const q = participantSearch.trim().toLowerCase();
-    if (!q) return participants;
-    return participants.filter((p) =>
-      `${p.firstName} ${p.lastName}`.toLowerCase().includes(q)
-    );
-  }, [participants, participantSearch]);
 
   const amountNum = parseFloat(amountPerUnit) || 0;
   const maxNum = hasCap ? parseFloat(maxTotal) || 0 : 0;
@@ -199,67 +195,45 @@ export function PledgePurchaseFlow({
               : ""}
             Pledge an amount per {unitLabel}. Your card won't be charged until after {eventDateStr}.
           </CardDescription>
-          {isParticipantScope && selectedRosterMember && !attributedRosterMember && step !== 'participant' && (
-            <button
-              type="button"
-              className="text-sm text-primary hover:underline self-start"
-              onClick={() => setStep('participant')}
-            >
-              Change participant
-            </button>
-          )}
         </CardHeader>
         <CardContent className="space-y-6">
-          {step === 'participant' && (
-            <div className="space-y-4">
-              <div>
-                <Label className="text-base">Who are you pledging for?</Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Select the participant you want to support.
-                </p>
-              </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name…"
-                  className="pl-9"
-                  value={participantSearch}
-                  onChange={(e) => setParticipantSearch(e.target.value)}
-                />
-              </div>
-              <div className="border rounded-md max-h-80 overflow-y-auto divide-y">
-                {participantsLoading ? (
-                  <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Loading participants…
-                  </div>
-                ) : filteredParticipants.length === 0 ? (
-                  <div className="p-4 text-sm text-muted-foreground">
-                    {participants.length === 0
-                      ? "No participants found for this fundraiser."
-                      : "No matches for your search."}
-                  </div>
-                ) : (
-                  filteredParticipants.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedRosterMember(p);
-                        setStep('amount');
-                      }}
-                      className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors"
-                    >
-                      <span className="font-medium">{p.firstName} {p.lastName}</span>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-
           {step === 'amount' && (
             <div className="space-y-5">
+              {needsParticipantPick && (
+                <div className="space-y-2">
+                  <Label htmlFor="participant-select">
+                    Pledging for <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={selectedRosterMember?.id || ""}
+                    onValueChange={(val) => {
+                      const p = participants.find((x) => x.id === val) || null;
+                      setSelectedRosterMember(p);
+                    }}
+                    disabled={participantsLoading || participants.length === 0}
+                  >
+                    <SelectTrigger id="participant-select">
+                      <SelectValue
+                        placeholder={
+                          participantsLoading
+                            ? "Loading participants…"
+                            : participants.length === 0
+                              ? "No participants available"
+                              : "Select a participant"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {participants.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.firstName} {p.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Amount per {unitLabel}</Label>
                 <div className="flex flex-wrap gap-2">
