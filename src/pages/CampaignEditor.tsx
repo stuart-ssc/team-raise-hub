@@ -180,6 +180,20 @@ export default function CampaignEditor() {
   const [slugExists, setSlugExists] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionKey>("details");
   const [navSheetOpen, setNavSheetOpen] = useState(false);
+  const [pledgeTypeId, setPledgeTypeId] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("campaign_type")
+        .select("id, name")
+        .ilike("name", "Pledge")
+        .maybeSingle();
+      if (data) setPledgeTypeId(data.id);
+    })();
+  }, []);
+
+  const isPledgeCampaign = !!pledgeTypeId && campaignData.campaignTypeId === pledgeTypeId;
 
   // Counts for nav badges
   const { data: itemsCount = 0 } = useQuery({
