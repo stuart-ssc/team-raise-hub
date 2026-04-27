@@ -339,7 +339,27 @@ const FIELD_DEFS: FieldDef[] = [
   { key: "end_date", label: "End Date", type: "date", required: true, aiDescription: "End date in YYYY-MM-DD format." },
   { key: "requires_business_info", label: "Sponsors Provide Info/Assets", type: "boolean", required: true, aiDescription: "Whether sponsors must provide information or assets to participate (e.g. a logo for a banner/shirt, a website link for social media recognition)." },
   { key: "fee_model", label: "Platform Fee Model", type: "select", required: true, aiDescription: "Who pays the 10% Sponsorly platform fee. Must be exactly 'donor_covers' (donor pays the fee on top of the item price) or 'org_absorbs' (organization absorbs the fee out of the item price the donor sees)." },
+  // Pledge-only fields. Required for Pledge campaigns; ignored otherwise.
+  { key: "pledge_unit_label", label: "Pledge Unit", type: "string", required: false, aiDescription: "Singular unit supporters pledge per (e.g. 'lap', 'mile', 'book'). REQUIRED for Pledge campaigns." },
+  { key: "pledge_scope", label: "Pledge Scope", type: "select", required: false, aiDescription: "'team' = one shared total. 'participant' = each roster member tracked separately. REQUIRED for Pledge campaigns." },
+  { key: "pledge_event_date", label: "Pledge Event Date", type: "date", required: false, aiDescription: "Date the activity happens (charging window opens this day). YYYY-MM-DD. REQUIRED for Pledge campaigns." },
+  { key: "pledge_min_per_unit", label: "Min per Unit", type: "number", required: false, aiDescription: "Optional minimum dollar amount per unit (e.g. 0.25)." },
+  { key: "pledge_suggested_unit_amounts", label: "Suggested per-Unit Amounts", type: "string", required: false, aiDescription: "Optional comma-separated suggested per-unit amounts (e.g. '0.5, 1, 2, 5')." },
 ];
+
+/** True when the resolved campaign type name is a Pledge fundraiser. */
+function isPledgeTypeName(typeName?: string | null): boolean {
+  return (typeName || "").toLowerCase().includes("pledge");
+}
+
+/** Pledge-specific post-draft fields the AI must collect, in order. */
+function getPledgeStillToAsk(collected: Record<string, any>): string[] {
+  const order = ["pledge_unit_label", "pledge_scope", "pledge_event_date"];
+  return order.filter((k) => {
+    const v = collected[k];
+    return v === undefined || v === null || v === "";
+  });
+}
 
 function buildItemsSystemPrompt(
   campaignName: string,
