@@ -834,6 +834,10 @@ export default function CampaignEditor() {
                 startDate={campaignData.startDate}
                 pitch={campaignPitch}
                 itemsCount={itemsCount}
+                isPledge={isPledgeCampaign}
+                pledgeUnitLabel={campaignData.pledgeUnitLabel}
+                pledgeScope={campaignData.pledgeScope}
+                pledgeEventDate={campaignData.pledgeEventDate}
               />
               {campaignData.publicationStatus === "published" && (
                 <CampaignRecentOrdersCard
