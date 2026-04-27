@@ -25,6 +25,9 @@ import Campaigns from "./pages/Campaigns";
 import CampaignEditor from "./pages/CampaignEditor";
 import CampaignLanding from "./pages/CampaignLanding";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
+import PledgeSuccess from "./pages/PledgeSuccess";
+import PledgeConfirm from "./pages/PledgeConfirm";
+import PledgeCancel from "./pages/PledgeCancel";
 import Profile from "./pages/Profile";
 import NotificationHistory from "./pages/NotificationHistory";
 import Messages from "./pages/Messages";
@@ -214,6 +217,9 @@ const AppContent = () => {
         <Route path="/schools/:state/:slug" element={<SchoolLandingPage />} />
         <Route path="/districts/:state/:slug" element={<DistrictLandingPage />} />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
+        <Route path="/pledge/success" element={<PledgeSuccess />} />
+        <Route path="/pledge/confirm" element={<PledgeConfirm />} />
+        <Route path="/pledge/cancel" element={<PledgeCancel />} />
         <Route path="/donor-receipts" element={<DonorReceiptPortal />} />
         <Route path="/fundraiser-unsubscribe" element={<FundraiserUnsubscribe />} />
         <Route path="/orders/:orderId" element={<OrderDetails />} />

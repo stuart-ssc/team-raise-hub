@@ -16,6 +16,7 @@ import { BusinessInfoForm } from "@/components/BusinessInfoForm";
 import { CustomFieldsRenderer } from "@/components/CustomFieldsRenderer";
 import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
 import SimpleFooter from "@/components/SimpleFooter";
+import { PledgePurchaseFlow } from "@/components/campaign-landing/PledgePurchaseFlow";
 
 interface CampaignData {
   id: string;
@@ -789,6 +790,16 @@ const CampaignLanding = () => {
 
       {/* Campaign Items and Checkout Steps */}
       <div className="max-w-6xl mx-auto p-6">
+        {campaign.campaign_type?.name?.toLowerCase() === 'pledge' ? (
+          <PledgePurchaseFlow
+            campaign={campaign as any}
+            organizationName={
+              campaign.groups?.schools?.school_name || campaign.groups?.group_name || "the organization"
+            }
+            attributedRosterMember={attributedRosterMember}
+          />
+        ) : (
+        <>
         {checkoutStep === 'cart' && (
           <>
             <div className="mb-8">
@@ -1312,6 +1323,8 @@ const CampaignLanding = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+        </>
         )}
       </div>
       <SimpleFooter />

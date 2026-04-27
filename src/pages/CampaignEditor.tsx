@@ -24,6 +24,8 @@ import {
   ChevronDown,
   Plus,
   DollarSign,
+  HandCoins,
+  ClipboardCheck,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -55,6 +57,8 @@ import { CampaignItemsSection } from "@/components/campaign-editor/CampaignItems
 import { CampaignQuickActions } from "@/components/campaign-editor/CampaignQuickActions";
 import { CampaignOrdersSection } from "@/components/campaign-editor/CampaignOrdersSection";
 import { CampaignAssetsSection } from "@/components/campaign-editor/CampaignAssetsSection";
+import { PledgeSettingsSection } from "@/components/campaign-editor/PledgeSettingsSection";
+import { PledgeResultsSection } from "@/components/campaign-editor/PledgeResultsSection";
 import { CampaignSectionNav, type SectionKey } from "@/components/campaign-editor/CampaignSectionNav";
 import { CampaignAtAGlanceCard } from "@/components/campaign-editor/CampaignAtAGlanceCard";
 import { CampaignRecentOrdersCard } from "@/components/campaign-editor/CampaignRecentOrdersCard";
@@ -71,6 +75,8 @@ const SECTION_META: Record<SectionKey, { icon: React.ComponentType<{ className?:
   pitch: { icon: Megaphone, title: "Fundraiser Pitch", subtitle: "Add a message, photo, or video for your fundraiser", showSave: false },
   orders: { icon: ShoppingCart, title: "Orders", subtitle: "View purchases and track pending file uploads", showSave: false },
   assets: { icon: ImageIcon, title: "Assets", subtitle: "Track required asset uploads from supporters", showSave: false },
+  pledgeSettings: { icon: HandCoins, title: "Pledge Setup", subtitle: "Configure unit, scope, event date and suggested amounts", showSave: true },
+  pledgeResults: { icon: ClipboardCheck, title: "Pledge Results", subtitle: "Record event results and charge supporters", showSave: false },
 };
 
 interface CampaignData {
@@ -93,6 +99,12 @@ interface CampaignData {
   rosterId: string;
   publicationStatus: string;
   feeModel: 'donor_covers' | 'org_absorbs';
+  pledgeUnitLabel: string;
+  pledgeUnitLabelPlural: string;
+  pledgeScope: 'team' | 'participant';
+  pledgeEventDate: string;
+  pledgeMinPerUnit: string;
+  pledgeSuggestedUnitAmounts: number[];
 }
 
 interface RequiredAsset {
@@ -154,6 +166,12 @@ export default function CampaignEditor() {
     rosterId: "",
     publicationStatus: "draft",
     feeModel: 'donor_covers',
+    pledgeUnitLabel: "",
+    pledgeUnitLabelPlural: "",
+    pledgeScope: 'team',
+    pledgeEventDate: "",
+    pledgeMinPerUnit: "",
+    pledgeSuggestedUnitAmounts: [0.5, 1, 2, 5],
   });
   const [requiredAssets, setRequiredAssets] = useState<RequiredAsset[]>([]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -162,6 +180,20 @@ export default function CampaignEditor() {
   const [slugExists, setSlugExists] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionKey>("details");
   const [navSheetOpen, setNavSheetOpen] = useState(false);
+  const [pledgeTypeId, setPledgeTypeId] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("campaign_type")
+        .select("id, name")
+        .ilike("name", "Pledge")
+        .maybeSingle();
+      if (data) setPledgeTypeId(data.id);
+    })();
+  }, []);
+
+  const isPledgeCampaign = !!pledgeTypeId && campaignData.campaignTypeId === pledgeTypeId;
 
   // Counts for nav badges
   const { data: itemsCount = 0 } = useQuery({
@@ -231,6 +263,16 @@ export default function CampaignEditor() {
           rosterId: data.roster_id?.toString() || "",
           publicationStatus: data.publication_status || "draft",
           feeModel: (data.fee_model as 'donor_covers' | 'org_absorbs') || 'donor_covers',
+          pledgeUnitLabel: (data as any).pledge_unit_label || "",
+          pledgeUnitLabelPlural: (data as any).pledge_unit_label_plural || "",
+          pledgeScope: ((data as any).pledge_scope as 'team' | 'participant') || 'team',
+          pledgeEventDate: (data as any).pledge_event_date || "",
+          pledgeMinPerUnit:
+            (data as any).pledge_min_per_unit != null
+              ? String((data as any).pledge_min_per_unit)
+              : "",
+          pledgeSuggestedUnitAmounts:
+            ((data as any).pledge_suggested_unit_amounts as number[] | null) || [0.5, 1, 2, 5],
         });
 
         // Fetch pitch data
@@ -393,6 +435,14 @@ export default function CampaignEditor() {
         status: true,
         publication_status: isEditing ? undefined : 'draft',
         fee_model: campaignData.feeModel || 'donor_covers',
+        pledge_unit_label: campaignData.pledgeUnitLabel || null,
+        pledge_unit_label_plural: campaignData.pledgeUnitLabelPlural || null,
+        pledge_scope: campaignData.pledgeScope || null,
+        pledge_event_date: campaignData.pledgeEventDate || null,
+        pledge_min_per_unit: campaignData.pledgeMinPerUnit
+          ? parseFloat(campaignData.pledgeMinPerUnit)
+          : null,
+        pledge_suggested_unit_amounts: campaignData.pledgeSuggestedUnitAmounts || null,
       };
 
       let campaignId = id;
@@ -612,7 +662,9 @@ export default function CampaignEditor() {
                   }}
                   showManage={!!(isEditing && id)}
                   showPitch={!!(isEditing && id)}
-                  showItems={!!(isEditing && id)}
+                  showItems={!!(isEditing && id) && !isPledgeCampaign}
+                  isPledge={isPledgeCampaign}
+                  showPledgeResults={!!(isEditing && id) && isPledgeCampaign}
                 />
               </CardContent>
             </Card>
@@ -729,6 +781,30 @@ export default function CampaignEditor() {
                 {activeSection === "assets" && isEditing && id && (
                   <CampaignAssetsSection campaignId={id} />
                 )}
+
+                {activeSection === "pledgeSettings" && (
+                  <PledgeSettingsSection
+                    data={{
+                      pledgeUnitLabel: campaignData.pledgeUnitLabel,
+                      pledgeUnitLabelPlural: campaignData.pledgeUnitLabelPlural,
+                      pledgeScope: campaignData.pledgeScope,
+                      pledgeEventDate: campaignData.pledgeEventDate,
+                      pledgeMinPerUnit: campaignData.pledgeMinPerUnit,
+                      pledgeSuggestedUnitAmounts: campaignData.pledgeSuggestedUnitAmounts,
+                      enableRosterAttribution: campaignData.enableRosterAttribution,
+                    }}
+                    onUpdate={updateCampaignData}
+                  />
+                )}
+
+                {activeSection === "pledgeResults" && isEditing && id && (
+                  <PledgeResultsSection
+                    campaignId={id}
+                    pledgeScope={campaignData.pledgeScope}
+                    pledgeUnitLabel={campaignData.pledgeUnitLabel}
+                    pledgeUnitLabelPlural={campaignData.pledgeUnitLabelPlural}
+                  />
+                )}
               </CardContent>
             </Card>
 
@@ -792,7 +868,9 @@ export default function CampaignEditor() {
                 }}
                 showManage={!!(isEditing && id)}
                 showPitch={!!(isEditing && id)}
-                showItems={!!(isEditing && id)}
+                showItems={!!(isEditing && id) && !isPledgeCampaign}
+                isPledge={isPledgeCampaign}
+                showPledgeResults={!!(isEditing && id) && isPledgeCampaign}
               />
             </div>
           </SheetContent>

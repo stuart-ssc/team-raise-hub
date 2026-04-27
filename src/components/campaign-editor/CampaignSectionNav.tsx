@@ -11,6 +11,8 @@ import {
   ShoppingCart,
   ImageIcon,
   DollarSign,
+  HandCoins,
+  ClipboardCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,7 +26,9 @@ export type SectionKey =
   | "fields"
   | "pitch"
   | "orders"
-  | "assets";
+  | "assets"
+  | "pledgeSettings"
+  | "pledgeResults";
 
 interface NavItem {
   key: SectionKey;
@@ -45,6 +49,8 @@ interface CampaignSectionNavProps {
   showManage: boolean;
   showPitch: boolean;
   showItems: boolean;
+  isPledge?: boolean;
+  showPledgeResults?: boolean;
 }
 
 export function CampaignSectionNav({
@@ -54,12 +60,17 @@ export function CampaignSectionNav({
   showManage,
   showPitch,
   showItems,
+  isPledge,
+  showPledgeResults,
 }: CampaignSectionNavProps) {
   const setupItems: NavItem[] = [
     { key: "details", label: "Details", icon: FileText },
     { key: "schedule", label: "Schedule", icon: Calendar },
     { key: "fees", label: "Fees", icon: DollarSign },
-    ...(showItems
+    ...(isPledge
+      ? [{ key: "pledgeSettings" as const, label: "Pledge Setup", icon: HandCoins }]
+      : []),
+    ...(showItems && !isPledge
       ? [{ key: "items" as const, label: "Items", icon: Package, count: counts.items }]
       : []),
     { key: "experience", label: "Experience", icon: Heart },
@@ -72,6 +83,9 @@ export function CampaignSectionNav({
 
   const manageItems: NavItem[] = [
     { key: "orders", label: "Orders", icon: ShoppingCart, count: counts.orders },
+    ...(showPledgeResults
+      ? [{ key: "pledgeResults" as const, label: "Results", icon: ClipboardCheck }]
+      : []),
     { key: "assets", label: "Assets", icon: ImageIcon, count: counts.assets },
   ];
 
