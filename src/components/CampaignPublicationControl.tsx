@@ -127,12 +127,12 @@ export const CampaignPublicationControl = ({
           pledge_unit_label,
           pledge_event_date,
           pledge_min_per_unit,
-          campaign_type:campaign_type_id ( campaign_type )
+          campaign_type:campaign_type_id ( name )
         `)
         .eq("id", campaignId)
         .maybeSingle();
 
-      const typeName = (campaign as any)?.campaign_type?.campaign_type || "";
+      const typeName = (campaign as any)?.campaign_type?.name || "";
       const isPledge = typeof typeName === "string" && typeName.toLowerCase().includes("pledge");
 
       if (isPledge && !campaignError && campaign) {

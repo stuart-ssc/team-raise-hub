@@ -1,35 +1,32 @@
-## Why the dropdown is empty
+## Problem
 
-The campaign genuinely has 3 active roster members (Player One, Second Player, Taylor Player on the Varsity Basketball roster). The data is there.
+On the Pledge fundraiser, the publish dialog still shows "Fundraiser should have at least one item before publishing" instead of validating Pledge Setup.
 
-The problem is **Row Level Security**. The campaign landing page is public, so the donor viewing it is either anonymous or a logged-in user with no relationship to that organization. The current dropdown in `PledgePurchaseFlow.tsx` queries three tables directly from the browser:
+## Root cause
 
-1. `rosters` (filtered by `group_id`)
-2. `organization_user` (filtered by those roster ids)
-3. `profiles` (filtered by those user ids)
+In `src/components/CampaignPublicationControl.tsx`, the campaign query embeds the type with the wrong column name:
 
-RLS on `organization_user` and `profiles` blocks unaffiliated users from reading those rows, so the queries silently return `[]` and the Select shows "No participants available". This is the same reason the rest of the landing page uses an edge function (`get-roster-member-by-slug`) for the slug-based single-member lookup.
+```ts
+campaign_type:campaign_type_id ( campaign_type )
+```
+
+The related table is `campaign_type` and its label column is `name` (not `campaign_type`). I verified directly in the database — the type row for this campaign is `{ id: ..., name: "Pledge" }`, and `pledge_scope`, `pledge_unit_label`, `pledge_event_date`, and `pledge_min_per_unit` are all populated.
+
+Because the embedded column doesn't exist, `typeName` resolves to an empty string, `isPledge` is false, and the code falls into the else branch that checks `campaign_items`. That's why the item-required message keeps showing on a Pledge campaign.
 
 ## Fix
 
-Mirror the existing pattern: introduce a small public edge function that uses the service role key to return the participant list for one campaign, and have the dropdown call it instead of querying tables directly.
+In `src/components/CampaignPublicationControl.tsx` (`checkPublicationRequirements`):
 
-### 1. New edge function: `get-campaign-roster-members`
-- Input: `{ campaignId: string }`
-- Use `SUPABASE_SERVICE_ROLE_KEY` admin client (same pattern as `get-roster-member-by-slug`).
-- Look up the campaign to get `group_id` and confirm it is published (so we don't leak draft campaign rosters).
-- Fetch active rosters for that group, then `organization_user` rows joined to `profiles`, restricted to participant-type roles (Team Player, Club Participant, etc. — same set the leaderboard uses) and `active_user = true`.
-- Return `{ members: [{ id, firstName, lastName }] }` sorted alphabetically.
-- Register in `supabase/config.toml` with `verify_jwt = false` so it works for anonymous donors.
+1. Change the embedded select from `campaign_type:campaign_type_id ( campaign_type )` to `campaign_type:campaign_type_id ( name )`.
+2. Update `typeName` extraction to read `.name` instead of `.campaign_type`:
+   ```ts
+   const typeName = (campaign as any)?.campaign_type?.name || "";
+   ```
+3. Keep the rest of the logic identical: when `isPledge` is true, validate `pledge_scope`, `pledge_unit_label`, `pledge_event_date`, `pledge_min_per_unit` and skip the `campaign_items` check entirely.
 
-### 2. Update `PledgePurchaseFlow.tsx`
-- Replace the existing `useEffect` that calls `rosters` / `organization_user` / `profiles` directly with a single `supabase.functions.invoke('get-campaign-roster-members', { body: { campaignId: campaign.id } })`.
-- Keep all the existing UI: the inline required `<Select>`, loading placeholder, and the disabled "Continue" guard until a participant is chosen.
-- Drop the now-unused `group_id` query path; the edge function owns that lookup.
-
-### 3. No schema or RLS changes
-We deliberately do not loosen RLS on `organization_user` or `profiles`. The edge function is the controlled, minimal disclosure surface (only first/last name + roster_member id of active participants on a published campaign).
+No schema, RLS, or other component changes are needed.
 
 ## Result
 
-On `/c/<slug>` for a participant-scope pledge campaign, the donor sees a populated dropdown with Player One, Second Player, and Taylor Player, can pick one, and proceed through the existing amount → donor info → review → Stripe flow.
+For Pledge fundraisers, the publish dialog will show "Pledge setup is configured" (or list the missing pledge fields) and will no longer require a fundraiser item. Standard fundraisers continue to require at least one item.
