@@ -2307,6 +2307,7 @@ export type Database = {
       groups: {
         Row: {
           allow_manual_orders: boolean | null
+          cover_image_url: string | null
           created_at: string
           group_name: string
           group_type_id: string | null
@@ -2315,14 +2316,19 @@ export type Database = {
           manual_order_notes: string | null
           organization_id: string | null
           payment_processor_config: Json | null
+          public_contact_email: string | null
+          public_page_enabled: boolean
+          public_slug: string | null
           school_id: string | null
           status: boolean | null
+          tagline: string | null
           updated_at: string
           use_org_payment_account: boolean | null
           website_url: string | null
         }
         Insert: {
           allow_manual_orders?: boolean | null
+          cover_image_url?: string | null
           created_at?: string
           group_name: string
           group_type_id?: string | null
@@ -2331,14 +2337,19 @@ export type Database = {
           manual_order_notes?: string | null
           organization_id?: string | null
           payment_processor_config?: Json | null
+          public_contact_email?: string | null
+          public_page_enabled?: boolean
+          public_slug?: string | null
           school_id?: string | null
           status?: boolean | null
+          tagline?: string | null
           updated_at?: string
           use_org_payment_account?: boolean | null
           website_url?: string | null
         }
         Update: {
           allow_manual_orders?: boolean | null
+          cover_image_url?: string | null
           created_at?: string
           group_name?: string
           group_type_id?: string | null
@@ -2347,8 +2358,12 @@ export type Database = {
           manual_order_notes?: string | null
           organization_id?: string | null
           payment_processor_config?: Json | null
+          public_contact_email?: string | null
+          public_page_enabled?: boolean
+          public_slug?: string | null
           school_id?: string | null
           status?: boolean | null
+          tagline?: string | null
           updated_at?: string
           use_org_payment_account?: boolean | null
           website_url?: string | null
@@ -3680,6 +3695,7 @@ export type Database = {
           address_line2: string | null
           allow_manual_orders: boolean | null
           city: string | null
+          cover_image_url: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -3689,9 +3705,13 @@ export type Database = {
           payment_processor_config: Json | null
           phone: string | null
           primary_color: string | null
+          public_contact_email: string | null
+          public_page_enabled: boolean
+          public_slug: string | null
           requires_verification: boolean | null
           secondary_color: string | null
           state: string | null
+          tagline: string | null
           updated_at: string | null
           verification_approved_at: string | null
           verification_documents: Json | null
@@ -3706,6 +3726,7 @@ export type Database = {
           address_line2?: string | null
           allow_manual_orders?: boolean | null
           city?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -3715,9 +3736,13 @@ export type Database = {
           payment_processor_config?: Json | null
           phone?: string | null
           primary_color?: string | null
+          public_contact_email?: string | null
+          public_page_enabled?: boolean
+          public_slug?: string | null
           requires_verification?: boolean | null
           secondary_color?: string | null
           state?: string | null
+          tagline?: string | null
           updated_at?: string | null
           verification_approved_at?: string | null
           verification_documents?: Json | null
@@ -3732,6 +3757,7 @@ export type Database = {
           address_line2?: string | null
           allow_manual_orders?: boolean | null
           city?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -3741,9 +3767,13 @@ export type Database = {
           payment_processor_config?: Json | null
           phone?: string | null
           primary_color?: string | null
+          public_contact_email?: string | null
+          public_page_enabled?: boolean
+          public_slug?: string | null
           requires_verification?: boolean | null
           secondary_color?: string | null
           state?: string | null
+          tagline?: string | null
           updated_at?: string | null
           verification_approved_at?: string | null
           verification_documents?: Json | null
