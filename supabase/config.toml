@@ -281,3 +281,6 @@ verify_jwt = false
 
 [functions.log-signup-attempt]
 verify_jwt = false
+
+[functions.invite-abandoned-signup]
+verify_jwt = false
