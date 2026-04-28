@@ -17,6 +17,7 @@ import { CustomFieldsRenderer } from "@/components/CustomFieldsRenderer";
 import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
 import SimpleFooter from "@/components/SimpleFooter";
 import { PledgePurchaseFlow } from "@/components/campaign-landing/PledgePurchaseFlow";
+import { SeoHead } from "@/components/seo/SeoHead";
 
 interface CampaignData {
   id: string;
@@ -602,6 +603,18 @@ const CampaignLanding = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SeoHead
+        title={(() => {
+          const groupName = campaign.groups?.group_name || '';
+          const schoolName = campaign.groups?.schools?.school_name || '';
+          const subject = [schoolName, groupName].filter(Boolean).join(' ') || 'this fundraiser';
+          return `Support ${subject} — ${campaign.name} | Sponsorly`.slice(0, 110);
+        })()}
+        description={(campaign.description || `Support this fundraiser on Sponsorly. 100% of your donation goes directly to the organization.`).slice(0, 200)}
+        path={`/c/${slug}${rosterMemberSlug ? '/' + rosterMemberSlug : ''}`}
+        image={campaign.image_url || undefined}
+        imageAlt={campaign.name}
+      />
       {/* Hero Section */}
       <div 
         className="border-b relative"
