@@ -278,3 +278,6 @@ verify_jwt = false
 
 [functions.get-campaign-roster-members]
 verify_jwt = false
+
+[functions.log-signup-attempt]
+verify_jwt = false
