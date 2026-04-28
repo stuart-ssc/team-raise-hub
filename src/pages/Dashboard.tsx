@@ -41,6 +41,7 @@ import {
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
 import { GroupPaymentSetupDialog } from "@/components/GroupPaymentSetupDialog";
+import PublicHubLinkButton from "@/components/public-hub/PublicHubLinkButton";
 
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useAuth } from "@/hooks/useAuth";
@@ -835,6 +836,11 @@ const Dashboard = () => {
                     >
                       <Send className="h-4 w-4 mr-1" /> Send Roster Blast
                     </Button>
+                    <PublicHubLinkButton
+                      organizationId={organizationUser?.organization_id}
+                      groupId={activeGroup?.id}
+                      variant="hero"
+                    />
                   </div>
                 </div>
 

@@ -32,6 +32,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ShareMenu } from "@/components/ShareMenu";
 import { QRDialog, pickBrandLogo } from "@/components/player/QRDialog";
+import PublicHubLinkButton from "@/components/public-hub/PublicHubLinkButton";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -346,6 +347,15 @@ export default function Campaigns() {
               <p className="text-muted-foreground">
                 Manage fundraisers for your groups.
               </p>
+              {(canSeeUsers) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <PublicHubLinkButton
+                    organizationId={organizationUser?.organization_id}
+                    groupId={activeGroup?.id}
+                    viewLabel={activeGroup ? "View team page" : "View public page"}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
