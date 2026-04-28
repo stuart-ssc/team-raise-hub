@@ -461,6 +461,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
                         setLogoFile(null);
                         setLogoPreview(null);
                         setExistingLogoUrl(null);
+                        setLogoRemoved(true);
                       }}
                     >
                       Remove
