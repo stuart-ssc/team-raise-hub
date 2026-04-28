@@ -150,6 +150,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
     const file = event.target.files?.[0];
     if (file) {
       setLogoFile(file);
+      setLogoRemoved(false);
       
       // Create preview
       const reader = new FileReader();
