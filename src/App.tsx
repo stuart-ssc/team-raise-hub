@@ -85,6 +85,7 @@ import SchoolLandingPage from "./pages/SchoolLandingPage";
 import DistrictLandingPage from "./pages/DistrictLandingPage";
 import FAQ from "./pages/FAQ";
 import CampaignLeaderboard from "./pages/CampaignLeaderboard";
+import PublicHub from "./pages/PublicHub";
 
 // Marketing Campaign Pages
 import CampaignsOverview from "./pages/CampaignsOverview";
@@ -214,6 +215,8 @@ const AppContent = () => {
         <Route path="/set-password" element={<SetPassword />} />
         <Route path="/c/:slug" element={<CampaignLanding />} />
         <Route path="/c/:slug/:rosterMemberSlug" element={<CampaignLanding />} />
+        <Route path="/g/:orgSlug/:groupSlug" element={<PublicHub scope="group" />} />
+        <Route path="/o/:orgSlug" element={<PublicHub scope="org" />} />
         <Route path="/schools/:state/:slug" element={<SchoolLandingPage />} />
         <Route path="/districts/:state/:slug" element={<DistrictLandingPage />} />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
