@@ -41,6 +41,7 @@ import {
 import DashboardPageLayout from "@/components/DashboardPageLayout";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
 import { GroupPaymentSetupDialog } from "@/components/GroupPaymentSetupDialog";
+import PublicHubLinkButton from "@/components/public-hub/PublicHubLinkButton";
 
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
 import { useAuth } from "@/hooks/useAuth";
