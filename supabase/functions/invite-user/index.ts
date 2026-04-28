@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface InviteUserRequest {
@@ -30,6 +30,17 @@ serve(async (req: Request) => {
     );
 
     const { email, firstName, lastName, userTypeId, organizationId, groupId, rosterId, linkedOrganizationUserId }: InviteUserRequest = await req.json();
+
+    // Identify the inviter from the JWT (best-effort)
+    let inviterUserId: string | null = null;
+    try {
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader?.startsWith("Bearer ")) {
+        const token = authHeader.replace("Bearer ", "");
+        const { data: u } = await supabaseAdmin.auth.getUser(token);
+        inviterUserId = u?.user?.id ?? null;
+      }
+    } catch (_) { /* ignore */ }
 
     const normalizedEmail = email.trim().toLowerCase();
     
@@ -76,6 +87,21 @@ serve(async (req: Request) => {
 
       userId = authData.user.id;
       console.log(`Created new user with email ${normalizedEmail}: ${userId}`);
+    }
+
+    // Record/refresh signup_attempts row so we have a single timeline per email
+    try {
+      await supabaseAdmin
+        .from("signup_attempts")
+        .insert({
+          email: normalizedEmail,
+          first_name: firstName,
+          last_name: lastName,
+          invite_sent_at: new Date().toISOString(),
+          invite_sent_by: inviterUserId,
+        });
+    } catch (sa) {
+      console.error("signup_attempts insert (non-fatal):", sa);
     }
 
     // Check if an inactive organization_user record already exists
@@ -176,7 +202,9 @@ serve(async (req: Request) => {
               organizationName: orgData?.name || "the organization",
               roleName: userTypeData?.name || "User",
               groupName: groupData?.group_name,
-              inviteLink: linkData.properties.action_link
+              inviteLink: linkData.properties.action_link,
+              invitedUserId: userId,
+              invitedBy: inviterUserId,
             })
           }
         );
