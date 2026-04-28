@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { X, Upload, Image } from "lucide-react";
+import { X, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,7 +56,9 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
   const [groupTypes, setGroupTypes] = useState<GroupType[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingEditData, setLoadingEditData] = useState<boolean>(!!editingGroup);
   const { toast } = useToast();
   const { organizationUser } = useOrganizationUser();
 
@@ -109,24 +111,39 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
   useEffect(() => {
     if (editingGroup) {
       const loadGroupData = async () => {
-        const { data } = await supabase
+        setLoadingEditData(true);
+        const { data, error } = await supabase
           .from("groups")
-          .select("website_url, group_type_id")
+          .select("group_name, website_url, group_type_id, logo_url")
           .eq("id", editingGroup.id)
-          .single();
-        
+          .maybeSingle();
+
+        if (error) {
+          console.error("Error loading group:", error);
+          toast({
+            title: "Could not load group",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+
         if (data) {
           form.reset({
-            groupName: editingGroup.group_name,
+            groupName: data.group_name ?? editingGroup.group_name,
             websiteAddress: data.website_url || "",
             groupTypeId: data.group_type_id || "",
           });
+          setExistingLogoUrl(data.logo_url ?? null);
         }
+        setLoadingEditData(false);
       };
-      
+
       loadGroupData();
+    } else {
+      setExistingLogoUrl(null);
+      setLoadingEditData(false);
     }
-  }, [editingGroup, form]);
+  }, [editingGroup, form, toast]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -210,16 +227,27 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
           updateData.logo_url = logoUrl;
         }
 
-        const { error: groupError } = await supabase
+        const { data: updated, error: groupError } = await supabase
           .from("groups")
           .update(updateData)
-          .eq("id", editingGroup.id);
+          .eq("id", editingGroup.id)
+          .select("id")
+          .maybeSingle();
 
         if (groupError) {
           console.error('Error updating group:', groupError);
           toast({
-            title: "Error",
-            description: "Failed to update group",
+            title: "Failed to save group",
+            description: groupError.message,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (!updated) {
+          toast({
+            title: "Save blocked",
+            description: "You don't have permission to update this group, or no row was returned.",
             variant: "destructive",
           });
           return;
@@ -230,6 +258,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
           description: "Group updated successfully",
           variant: "success",
         });
+        onSuccess();
       } else {
         // Create new group
         const { error: groupError } = await supabase
@@ -245,8 +274,8 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
         if (groupError) {
           console.error('Error creating group:', groupError);
           toast({
-            title: "Error",
-            description: "Failed to create group",
+            title: "Failed to create group",
+            description: groupError.message,
             variant: "destructive",
           });
           return;
@@ -257,14 +286,13 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
           description: "Group created successfully",
           variant: "success",
         });
+        onSuccess();
       }
-
-      onSuccess();
     } catch (error) {
       console.error('Error creating group:', error);
       toast({
-        title: "Error",
-        description: "Failed to create group",
+        title: "Unexpected error",
+        description: error instanceof Error ? error.message : "Failed to save group",
         variant: "destructive",
       });
     } finally {
@@ -288,6 +316,9 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {loadingEditData && (
+            <p className="text-sm text-muted-foreground">Loading group details…</p>
+          )}
           {/* Group Name */}
           <FormField
             control={form.control}
@@ -349,18 +380,33 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
             <Label>Logo</Label>
             <Card className="border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 transition-colors">
               <CardContent className="p-6">
-                {logoPreview ? (
+                {logoPreview || existingLogoUrl ? (
                   <div className="flex items-center gap-4">
                     <img
-                      src={logoPreview}
+                      src={logoPreview || existingLogoUrl || ""}
                       alt="Logo preview"
                       className="w-16 h-16 object-cover rounded-md border"
                     />
                     <div className="flex-1">
-                      <p className="text-sm font-medium">{logoFile?.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {logoFile && (logoFile.size / 1024).toFixed(1)} KB
+                      <p className="text-sm font-medium">
+                        {logoFile?.name ?? "Current logo"}
                       </p>
+                      {logoFile ? (
+                        <p className="text-xs text-muted-foreground">
+                          {(logoFile.size / 1024).toFixed(1)} KB
+                        </p>
+                      ) : (
+                        <label htmlFor="logo-upload" className="text-xs text-primary cursor-pointer hover:underline">
+                          Replace image
+                          <input
+                            id="logo-upload"
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                          />
+                        </label>
+                      )}
                     </div>
                     <Button
                       type="button"
@@ -369,6 +415,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
                       onClick={() => {
                         setLogoFile(null);
                         setLogoPreview(null);
+                        setExistingLogoUrl(null);
                       }}
                     >
                       Remove
