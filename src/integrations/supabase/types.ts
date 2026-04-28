@@ -5056,6 +5056,18 @@ export type Database = {
         Args: { campaign_id?: string; campaign_name: string }
         Returns: string
       }
+      generate_group_public_slug: {
+        Args: {
+          p_group_id?: string
+          p_group_name: string
+          p_organization_id: string
+        }
+        Returns: string
+      }
+      generate_org_public_slug: {
+        Args: { p_org_id?: string; p_org_name: string }
+        Returns: string
+      }
       generate_slug: { Args: { input_text: string }; Returns: string }
       generate_unique_district_slug: {
         Args: {
