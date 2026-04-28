@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MoreHorizontal, ChevronDown, CheckCircle2, AlertCircle } from "lucide-react";
+import { MoreHorizontal, ChevronDown, CheckCircle2, AlertCircle, Share2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { GroupPaymentSetupDialog } from "@/components/GroupPaymentSetupDialog";
 import Rosters from "@/pages/Rosters";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganizationUser } from "@/hooks/useOrganizationUser";
+import ShareHubDialog from "@/components/public-hub/ShareHubDialog";
 
 interface Group {
   id: string;
@@ -22,6 +23,8 @@ interface Group {
   status: boolean;
   stripe_account_id?: string;
   stripe_account_enabled?: boolean;
+  public_slug?: string | null;
+  organization_public_slug?: string | null;
 }
 
 const Groups = () => {
@@ -36,6 +39,7 @@ const Groups = () => {
   const [loading, setLoading] = useState(true);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentDialogGroup, setPaymentDialogGroup] = useState<Group | null>(null);
+  const [shareGroup, setShareGroup] = useState<Group | null>(null);
   const { organizationUser } = useOrganizationUser();
   const isMobile = useIsMobile();
 
@@ -52,7 +56,8 @@ const Groups = () => {
           status,
           group_type_id,
           payment_processor_config,
-          organizations!organization_id(name, organization_type),
+          public_slug,
+          organizations!organization_id(name, organization_type, public_slug),
           group_type(name)
         `);
 
@@ -94,6 +99,8 @@ const Groups = () => {
         organization_type: group.organizations?.organization_type,
         status: group.status ?? true,
         stripe_account_enabled: (group.payment_processor_config as any)?.account_enabled === true,
+        public_slug: group.public_slug ?? null,
+        organization_public_slug: group.organizations?.public_slug ?? null,
       }));
 
       setGroups(formattedGroups);
@@ -193,6 +200,12 @@ const Groups = () => {
   const handlePaymentSetup = (group: Group) => {
     setPaymentDialogGroup(group);
     setPaymentDialogOpen(true);
+  };
+
+  const buildHubUrl = (group: Group) => {
+    if (!group.organization_public_slug || !group.public_slug) return "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    return `${origin}/g/${group.organization_public_slug}/${group.public_slug}`;
   };
 
   const handleSort = (newSortBy: string) => {
@@ -357,6 +370,11 @@ const Groups = () => {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem onClick={() => handleEditGroup(group)}>Edit</DropdownMenuItem>
+                                    {group.public_slug && group.organization_public_slug ? (
+                                      <DropdownMenuItem onClick={() => setShareGroup(group)}>
+                                        <Share2 className="h-4 w-4 mr-2" /> Share Public Page
+                                      </DropdownMenuItem>
+                                    ) : null}
                                     {group.status ? (
                                       <DropdownMenuItem onClick={() => handleUpdateGroupStatus(group.id, false)}>
                                         Delete
@@ -490,6 +508,11 @@ const Groups = () => {
                                    </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                       <DropdownMenuItem onClick={() => handleEditGroup(group)}>Edit</DropdownMenuItem>
+                                      {group.public_slug && group.organization_public_slug ? (
+                                        <DropdownMenuItem onClick={() => setShareGroup(group)}>
+                                          <Share2 className="h-4 w-4 mr-2" /> Share Public Page
+                                        </DropdownMenuItem>
+                                      ) : null}
                                       {group.status ? (
                                         <DropdownMenuItem onClick={() => handleUpdateGroupStatus(group.id, false)}>
                                           Delete
@@ -523,6 +546,15 @@ const Groups = () => {
           groupName={paymentDialogGroup.group_name}
         />
       )}
+
+      {shareGroup ? (
+        <ShareHubDialog
+          open={!!shareGroup}
+          onOpenChange={(o) => !o && setShareGroup(null)}
+          url={buildHubUrl(shareGroup)}
+          title={`${shareGroup.school_name} — ${shareGroup.group_name}`}
+        />
+      ) : null}
     </DashboardPageLayout>
   );
 };
