@@ -370,6 +370,11 @@ const Groups = () => {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem onClick={() => handleEditGroup(group)}>Edit</DropdownMenuItem>
+                                    {group.public_slug && group.organization_public_slug ? (
+                                      <DropdownMenuItem onClick={() => setShareGroup(group)}>
+                                        <Share2 className="h-4 w-4 mr-2" /> Share Public Page
+                                      </DropdownMenuItem>
+                                    ) : null}
                                     {group.status ? (
                                       <DropdownMenuItem onClick={() => handleUpdateGroupStatus(group.id, false)}>
                                         Delete
@@ -503,6 +508,11 @@ const Groups = () => {
                                    </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                       <DropdownMenuItem onClick={() => handleEditGroup(group)}>Edit</DropdownMenuItem>
+                                      {group.public_slug && group.organization_public_slug ? (
+                                        <DropdownMenuItem onClick={() => setShareGroup(group)}>
+                                          <Share2 className="h-4 w-4 mr-2" /> Share Public Page
+                                        </DropdownMenuItem>
+                                      ) : null}
                                       {group.status ? (
                                         <DropdownMenuItem onClick={() => handleUpdateGroupStatus(group.id, false)}>
                                           Delete
@@ -536,6 +546,15 @@ const Groups = () => {
           groupName={paymentDialogGroup.group_name}
         />
       )}
+
+      {shareGroup ? (
+        <ShareHubDialog
+          open={!!shareGroup}
+          onOpenChange={(o) => !o && setShareGroup(null)}
+          url={buildHubUrl(shareGroup)}
+          title={`${shareGroup.school_name} — ${shareGroup.group_name}`}
+        />
+      ) : null}
     </DashboardPageLayout>
   );
 };
