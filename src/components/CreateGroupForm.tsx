@@ -57,6 +57,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
+  const [logoRemoved, setLogoRemoved] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingEditData, setLoadingEditData] = useState<boolean>(!!editingGroup);
   const { toast } = useToast();

@@ -1,43 +1,47 @@
-You're right — my previous fix did not actually solve the live issue. I checked the database policies, and the migration I described is not applied in the database. The active `groups` UPDATE policy is still the old `school_user`-based one, so the save returns no updated row and the form shows “Save blocked.”
+I looked at the actual form code, current live RLS policies, the `groups` table, triggers, and recent data for the Varsity Basketball group.
 
-Plan:
+What I found:
+- The current database `UPDATE` policy is now present and includes `WITH CHECK`, so the earlier RLS error path is no longer the main issue.
+- The app currently treats a returned row ID as success, but it does not verify that the submitted values were actually persisted.
+- The form immediately closes after the success toast, then the list reloads from the database. If the write is a no-op, stale, blocked by a subtle mismatch, or overwritten, the UI still says success.
+- The coach role for the sample Varsity Basketball group is `Coach` / `program_manager` and is assigned to that exact group, so the intended permission model should allow edits.
 
-1. Replace the live group update policy
-   - Add a new migration that drops the old policy:
-     - `Users with qualifying roles can update groups at their school`
-   - Create the correct `organization_user`-based UPDATE policy.
-   - Allow:
-     - organization admins for any group in their organization
-     - program managers/coaches for their assigned group
-     - system admins
+Plan to fix it properly:
 
-2. Make the migration idempotent and targeted
-   - Drop both the old legacy policy and the previously attempted policy name if present.
-   - Recreate one canonical policy so future migrations do not leave duplicate/conflicting rules.
-   - Keep SELECT public as currently designed; only fix UPDATE.
+1. Make the group save verify persisted values, not just row existence
+   - Update `CreateGroupForm.tsx` so the update request returns the saved columns: `id`, `group_name`, `website_url`, `group_type_id`, `logo_url`, `updated_at`.
+   - After the update, compare the returned values against the form values.
+   - If the returned values do not match, show a destructive error instead of a success message.
+   - This prevents false “Success” toasts.
 
-3. Improve the form’s save diagnostics
-   - Keep the existing `select("id").maybeSingle()` check, but change the “no row returned” message to explicitly say the database rejected the update due to permissions.
-   - Do not hide the issue behind a generic success message.
+2. Refresh the saved record after mutation before closing the form
+   - Run a fresh `.select(...)` for the edited group immediately after the update.
+   - Use that fresh row as the source of truth.
+   - Only call `onSuccess()` after the refreshed row confirms the new values are stored.
 
-4. Verify against the real database after approval
-   - Query `pg_policies` again to confirm the old `school_user` update policy is gone.
-   - Confirm the new `organization_user` update policy exists.
-   - Confirm the Sample School Varsity Basketball group has `organization_id = 11111111-1111-1111-1111-111111111111`, and the active admins/coaches are linked through `organization_user`.
+3. Preserve and correctly handle logo removal/replacement
+   - The current “Remove” button only clears local preview state; it does not save `logo_url: null` unless a new logo is uploaded.
+   - Add explicit state for “logo was removed” so clicking Remove actually clears the saved logo on submit.
+   - Keep existing logo unchanged when the user does nothing.
 
-Technical detail:
+4. Align coach/program-manager permissions in UI and database logic
+   - Keep the secure database policy based on `organization_user` and `user_type.permission_level`.
+   - Ensure the form’s update is scoped to the coach’s assigned `organization_id` and `group_id`, so a coach can edit only their own group.
+   - If the active role is not the assigned coach/admin role, show a clear permission message rather than a misleading success.
 
-The currently active database policy is still:
+5. Improve list refresh reliability
+   - Modify the form success callback to pass the confirmed saved group row back to `Groups.tsx`.
+   - Refresh the list after successful save, and optionally update the edited row optimistically from the confirmed database response to avoid stale display.
 
-```sql
-EXISTS (
-  SELECT 1
-  FROM school_user su
-  JOIN user_type ut ON su.user_type_id = ut.id
-  WHERE su.user_id = auth.uid()
-    AND su.school_id = groups.school_id
-    AND ut.name IN ('Principal', 'Athletic Director', 'Coach', 'Club Sponsor', 'Booster Leader')
-)
-```
+6. Verify with the actual failing scenario
+   - Log in/use the coach flow for Varsity Basketball.
+   - Edit a field such as website or group name.
+   - Confirm the network response contains the changed values.
+   - Confirm the `groups` table has the changed values.
+   - Reopen the edit form and verify the values load from the database.
 
-But the app’s active role system is using `organization_user`, so saves from the dashboard are being filtered out by RLS. The fix needs to replace that live policy, not only add a differently named policy that has not reached the database.
+Technical details:
+- Primary file to change: `src/components/CreateGroupForm.tsx`.
+- Supporting change: `src/pages/Groups.tsx` success handler typing/refresh.
+- Database migration only if final verification shows the live policy still allows a misleading no-op for a specific coach case. The current policy appears structurally correct, so I will first fix the client-side false success and persistence verification.
+- I will not loosen public read access or bypass RLS. Coach permissions will remain tied to `organization_user` and the assigned group.
