@@ -111,6 +111,13 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
   // Load existing group data when editing
   useEffect(() => {
     if (editingGroup) {
+      // Wait for groupTypes to be populated before resetting the form,
+      // otherwise the Radix <Select> can't render the saved value (it
+      // needs a matching <SelectItem>) and shows the placeholder instead.
+      if (groupTypes.length === 0) {
+        return;
+      }
+
       const loadGroupData = async () => {
         setLoadingEditData(true);
         const { data, error } = await supabase
@@ -129,12 +136,23 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
         }
 
         if (data) {
+          const savedTypeId = data.group_type_id || "";
+          const typeExistsInOptions =
+            !savedTypeId || groupTypes.some((t) => t.id === savedTypeId);
+
           form.reset({
             groupName: data.group_name ?? editingGroup.group_name,
             websiteAddress: data.website_url || "",
-            groupTypeId: data.group_type_id || "",
+            groupTypeId: savedTypeId,
           });
           setExistingLogoUrl(data.logo_url ?? null);
+
+          if (savedTypeId && !typeExistsInOptions) {
+            console.warn(
+              "Saved group_type_id is not in the filtered options for this organization type",
+              { savedTypeId, available: groupTypes.map((t) => t.id) }
+            );
+          }
         }
         setLoadingEditData(false);
       };
@@ -144,7 +162,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
       setExistingLogoUrl(null);
       setLoadingEditData(false);
     }
-  }, [editingGroup, form, toast]);
+  }, [editingGroup, form, toast, groupTypes]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
