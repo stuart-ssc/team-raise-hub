@@ -73,6 +73,7 @@ import Contact from "./pages/Contact";
 import ContactSubmissions from "./pages/SystemAdmin/ContactSubmissions";
 import HelpSubmissions from "./pages/SystemAdmin/HelpSubmissions";
 import OrderRecovery from "./pages/SystemAdmin/OrderRecovery";
+import AbandonedSignups from "./pages/SystemAdmin/AbandonedSignups";
 import Help from "./pages/Help";
 import { SystemAdminGuard } from "./components/SystemAdminGuard";
 import { HubSpotTracker } from "./components/HubSpotTracker";
@@ -280,6 +281,7 @@ const AppContent = () => {
         <Route path="/system-admin/contact-submissions" element={<ProtectedRoute><SystemAdminGuard><ContactSubmissions /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/help-submissions" element={<ProtectedRoute><SystemAdminGuard><HelpSubmissions /></SystemAdminGuard></ProtectedRoute>} />
         <Route path="/system-admin/order-recovery" element={<ProtectedRoute><SystemAdminGuard><OrderRecovery /></SystemAdminGuard></ProtectedRoute>} />
+        <Route path="/system-admin/abandoned-signups" element={<ProtectedRoute><SystemAdminGuard><AbandonedSignups /></SystemAdminGuard></ProtectedRoute>} />
         
         {/* Donor Portal Routes */}
         <Route path="/portal" element={<ProtectedRoute><DonorPortalHome /></ProtectedRoute>} />

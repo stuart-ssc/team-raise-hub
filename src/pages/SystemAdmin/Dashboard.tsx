@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, FileCheck, Mail, FlaskConical, BarChart3 } from "lucide-react";
+import { Building2, FileCheck, Mail, FlaskConical, BarChart3, UserX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SystemAdminPageLayout } from "@/components/SystemAdminPageLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,6 +163,18 @@ const SystemAdminDashboard = () => {
                   </div>
                   <CardDescription>
                     View comprehensive platform analytics and insights
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate('/system-admin/abandoned-signups')}>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <UserX style={{ height: '1.25rem', width: '1.25rem' }} />
+                    <CardTitle>Abandoned Signups</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Recover leads who started signup but never finished
                   </CardDescription>
                 </CardHeader>
               </Card>
