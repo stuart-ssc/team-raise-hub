@@ -1990,6 +1990,7 @@ export type Database = {
           email_type: string
           error_message: string | null
           id: string
+          invited_user_id: string | null
           last_retry_at: string | null
           max_retries: number | null
           metadata: Json | null
@@ -2012,6 +2013,7 @@ export type Database = {
           email_type: string
           error_message?: string | null
           id?: string
+          invited_user_id?: string | null
           last_retry_at?: string | null
           max_retries?: number | null
           metadata?: Json | null
@@ -2034,6 +2036,7 @@ export type Database = {
           email_type?: string
           error_message?: string | null
           id?: string
+          invited_user_id?: string | null
           last_retry_at?: string | null
           max_retries?: number | null
           metadata?: Json | null
@@ -4594,6 +4597,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      signup_attempts: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          email: string
+          error_message: string | null
+          first_name: string | null
+          id: string
+          invite_sent_at: string | null
+          invite_sent_by: string | null
+          last_name: string | null
+          referrer: string | null
+          updated_at: string
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          email: string
+          error_message?: string | null
+          first_name?: string | null
+          id?: string
+          invite_sent_at?: string | null
+          invite_sent_by?: string | null
+          last_name?: string | null
+          referrer?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          email?: string
+          error_message?: string | null
+          first_name?: string | null
+          id?: string
+          invite_sent_at?: string | null
+          invite_sent_by?: string | null
+          last_name?: string | null
+          referrer?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
       }
       sponsorship_files: {
         Row: {

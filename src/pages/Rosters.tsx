@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ArrowLeft, Plus, UserPlus } from "lucide-react";
+import { ChevronDown, ArrowLeft, Plus, UserPlus, Upload, Mail } from "lucide-react";
 import { NewRosterForm } from "@/components/NewRosterForm";
 import { AddParticipantForm } from "@/components/AddParticipantForm";
+import { BulkRosterUpload } from "@/components/BulkRosterUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -48,6 +49,9 @@ interface SchoolUser {
   user_type: {
     name: string;
   };
+  account_status?: "no_invite" | "invite_sent" | "email_opened" | "link_clicked" | "account_created";
+  last_sign_in_at?: string | null;
+  invite_sent_at?: string | null;
 }
 
 interface Roster {
@@ -81,6 +85,7 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
   const [loading, setLoading] = useState(true);
   const [showNewRosterForm, setShowNewRosterForm] = useState(false);
   const [showAddParticipantForm, setShowAddParticipantForm] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const { organizationUser } = useOrganizationUser();
 
   const fetchRosters = async () => {
@@ -172,11 +177,59 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
         return;
       }
 
+      // Pull auth status (last_sign_in_at, email confirmation) and invitation tracking in parallel
+      const [authStatusRes, deliveryRes] = await Promise.all([
+        supabase.functions.invoke("get-user-auth-status", { body: { userIds } }),
+        (async () => {
+          // Map user_id -> email so we can match email_delivery_log rows
+          const emailById = new Map<string, string>();
+          // Use the auth admin lookup via the same function above; emails returned in statuses
+          return null;
+        })(),
+      ]);
+      const authStatuses: Record<string, any> = (authStatusRes as any)?.data?.statuses ?? {};
+
+      // Build email -> tracking row map from the most-recent invitation per recipient
+      const emails = Object.values(authStatuses)
+        .map((s: any) => (s?.email ? String(s.email).toLowerCase() : null))
+        .filter(Boolean) as string[];
+      const trackingByEmail = new Map<string, { sent_at: string | null; opened_at: string | null; clicked_at: string | null }>();
+      if (emails.length > 0) {
+        const { data: dlogs } = await supabase
+          .from("email_delivery_log")
+          .select("recipient_email, sent_at, opened_at, clicked_at, created_at")
+          .eq("email_type", "invitation")
+          .in("recipient_email", emails)
+          .order("created_at", { ascending: false })
+          .limit(1000);
+        for (const row of dlogs ?? []) {
+          const k = (row as any).recipient_email?.toLowerCase();
+          if (k && !trackingByEmail.has(k)) {
+            trackingByEmail.set(k, {
+              sent_at: (row as any).sent_at,
+              opened_at: (row as any).opened_at,
+              clicked_at: (row as any).clicked_at,
+            });
+          }
+        }
+      }
+
       // Combine the data
       const combinedData = schoolUsersData.map(user => {
         const profile = profilesData?.find(p => p.id === user.user_id);
         const userType = userTypesData?.find(ut => ut.id === user.user_type_id);
-        
+        const auth = authStatuses[user.user_id];
+        const email = auth?.email ? String(auth.email).toLowerCase() : null;
+        const tracking = email ? trackingByEmail.get(email) : null;
+        const lastSignIn = auth?.lastSignIn ?? null;
+        const inviteSentAt = tracking?.sent_at ?? null;
+
+        let accountStatus: SchoolUser["account_status"] = "no_invite";
+        if (lastSignIn || auth?.emailConfirmed) accountStatus = "account_created";
+        else if (tracking?.clicked_at) accountStatus = "link_clicked";
+        else if (tracking?.opened_at) accountStatus = "email_opened";
+        else if (inviteSentAt) accountStatus = "invite_sent";
+
         return {
           ...user,
           profiles: {
@@ -185,7 +238,10 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
           },
           user_type: {
             name: userType?.name || ""
-          }
+          },
+          account_status: accountStatus,
+          last_sign_in_at: lastSignIn,
+          invite_sent_at: inviteSentAt,
         };
       });
 
@@ -421,6 +477,13 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
                   <UserPlus className="mr-2 h-4 w-4" />
                   Add Participant
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowBulkUpload(true)}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Bulk Upload
+                </Button>
              </div>
            </div>
 
@@ -435,6 +498,8 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
                      <ChevronDown className="h-4 w-4" />
                    </TableHead>
                    <TableHead>User Type</TableHead>
+                   <TableHead>Account Status</TableHead>
+                   <TableHead>Last Login</TableHead>
                    <TableHead>Status</TableHead>
                    <TableHead className="w-12"></TableHead>
                  </TableRow>
@@ -442,13 +507,13 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
                <TableBody>
                  {loading ? (
                    <TableRow>
-                     <TableCell colSpan={4} className="text-center py-4">
+                     <TableCell colSpan={6} className="text-center py-4">
                        Loading...
                      </TableCell>
                    </TableRow>
                  ) : schoolUsers.length === 0 ? (
                    <TableRow>
-                     <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                     <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
                        No users found for this roster
                      </TableCell>
                    </TableRow>
@@ -463,6 +528,29 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
                        </TableCell>
                        <TableCell>
                          {user.user_type.name}
+                       </TableCell>
+                       <TableCell>
+                         {(() => {
+                           const s = user.account_status || "no_invite";
+                           const map: Record<string, { label: string; cls: string }> = {
+                             account_created: { label: "Account Created", cls: "bg-green-100 text-green-800" },
+                             link_clicked: { label: "Link Clicked", cls: "bg-blue-100 text-blue-800" },
+                             email_opened: { label: "Email Opened", cls: "bg-sky-100 text-sky-800" },
+                             invite_sent: { label: "Invite Sent", cls: "bg-amber-100 text-amber-800" },
+                             no_invite: { label: "Not Invited", cls: "bg-gray-100 text-gray-700" },
+                           };
+                           const m = map[s];
+                           return (
+                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${m.cls}`}>
+                               {m.label}
+                             </span>
+                           );
+                         })()}
+                       </TableCell>
+                       <TableCell className="text-xs text-muted-foreground">
+                         {user.last_sign_in_at
+                           ? new Date(user.last_sign_in_at).toLocaleDateString()
+                           : "Never"}
                        </TableCell>
                        <TableCell>
                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -537,6 +625,24 @@ const Rosters = ({ selectedGroup, onBack }: RostersProps) => {
         onSubmit={handleCreateRoster}
         existingYears={availableYears}
       />
+
+      {organizationUser?.organization_id && (
+        <BulkRosterUpload
+          open={showBulkUpload}
+          onOpenChange={setShowBulkUpload}
+          organizationId={organizationUser.organization_id}
+          groupId={selectedGroup.id}
+          rosterId={
+            rosters.find(r => r.roster_year.toString() === selectedYear)?.id ?? null
+          }
+          organizationType={selectedGroup.organization_type}
+          groupTypeName={selectedGroup.group_type_name}
+          onSuccess={() => {
+            const sel = rosters.find(r => r.roster_year.toString() === selectedYear);
+            if (sel) fetchSchoolUsers(sel.id);
+          }}
+        />
+      )}
      </div>
    );
 };

@@ -399,6 +399,29 @@ const Signup = () => {
     }
   };
 
+  const alertAdminOfSignupError = async (
+    payload: { email: string; firstName: string; lastName: string; errorMessage: string }
+  ) => {
+    try {
+      await supabase.functions.invoke("send-admin-alert", {
+        body: {
+          functionName: "signup-page",
+          errorMessage: payload.errorMessage,
+          severity: "high",
+          context: {
+            email: payload.email,
+            firstName: payload.firstName,
+            lastName: payload.lastName,
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+          },
+        },
+      });
+    } catch (e) {
+      console.error("send-admin-alert failed:", e);
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -433,6 +456,12 @@ const Signup = () => {
         if (attemptId) {
           updateSignupAttempt(attemptId, { errorMessage: error.message });
         }
+        alertAdminOfSignupError({
+          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          errorMessage: error.message,
+        });
         toast({
           title: "Signup Error",
           description: error.message,
@@ -454,6 +483,12 @@ const Signup = () => {
           errorMessage: error?.message ?? "Unexpected client error",
         });
       }
+      alertAdminOfSignupError({
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        errorMessage: error?.message ?? "Unexpected client error during signup",
+      });
       toast({
         title: "Signup Error",
         description: "An unexpected error occurred. Please try again.",

@@ -726,6 +726,19 @@ const Dashboard = () => {
       });
     }
 
+    // Roster members who haven't accepted their invite (no last_sign_in)
+    const pendingInvites = rosterPlayers.filter((p: any) => p.userId && !p.lastSignIn).length;
+    if (canManageUsers && pendingInvites > 0) {
+      items.push({
+        key: "invites",
+        label: `${pendingInvites} roster ${pendingInvites === 1 ? "member hasn't" : "members haven't"} accepted their invite`,
+        count: pendingInvites,
+        icon: <UserPlus className="h-4 w-4" />,
+        onClick: () => navigate("/dashboard/rosters"),
+        tone: "amber",
+      });
+    }
+
     unconnectedGroups.forEach((g) => {
       items.push({
         key: `pay-${g.id}`,
