@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -16,6 +17,8 @@ interface InvitationEmailRequest {
   roleName: string;
   groupName?: string;
   inviteLink: string;
+  invitedUserId?: string | null;
+  invitedBy?: string | null;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -23,10 +26,48 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+
+  let logId: string | null = null;
+  let recipientEmail = "";
+
   try {
-    const { email, firstName, lastName, organizationName, roleName, groupName, inviteLink }: InvitationEmailRequest = await req.json();
+    const { email, firstName, lastName, organizationName, roleName, groupName, inviteLink, invitedUserId, invitedBy }: InvitationEmailRequest = await req.json();
+    recipientEmail = email.trim().toLowerCase();
 
     console.log("Sending invitation email to:", email);
+
+    // Pre-insert delivery log row so the Resend webhook can update it later
+    try {
+      const { data: logRow, error: logErr } = await supabaseAdmin
+        .from("email_delivery_log")
+        .insert({
+          email_type: "invitation",
+          recipient_email: recipientEmail,
+          recipient_name: `${firstName ?? ""} ${lastName ?? ""}`.trim() || null,
+          status: "pending",
+          invited_user_id: invitedUserId ?? null,
+          metadata: {
+            organization_name: organizationName,
+            role_name: roleName,
+            group_name: groupName ?? null,
+            invited_by: invitedBy ?? null,
+            subject: `You've been invited to join ${organizationName} on Sponsorly`,
+          },
+        })
+        .select("id")
+        .single();
+      if (logErr) {
+        console.error("Failed to pre-insert email_delivery_log row:", logErr);
+      } else {
+        logId = logRow?.id ?? null;
+      }
+    } catch (logCatch) {
+      console.error("Exception pre-inserting email_delivery_log row:", logCatch);
+    }
 
     const emailResponse = await resend.emails.send({
       from: "Sponsorly <noreply@sponsorly.io>",
@@ -70,12 +111,47 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Invitation email sent successfully:", emailResponse);
 
+    // Capture Resend message id so the webhook can correlate open/click events
+    const resendId =
+      (emailResponse as any)?.data?.id ?? (emailResponse as any)?.id ?? null;
+    if (logId) {
+      try {
+        await supabaseAdmin
+          .from("email_delivery_log")
+          .update({
+            resend_email_id: resendId,
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", logId);
+      } catch (updateErr) {
+        console.error("Failed to update email_delivery_log after send:", updateErr);
+      }
+    }
+
     return new Response(JSON.stringify(emailResponse), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
     console.error("Error sending invitation email:", error);
+
+    // Mark log row as failed so admins can see it
+    if (logId) {
+      try {
+        await supabaseAdmin
+          .from("email_delivery_log")
+          .update({
+            status: "failed",
+            error_message: (error?.message ?? "Unknown error").slice(0, 500),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", logId);
+      } catch (updateErr) {
+        console.error("Failed to mark email_delivery_log as failed:", updateErr);
+      }
+    }
     
     // Send admin alert for email delivery failures
     try {
@@ -90,7 +166,8 @@ const handler = async (req: Request): Promise<Response> => {
           errorMessage: error.message,
           severity: "high",
           context: {
-            errorStack: error.stack
+            errorStack: error.stack,
+            recipient: recipientEmail,
           }
         })
       });
