@@ -57,6 +57,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
+  const [logoRemoved, setLogoRemoved] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingEditData, setLoadingEditData] = useState<boolean>(!!editingGroup);
   const { toast } = useToast();
@@ -149,6 +150,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
     const file = event.target.files?.[0];
     if (file) {
       setLogoFile(file);
+      setLogoRemoved(false);
       
       // Create preview
       const reader = new FileReader();
@@ -217,25 +219,34 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
       // Create or update group record
       if (editingGroup) {
         // Update existing group
-        const updateData: any = {
+        const expectedWebsite = data.websiteAddress?.trim() ? data.websiteAddress.trim() : null;
+        const updateData: Record<string, any> = {
           group_name: data.groupName,
-          website_url: data.websiteAddress || null,
+          website_url: expectedWebsite,
           group_type_id: data.groupTypeId,
         };
-        
+
+        let expectedLogo: string | null | undefined = undefined;
         if (logoUrl) {
           updateData.logo_url = logoUrl;
+          expectedLogo = logoUrl;
+        } else if (logoRemoved && !logoFile) {
+          updateData.logo_url = null;
+          expectedLogo = null;
         }
 
+        // Scope by organization_id as well so RLS evaluates with the
+        // user's assigned organization, and so we don't accidentally
+        // attempt to update a group outside the active role.
         const { data: updated, error: groupError } = await supabase
           .from("groups")
           .update(updateData)
           .eq("id", editingGroup.id)
-          .select("id")
-          .maybeSingle();
+          .eq("organization_id", organizationUser.organization_id)
+          .select("id, group_name, website_url, group_type_id, logo_url, updated_at");
 
         if (groupError) {
-          console.error('Error updating group:', groupError);
+          console.error("Error updating group:", groupError);
           toast({
             title: "Failed to save group",
             description: groupError.message,
@@ -244,14 +255,49 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
           return;
         }
 
-        if (!updated) {
+        if (!updated || updated.length === 0) {
           toast({
             title: "Save blocked",
-            description: "You don't have permission to update this group, or no row was returned.",
+            description:
+              "Your active role doesn't have permission to update this group. Switch to the role that owns this group and try again.",
             variant: "destructive",
           });
           return;
         }
+
+        // Verify the database actually persisted what we sent.
+        const saved = updated[0] as {
+          id: string;
+          group_name: string;
+          website_url: string | null;
+          group_type_id: string | null;
+          logo_url: string | null;
+          updated_at: string;
+        };
+
+        const mismatches: string[] = [];
+        if (saved.group_name !== data.groupName) mismatches.push("name");
+        if ((saved.website_url ?? null) !== expectedWebsite) mismatches.push("website");
+        if ((saved.group_type_id ?? null) !== data.groupTypeId) mismatches.push("group type");
+        if (expectedLogo !== undefined && (saved.logo_url ?? null) !== expectedLogo) {
+          mismatches.push("logo");
+        }
+
+        if (mismatches.length > 0) {
+          console.error("Group update did not persist", { sent: updateData, saved, mismatches });
+          toast({
+            title: "Changes did not save",
+            description: `These fields didn't update: ${mismatches.join(", ")}. Please try again or contact support.`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Reset local edit state from the source of truth and notify parent.
+        setExistingLogoUrl(saved.logo_url ?? null);
+        setLogoFile(null);
+        setLogoPreview(null);
+        setLogoRemoved(false);
 
         toast({
           title: "Success",
@@ -416,6 +462,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
                         setLogoFile(null);
                         setLogoPreview(null);
                         setExistingLogoUrl(null);
+                        setLogoRemoved(true);
                       }}
                     >
                       Remove
