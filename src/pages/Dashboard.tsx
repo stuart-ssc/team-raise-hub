@@ -836,6 +836,11 @@ const Dashboard = () => {
                     >
                       <Send className="h-4 w-4 mr-1" /> Send Roster Blast
                     </Button>
+                    <PublicHubLinkButton
+                      organizationId={organizationUser?.organization_id}
+                      groupId={activeGroup?.id}
+                      variant="hero"
+                    />
                   </div>
                 </div>
 
