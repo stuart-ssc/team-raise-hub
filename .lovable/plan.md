@@ -1,77 +1,43 @@
-## Findings
+You're right — my previous fix did not actually solve the live issue. I checked the database policies, and the migration I described is not applied in the database. The active `groups` UPDATE policy is still the old `school_user`-based one, so the save returns no updated row and the form shows “Save blocked.”
 
-The group edit form is currently confusing because it can look like saves are failing:
+Plan:
 
-1. The saved data for Varsity Basketball in the database currently has:
-   - Group Type: Sports Team
-   - Website Address: blank
-   - Logo: blank
+1. Replace the live group update policy
+   - Add a new migration that drops the old policy:
+     - `Users with qualifying roles can update groups at their school`
+   - Create the correct `organization_user`-based UPDATE policy.
+   - Allow:
+     - organization admins for any group in their organization
+     - program managers/coaches for their assigned group
+     - system admins
 
-2. The screenshot shows the edit form did not load the saved Group Type, even though it exists in the database. The most likely cause is a loading race: the form resets before the group type options are ready, so the Select stays on its placeholder.
+2. Make the migration idempotent and targeted
+   - Drop both the old legacy policy and the previously attempted policy name if present.
+   - Recreate one canonical policy so future migrations do not leave duplicate/conflicting rules.
+   - Keep SELECT public as currently designed; only fix UPDATE.
 
-3. The current save code logs Supabase errors to the console, but the user-facing error only says “Failed to update group”. If RLS/permission blocks the update, the UI does not explain why.
+3. Improve the form’s save diagnostics
+   - Keep the existing `select("id").maybeSingle()` check, but change the “no row returned” message to explicitly say the database rejected the update due to permissions.
+   - Do not hide the issue behind a generic success message.
 
-4. The current database `groups` UPDATE policy is still based on the legacy `school_user` table, but the app now uses `organization_user` for coach/admin access. For Sample School, there are no active `school_user` rows tied to Varsity Basketball, so a coach can see the form via `organization_user` but may be blocked from updating by RLS.
+4. Verify against the real database after approval
+   - Query `pg_policies` again to confirm the old `school_user` update policy is gone.
+   - Confirm the new `organization_user` update policy exists.
+   - Confirm the Sample School Varsity Basketball group has `organization_id = 11111111-1111-1111-1111-111111111111`, and the active admins/coaches are linked through `organization_user`.
 
-## Plan
+Technical detail:
 
-### 1. Fix the edit form loading behavior
-Update `CreateGroupForm.tsx` so it loads the full group record consistently when editing, including:
-- `group_name`
-- `website_url`
-- `group_type_id`
-- `logo_url`
-
-The form will reset only after the edit record is fetched, and the Group Type select will receive the saved value after the options are loaded.
-
-### 2. Show existing logo and saved values clearly
-Update the edit form so saved information is visibly loaded:
-- Show existing logo if `logo_url` is already saved.
-- Keep the existing logo unless the user uploads a replacement.
-- Show a clearer loading state while editing data is being fetched.
-
-### 3. Improve save feedback
-Update the save handler to:
-- Show the actual Supabase error message in the toast when a save fails.
-- Avoid closing the form unless the update actually succeeds.
-- Keep the current “Success” message only after a confirmed save.
-
-### 4. Fix group update permissions in Supabase
-Add a migration that updates `groups` RLS to match the current app authorization model:
-- Organization admins can update groups in their organization.
-- Program managers/coaches can update their assigned group.
-- System admins keep access.
-- Keep public read behavior needed for public hub pages.
-
-This fixes the mismatch where the UI uses `organization_user`, but the `groups` table update policy still checks legacy `school_user` rows.
-
-### 5. Verify after implementation
-After changes are approved and applied:
-- Re-open Varsity Basketball edit form.
-- Confirm “Sports Team” loads instead of “Select group type”.
-- Save a website URL.
-- Confirm it persists in the database and reloads in the form.
-
-## Technical details
-
-The key policy change will replace or supplement the current `groups` UPDATE policy, which currently checks `school_user`, with an `organization_user` based check similar to:
+The currently active database policy is still:
 
 ```sql
-exists (
-  select 1
-  from public.organization_user ou
-  join public.user_type ut on ut.id = ou.user_type_id
-  where ou.user_id = auth.uid()
-    and ou.organization_id = groups.organization_id
-    and ou.active_user = true
-    and (
-      ut.permission_level = 'organization_admin'
-      or (
-        ut.permission_level = 'program_manager'
-        and ou.group_id = groups.id
-      )
-    )
+EXISTS (
+  SELECT 1
+  FROM school_user su
+  JOIN user_type ut ON su.user_type_id = ut.id
+  WHERE su.user_id = auth.uid()
+    AND su.school_id = groups.school_id
+    AND ut.name IN ('Principal', 'Athletic Director', 'Coach', 'Club Sponsor', 'Booster Leader')
 )
 ```
 
-This aligns the database with the dashboard’s current coach/admin role system.
+But the app’s active role system is using `organization_user`, so saves from the dashboard are being filtered out by RLS. The fix needs to replace that live policy, not only add a differently named policy that has not reached the database.
