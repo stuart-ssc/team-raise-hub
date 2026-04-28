@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -359,8 +360,3 @@ export const BulkRosterUpload = ({
     </Dialog>
   );
 };
-
-// Minimal Input shim used by the upload card
-function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className="text-sm" />;
-}
