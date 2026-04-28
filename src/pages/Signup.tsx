@@ -355,6 +355,50 @@ const Signup = () => {
     }));
   };
 
+  const logSignupAttempt = async (
+    payload: { email: string; firstName: string; lastName: string }
+  ): Promise<string | null> => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const utm: Record<string, string> = {};
+      ["utm_source","utm_medium","utm_campaign","utm_term","utm_content"].forEach(k => {
+        const v = params.get(k);
+        if (v) utm[k] = v;
+      });
+      const { data, error } = await supabase.functions.invoke("log-signup-attempt", {
+        body: {
+          email: payload.email,
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          userAgent: navigator.userAgent,
+          referrer: document.referrer || null,
+          utm,
+        },
+      });
+      if (error) {
+        console.error("log-signup-attempt failed:", error);
+        return null;
+      }
+      return (data as any)?.id ?? null;
+    } catch (e) {
+      console.error("log-signup-attempt threw:", e);
+      return null;
+    }
+  };
+
+  const updateSignupAttempt = async (
+    id: string,
+    patch: { errorMessage?: string; completed?: boolean }
+  ) => {
+    try {
+      await supabase.functions.invoke("log-signup-attempt", {
+        body: { id, ...patch },
+      });
+    } catch (e) {
+      console.error("log-signup-attempt update threw:", e);
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -368,6 +412,14 @@ const Signup = () => {
     }
 
     setLoading(true);
+
+    // Log the attempt BEFORE calling Supabase Auth so we capture the lead even
+    // if the auth request is blocked by extensions, network, etc.
+    const attemptId = await logSignupAttempt({
+      email: formData.email,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+    });
     
     try {
       const { error } = await signUp(
@@ -378,19 +430,30 @@ const Signup = () => {
       );
       
       if (error) {
+        if (attemptId) {
+          updateSignupAttempt(attemptId, { errorMessage: error.message });
+        }
         toast({
           title: "Signup Error",
           description: error.message,
           variant: "destructive",
         });
       } else {
+        if (attemptId) {
+          updateSignupAttempt(attemptId, { completed: true });
+        }
         toast({
           title: "Success",
           description: "Account created successfully! Please check your email to verify your account.",
         });
         navigate('/login');
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (attemptId) {
+        updateSignupAttempt(attemptId, {
+          errorMessage: error?.message ?? "Unexpected client error",
+        });
+      }
       toast({
         title: "Signup Error",
         description: "An unexpected error occurred. Please try again.",
