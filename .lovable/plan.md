@@ -1,26 +1,28 @@
-# Update Default OG Image to JPG
+## Fix the clipped "0" in the dashboard headline
 
-Swap the default Open Graph image reference from `og-default-1200x630.png` to `og-default-1200x630.jpg` (the newly uploaded Sponsorly brand card) everywhere in the codebase, except `cloudflare/worker.js` which you manage separately.
+### What's happening
+On `/dashboard`, the headline reads `{org} raised $0 toward $50,000.` The dollar amount spans use:
+- `italic`
+- `bg-gradient-to-r ... bg-clip-text text-transparent` (gradient fill clipped to glyph shape)
 
-## Files to update
+…inside an `<h1>` with `leading-tight`. Browsers compute the glyph bounding box for `bg-clip-text` slightly tighter than the actual glyph extent. With italic (which leans right and dips below the baseline) plus tight line-height, the bottom curve of round glyphs like `0` gets visually clipped.
 
-1. **`index.html`** (lines 37, 38, 51) — update three `<meta>` tags:
-   - `og:image`
-   - `og:image:secure_url`
-   - `twitter:image`
+### Fix
+In `src/pages/Dashboard.tsx` (lines 865–875), adjust the gradient `<span>` elements so the glyph descenders aren't clipped:
 
-2. **`src/components/seo/SeoHead.tsx`** (line 4) — update `DEFAULT_OG_IMAGE` constant.
+1. Add `inline-block pb-1` (or `leading-[1.15] pb-[2px]`) to each gradient `<span>` so the clipping box has breathing room below the baseline.
+2. Add `pr-[2px]` to compensate for the italic slant on the right edge of the last digit.
+3. Optionally relax the `<h1>`'s `leading-tight` to `leading-[1.2]` so the line itself has enough vertical room.
 
-3. **`supabase/functions/get-page-meta/index.ts`** (line 53) — update `STATIC_OG_IMAGE` constant. (Edge function will be redeployed automatically.)
+Resulting span pattern:
+```tsx
+<span className="inline-block italic pb-1 pr-[2px] bg-gradient-to-r from-primary-foreground to-primary-foreground/70 bg-clip-text text-transparent">
+  ${totalAmountRaised.toLocaleString()}
+</span>
+```
 
-4. **`supabase/functions/generate-og-image/index.ts`** (line 7) — update `STATIC_OG_IMAGE` constant. (Edge function will be redeployed automatically.)
+### Files to edit
+- `src/pages/Dashboard.tsx` — both gradient `<span>`s on lines 867–869 and 871–873, and the `<h1>` className on line 865.
 
-## Not changing
-
-- `cloudflare/worker.js` — you manage and deploy this outside Lovable.
-- The old `public/lovable-uploads/og-default-1200x630.png` file will be left in place (harmless; can be deleted later if desired).
-
-## Result
-
-All Sponsorly default OG image references will resolve to:
-`https://sponsorly.io/lovable-uploads/og-default-1200x630.jpg`
+### Verification
+After the change, reload `/dashboard` and confirm the bottoms of the `0`s in `$0` and `$50,000` render cleanly with no clipping at the typical 1450px viewport.

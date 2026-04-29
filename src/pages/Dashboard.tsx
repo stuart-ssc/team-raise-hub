@@ -862,13 +862,13 @@ const Dashboard = () => {
                   <p className="text-xs uppercase tracking-[0.18em] text-sidebar-foreground/60 font-semibold">
                     {greeting}, {firstName}
                   </p>
-                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mt-2 leading-tight">
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mt-2 leading-[1.2]">
                     <span className="text-sidebar-foreground/95">{orgOrGroupName} raised </span>
-                    <span className="italic bg-gradient-to-r from-primary-foreground to-primary-foreground/70 bg-clip-text text-transparent">
+                    <span className="inline-block italic pb-1 pr-[2px] bg-gradient-to-r from-primary-foreground to-primary-foreground/70 bg-clip-text text-transparent">
                       ${totalAmountRaised.toLocaleString()}
                     </span>
                     <span className="text-sidebar-foreground/95"> toward </span>
-                    <span className="italic bg-gradient-to-r from-primary-foreground to-primary-foreground/70 bg-clip-text text-transparent">
+                    <span className="inline-block italic pb-1 pr-[2px] bg-gradient-to-r from-primary-foreground to-primary-foreground/70 bg-clip-text text-transparent">
                       ${totalGoalAmount.toLocaleString()}
                     </span>
                     <span className="text-sidebar-foreground/95">.</span>
