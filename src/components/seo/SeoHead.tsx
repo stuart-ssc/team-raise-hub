@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
 
 const SITE = "https://sponsorly.io";
-const DEFAULT_OG_IMAGE = `${SITE}/lovable-uploads/og-default-1200x630.png`;
+const DEFAULT_OG_IMAGE = `${SITE}/lovable-uploads/og-default-1200x630.jpg`;
 
 interface SeoHeadProps {
   /** Page title — keep under 60 chars including any " | Sponsorly" suffix. */

@@ -50,7 +50,7 @@ function getStateInfo(stateSlug: string): { abbr: string; name: string } | null 
 const BASE_URL = 'https://sponsorly.io';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 // 1200x630 brand card — proper Open Graph dimensions for Facebook/LinkedIn/Twitter.
-const STATIC_OG_IMAGE = `${BASE_URL}/lovable-uploads/og-default-1200x630.png`;
+const STATIC_OG_IMAGE = `${BASE_URL}/lovable-uploads/og-default-1200x630.jpg`;
 const FB_APP_ID = '2577576499294352';
 
 interface PageMeta {
