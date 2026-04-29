@@ -1004,7 +1004,10 @@ export type Database = {
           group_id: string | null
           id: string
           image_url: string | null
+          meta_description: string | null
+          meta_title: string | null
           name: string
+          og_image_url: string | null
           pitch_image_url: string | null
           pitch_message: string | null
           pitch_recorded_video_url: string | null
@@ -1040,7 +1043,10 @@ export type Database = {
           group_id?: string | null
           id?: string
           image_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
           name: string
+          og_image_url?: string | null
           pitch_image_url?: string | null
           pitch_message?: string | null
           pitch_recorded_video_url?: string | null
@@ -1076,7 +1082,10 @@ export type Database = {
           group_id?: string | null
           id?: string
           image_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
           name?: string
+          og_image_url?: string | null
           pitch_image_url?: string | null
           pitch_message?: string | null
           pitch_recorded_video_url?: string | null
@@ -2317,6 +2326,9 @@ export type Database = {
           id: string
           logo_url: string | null
           manual_order_notes: string | null
+          meta_description: string | null
+          meta_title: string | null
+          og_image_url: string | null
           organization_id: string | null
           payment_processor_config: Json | null
           public_contact_email: string | null
@@ -2338,6 +2350,9 @@ export type Database = {
           id?: string
           logo_url?: string | null
           manual_order_notes?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image_url?: string | null
           organization_id?: string | null
           payment_processor_config?: Json | null
           public_contact_email?: string | null
@@ -2359,6 +2374,9 @@ export type Database = {
           id?: string
           logo_url?: string | null
           manual_order_notes?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image_url?: string | null
           organization_id?: string | null
           payment_processor_config?: Json | null
           public_contact_email?: string | null
@@ -4444,7 +4462,10 @@ export type Database = {
           locale_id: string | null
           logo_file: string | null
           low_grade: string | null
+          meta_description: string | null
+          meta_title: string | null
           NCES_School_ID: string | null
+          og_image_url: string | null
           organization_id: string | null
           phone: string | null
           "Primary Color": string | null
@@ -4483,7 +4504,10 @@ export type Database = {
           locale_id?: string | null
           logo_file?: string | null
           low_grade?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
           NCES_School_ID?: string | null
+          og_image_url?: string | null
           organization_id?: string | null
           phone?: string | null
           "Primary Color"?: string | null
@@ -4522,7 +4546,10 @@ export type Database = {
           locale_id?: string | null
           logo_file?: string | null
           low_grade?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
           NCES_School_ID?: string | null
+          og_image_url?: string | null
           organization_id?: string | null
           phone?: string | null
           "Primary Color"?: string | null
@@ -4597,6 +4624,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      seo_pages: {
+        Row: {
+          meta_description: string | null
+          meta_title: string | null
+          og_image_url: string | null
+          path: string
+          updated_at: string | null
+        }
+        Insert: {
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image_url?: string | null
+          path: string
+          updated_at?: string | null
+        }
+        Update: {
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image_url?: string | null
+          path?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       signup_attempts: {
         Row: {

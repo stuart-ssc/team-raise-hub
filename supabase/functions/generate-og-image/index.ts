@@ -4,7 +4,7 @@ const corsHeaders = {
 };
 
 // 1200x630 Sponsorly brand card — proper OG dimensions for Facebook/LinkedIn/Twitter.
-const STATIC_OG_IMAGE = "https://sponsorly.io/lovable-uploads/og-default-1200x630.png";
+const STATIC_OG_IMAGE = "https://sponsorly.io/lovable-uploads/og-default-1200x630.jpg";
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
