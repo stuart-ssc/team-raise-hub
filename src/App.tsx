@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ActiveGroupProvider } from "@/contexts/ActiveGroupContext";
+import { OrganizationUserProvider } from "@/hooks/useOrganizationUser";
 import Index from "./pages/Index";
 import Platform from "./pages/Platform";
 import Schools from "./pages/Schools";
@@ -136,7 +137,11 @@ const AppContent = () => {
       return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
     }
     
-    return <ActiveGroupProvider>{children}</ActiveGroupProvider>;
+    return (
+      <OrganizationUserProvider>
+        <ActiveGroupProvider>{children}</ActiveGroupProvider>
+      </OrganizationUserProvider>
+    );
   };
 
   const PublicRoute = ({ children }: { children: React.ReactNode }) => {
