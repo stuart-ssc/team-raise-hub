@@ -85,7 +85,7 @@ export function AddOrganizationDialog({ open, onOpenChange, onSuccess }: AddOrga
           organization_type: data.organization_type,
           email: data.email || null,
           phone: data.phone || null,
-          website: data.website || null,
+          website_url: data.website || null,
           address_line1: data.address_line1 || null,
           address_line2: data.address_line2 || null,
           city: data.city || null,
