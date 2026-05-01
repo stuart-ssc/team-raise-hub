@@ -1969,6 +1969,10 @@ Deno.serve(async (req) => {
         !inItemsPhase &&
         !exitItemsCollection &&
         setupJustFinished &&
+        // Don't re-fire the "first item" prompt once items have already been
+        // saved or once the user has reached the final/complete step.
+        itemsAdded === 0 &&
+        clientPhase !== "complete" &&
         Object.keys(currentItemDraft).filter((k) => !k.endsWith("_skipped")).length === 0;
 
       if (justEnteringItemsPhase) {
@@ -2261,6 +2265,15 @@ Deno.serve(async (req) => {
       } else if (/^(open editor|open the editor|editor|open in editor|fine.?tune|2)$/i.test(t)) {
         finalAction = "open_editor";
       }
+    }
+
+    // When the user picked a final action, replace any LLM/canned text with a
+    // short confirmation so no stale "add your first item" prompt leaks through
+    // before the client navigates.
+    if (finalAction === "open_editor") {
+      assistantMessage = "Opening the editor…";
+    } else if (finalAction === "publish") {
+      assistantMessage = "Opening publish…";
     }
 
     // Split assistant message into separate bubbles on \n\n boundaries
