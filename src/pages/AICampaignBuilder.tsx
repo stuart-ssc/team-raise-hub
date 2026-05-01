@@ -251,7 +251,7 @@ export default function AICampaignBuilder() {
         } else if (data.finalAction === "open_editor") {
           const targetId = data.createdCampaignId || campaignId;
           if (targetId) {
-            setTimeout(() => navigate(`/dashboard/fundraisers/${targetId}/edit`), 300);
+            navigate(`/dashboard/fundraisers/${targetId}/edit`);
           }
         }
       }
