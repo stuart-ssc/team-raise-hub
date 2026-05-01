@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -45,14 +45,30 @@ function sortByPermissionLevel(roles: OrganizationUser[]): OrganizationUser[] {
   });
 }
 
-export const useOrganizationUser = () => {
+const STORAGE_KEY = 'sponsorly.activeOrgUserId';
+
+interface OrganizationUserContextValue {
+  organizationUser: OrganizationUser | null;
+  allRoles: OrganizationUser[];
+  switchRole: (orgUserId: string) => void;
+  refreshRoles: () => Promise<void>;
+  loading: boolean;
+}
+
+const OrganizationUserContext = createContext<OrganizationUserContextValue | null>(null);
+
+export const OrganizationUserProvider = ({ children }: { children: ReactNode }) => {
   const [allRoles, setAllRoles] = useState<OrganizationUser[]>([]);
-  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage.getItem(STORAGE_KEY);
+  });
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   const fetchRoles = useCallback(async () => {
     if (!user?.id) {
+      setAllRoles([]);
       setLoading(false);
       return;
     }
@@ -90,10 +106,6 @@ export const useOrganizationUser = () => {
       } else {
         const sorted = sortByPermissionLevel((data || []) as unknown as OrganizationUser[]);
         setAllRoles(sorted);
-        // If no role is selected yet, default to highest priority
-        if (!selectedRoleId && sorted.length > 0) {
-          setSelectedRoleId(sorted[0].id);
-        }
       }
     } catch (error) {
       console.error('Error in fetchOrganizationUser:', error);
@@ -107,7 +119,19 @@ export const useOrganizationUser = () => {
     fetchRoles();
   }, [fetchRoles]);
 
+  // Validate stored selection against available roles; fall back to highest priority.
+  useEffect(() => {
+    if (allRoles.length === 0) return;
+    const stillValid = selectedRoleId && allRoles.some(r => r.id === selectedRoleId);
+    if (!stillValid) {
+      setSelectedRoleId(allRoles[0].id);
+    }
+  }, [allRoles, selectedRoleId]);
+
   const switchRole = useCallback((orgUserId: string) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(STORAGE_KEY, orgUserId);
+    }
     setSelectedRoleId(orgUserId);
   }, []);
 
@@ -117,5 +141,25 @@ export const useOrganizationUser = () => {
 
   const organizationUser = allRoles.find(r => r.id === selectedRoleId) || allRoles[0] || null;
 
-  return { organizationUser, allRoles, switchRole, refreshRoles, loading };
+  return (
+    <OrganizationUserContext.Provider
+      value={{ organizationUser, allRoles, switchRole, refreshRoles, loading }}
+    >
+      {children}
+    </OrganizationUserContext.Provider>
+  );
+};
+
+export const useOrganizationUser = (): OrganizationUserContextValue => {
+  const ctx = useContext(OrganizationUserContext);
+  if (ctx) return ctx;
+  // Fallback for components rendered outside the provider (e.g., public routes).
+  // Returns an inert value so callers don't crash.
+  return {
+    organizationUser: null,
+    allRoles: [],
+    switchRole: () => {},
+    refreshRoles: async () => {},
+    loading: false,
+  };
 };
