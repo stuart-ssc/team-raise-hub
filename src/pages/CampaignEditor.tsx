@@ -360,6 +360,13 @@ export default function CampaignEditor() {
           eventAgendaHeading: (data as any).event_agenda_heading || "",
           eventAgendaHeadingAccent: (data as any).event_agenda_heading_accent || "",
           eventIncludesHeading: (data as any).event_includes_heading || "",
+          merchShipsByDate: (data as any).merch_ships_by_date || "",
+          merchPickupAvailable: !!(data as any).merch_pickup_available,
+          merchPickupNote: (data as any).merch_pickup_note || "",
+          merchShippingFlatRate:
+            (data as any).merch_shipping_flat_rate != null
+              ? String((data as any).merch_shipping_flat_rate)
+              : "",
         });
 
         // Fetch pitch data
