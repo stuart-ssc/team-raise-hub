@@ -80,7 +80,7 @@ interface AttributedRosterMember {
   pitchRecordedVideoUrl?: string | null;
 }
 
-interface SponsorshipLandingProps {
+export interface SponsorshipLandingProps {
   campaign: SponsorshipCampaign;
   cart: SponsorshipItem[];
   attributedRosterMember: AttributedRosterMember | null;

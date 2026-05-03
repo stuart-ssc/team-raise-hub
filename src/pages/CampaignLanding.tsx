@@ -21,6 +21,7 @@ import { SeoHead } from "@/components/seo/SeoHead";
 import { SponsorshipLanding } from "@/components/campaign-landing/sponsorship/SponsorshipLanding";
 import { DonationLanding, DonationSelection } from "@/components/campaign-landing/donation/DonationLanding";
 import { PledgeLanding } from "@/components/campaign-landing/pledge/PledgeLanding";
+import { EventLanding } from "@/components/campaign-landing/event/EventLanding";
 
 interface CampaignData {
   id: string;
@@ -47,6 +48,14 @@ interface CampaignData {
   pitch_image_url: string | null;
   pitch_video_url: string | null;
   pitch_recorded_video_url: string | null;
+  event_start_at?: string | null;
+  event_location_name?: string | null;
+  event_location_address?: string | null;
+  event_format?: string | null;
+  event_format_subtitle?: string | null;
+  event_includes?: string[] | null;
+  event_includes_subtitle?: string | null;
+  event_agenda?: Array<{ time?: string; title?: string; description?: string }> | null;
   groups: {
     id: string;
     organization_id: string;
@@ -649,7 +658,8 @@ const CampaignLanding = () => {
       />
       {campaign.campaign_type?.name?.toLowerCase() !== 'sponsorship' &&
        campaign.campaign_type?.name?.toLowerCase() !== 'donation' &&
-       campaign.campaign_type?.name?.toLowerCase() !== 'pledge' && (
+       campaign.campaign_type?.name?.toLowerCase() !== 'pledge' &&
+       campaign.campaign_type?.name?.toLowerCase() !== 'event' && (
         <>
       {/* Hero Section */}
       <div 
@@ -870,6 +880,47 @@ const CampaignLanding = () => {
           setPendingLogoFile={setPendingLogoFile}
         />
       )}
+      {campaign.campaign_type?.name?.toLowerCase() === 'event' && (
+        <EventLanding
+          campaign={campaign as any}
+          cart={cart as any}
+          attributedRosterMember={attributedRosterMember}
+          onUpdateQuantity={updateQuantity}
+          onUpdateVariantQuantity={updateVariantQuantity}
+          onProceedToCheckout={handleProceedToCheckout}
+          subtotal={getSubtotal()}
+          platformFee={getPlatformFee()}
+          total={getTotalAmount()}
+          selectedItemsCount={getSelectedItemsCount()}
+          checkoutStep={checkoutStep}
+          setCheckoutStep={setCheckoutStep}
+          donorInfo={donorInfo}
+          onDonorInfoNext={handleDonorInfoNext}
+          businessData={businessData}
+          setBusinessData={setBusinessData}
+          onBusinessInfoNext={handleBusinessInfoNext}
+          customFields={customFields}
+          customFieldValues={customFieldValues}
+          setCustomFieldValues={setCustomFieldValues}
+          onCustomFieldsNext={handleCustomFieldsNext}
+          requiresBusinessInfo={!!campaign.requires_business_info}
+          organizationId={campaign.groups?.organization_id || ''}
+          processingCheckout={processingCheckout}
+          onFinalCheckout={handleFinalCheckout}
+          pendingLogoFile={pendingLogoFile}
+          setPendingLogoFile={setPendingLogoFile}
+          eventFields={{
+            event_start_at: (campaign as any).event_start_at,
+            event_location_name: (campaign as any).event_location_name,
+            event_location_address: (campaign as any).event_location_address,
+            event_format: (campaign as any).event_format,
+            event_format_subtitle: (campaign as any).event_format_subtitle,
+            event_includes: (campaign as any).event_includes,
+            event_includes_subtitle: (campaign as any).event_includes_subtitle,
+            event_agenda: (campaign as any).event_agenda,
+          }}
+        />
+      )}
       {campaign.campaign_type?.name?.toLowerCase() === 'donation' && (
         <DonationLanding
           campaign={campaign as any}
@@ -906,7 +957,8 @@ const CampaignLanding = () => {
       {/* Campaign Items and Checkout Steps */}
       {campaign.campaign_type?.name?.toLowerCase() !== 'sponsorship' &&
        campaign.campaign_type?.name?.toLowerCase() !== 'donation' &&
-       campaign.campaign_type?.name?.toLowerCase() !== 'pledge' && (
+       campaign.campaign_type?.name?.toLowerCase() !== 'pledge' &&
+       campaign.campaign_type?.name?.toLowerCase() !== 'event' && (
       <div className="max-w-6xl mx-auto p-6">
         {campaign.campaign_type?.name?.toLowerCase() === 'pledge' ? (
           <PledgePurchaseFlow

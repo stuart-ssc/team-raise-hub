@@ -26,6 +26,7 @@ import {
   DollarSign,
   HandCoins,
   ClipboardCheck,
+  CalendarClock,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -59,6 +60,7 @@ import { CampaignOrdersSection } from "@/components/campaign-editor/CampaignOrde
 import { CampaignAssetsSection } from "@/components/campaign-editor/CampaignAssetsSection";
 import { PledgeSettingsSection } from "@/components/campaign-editor/PledgeSettingsSection";
 import { PledgeResultsSection } from "@/components/campaign-editor/PledgeResultsSection";
+import { EventDetailsSection, type AgendaItem } from "@/components/campaign-editor/EventDetailsSection";
 import { CampaignSectionNav, type SectionKey } from "@/components/campaign-editor/CampaignSectionNav";
 import { CampaignAtAGlanceCard } from "@/components/campaign-editor/CampaignAtAGlanceCard";
 import { CampaignRecentOrdersCard } from "@/components/campaign-editor/CampaignRecentOrdersCard";
@@ -77,6 +79,7 @@ const SECTION_META: Record<SectionKey, { icon: React.ComponentType<{ className?:
   assets: { icon: ImageIcon, title: "Assets", subtitle: "Track required asset uploads from supporters", showSave: false },
   pledgeSettings: { icon: HandCoins, title: "Pledge Setup", subtitle: "Configure unit, scope, event date and suggested amounts", showSave: true },
   pledgeResults: { icon: ClipboardCheck, title: "Pledge Results", subtitle: "Record event results and charge supporters", showSave: false },
+  eventDetails: { icon: CalendarClock, title: "Event Details", subtitle: "Date, location, format, includes, and day-of agenda", showSave: true },
 };
 
 interface CampaignData {
@@ -106,6 +109,14 @@ interface CampaignData {
   pledgeEventDate: string;
   pledgeMinPerUnit: string;
   pledgeSuggestedUnitAmounts: number[];
+  eventStartAt: string;
+  eventLocationName: string;
+  eventLocationAddress: string;
+  eventFormat: string;
+  eventFormatSubtitle: string;
+  eventIncludes: string[];
+  eventIncludesSubtitle: string;
+  eventAgenda: AgendaItem[];
 }
 
 interface RequiredAsset {
@@ -174,6 +185,14 @@ export default function CampaignEditor() {
     pledgeEventDate: "",
     pledgeMinPerUnit: "",
     pledgeSuggestedUnitAmounts: [0.5, 1, 2, 5],
+    eventStartAt: "",
+    eventLocationName: "",
+    eventLocationAddress: "",
+    eventFormat: "",
+    eventFormatSubtitle: "",
+    eventIncludes: [],
+    eventIncludesSubtitle: "",
+    eventAgenda: [],
   });
   const [requiredAssets, setRequiredAssets] = useState<RequiredAsset[]>([]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -183,6 +202,7 @@ export default function CampaignEditor() {
   const [activeSection, setActiveSection] = useState<SectionKey>("details");
   const [navSheetOpen, setNavSheetOpen] = useState(false);
   const [pledgeTypeId, setPledgeTypeId] = useState<string | null>(null);
+  const [eventTypeId, setEventTypeId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -195,7 +215,19 @@ export default function CampaignEditor() {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("campaign_type")
+        .select("id, name")
+        .ilike("name", "Event")
+        .maybeSingle();
+      if (data) setEventTypeId(data.id);
+    })();
+  }, []);
+
   const isPledgeCampaign = !!pledgeTypeId && campaignData.campaignTypeId === pledgeTypeId;
+  const isEventCampaign = !!eventTypeId && campaignData.campaignTypeId === eventTypeId;
 
   // Counts for nav badges
   const { data: itemsCount = 0 } = useQuery({
@@ -276,6 +308,16 @@ export default function CampaignEditor() {
               : "",
           pledgeSuggestedUnitAmounts:
             ((data as any).pledge_suggested_unit_amounts as number[] | null) || [0.5, 1, 2, 5],
+          eventStartAt: (data as any).event_start_at
+            ? new Date((data as any).event_start_at).toISOString().slice(0, 16)
+            : "",
+          eventLocationName: (data as any).event_location_name || "",
+          eventLocationAddress: (data as any).event_location_address || "",
+          eventFormat: (data as any).event_format || "",
+          eventFormatSubtitle: (data as any).event_format_subtitle || "",
+          eventIncludes: ((data as any).event_includes as string[] | null) || [],
+          eventIncludesSubtitle: (data as any).event_includes_subtitle || "",
+          eventAgenda: ((data as any).event_agenda as AgendaItem[] | null) || [],
         });
 
         // Fetch pitch data
@@ -447,6 +489,18 @@ export default function CampaignEditor() {
           ? parseFloat(campaignData.pledgeMinPerUnit)
           : null,
         pledge_suggested_unit_amounts: campaignData.pledgeSuggestedUnitAmounts || null,
+        event_start_at: campaignData.eventStartAt
+          ? new Date(campaignData.eventStartAt).toISOString()
+          : null,
+        event_location_name: campaignData.eventLocationName || null,
+        event_location_address: campaignData.eventLocationAddress || null,
+        event_format: campaignData.eventFormat || null,
+        event_format_subtitle: campaignData.eventFormatSubtitle || null,
+        event_includes: campaignData.eventIncludes && campaignData.eventIncludes.length ? campaignData.eventIncludes : null,
+        event_includes_subtitle: campaignData.eventIncludesSubtitle || null,
+        event_agenda: campaignData.eventAgenda && campaignData.eventAgenda.length
+          ? (campaignData.eventAgenda as any)
+          : null,
       };
 
       let campaignId = id;
@@ -814,6 +868,22 @@ export default function CampaignEditor() {
                     pledgeUnitLabelPlural={campaignData.pledgeUnitLabelPlural}
                   />
                 )}
+
+                {activeSection === "eventDetails" && (
+                  <EventDetailsSection
+                    data={{
+                      eventStartAt: campaignData.eventStartAt,
+                      eventLocationName: campaignData.eventLocationName,
+                      eventLocationAddress: campaignData.eventLocationAddress,
+                      eventFormat: campaignData.eventFormat,
+                      eventFormatSubtitle: campaignData.eventFormatSubtitle,
+                      eventIncludes: campaignData.eventIncludes,
+                      eventIncludesSubtitle: campaignData.eventIncludesSubtitle,
+                      eventAgenda: campaignData.eventAgenda,
+                    }}
+                    onUpdate={updateCampaignData}
+                  />
+                )}
               </CardContent>
             </Card>
 
@@ -884,6 +954,7 @@ export default function CampaignEditor() {
                 showItems={!!(isEditing && id) && !isPledgeCampaign}
                 isPledge={isPledgeCampaign}
                 showPledgeResults={!!(isEditing && id) && isPledgeCampaign}
+                isEvent={isEventCampaign}
               />
             </div>
           </SheetContent>
