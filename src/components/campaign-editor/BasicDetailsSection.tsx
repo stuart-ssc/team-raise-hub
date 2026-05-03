@@ -16,6 +16,7 @@ interface CampaignData {
   campaignTypeId: string;
   endDate?: string;
   pledgeEventDate?: string;
+  heroAccentWord?: string;
 }
 
 interface BasicDetailsSectionProps {
@@ -193,6 +194,19 @@ export function BasicDetailsSection({
           value={data.description}
           onChange={(e) => onUpdate({ description: e.target.value })}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="heroAccentWord">Hero Accent Word</Label>
+        <Input
+          id="heroAccentWord"
+          placeholder="e.g. Sponsor"
+          value={data.heroAccentWord || ""}
+          onChange={(e) => onUpdate({ heroAccentWord: e.target.value })}
+        />
+        <p className="text-sm text-muted-foreground">
+          Highlighted word styled in your brand color within the landing page headline.
+        </p>
       </div>
 
       <div className="space-y-2">
