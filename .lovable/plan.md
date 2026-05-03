@@ -1,93 +1,59 @@
-# Rebuild Event Landing to Match Mockup
+# Merchandise Sales Fundraiser — Updated Template
 
-The current EventLanding is a single-column cream page with a sticky bottom bar. The mockup shows a very different structure that needs to be implemented.
+Build a dedicated landing layout for `Merchandise Sales` campaigns matching the mockup, parallel to how `EventLanding` works today. Roster-enabled features (pitch card) are preserved.
 
-## Layout Structure (matching the mockup)
+## What the mockup adds vs. today's generic items grid
+
+Layout changes (visual only, no new data):
+- Full-bleed hero with background image + 70% black overlay (per brand rule), no top nav bar
+- Status pills: campaign type, "Shop open / closed", organization location
+- Serif headline with italic accent word (uses existing `formatHeadline`)
+- Raised total + progress bar + "X orders" inline
+- Four hero stat tiles: **Raised**, **Orders**, **Items Left** (sum of available across items/variants), **Closes** (from `end_date`)
+- Two-column body: items grid (left, 3-up) + sticky cart card (right) — same pattern as Event
+- Per-item card: image, name, description, price, "X left", size dropdown (existing variants), quantity stepper, "Max N per person", auto badges ("New" if recently created, "Almost gone" if <10% stock)
+- Cart card: line items, subtotal, **shipping**, platform fee, total, fee disclosure, "Continue to checkout" CTA, footer note "Ships by {date}. Pickup option at next checkout step." (only shown when configured)
+
+## New fields to add to the Merchandise fundraiser editor
+
+Added under a new **"Fulfillment"** sub-menu in the campaign editor sidebar (only visible for Merchandise Sales), mirroring the Event Location/Agenda pattern:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `merch_ships_by_date` | date | Drives "Ships by Mar 15" footer + cart note |
+| `merch_pickup_available` | bool | Toggles "Pickup option at next checkout step" line |
+| `merch_pickup_note` | text (optional) | Custom pickup instructions shown on cart |
+| `merch_shipping_flat_rate` | decimal (optional) | Flat shipping shown in cart breakdown; if null, hide line |
+| `merch_hero_subtitle` | text | Already covered by existing campaign `description`/tagline — reuse, no new column |
+
+Auto-computed (no new fields):
+- "Items Left" = sum of `quantity_available` across items + variants
+- "Closes" = existing `end_date`
+- "New" badge = item created within last 14 days
+- "Almost gone" = `quantity_available / quantity_offered < 0.15`
+
+## Technical work
 
 ```text
-┌──────────────────────────────────────────────────────┐
-│ DARK HERO (background image, overlay)                │
-│  • Type chip · accent badge · location pin           │
-│  • Big serif title with italic accent                │
-│  • Description paragraph                              │
-│  • Italic red $raised + thin progress bar             │
-│  • 4 STAT TILES overlay (Raised / Teams Sold /       │
-│    Hole Sponsors / Days Left)                        │
-└──────────────────────────────────────────────────────┘
-┌──────────────────────────┬───────────────────────────┐
-│ LEFT COLUMN (cream bg)   │ RIGHT SIDEBAR (sticky)    │
-│                          │                           │
-│ [Roster Pitch Card]      │ ┌───────────────────────┐ │
-│  red left border         │ │ ■ Your tickets   0 it │ │
-│  avatar + "buying        │ │                       │ │
-│   tickets through"       │ │  No tickets yet       │ │
-│  Coach name · title      │ │  Add a foursome...    │ │
-│  italic quote            │ │                       │ │
-│  video player            │ │  [Continue checkout]  │ │
-│  3 italic mini-stats     │ │  ✓ Add player names   │ │
-│                          │ │     on next step      │ │
-│ THE DETAILS              │ └───────────────────────┘ │
-│  "A good day, outdoors." │   (sticky as user        │
-│  2x2 detail tiles        │    scrolls)              │
-│                          │                           │
-│ TICKETS & EXPERIENCES    │                           │
-│  "Pick your spot."       │                           │
-│  Stacked ticket cards    │                           │
-│   w/ inline steppers     │                           │
-│                          │                           │
-│ DAY-OF AGENDA            │                           │
-│  "How the day runs."     │                           │
-│  Timeline rows           │                           │
-└──────────────────────────┴───────────────────────────┘
+src/components/campaign-landing/
+  merchandise/
+    MerchandiseLanding.tsx         (new — modeled on EventLanding)
+    MerchandiseHero.tsx            (new — stat tiles, progress)
+    MerchandiseItemCard.tsx        (new — image/size/qty/badges)
+    MerchandiseCartCard.tsx        (new — sticky right column)
 ```
 
-## Changes
+- `MerchandiseLanding` accepts the same `SponsorshipLandingProps` shape Event uses (cart, updateQuantity, updateVariantQuantity, checkout step machine, donor/business/custom fields). When `checkoutStep !== "cart"`, falls back to the shared `SponsorshipLanding` checkout flow (same pattern as Event) so all existing donor info → business info → custom fields → payment steps work unchanged.
+- Reuse `RosterPitchCard` from `EventLanding` (extract to `shared/RosterPitchCard.tsx`) and render it above the items grid when `attributedRosterMember` has any pitch content. This preserves all roster P2P features.
+- Wire into `src/pages/CampaignLanding.tsx`: add a `campaign_type === 'merchandise sales'` branch that renders `<MerchandiseLanding>` and exclude that type from the legacy fallback grid (lines 963–966).
+- Add a "Fulfillment" entry to `CampaignSectionNav` gated by `isMerchandise` prop, plus a new `MerchandiseFulfillmentSection.tsx` editor with the four fields above. Pass `isMerchandise` to both desktop and mobile nav instances in `CampaignEditor.tsx`.
+- DB migration: add `merch_ships_by_date date`, `merch_pickup_available boolean default false`, `merch_pickup_note text`, `merch_shipping_flat_rate numeric` to `campaigns`. No RLS changes (inherits campaign policies).
+- Checkout: include `merch_shipping_flat_rate` in the Stripe line items as a separate "Shipping" line when set, so the platform fee continues to compute off the items subtotal only (per project memory: 10% fee added at checkout).
+- Hero overlay: 70% black overlay on background image (existing brand rule).
+- Responsive: cart card stacks below items on `<lg`; tables-to-cards rule already satisfied since this layout is card-based.
 
-### 1. Hero — dark photo background
-- Use `campaign.image_url` as background with a dark gradient overlay (matches the soccer-balls hero in mockup).
-- Top-left chips row: `• Event` pill, accent campaign-type badge (green in mockup), `📍 Location name`.
-- Title in white serif with italic accent word.
-- Short description in muted white.
-- Italic red `$X,XXX` followed by `XX% of goal`, then a thin red progress bar with a draggable-looking dot at current %, with goal label `Goal: $XX,XXX` on the right.
-- **Stat tiles row** overlaid at the bottom of the hero (translucent dark cards): Raised, plus each `show_in_hero_stats` campaign_item rendered as `{sold}` big number + `of {offered}` subtitle + label, plus `Days Left` (with `Tee-off MMM D` subtitle).
+## Questions before I build
 
-### 2. Two-column body
-- Wrap details/tickets/agenda in a left column (`lg:col-span-2`) with a sticky right sidebar (`lg:col-span-1`, `lg:sticky lg:top-6`).
-- Background remains `--event-bg` cream.
-
-### 3. Roster Pitch Card (top of left column)
-- Only shown when `attributedRosterMember` has pitch content.
-- Left red accent border, avatar circle, red eyebrow `★ YOU'RE BUYING TICKETS THROUGH`.
-- Name in serif + role/title (uses new `organization_user.title` field, fallback to group/role).
-- Italic quote = `pitchMessage`.
-- Video player below (uses `pitchVideoUrl` / `pitchRecordedVideoUrl`).
-- Footer row with 3 italic red stats (tickets via X, $ credited to team, leaderboard rank). For now render placeholders driven by data we already have on the roster member; if not present, hide the row.
-- Add `attributedRosterMember` to `EventLandingProps` and accept it from `CampaignLanding.tsx` (already passed).
-
-### 4. Sidebar cart
-- New component mirrors the `SponsorshipLanding` cart panel visually but simplified:
-  - Header: red square icon + "Your tickets" + `{count} items`.
-  - Empty state: "No tickets yet — Add a foursome, single, or hole sponsorship to get started."
-  - Selected state: list line items with name, qty, price; subtotal + 10% fee.
-  - Primary `Continue to checkout` button (disabled when empty).
-  - Footnote: `✓ You'll add player names on the next step.`
-- Wire button to `onProceedToCheckout`. Reuse `cart`, `subtotal`, `total`, `selectedItemsCount`, `onUpdateQuantity`.
-- Drop the bottom sticky bar.
-
-### 5. Sections kept (left column)
-- Details grid: keep the 2x2 tile layout but match mockup (red-tinted icon chips, smaller title eyebrow `THE DETAILS` in red, serif heading with italic accent).
-- Tickets: keep the stacked `TicketCard`s exactly as today.
-- Agenda: keep the timeline card with monospace red times.
-
-### 6. Typography & color tokens
-- Reuse `--event-bg`. Add `--event-accent` (red ~ `#D64545`) used for: eyebrows, italic prices, progress bar, agenda times, pitch card border, sidebar icon. Scope to event template only.
-- Continue using `formatHeadline` for italic accents.
-
-## Files to edit
-- `src/components/campaign-landing/event/EventLanding.tsx` — full rewrite of layout (hero + 2 columns + pitch card + sidebar). Keep existing `TicketCard`, `DetailTile`, `QtyStepper`, `SectionHeading` helpers.
-- `src/index.css` — add `--event-accent` token.
-- `src/pages/CampaignLanding.tsx` — already passes `attributedRosterMember`; just confirm prop typing.
-
-## Out of scope (handled later)
-- Attendee-name collection step in checkout (still falls through to `SponsorshipLanding` for donor-info → payment).
-- Editor UI for the `organization_user.title` field (data already in DB).
+1. **Shipping**: Should shipping be a single flat rate per order (mockup shows "$5.00"), or do you want per-item shipping later? I'll start with flat-rate only unless you say otherwise.
+2. **Pickup**: Is the pickup option just a checkbox toggle that surfaces at checkout (collect address vs. pickup choice), or does it need its own pickup location/time fields? I'll default to a simple toggle + free-text note unless you want structured pickup details.
+3. **"Closes" stat**: OK to just reuse the existing campaign `end_date`, or do you want a separate "pre-order closes" date distinct from the campaign end?
