@@ -1,13 +1,15 @@
 ## Goal
-Replace the bulky "Already have an account? / Login to autofill" muted box at the top of the donor info form. In the new narrow sidebar checkout it wraps awkwardly and looks dated.
+Add the same "10% platform fee" explanation Alert that appears on the cart page to the Review & pay step in the sponsorship checkout sidebar, so donors see consistent context before paying.
 
 ## Change
-Edit `src/components/DonorInfoForm.tsx` (lines ~342-358):
+In `src/components/campaign-landing/sponsorship/SponsorshipLanding.tsx`, inside the `step === 'payment'` block of `CheckoutStepsPanel` (around lines 800-854):
 
-- Remove the `bg-muted/50 rounded-lg p-4 border` container.
-- Render a single-line, minimal trigger that matches the rest of the sponsorship sidebar (clean white card, small text, primary-color link).
-- Use a simple right-aligned `Button variant="link"` reading "Have an account? Log in" (with a small `LogIn` icon), no User icon, no boxed background.
-- Keep the `Collapsible` behavior; the expanded email/password form stays the same but rendered without the surrounding muted block (just `mt-3 space-y-3`).
+- After the totals block (line 825) and before the donor-info summary box, render an `Alert` styled the same as the cart page (`bg-primary/5 border-primary/20`) with the text:
+
+  > The **10% platform fee** covers card processing and keeps Sponsorly running. By covering it, 100% of your sponsorship reaches the team.
+
+- Only show this alert when `feeModel !== 'org_absorbs'` (matches cart-page behavior — no fee shown when org absorbs it).
+- Use the existing `Alert` / `AlertDescription` imports already present in the file.
 
 ## Result
-A subtle one-line link above the donor fields instead of a heavy outlined panel — consistent with the minimalist white-card style of the updated sponsorship checkout.
+The Review & pay card displays the same subtle primary-tinted explanation of the platform fee that appears on the cart page, providing consistent reassurance right before the donor clicks "Pay".
