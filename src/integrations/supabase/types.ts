@@ -1041,6 +1041,10 @@ export type Database = {
           hero_accent_word: string | null
           id: string
           image_url: string | null
+          merch_pickup_available: boolean
+          merch_pickup_note: string | null
+          merch_shipping_flat_rate: number | null
+          merch_ships_by_date: string | null
           meta_description: string | null
           meta_title: string | null
           name: string
@@ -1099,6 +1103,10 @@ export type Database = {
           hero_accent_word?: string | null
           id?: string
           image_url?: string | null
+          merch_pickup_available?: boolean
+          merch_pickup_note?: string | null
+          merch_shipping_flat_rate?: number | null
+          merch_ships_by_date?: string | null
           meta_description?: string | null
           meta_title?: string | null
           name: string
@@ -1157,6 +1165,10 @@ export type Database = {
           hero_accent_word?: string | null
           id?: string
           image_url?: string | null
+          merch_pickup_available?: boolean
+          merch_pickup_note?: string | null
+          merch_shipping_flat_rate?: number | null
+          merch_ships_by_date?: string | null
           meta_description?: string | null
           meta_title?: string | null
           name?: string

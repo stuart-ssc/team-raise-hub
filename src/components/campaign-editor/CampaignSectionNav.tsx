@@ -14,6 +14,7 @@ import {
   HandCoins,
   ClipboardCheck,
   CalendarClock,
+  Truck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -32,7 +33,8 @@ export type SectionKey =
   | "pledgeResults"
   | "eventDetails"
   | "eventLocation"
-  | "eventAgenda";
+  | "eventAgenda"
+  | "merchFulfillment";
 
 interface NavItem {
   key: SectionKey;
@@ -56,6 +58,7 @@ interface CampaignSectionNavProps {
   isPledge?: boolean;
   showPledgeResults?: boolean;
   isEvent?: boolean;
+  isMerchandise?: boolean;
 }
 
 export function CampaignSectionNav({
@@ -68,6 +71,7 @@ export function CampaignSectionNav({
   isPledge,
   showPledgeResults,
   isEvent,
+  isMerchandise,
 }: CampaignSectionNavProps) {
   const setupItems: NavItem[] = [
     { key: "details", label: "Details", icon: FileText },
@@ -78,6 +82,9 @@ export function CampaignSectionNav({
           { key: "eventLocation" as const, label: "Location", icon: CalendarClock },
           { key: "eventAgenda" as const, label: "Agenda", icon: Calendar },
         ]
+      : []),
+    ...(isMerchandise
+      ? [{ key: "merchFulfillment" as const, label: "Fulfillment", icon: Truck }]
       : []),
     ...(isPledge
       ? [{ key: "pledgeSettings" as const, label: "Pledge Setup", icon: HandCoins }]

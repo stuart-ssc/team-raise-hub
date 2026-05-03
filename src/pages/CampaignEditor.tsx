@@ -27,6 +27,7 @@ import {
   HandCoins,
   ClipboardCheck,
   CalendarClock,
+  Truck,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -61,6 +62,7 @@ import { CampaignAssetsSection } from "@/components/campaign-editor/CampaignAsse
 import { PledgeSettingsSection } from "@/components/campaign-editor/PledgeSettingsSection";
 import { PledgeResultsSection } from "@/components/campaign-editor/PledgeResultsSection";
 import { EventDetailsSection, type AgendaItem } from "@/components/campaign-editor/EventDetailsSection";
+import { MerchandiseFulfillmentSection } from "@/components/campaign-editor/MerchandiseFulfillmentSection";
 import { CampaignSectionNav, type SectionKey } from "@/components/campaign-editor/CampaignSectionNav";
 import { CampaignAtAGlanceCard } from "@/components/campaign-editor/CampaignAtAGlanceCard";
 import { CampaignRecentOrdersCard } from "@/components/campaign-editor/CampaignRecentOrdersCard";
@@ -82,6 +84,7 @@ const SECTION_META: Record<SectionKey, { icon: React.ComponentType<{ className?:
   eventDetails: { icon: CalendarClock, title: "Event Details", subtitle: "Date, location, format, includes, and day-of agenda", showSave: true },
   eventLocation: { icon: CalendarClock, title: "Location & Details", subtitle: "Date, venue, format, and what's included", showSave: true },
   eventAgenda: { icon: CalendarClock, title: "Day-of Agenda", subtitle: "Build the schedule donors see on the landing page", showSave: true },
+  merchFulfillment: { icon: Truck, title: "Fulfillment", subtitle: "Ship-by date, shipping rate, and pickup options", showSave: true },
 };
 
 interface CampaignData {
@@ -124,6 +127,10 @@ interface CampaignData {
   eventAgendaHeading?: string;
   eventAgendaHeadingAccent?: string;
   eventIncludesHeading?: string;
+  merchShipsByDate: string;
+  merchPickupAvailable: boolean;
+  merchPickupNote: string;
+  merchShippingFlatRate: string;
 }
 
 interface RequiredAsset {
@@ -205,6 +212,10 @@ export default function CampaignEditor() {
     eventAgendaHeading: "",
     eventAgendaHeadingAccent: "",
     eventIncludesHeading: "",
+    merchShipsByDate: "",
+    merchPickupAvailable: false,
+    merchPickupNote: "",
+    merchShippingFlatRate: "",
   });
   const [requiredAssets, setRequiredAssets] = useState<RequiredAsset[]>([]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -215,6 +226,7 @@ export default function CampaignEditor() {
   const [navSheetOpen, setNavSheetOpen] = useState(false);
   const [pledgeTypeId, setPledgeTypeId] = useState<string | null>(null);
   const [eventTypeId, setEventTypeId] = useState<string | null>(null);
+  const [merchandiseTypeId, setMerchandiseTypeId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -238,8 +250,21 @@ export default function CampaignEditor() {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("campaign_type")
+        .select("id, name")
+        .ilike("name", "Merchandise Sales")
+        .maybeSingle();
+      if (data) setMerchandiseTypeId(data.id);
+    })();
+  }, []);
+
   const isPledgeCampaign = !!pledgeTypeId && campaignData.campaignTypeId === pledgeTypeId;
   const isEventCampaign = !!eventTypeId && campaignData.campaignTypeId === eventTypeId;
+  const isMerchandiseCampaign =
+    !!merchandiseTypeId && campaignData.campaignTypeId === merchandiseTypeId;
 
   // Counts for nav badges
   const { data: itemsCount = 0 } = useQuery({
@@ -335,6 +360,13 @@ export default function CampaignEditor() {
           eventAgendaHeading: (data as any).event_agenda_heading || "",
           eventAgendaHeadingAccent: (data as any).event_agenda_heading_accent || "",
           eventIncludesHeading: (data as any).event_includes_heading || "",
+          merchShipsByDate: (data as any).merch_ships_by_date || "",
+          merchPickupAvailable: !!(data as any).merch_pickup_available,
+          merchPickupNote: (data as any).merch_pickup_note || "",
+          merchShippingFlatRate:
+            (data as any).merch_shipping_flat_rate != null
+              ? String((data as any).merch_shipping_flat_rate)
+              : "",
         });
 
         // Fetch pitch data
@@ -523,6 +555,12 @@ export default function CampaignEditor() {
         event_agenda_heading: campaignData.eventAgendaHeading || null,
         event_agenda_heading_accent: campaignData.eventAgendaHeadingAccent || null,
         event_includes_heading: campaignData.eventIncludesHeading || null,
+        merch_ships_by_date: campaignData.merchShipsByDate || null,
+        merch_pickup_available: campaignData.merchPickupAvailable,
+        merch_pickup_note: campaignData.merchPickupNote || null,
+        merch_shipping_flat_rate: campaignData.merchShippingFlatRate
+          ? parseFloat(campaignData.merchShippingFlatRate)
+          : null,
       };
 
       let campaignId = id;
@@ -751,6 +789,7 @@ export default function CampaignEditor() {
                   isPledge={isPledgeCampaign}
                   showPledgeResults={!!(isEditing && id) && isPledgeCampaign}
                   isEvent={isEventCampaign}
+                  isMerchandise={isMerchandiseCampaign}
                 />
               </CardContent>
             </Card>
@@ -919,6 +958,18 @@ export default function CampaignEditor() {
                     onUpdate={updateCampaignData}
                   />
                 )}
+
+                {activeSection === "merchFulfillment" && (
+                  <MerchandiseFulfillmentSection
+                    data={{
+                      merchShipsByDate: campaignData.merchShipsByDate,
+                      merchPickupAvailable: campaignData.merchPickupAvailable,
+                      merchPickupNote: campaignData.merchPickupNote,
+                      merchShippingFlatRate: campaignData.merchShippingFlatRate,
+                    }}
+                    onUpdate={updateCampaignData}
+                  />
+                )}
               </CardContent>
             </Card>
 
@@ -990,6 +1041,7 @@ export default function CampaignEditor() {
                 isPledge={isPledgeCampaign}
                 showPledgeResults={!!(isEditing && id) && isPledgeCampaign}
                 isEvent={isEventCampaign}
+                isMerchandise={isMerchandiseCampaign}
               />
             </div>
           </SheetContent>
