@@ -341,22 +341,18 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
     <div className="space-y-6">
       {/* Login Section */}
       {!isLoggedIn ? (
-        <div className="bg-muted/50 rounded-lg p-4 border">
-          <Collapsible open={showLoginForm} onOpenChange={setShowLoginForm}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <User className="h-4 w-4" />
-                <span>Already have an account?</span>
-              </div>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <LogIn className="h-4 w-4" />
-                  {showLoginForm ? "Hide" : "Login to autofill"}
-                </Button>
-              </CollapsibleTrigger>
-            </div>
-            
-            <CollapsibleContent className="mt-4 space-y-4">
+        <Collapsible open={showLoginForm} onOpenChange={setShowLoginForm}>
+          <div className="flex items-center justify-end text-sm">
+            <span className="text-muted-foreground mr-1">Have an account?</span>
+            <CollapsibleTrigger asChild>
+              <Button variant="link" size="sm" className="h-auto p-0 gap-1">
+                <LogIn className="h-4 w-4" />
+                {showLoginForm ? "Hide" : "Log in"}
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+
+          <CollapsibleContent className="mt-3 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="loginEmail">Email</Label>
@@ -405,7 +401,6 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
               </Button>
             </CollapsibleContent>
           </Collapsible>
-        </div>
       ) : (
         <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
           <div className="flex items-center justify-between">
