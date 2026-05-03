@@ -53,9 +53,12 @@ interface DonorInfoFormProps {
   onComplete: (donorInfo: DonorInfo) => void;
   onBack: () => void;
   organizationId?: string;
+  hideLoginTrigger?: boolean;
+  loginOpen?: boolean;
+  onLoginOpenChange?: (open: boolean) => void;
 }
 
-export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoFormProps) {
+export function DonorInfoForm({ onComplete, onBack, organizationId, hideLoginTrigger, loginOpen, onLoginOpenChange }: DonorInfoFormProps) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     firstName: "",
