@@ -789,6 +789,7 @@ export default function CampaignEditor() {
                   isPledge={isPledgeCampaign}
                   showPledgeResults={!!(isEditing && id) && isPledgeCampaign}
                   isEvent={isEventCampaign}
+                  isMerchandise={isMerchandiseCampaign}
                 />
               </CardContent>
             </Card>
