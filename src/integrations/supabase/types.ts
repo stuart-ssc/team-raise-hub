@@ -1001,6 +1001,11 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           description: string | null
+          donation_allocations: Json | null
+          donation_allow_dedication: boolean | null
+          donation_allow_recurring: boolean | null
+          donation_min_amount: number | null
+          donation_suggested_amounts: Json | null
           enable_roster_attribution: boolean | null
           end_date: string | null
           fee_model: string
@@ -1041,6 +1046,11 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           description?: string | null
+          donation_allocations?: Json | null
+          donation_allow_dedication?: boolean | null
+          donation_allow_recurring?: boolean | null
+          donation_min_amount?: number | null
+          donation_suggested_amounts?: Json | null
           enable_roster_attribution?: boolean | null
           end_date?: string | null
           fee_model?: string
@@ -1081,6 +1091,11 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           description?: string | null
+          donation_allocations?: Json | null
+          donation_allow_dedication?: boolean | null
+          donation_allow_recurring?: boolean | null
+          donation_min_amount?: number | null
+          donation_suggested_amounts?: Json | null
           enable_roster_attribution?: boolean | null
           end_date?: string | null
           fee_model?: string
@@ -3425,6 +3440,8 @@ export type Database = {
           customer_email: string | null
           customer_name: string | null
           customer_phone: string | null
+          dedication_name: string | null
+          dedication_type: string | null
           entered_by: string | null
           fee_model: string
           files_complete: boolean | null
@@ -3466,6 +3483,8 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          dedication_name?: string | null
+          dedication_type?: string | null
           entered_by?: string | null
           fee_model?: string
           files_complete?: boolean | null
@@ -3507,6 +3526,8 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          dedication_name?: string | null
+          dedication_type?: string | null
           entered_by?: string | null
           fee_model?: string
           files_complete?: boolean | null
