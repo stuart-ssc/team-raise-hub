@@ -318,6 +318,11 @@ export default function CampaignEditor() {
           eventIncludes: ((data as any).event_includes as string[] | null) || [],
           eventIncludesSubtitle: (data as any).event_includes_subtitle || "",
           eventAgenda: ((data as any).event_agenda as AgendaItem[] | null) || [],
+          eventDetailsHeading: (data as any).event_details_heading || "",
+          eventDetailsHeadingAccent: (data as any).event_details_heading_accent || "",
+          eventAgendaHeading: (data as any).event_agenda_heading || "",
+          eventAgendaHeadingAccent: (data as any).event_agenda_heading_accent || "",
+          eventIncludesHeading: (data as any).event_includes_heading || "",
         });
 
         // Fetch pitch data
