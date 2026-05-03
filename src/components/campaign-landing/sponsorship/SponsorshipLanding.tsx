@@ -304,7 +304,7 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`grid grid-cols-1 gap-4 ${cart.length >= 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
                 {cart.map((item, idx) => (
                   <ItemCard
                     key={item.id}
@@ -583,11 +583,11 @@ function ItemCard({
             })}
           </div>
         ) : (
-          <div className="mt-5 pt-4 border-t flex items-center justify-between">
+          <div className="mt-5 pt-4 border-t flex flex-col items-center gap-3">
             <Button
               variant={item.selectedQuantity > 0 ? "default" : "outline"}
               size="sm"
-              className="rounded-full"
+              className="rounded-full w-full"
               onClick={() =>
                 onUpdateQuantity(item.id, item.selectedQuantity > 0 ? item.selectedQuantity : 1)
               }
@@ -595,7 +595,7 @@ function ItemCard({
             >
               {item.selectedQuantity > 0 ? `Choose ${item.name}` : `Choose ${item.name}`}
             </Button>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="icon"
