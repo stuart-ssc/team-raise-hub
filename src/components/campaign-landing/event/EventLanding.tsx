@@ -1,5 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, MapPin, Trophy, ListChecks } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   SponsorshipLanding,
   SponsorshipLandingProps,
@@ -62,6 +64,30 @@ function DetailTile({
 
 export function EventLanding(props: EventLandingProps) {
   const { eventFields, ...rest } = props;
+  const campaignId = (rest as any).campaign?.id as string | undefined;
+
+  const [heroStatItems, setHeroStatItems] = useState<
+    Array<{ id: string; label: string; sold: number; offered: number }>
+  >([]);
+
+  useEffect(() => {
+    if (!campaignId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("campaign_items")
+        .select("id, hero_stat_label, quantity_offered, quantity_available, show_in_hero_stats")
+        .eq("campaign_id", campaignId)
+        .eq("show_in_hero_stats", true);
+      setHeroStatItems(
+        (data || []).map((i: any) => ({
+          id: i.id,
+          label: i.hero_stat_label || "Sold",
+          sold: Math.max(0, (i.quantity_offered || 0) - (i.quantity_available || 0)),
+          offered: i.quantity_offered || 0,
+        })),
+      );
+    })();
+  }, [campaignId]);
 
   const startAt = eventFields.event_start_at
     ? new Date(eventFields.event_start_at)
@@ -94,6 +120,30 @@ export function EventLanding(props: EventLandingProps) {
   return (
     <>
       <SponsorshipLanding {...rest} />
+
+      {heroStatItems.length > 0 && (
+        <section className="max-w-6xl mx-auto px-6 -mt-6 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {heroStatItems.map((s) => (
+              <Card key={s.id}>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-bold">
+                    {s.sold}
+                    {s.offered > 0 && (
+                      <span className="text-base text-muted-foreground font-normal">
+                        {" "}/ {s.offered}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">
+                    {s.label}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
 
       {hasDetails && (
         <section className="max-w-6xl mx-auto px-6 pb-10">
