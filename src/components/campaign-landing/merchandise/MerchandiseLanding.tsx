@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import {
   ShoppingCart,
   Minus,
@@ -14,13 +13,6 @@ import {
   SponsorshipLandingProps,
   SponsorshipItem,
 } from "@/components/campaign-landing/sponsorship/SponsorshipLanding";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   formatHeadline,
   getVideoEmbedUrl,
@@ -114,52 +106,13 @@ function MerchItemCard({
 
   const hasVariants = !!(item.has_variants && item.variants && item.variants.length > 0);
 
-  // Selected variant id (single-select; quantities applied to that variant)
-  const selectedVariantId = useMemo(() => {
-    if (!hasVariants) return null;
-    const entries = Object.entries(item.selectedVariants || {});
-    const picked = entries.find(([, q]) => q > 0);
-    return picked?.[0] || item.variants![0].id;
-  }, [item.selectedVariants, item.variants, hasVariants]);
-
-  const selectedVariant = hasVariants
-    ? item.variants!.find((v) => v.id === selectedVariantId)
-    : null;
-
-  const variantQty = hasVariants
-    ? item.selectedVariants?.[selectedVariantId!] || 0
+  const totalSelectedAcrossVariants = hasVariants
+    ? Object.values(item.selectedVariants || {}).reduce((s, q) => s + (q || 0), 0)
     : 0;
 
-  const variantMax = hasVariants && selectedVariant ? selectedVariant.quantity_available : null;
-
-  const handleVariantChange = (newVariantId: string) => {
-    if (!hasVariants || newVariantId === selectedVariantId) return;
-    // Move existing qty to the new variant (capped by availability)
-    const existing = variantQty;
-    if (existing > 0 && selectedVariantId) {
-      onUpdateVariantQuantity(item.id, selectedVariantId, 0);
-    }
-    if (existing > 0) {
-      const target = item.variants!.find((v) => v.id === newVariantId);
-      const cap = target ? target.quantity_available : existing;
-      onUpdateVariantQuantity(item.id, newVariantId, Math.min(existing, cap));
-    } else {
-      // Just record the selection by setting 0 — keeps the dropdown sticky
-      onUpdateVariantQuantity(item.id, newVariantId, 0);
-    }
-  };
-
-  const stepperMax = hasVariants
-    ? variantMax
-    : unlimited
+  const nonVariantStepperMax = unlimited
     ? item.max_items_purchased ?? null
     : Math.min(available, item.max_items_purchased ?? available);
-
-  const stepperValue = hasVariants ? variantQty : item.selectedQuantity;
-  const onStepperChange = (n: number) =>
-    hasVariants && selectedVariantId
-      ? onUpdateVariantQuantity(item.id, selectedVariantId, n)
-      : onUpdateQuantity(item.id, n);
 
   return (
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden flex flex-col">
@@ -204,36 +157,66 @@ function MerchItemCard({
           <span className="text-[11px] text-muted-foreground">{remainingLabel}</span>
         </div>
 
-        {hasVariants && (
+        {hasVariants ? (
+          <div>
+            <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+              <span>Size</span>
+              <span>Quantity</span>
+            </div>
+            <div className="space-y-1.5">
+              {item.variants!.map((v) => {
+                const qty = item.selectedVariants?.[v.id] || 0;
+                const variantSoldOut = v.quantity_available <= 0 && qty <= 0;
+                const max = item.max_items_purchased
+                  ? Math.min(v.quantity_available, item.max_items_purchased)
+                  : v.quantity_available;
+                return (
+                  <div
+                    key={v.id}
+                    className="grid grid-cols-[1fr_auto] items-center gap-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium leading-tight">{v.size}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {variantSoldOut
+                          ? "Sold out"
+                          : `${v.quantity_available} left`}
+                      </div>
+                    </div>
+                    <div className="w-[110px]">
+                      {variantSoldOut ? (
+                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-right pr-2">
+                          —
+                        </div>
+                      ) : (
+                        <QtyStepper
+                          value={qty}
+                          onChange={(n) => onUpdateVariantQuantity(item.id, v.id, n)}
+                          max={max}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
-              Size
+              Quantity
             </div>
-            <Select value={selectedVariantId || undefined} onValueChange={handleVariantChange}>
-              <SelectTrigger className="h-9 rounded-full">
-                <SelectValue placeholder="Choose a size…" />
-              </SelectTrigger>
-              <SelectContent>
-                {item.variants!.map((v) => (
-                  <SelectItem key={v.id} value={v.id} disabled={v.quantity_available <= 0}>
-                    Size {v.size} {v.quantity_available <= 0 ? "(out)" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <QtyStepper
+              value={item.selectedQuantity}
+              onChange={(n) => onUpdateQuantity(item.id, n)}
+              max={nonVariantStepperMax}
+            />
           </div>
         )}
 
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
-            Quantity
-          </div>
-          <QtyStepper value={stepperValue} onChange={onStepperChange} max={stepperMax} />
-        </div>
-
         <div className="text-[11px] text-muted-foreground mt-auto">
-          {hasVariants && selectedVariant && variantQty > 0 && (
-            <div>{selectedVariant.quantity_available} left in size {selectedVariant.size}</div>
+          {hasVariants && totalSelectedAcrossVariants > 0 && (
+            <div>{totalSelectedAcrossVariants} selected</div>
           )}
           {item.max_items_purchased ? (
             <div>Max {item.max_items_purchased} per person</div>
