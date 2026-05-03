@@ -62,6 +62,18 @@ export function EventDetailsSection({ data, onUpdate }: Props) {
 
   return (
     <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <Input
+          placeholder="Details heading (e.g. A good day, outdoors.)"
+          value={data.eventDetailsHeading || ""}
+          onChange={(e) => onUpdate({ eventDetailsHeading: e.target.value })}
+        />
+        <Input
+          placeholder="Accent word (highlighted in heading)"
+          value={data.eventDetailsHeadingAccent || ""}
+          onChange={(e) => onUpdate({ eventDetailsHeadingAccent: e.target.value })}
+        />
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="eventStartAt">Event date & start time</Label>
