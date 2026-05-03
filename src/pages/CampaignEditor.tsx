@@ -88,6 +88,7 @@ interface CampaignData {
   groupId: string;
   campaignTypeId: string;
   goalAmount: string;
+  heroAccentWord: string;
   startDate: string;
   endDate: string;
   groupDirections: string;
@@ -155,6 +156,7 @@ export default function CampaignEditor() {
     groupId: "",
     campaignTypeId: "",
     goalAmount: "",
+    heroAccentWord: "",
     startDate: "",
     endDate: "",
     groupDirections: "",
@@ -252,6 +254,7 @@ export default function CampaignEditor() {
           groupId: data.group_id,
           campaignTypeId: data.campaign_type_id || "",
           goalAmount: data.goal_amount?.toString() || "",
+          heroAccentWord: (data as any).hero_accent_word || "",
           startDate: data.start_date || "",
           endDate: data.end_date || "",
           groupDirections: data.group_directions || "",
@@ -423,6 +426,7 @@ export default function CampaignEditor() {
         group_id: campaignData.groupId,
         campaign_type_id: campaignData.campaignTypeId,
         goal_amount: campaignData.goalAmount ? parseFloat(campaignData.goalAmount) : null,
+        hero_accent_word: campaignData.heroAccentWord || null,
         start_date: campaignData.startDate || null,
         end_date: campaignData.endDate || null,
         group_directions: campaignData.groupDirections || null,
