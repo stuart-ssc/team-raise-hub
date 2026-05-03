@@ -677,3 +677,222 @@ function ItemCard({
     </Card>
   );
 }
+
+// ───────────────────────────── checkout panel ─────────────────────────────
+
+type CheckoutStep = 'cart' | 'donor-info' | 'business-info' | 'custom-fields' | 'payment';
+
+function CheckoutStepsPanel(props: {
+  step: CheckoutStep;
+  setStep: (s: CheckoutStep) => void;
+  donorInfo: DonorInfo | null;
+  onDonorInfoNext?: (info: DonorInfo) => void;
+  businessData: { businessId: string; isNew: boolean; businessName: string } | null;
+  setBusinessData?: (d: { businessId: string; isNew: boolean; businessName: string } | null) => void;
+  onBusinessInfoNext?: () => void;
+  customFields: Array<any>;
+  customFieldValues: Record<string, any>;
+  setCustomFieldValues?: (v: Record<string, any>) => void;
+  onCustomFieldsNext?: () => void;
+  requiresBusinessInfo: boolean;
+  organizationId: string;
+  processingCheckout: boolean;
+  onFinalCheckout?: () => void;
+  pendingLogoFile: File | null;
+  setPendingLogoFile?: (f: File | null) => void;
+  cart: SponsorshipItem[];
+  subtotal: number;
+  platformFee: number;
+  total: number;
+  feeModel: "donor_covers" | "org_absorbs" | null;
+}) {
+  const {
+    step, setStep, donorInfo, onDonorInfoNext, businessData, onBusinessInfoNext,
+    customFields, customFieldValues, setCustomFieldValues, onCustomFieldsNext,
+    requiresBusinessInfo, organizationId, processingCheckout, onFinalCheckout,
+    pendingLogoFile, setPendingLogoFile, cart, subtotal, platformFee, total, feeModel,
+  } = props;
+
+  const stepLabels: Record<CheckoutStep, string> = {
+    'cart': 'Cart',
+    'donor-info': 'Your info',
+    'business-info': 'Business info',
+    'custom-fields': 'Details',
+    'payment': 'Review & pay',
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-semibold">{stepLabels[step]}</div>
+        <button
+          type="button"
+          onClick={() => setStep('cart')}
+          className="text-xs text-muted-foreground hover:text-foreground underline"
+        >
+          Edit cart
+        </button>
+      </div>
+
+      {step === 'donor-info' && (
+        <DonorInfoForm
+          organizationId={organizationId}
+          onBack={() => setStep('cart')}
+          onComplete={(info) => onDonorInfoNext?.(info)}
+        />
+      )}
+
+      {step === 'business-info' && (
+        <div className="space-y-4">
+          <LogoUploadInline
+            file={pendingLogoFile}
+            onChange={(f) => setPendingLogoFile?.(f)}
+          />
+          <BusinessInfoForm
+            organizationId={organizationId}
+            logoFile={pendingLogoFile}
+            onBusinessSelected={(businessId, isNew, businessName) => {
+              props.setBusinessData?.({ businessId, isNew, businessName });
+              onBusinessInfoNext?.();
+            }}
+            onSkip={requiresBusinessInfo ? undefined : () => onBusinessInfoNext?.()}
+          />
+          <Button variant="outline" className="w-full" onClick={() => setStep('donor-info')}>
+            Back
+          </Button>
+        </div>
+      )}
+
+      {step === 'custom-fields' && (
+        <div className="space-y-4">
+          <CustomFieldsRenderer
+            fields={customFields as any}
+            values={customFieldValues}
+            onChange={(fieldId, value) => {
+              setCustomFieldValues?.({ ...customFieldValues, [fieldId]: value });
+            }}
+          />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setStep(requiresBusinessInfo ? 'business-info' : 'donor-info')}
+            >
+              Back
+            </Button>
+            <Button className="flex-1" onClick={() => onCustomFieldsNext?.()}>
+              Continue
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === 'payment' && (
+        <div className="space-y-4">
+          <div className="space-y-2 border-t pt-3 text-sm">
+            {cart.filter(i => i.selectedQuantity > 0).map(i => (
+              <div key={i.id} className="flex justify-between">
+                <span className="text-muted-foreground">{i.name} × {i.selectedQuantity}</span>
+                <span>${((i.cost || 0) * i.selectedQuantity).toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-1 border-t pt-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>${subtotal.toFixed(2)}</span>
+            </div>
+            {feeModel !== 'org_absorbs' && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Platform fee (10%)</span>
+                <span>${platformFee.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-bold border-t pt-2">
+              <span>Total</span>
+              <span>${total.toFixed(2)}</span>
+            </div>
+          </div>
+          {donorInfo && (
+            <div className="rounded-md border p-3 text-xs space-y-0.5">
+              <div className="font-medium text-sm">{donorInfo.firstName} {donorInfo.lastName}</div>
+              <div className="text-muted-foreground">{donorInfo.email}</div>
+              {businessData && (
+                <div className="text-muted-foreground mt-1">Business: {businessData.businessName}</div>
+              )}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              disabled={processingCheckout}
+              onClick={() => {
+                if (customFields.length > 0) setStep('custom-fields');
+                else if (requiresBusinessInfo) setStep('business-info');
+                else setStep('donor-info');
+              }}
+            >
+              Back
+            </Button>
+            <Button className="flex-1" disabled={processingCheckout} onClick={() => onFinalCheckout?.()}>
+              {processingCheckout && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Pay ${total.toFixed(2)}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LogoUploadInline({
+  file,
+  onChange,
+}: {
+  file: File | null;
+  onChange: (f: File | null) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const handleFile = (f: File | null) => {
+    onChange(f);
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(f ? URL.createObjectURL(f) : null);
+  };
+
+  return (
+    <div className="border rounded-lg p-3 space-y-2">
+      <div className="text-sm font-medium">Business logo (optional)</div>
+      {file && preview ? (
+        <div className="flex items-center gap-3">
+          <img src={preview} alt="Logo preview" className="h-12 w-12 object-contain border rounded" />
+          <div className="text-xs text-muted-foreground flex-1 truncate">{file.name}</div>
+          <Button variant="ghost" size="sm" onClick={() => handleFile(null)}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-center gap-2"
+          onClick={() => inputRef.current?.click()}
+        >
+          <Upload className="h-4 w-4" /> Upload PNG / SVG
+        </Button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files?.[0] || null)}
+      />
+      <p className="text-xs text-muted-foreground">
+        We'll attach this to your business account for sponsorship recognition.
+      </p>
+    </div>
+  );
+}
