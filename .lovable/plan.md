@@ -1,67 +1,48 @@
-# Event Template — Revised Enhancements
+# Rebuild Event Template to Match Mockup
 
-Clarification applied: the person/photo + message + video block on the event landing is the **roster-enabled P2P pitch card** (rendered only when the visitor lands via a roster member URL like `/c/{slug}/p/{member}`). Ignore the leaderboard/rank/raised stats inside that card.
+The current `EventLanding` extends `SponsorshipLanding`, so it inherits the dark hero, big stat tiles, and "Sponsorship opportunities" item grid — none of which match the mockup. Replace it with a dedicated event template.
 
-## 1. Database
+## Visual direction (from mockup)
 
-**`campaign_items`** — support hero rollups + attendee capture
-- `show_in_hero_stats boolean default false`
-- `hero_stat_label text` (e.g. "Teams", "Sponsors")
-- `collect_attendee_names boolean default false`
-- `attendees_per_unit int default 1`
+- Cream/off-white background (`#FAF7F2`-ish), no dark hero, no full-bleed photo overlay.
+- Editorial serif display font for H1/H2 with **italic red accent word** ("A good *day,* outdoors.", "Pick your *spot.*", "How the *day* runs.").
+- Small uppercase red eyebrow labels ("THE DETAILS", "TICKETS & EXPERIENCES", "DAY-OF AGENDA").
+- Soft white cards with subtle border, rounded corners, generous spacing.
+- Red price in serif italic on ticket cards.
+- Inline ticket cards (full-width, stacked) — not a sidebar cart.
+- Quantity stepper inline on each card (no separate "Choose" button).
+- Agenda timeline: monospace red times in left column, bold title + muted description in right column.
 
-**`campaigns`** — editable section copy
-- `event_details_heading text`, `event_details_heading_accent text`
-- `event_agenda_heading text`, `event_agenda_heading_accent text`
-- `event_includes_heading text`
+## New component: `src/components/campaign-landing/event/EventLanding.tsx` (rewrite)
 
-**`organization_user`** — roster member title
-- `title text` (e.g. "Head Coach", "Team Captain")
+Sections, top to bottom:
 
-**`orders`** — already JSONB-friendly; reuse existing `attendees jsonb` if present, otherwise add `attendees jsonb` for `[{ item_id, name }]`.
+1. **Hero (light)** — campaign name (with italic red accent word), short description, optional progress bar in cream tone. No giant stat-tile grid; replaced by inline progress + a single line: "$X raised · N attendees · M days left".
+2. **Pitch card** (existing roster-aware block stays — already rendered by `CampaignLanding.tsx`).
+3. **The details** — 2×2 grid of detail tiles (Date, Where, Format, Includes) with pink-tinted icon chip on the left, uppercase label, bold value, muted subtitle. Editable heading + accent ("A good *day,* outdoors.").
+4. **Tickets & experiences** — heading "Pick your *spot.*"; full-width stacked cards from `campaign_items` with:
+   - Item name (serif), description, ✓ feature bullets row.
+   - Right column: italic red price, "X of Y left" / "Unlimited" / "N spots open".
+   - Quantity stepper (− / value / +) wired to the existing `onUpdateQuantity` / `onUpdateVariantQuantity`.
+5. **Day-of agenda** — heading "How the *day* runs."; single card with timeline rows (mono red time + bold title + muted description).
+6. **Sticky bottom checkout bar** (replaces sidebar) — appears once any quantity > 0: shows "N items · $total" and a "Continue to checkout" button. On click, runs the existing `onProceedToCheckout` and reuses the existing `CheckoutStepsPanel` rendered in a centered sheet/modal for donor info → business → custom fields → payment.
+7. Dynamic hero stat tiles based on `campaign_items.show_in_hero_stats` are folded into a small inline metric row under the hero (Raised / Days left / per-item rollups like "14 of 32 Teams").
 
-## 2. Roster-enabled Pitch Card (EventLanding)
+## Styling
 
-Render only when `rosterMember` is present in route context.
-- Left: square photo from `organization_user.avatar_url` (fallback initials).
-- Right:
-  - Name + `title` (new field) under name.
-  - Personal `pitch_message` (existing roster field).
-  - Optional `pitch_video_url` rendered as embedded player (YouTube/Vimeo/MP4 detection).
-- No stats, no leaderboard, no raised amount inside this card.
-- Falls back to hidden when no roster member context.
+- Add a `event-cream` background token (or local `bg-[hsl(var(--event-bg))]` using a new CSS var) to `index.css`.
+- Add a serif display font for headings (Playfair Display / similar) scoped to `.event-landing` to avoid global impact.
+- Reuse existing `formatHeadline` for accent-word italic styling; verify it renders italic + primary color (it does).
 
-## 3. Hero Stats
+## Wiring
 
-Replace hardcoded 4-stat grid with dynamic tiles:
-- Always: Raised, Days Left.
-- Plus one tile per `campaign_items` row where `show_in_hero_stats = true`, formatted `"{sold} of {inventory} {hero_stat_label}"` (or just `{sold} {label}` if no inventory).
+- `src/pages/CampaignLanding.tsx` already routes `campaign_type === 'event'` to `EventLanding` and passes `eventFields`, cart props, checkout step state — no changes needed besides ensuring the props it already passes are consumed by the new layout.
+- Stop extending `SponsorshipLanding`. `EventLanding` becomes a standalone template.
 
-## 4. Checkout — Attendee Capture
+## Files
 
-When cart contains an item with `collect_attendee_names = true`:
-- After ticket selection, before payment, show an "Attendees" step.
-- Render `qty * attendees_per_unit` name inputs grouped per item.
-- Persist into `orders.attendees` JSONB; pass through `create-stripe-checkout` metadata.
+- Rewrite `src/components/campaign-landing/event/EventLanding.tsx`.
+- Add `event-landing` styles + CSS vars to `src/index.css` (cream bg, serif display font import).
+- No DB changes (all needed columns shipped in the previous migration).
 
-## 5. Editor Updates
-
-- **`EventDetailsSection.tsx`** — add inputs for editable headings/accents.
-- **`CampaignItemsSection.tsx`** — per-item toggles: `show_in_hero_stats`, `hero_stat_label`, `collect_attendee_names`, `attendees_per_unit`.
-- **Roster member edit form** — add `title` field; `pitch_message` and `pitch_video_url` already exist (verify and expose if missing).
-
-## 6. Routing / Display
-
-No new routes. `EventLanding` reads `rosterMember` from existing campaign-landing context (same pattern as `PledgeLanding`/`SponsorshipLanding`).
-
-## Files to touch
-
-- New migration: `campaign_items` + `campaigns` + `organization_user` columns
-- `src/components/campaign-landing/event/EventLanding.tsx` — pitch card + dynamic hero stats
-- `src/components/campaign-editor/EventDetailsSection.tsx` — new heading fields
-- `src/components/campaign-editor/CampaignItemsSection.tsx` — per-item event flags
-- Roster member editor (locate existing component) — add `title`
-- Checkout flow components + `create-stripe-checkout` edge function — attendees step + metadata
-- `src/integrations/supabase/types.ts` — regenerate types
-
-Approve to proceed.
+Approve to rebuild.

@@ -12,6 +12,9 @@
     --background: 0 0% 100%;
     --foreground: 210 24% 16%;
 
+    /* Event landing template — warm cream backdrop */
+    --event-bg: 38 40% 96%;
+
     --card: 0 0% 100%;
     --card-foreground: 210 24% 16%;
 
