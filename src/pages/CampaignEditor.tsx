@@ -489,6 +489,16 @@ export default function CampaignEditor() {
           ? parseFloat(campaignData.pledgeMinPerUnit)
           : null,
         pledge_suggested_unit_amounts: campaignData.pledgeSuggestedUnitAmounts || null,
+        event_start_at: campaignData.eventStartAt
+          ? new Date(campaignData.eventStartAt).toISOString()
+          : null,
+        event_location_name: campaignData.eventLocationName || null,
+        event_location_address: campaignData.eventLocationAddress || null,
+        event_format: campaignData.eventFormat || null,
+        event_format_subtitle: campaignData.eventFormatSubtitle || null,
+        event_includes: campaignData.eventIncludes && campaignData.eventIncludes.length ? campaignData.eventIncludes : null,
+        event_includes_subtitle: campaignData.eventIncludesSubtitle || null,
+        event_agenda: campaignData.eventAgenda && campaignData.eventAgenda.length ? campaignData.eventAgenda : null,
       };
 
       let campaignId = id;
