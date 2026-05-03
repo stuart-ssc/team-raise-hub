@@ -345,6 +345,11 @@ const CampaignLanding = () => {
 
   const handleProceedToCheckout = () => {
     if (!campaign) return;
+    // Donation flow: amount is captured separately
+    if (campaign.campaign_type?.name?.toLowerCase() === 'donation') {
+      setCheckoutStep('donor-info');
+      return;
+    }
     
     const items = cart.filter(item => item.selectedQuantity > 0);
 
@@ -371,6 +376,12 @@ const CampaignLanding = () => {
     }
 
     // Always go to donor info first
+    setCheckoutStep('donor-info');
+  };
+
+  const handleDonationProceed = (selection: DonationSelection) => {
+    if (selection.amount <= 0) return;
+    setDonationSelection(selection);
     setCheckoutStep('donor-info');
   };
 
