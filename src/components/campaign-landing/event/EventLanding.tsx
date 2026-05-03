@@ -17,9 +17,9 @@ export interface EventCampaignFields {
   event_agenda?: Array<{ time?: string; title?: string; description?: string }> | null;
 }
 
-interface EventLandingProps extends SponsorshipLandingProps {
+type EventLandingProps = SponsorshipLandingProps & {
   eventFields: EventCampaignFields;
-}
+};
 
 function DetailTile({
   icon: Icon,
@@ -56,7 +56,7 @@ function DetailTile({
 }
 
 export function EventLanding(props: EventLandingProps) {
-  const { eventFields, campaign, ...rest } = props;
+  const { eventFields, ...rest } = props;
 
   const startAt = eventFields.event_start_at
     ? new Date(eventFields.event_start_at)
@@ -88,7 +88,7 @@ export function EventLanding(props: EventLandingProps) {
 
   return (
     <>
-      <SponsorshipLanding {...rest} campaign={campaign} />
+      <SponsorshipLanding {...rest} />
 
       {hasDetails && (
         <section className="max-w-6xl mx-auto px-6 pb-10">
