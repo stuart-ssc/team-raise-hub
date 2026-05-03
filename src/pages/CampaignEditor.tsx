@@ -555,6 +555,12 @@ export default function CampaignEditor() {
         event_agenda_heading: campaignData.eventAgendaHeading || null,
         event_agenda_heading_accent: campaignData.eventAgendaHeadingAccent || null,
         event_includes_heading: campaignData.eventIncludesHeading || null,
+        merch_ships_by_date: campaignData.merchShipsByDate || null,
+        merch_pickup_available: campaignData.merchPickupAvailable,
+        merch_pickup_note: campaignData.merchPickupNote || null,
+        merch_shipping_flat_rate: campaignData.merchShippingFlatRate
+          ? parseFloat(campaignData.merchShippingFlatRate)
+          : null,
       };
 
       let campaignId = id;
