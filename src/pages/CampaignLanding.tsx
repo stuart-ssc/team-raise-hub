@@ -810,21 +810,7 @@ const CampaignLanding = () => {
 
         </>
       )}
-      {campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && checkoutStep === 'cart' && (
-        <SponsorshipLanding
-          campaign={campaign as any}
-          cart={cart as any}
-          attributedRosterMember={attributedRosterMember}
-          onUpdateQuantity={updateQuantity}
-          onUpdateVariantQuantity={updateVariantQuantity}
-          onProceedToCheckout={handleProceedToCheckout}
-          subtotal={getSubtotal()}
-          platformFee={getPlatformFee()}
-          total={getTotalAmount()}
-          selectedItemsCount={getSelectedItemsCount()}
-        />
-      )}
-      {campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && checkoutStep !== 'cart' && (
+      {campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && (
         <SponsorshipLanding
           campaign={campaign as any}
           cart={cart as any}
