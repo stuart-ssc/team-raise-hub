@@ -9,7 +9,6 @@ import {
   Check,
   Star,
   Ticket,
-  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -402,27 +401,6 @@ export function EventLanding(props: EventLandingProps) {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--event-bg))]">
-      {/* TOP BAR */}
-      <div className="bg-background border-b border-border/60">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="font-serif italic text-primary text-lg">Sponsorly</span>
-            {orgLabel && (
-              <>
-                <div className={`h-6 w-6 rounded ${accentBg} flex items-center justify-center text-white text-xs font-bold`}>
-                  {(campaign.groups?.schools?.school_name || "?")[0]}
-                </div>
-                <span className="text-sm font-medium">{orgLabel}</span>
-              </>
-            )}
-          </div>
-          <Button variant="outline" size="sm" className="rounded-full">
-            <Share2 className="h-3.5 w-3.5 mr-1.5" />
-            Share
-          </Button>
-        </div>
-      </div>
-
       {/* HERO — dark photo background */}
       <section className="relative text-white overflow-hidden">
         {campaign.image_url && (
