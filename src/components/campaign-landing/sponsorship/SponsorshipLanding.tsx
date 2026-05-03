@@ -243,7 +243,7 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
         </div>
       </section>
 
-      {/* MAIN: pitch + tiers (left) | cart (right) */}
+      {/* MAIN: pitch + items (left) | cart (right) */}
       <section className="max-w-6xl mx-auto px-6 py-10 grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-10">
           {/* Pitch card (roster) */}
@@ -293,10 +293,10 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
             </Card>
           )}
 
-          {/* Tier grid */}
+          {/* Items grid */}
           <div>
             <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-1">
-              Sponsorship tiers
+              Sponsorship opportunities
             </p>
             <h2 className="text-3xl font-bold mb-2">
               Pick your <span className="font-serif italic text-primary">level.</span>
@@ -308,7 +308,7 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
             {cart.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center text-muted-foreground">
-                  No sponsorship tiers available yet.
+                  No sponsorship items available yet.
                 </CardContent>
               </Card>
             ) : (
@@ -343,7 +343,7 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
 
               {selectedItemsCount === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">
-                  Select a tier to start your sponsorship.
+                  Select an item to start your sponsorship.
                 </p>
               ) : (
                 <>
@@ -555,7 +555,7 @@ function TierCard({
           </ul>
         )}
 
-        {/* Variant pickers (uncommon for tiers but supported) */}
+        {/* Variant pickers */}
         {item.has_variants && item.variants && item.variants.length > 0 ? (
           <div className="mt-4 space-y-2">
             {item.variants.map((v) => {
