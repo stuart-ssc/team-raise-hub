@@ -27,6 +27,7 @@ import {
   HandCoins,
   ClipboardCheck,
   CalendarClock,
+  Truck,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -61,6 +62,7 @@ import { CampaignAssetsSection } from "@/components/campaign-editor/CampaignAsse
 import { PledgeSettingsSection } from "@/components/campaign-editor/PledgeSettingsSection";
 import { PledgeResultsSection } from "@/components/campaign-editor/PledgeResultsSection";
 import { EventDetailsSection, type AgendaItem } from "@/components/campaign-editor/EventDetailsSection";
+import { MerchandiseFulfillmentSection } from "@/components/campaign-editor/MerchandiseFulfillmentSection";
 import { CampaignSectionNav, type SectionKey } from "@/components/campaign-editor/CampaignSectionNav";
 import { CampaignAtAGlanceCard } from "@/components/campaign-editor/CampaignAtAGlanceCard";
 import { CampaignRecentOrdersCard } from "@/components/campaign-editor/CampaignRecentOrdersCard";
@@ -82,6 +84,7 @@ const SECTION_META: Record<SectionKey, { icon: React.ComponentType<{ className?:
   eventDetails: { icon: CalendarClock, title: "Event Details", subtitle: "Date, location, format, includes, and day-of agenda", showSave: true },
   eventLocation: { icon: CalendarClock, title: "Location & Details", subtitle: "Date, venue, format, and what's included", showSave: true },
   eventAgenda: { icon: CalendarClock, title: "Day-of Agenda", subtitle: "Build the schedule donors see on the landing page", showSave: true },
+  merchFulfillment: { icon: Truck, title: "Fulfillment", subtitle: "Ship-by date, shipping rate, and pickup options", showSave: true },
 };
 
 interface CampaignData {
