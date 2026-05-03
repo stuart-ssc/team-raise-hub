@@ -499,7 +499,7 @@ export function DonorInfoForm({ onComplete, onBack, organizationId, hideLoginTri
           </div>
 
           {formData.createAccount && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-6 border-l-2 border-muted">
+            <div className="space-y-3 pl-6">
               <div className="space-y-2">
                 <Label htmlFor="password">Password *</Label>
                 <Input
@@ -507,7 +507,7 @@ export function DonorInfoForm({ onComplete, onBack, organizationId, hideLoginTri
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Min 8 characters"
+                  placeholder="Minimum 8 characters"
                 />
                 {errors.password && (
                   <p className="text-sm text-destructive">{errors.password}</p>
@@ -521,7 +521,7 @@ export function DonorInfoForm({ onComplete, onBack, organizationId, hideLoginTri
                   type="password"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  placeholder="Confirm password"
+                  placeholder="Re-enter password"
                 />
                 {errors.confirmPassword && (
                   <p className="text-sm text-destructive">{errors.confirmPassword}</p>
