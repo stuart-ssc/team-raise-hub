@@ -21,6 +21,7 @@ import { SeoHead } from "@/components/seo/SeoHead";
 import { SponsorshipLanding } from "@/components/campaign-landing/sponsorship/SponsorshipLanding";
 import { DonationLanding, DonationSelection } from "@/components/campaign-landing/donation/DonationLanding";
 import { PledgeLanding } from "@/components/campaign-landing/pledge/PledgeLanding";
+import { EventLanding } from "@/components/campaign-landing/event/EventLanding";
 
 interface CampaignData {
   id: string;
@@ -47,6 +48,14 @@ interface CampaignData {
   pitch_image_url: string | null;
   pitch_video_url: string | null;
   pitch_recorded_video_url: string | null;
+  event_start_at?: string | null;
+  event_location_name?: string | null;
+  event_location_address?: string | null;
+  event_format?: string | null;
+  event_format_subtitle?: string | null;
+  event_includes?: string[] | null;
+  event_includes_subtitle?: string | null;
+  event_agenda?: Array<{ time?: string; title?: string; description?: string }> | null;
   groups: {
     id: string;
     organization_id: string;
