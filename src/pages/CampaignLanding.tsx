@@ -1395,6 +1395,7 @@ const CampaignLanding = () => {
         </>
         )}
       </div>
+      )}
       <SimpleFooter />
     </div>
   );
