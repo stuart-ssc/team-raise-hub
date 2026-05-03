@@ -959,11 +959,49 @@ const CampaignLanding = () => {
           customFields={customFields}
         />
       )}
+      {campaign.campaign_type?.name?.toLowerCase() === 'merchandise sales' && (
+        <MerchandiseLanding
+          campaign={campaign as any}
+          cart={cart as any}
+          attributedRosterMember={attributedRosterMember}
+          onUpdateQuantity={updateQuantity}
+          onUpdateVariantQuantity={updateVariantQuantity}
+          onProceedToCheckout={handleProceedToCheckout}
+          subtotal={getSubtotal()}
+          platformFee={getPlatformFee()}
+          total={getTotalAmount()}
+          selectedItemsCount={getSelectedItemsCount()}
+          checkoutStep={checkoutStep}
+          setCheckoutStep={setCheckoutStep}
+          donorInfo={donorInfo}
+          onDonorInfoNext={handleDonorInfoNext}
+          businessData={businessData}
+          setBusinessData={setBusinessData}
+          onBusinessInfoNext={handleBusinessInfoNext}
+          customFields={customFields}
+          customFieldValues={customFieldValues}
+          setCustomFieldValues={setCustomFieldValues}
+          onCustomFieldsNext={handleCustomFieldsNext}
+          requiresBusinessInfo={!!campaign.requires_business_info}
+          organizationId={campaign.groups?.organization_id || ''}
+          processingCheckout={processingCheckout}
+          onFinalCheckout={handleFinalCheckout}
+          pendingLogoFile={pendingLogoFile}
+          setPendingLogoFile={setPendingLogoFile}
+          merchFields={{
+            merch_ships_by_date: (campaign as any).merch_ships_by_date,
+            merch_pickup_available: (campaign as any).merch_pickup_available,
+            merch_pickup_note: (campaign as any).merch_pickup_note,
+            merch_shipping_flat_rate: (campaign as any).merch_shipping_flat_rate,
+          }}
+        />
+      )}
       {/* Campaign Items and Checkout Steps */}
       {campaign.campaign_type?.name?.toLowerCase() !== 'sponsorship' &&
        campaign.campaign_type?.name?.toLowerCase() !== 'donation' &&
        campaign.campaign_type?.name?.toLowerCase() !== 'pledge' &&
-       campaign.campaign_type?.name?.toLowerCase() !== 'event' && (
+       campaign.campaign_type?.name?.toLowerCase() !== 'event' &&
+       campaign.campaign_type?.name?.toLowerCase() !== 'merchandise sales' && (
       <div className="max-w-6xl mx-auto p-6">
         {campaign.campaign_type?.name?.toLowerCase() === 'pledge' ? (
           <PledgePurchaseFlow
