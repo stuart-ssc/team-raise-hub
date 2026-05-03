@@ -85,7 +85,7 @@ interface CampaignItem {
   recurring_interval: string | null;
   has_variants: boolean | null;
   is_most_popular?: boolean | null;
-  feature_bullets?: string[] | null;
+  feature_bullets?: any;
   variants?: ItemVariant[];
 }
 
