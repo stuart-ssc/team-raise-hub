@@ -823,6 +823,13 @@ function CheckoutStepsPanel(props: {
               <span>${total.toFixed(2)}</span>
             </div>
           </div>
+          {feeModel !== 'org_absorbs' && (
+            <Alert className="bg-primary/5 border-primary/20">
+              <AlertDescription className="text-xs">
+                The <strong>10% platform fee</strong> covers card processing and keeps Sponsorly running. By covering it, 100% of your sponsorship reaches the team.
+              </AlertDescription>
+            </Alert>
+          )}
           {donorInfo && (
             <div className="rounded-md border p-3 text-xs space-y-0.5">
               <div className="font-medium text-sm">{donorInfo.firstName} {donorInfo.lastName}</div>
