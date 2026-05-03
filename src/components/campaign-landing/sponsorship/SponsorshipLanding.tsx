@@ -723,16 +723,7 @@ function CheckoutStepsPanel(props: {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-semibold">{stepLabels[step]}</div>
-        <button
-          type="button"
-          onClick={() => setStep('cart')}
-          className="text-xs text-muted-foreground hover:text-foreground underline"
-        >
-          Edit cart
-        </button>
-      </div>
+      <div className="text-sm font-semibold">{stepLabels[step]}</div>
 
       {step === 'donor-info' && (
         <DonorInfoForm
