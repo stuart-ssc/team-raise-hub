@@ -658,7 +658,8 @@ const CampaignLanding = () => {
       />
       {campaign.campaign_type?.name?.toLowerCase() !== 'sponsorship' &&
        campaign.campaign_type?.name?.toLowerCase() !== 'donation' &&
-       campaign.campaign_type?.name?.toLowerCase() !== 'pledge' && (
+       campaign.campaign_type?.name?.toLowerCase() !== 'pledge' &&
+       campaign.campaign_type?.name?.toLowerCase() !== 'event' && (
         <>
       {/* Hero Section */}
       <div 
