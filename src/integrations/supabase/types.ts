@@ -1008,6 +1008,14 @@ export type Database = {
           donation_suggested_amounts: Json | null
           enable_roster_attribution: boolean | null
           end_date: string | null
+          event_agenda: Json | null
+          event_format: string | null
+          event_format_subtitle: string | null
+          event_includes: string[] | null
+          event_includes_subtitle: string | null
+          event_location_address: string | null
+          event_location_name: string | null
+          event_start_at: string | null
           fee_model: string
           file_upload_deadline_days: number | null
           goal_amount: number | null
@@ -1053,6 +1061,14 @@ export type Database = {
           donation_suggested_amounts?: Json | null
           enable_roster_attribution?: boolean | null
           end_date?: string | null
+          event_agenda?: Json | null
+          event_format?: string | null
+          event_format_subtitle?: string | null
+          event_includes?: string[] | null
+          event_includes_subtitle?: string | null
+          event_location_address?: string | null
+          event_location_name?: string | null
+          event_start_at?: string | null
           fee_model?: string
           file_upload_deadline_days?: number | null
           goal_amount?: number | null
@@ -1098,6 +1114,14 @@ export type Database = {
           donation_suggested_amounts?: Json | null
           enable_roster_attribution?: boolean | null
           end_date?: string | null
+          event_agenda?: Json | null
+          event_format?: string | null
+          event_format_subtitle?: string | null
+          event_includes?: string[] | null
+          event_includes_subtitle?: string | null
+          event_location_address?: string | null
+          event_location_name?: string | null
+          event_start_at?: string | null
           fee_model?: string
           file_upload_deadline_days?: number | null
           goal_amount?: number | null

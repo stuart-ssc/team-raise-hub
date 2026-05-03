@@ -1,59 +1,63 @@
-## Goal
+## Event Fundraiser Template
 
-Build a polished `PledgeLanding` template for pledge campaigns matching the attached mockup, mirroring the structure of `SponsorshipLanding` and `DonationLanding`. Replace the current minimal `PledgePurchaseFlow` UI on `/c/:slug` for pledge campaigns.
+Build a dedicated `EventLanding` template for `campaign_type = 'Event'`, mirroring the mockup (Booster Club Golf Scramble), and add the event-specific data model + editor section needed to power it.
 
-## What gets built
+### 1. Database additions (campaigns table)
 
-### 1. New file: `src/components/campaign-landing/pledge/PledgeLanding.tsx`
-Full-page template, structured like `DonationLanding`:
+Add new event-specific columns (all nullable, only used for Event campaigns):
 
-- **Dark hero** (reuses pattern + `StatTile`/`formatHeadline` from `landingHelpers`)
-  - Pledge badge + "Counting now" status pill + group/school location
-  - Big serif-italic-accented headline (`hero_accent_word`)
-  - Description
-  - Raised total (large serif italic) + count of pledgers + progress bar to goal
-  - 4-stat grid: Pledged so far, Pledgers, Avg per unit, Game day (event date with "in N days")
-- **Two-column main**
-  - **Left column**:
-    - Roster pitch card (when `attributedRosterMember` present), same pattern as DonationLanding (photo, "You're pledging for", message, video). Show pledger-specific stats footer (their pledger count, avg per unit, projected total) when participant scope.
-    - "Make a pledge — Pick a player. Pick an amount." card:
-      - Participant select (when `pledge_scope === 'participant'` and no roster member in URL) — reuses participant fetch via `get-campaign-roster-members` edge function
-      - Amount-per-unit chips from `pledge_suggested_unit_amounts` + custom input with min validation
-      - Live calculation tile: `your pledge × avg units/game = estimated total` (serif italic numbers)
-      - "Set a maximum total" toggle + cap input
-      - Confirmation banner: "Your card won't be charged until after {eventDate}."
-    - "The leaderboard" — top pledgers list (rank, initials avatar, name, $/unit + scope, est total). Highlights "Your pledge" row when current selection is valid.
-  - **Right column** (sticky pledge summary card):
-    - Whole team / participant scope label + per-unit price + est units
-    - Max cap (or "No cap")
-    - Estimated subtotal, Platform fee (10%), Charged after {eventDate}
-    - Bold "Est. auth amount"
-    - Info note about platform fee when `fee_model === 'donor_covers'`
-    - "Continue to checkout" CTA → invokes `create-pledge-setup` edge function (same payload shape as current `PledgePurchaseFlow`) and redirects to Stripe
-    - Reassurance: "You'll only be charged for {units} actually made."
+- `event_start_at timestamptz` — full date + start time (replaces just-a-date for events; existing `start_date` still drives campaign go-live).
+- `event_location_name text` — e.g. "Pine Hills Golf Club".
+- `event_location_address text` — e.g. "2400 Riverbend Rd, Lakewood".
+- `event_format text` — e.g. "4-person scramble".
+- `event_format_subtitle text` — e.g. "All skill levels welcome".
+- `event_includes text[]` — chips like ["Cart","Lunch","Range balls"].
+- `event_includes_subtitle text` — e.g. "Prizes for top 3 teams + closest to pin".
+- `event_agenda jsonb` — ordered list: `[{ time, title, description }]`.
 
-### 2. New hook: `src/hooks/useCampaignPledgers.ts`
-Fetches pledges + (optional) roster member names for the leaderboard and stat aggregates (count, total estimated raise, avg per unit). Uses existing `pledges` table; aggregates client-side.
+No RLS changes needed (campaigns RLS already covers these columns).
 
-### 3. Edit `src/pages/CampaignLanding.tsx`
-- Import `PledgeLanding`.
-- In the existing pledge branch (currently rendering `PledgePurchaseFlow` inside the legacy hero), render `PledgeLanding` as a top-level template like `DonationLanding`/`SponsorshipLanding` — and skip the legacy hero/pitch wrapper for pledge campaigns (extend the existing `!== 'sponsorship' && !== 'donation'` guard to also exclude `'pledge'`).
-- Keep `PledgePurchaseFlow` file in place for now (no behavior risk); the new template owns the flow entirely.
+### 2. New landing template
 
-### 4. Shared helpers
-No changes — reuses `formatHeadline`, `getDaysLeft`, `getVideoEmbedUrl`, `StatTile` from `landingHelpers.tsx`.
+Create `src/components/campaign-landing/event/EventLanding.tsx` matching the mockup:
 
-## Data sources used
+- **Dark hero** with background image + overlay: "Event" pill, "Counting now"-style status, location chip, accented headline, description, raised vs goal progress bar, and 4 stat tiles (Raised, Teams Sold / Items Sold, Hole Sponsors / secondary item, Days Left / event date).
+- **Pitch card** (left) — reuses existing pitch (coach photo, quote, video, attribution stats) when a roster member is attributed. Same component pattern as Sponsorship/Donation.
+- **Sticky "Your tickets" cart** (right) — running list of selected items, quantity + line totals, "Continue to checkout" CTA. Disabled empty state matches mockup.
+- **Details block** — "A good day, outdoors." 2x2 grid of: Date, Where, Format, Includes (driven by new fields).
+- **Tickets & Experiences** — list of `campaign_items` rendered with title, description, feature checks (from item `features` if present, otherwise from a short description split), price, "X of Y left" inventory hint, and quantity stepper.
+- **Day-of Agenda** — vertical timeline rendered from `event_agenda` jsonb.
+- **Footer** — reuses standard MarketingFooter pattern from other landing templates.
 
-- `campaigns` (existing pledge_* fields, hero_accent_word, image_url, goal_amount, amount_raised, end_date)
-- `pledges` table (status='active') for leaderboard and stats
-- `get-campaign-roster-members` edge function (existing) for participant picker
-- `create-pledge-setup` edge function (existing) for checkout
+Reuses `landingHelpers.tsx` (`formatHeadline`, `StatTile`, `getDaysLeft`, `getVideoEmbedUrl`).
 
-No DB migrations needed.
+### 3. Cart + checkout
 
-## Out of scope
+- Local cart state in `EventLanding` (item id → qty), feeds into existing `create-stripe-checkout` edge function exactly the way `SponsorshipLanding` does for multi-item carts (no edge function changes).
+- Honors `attributedRosterMember` when present (via `/p/...` URL).
+- Honors existing `donation_allow_dedication` is N/A here; nothing new on Stripe side.
 
-- Editing the campaign editor for new pledge fields
-- Changes to charge-pledges / verify-pledge-setup edge functions
-- Refactoring `PledgePurchaseFlow` (left as-is, no longer rendered for pledge type)
+### 4. Editor changes
+
+- **New section**: `src/components/campaign-editor/EventDetailsSection.tsx` with inputs for: event date + start time (single datetime-local), location name, address, format, format subtitle, includes (chip list editor), includes subtitle, and a sortable agenda editor (time / title / description rows with add/remove).
+- **CampaignSectionNav**: add `eventDetails` key shown only when campaign type is Event (parallel to `pledgeSettings`).
+- **CampaignEditor.tsx**:
+  - Add `eventTypeId` lookup (same pattern as `pledgeTypeId`) and `isEventCampaign` flag.
+  - Extend `CampaignData` with the new event fields and load/save them in the existing fetch and `handleSave` flows.
+  - Pass `isEvent` / `showEventDetails` to `CampaignSectionNav`.
+  - Render `EventDetailsSection` when `activeSection === "eventDetails"`.
+- **BasicDetailsSection**: when type is Event, label the existing end-date field as "Sales close date" and add a hint that the event date itself lives in the new Event Details section.
+
+### 5. Routing
+
+Update `src/pages/CampaignLanding.tsx` to render `EventLanding` when `campaign.campaign_type?.name?.toLowerCase() === 'event'`, alongside the existing donation/pledge/sponsorship branches; exclude Event from the legacy items-based branch.
+
+### Files
+
+- new: `supabase/migrations/<ts>_add_event_campaign_fields.sql`
+- new: `src/components/campaign-landing/event/EventLanding.tsx`
+- new: `src/components/campaign-editor/EventDetailsSection.tsx`
+- edit: `src/pages/CampaignLanding.tsx`
+- edit: `src/pages/CampaignEditor.tsx`
+- edit: `src/components/campaign-editor/CampaignSectionNav.tsx`
+- edit: `src/components/campaign-editor/BasicDetailsSection.tsx` (label nuance only)
