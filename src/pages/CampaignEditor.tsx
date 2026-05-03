@@ -117,6 +117,11 @@ interface CampaignData {
   eventIncludes: string[];
   eventIncludesSubtitle: string;
   eventAgenda: AgendaItem[];
+  eventDetailsHeading?: string;
+  eventDetailsHeadingAccent?: string;
+  eventAgendaHeading?: string;
+  eventAgendaHeadingAccent?: string;
+  eventIncludesHeading?: string;
 }
 
 interface RequiredAsset {
@@ -193,6 +198,11 @@ export default function CampaignEditor() {
     eventIncludes: [],
     eventIncludesSubtitle: "",
     eventAgenda: [],
+    eventDetailsHeading: "",
+    eventDetailsHeadingAccent: "",
+    eventAgendaHeading: "",
+    eventAgendaHeadingAccent: "",
+    eventIncludesHeading: "",
   });
   const [requiredAssets, setRequiredAssets] = useState<RequiredAsset[]>([]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -318,6 +328,11 @@ export default function CampaignEditor() {
           eventIncludes: ((data as any).event_includes as string[] | null) || [],
           eventIncludesSubtitle: (data as any).event_includes_subtitle || "",
           eventAgenda: ((data as any).event_agenda as AgendaItem[] | null) || [],
+          eventDetailsHeading: (data as any).event_details_heading || "",
+          eventDetailsHeadingAccent: (data as any).event_details_heading_accent || "",
+          eventAgendaHeading: (data as any).event_agenda_heading || "",
+          eventAgendaHeadingAccent: (data as any).event_agenda_heading_accent || "",
+          eventIncludesHeading: (data as any).event_includes_heading || "",
         });
 
         // Fetch pitch data
@@ -501,6 +516,11 @@ export default function CampaignEditor() {
         event_agenda: campaignData.eventAgenda && campaignData.eventAgenda.length
           ? (campaignData.eventAgenda as any)
           : null,
+        event_details_heading: campaignData.eventDetailsHeading || null,
+        event_details_heading_accent: campaignData.eventDetailsHeadingAccent || null,
+        event_agenda_heading: campaignData.eventAgendaHeading || null,
+        event_agenda_heading_accent: campaignData.eventAgendaHeadingAccent || null,
+        event_includes_heading: campaignData.eventIncludesHeading || null,
       };
 
       let campaignId = id;

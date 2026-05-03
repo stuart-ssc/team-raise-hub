@@ -1,63 +1,67 @@
-## Event Fundraiser Template
+# Event Template — Revised Enhancements
 
-Build a dedicated `EventLanding` template for `campaign_type = 'Event'`, mirroring the mockup (Booster Club Golf Scramble), and add the event-specific data model + editor section needed to power it.
+Clarification applied: the person/photo + message + video block on the event landing is the **roster-enabled P2P pitch card** (rendered only when the visitor lands via a roster member URL like `/c/{slug}/p/{member}`). Ignore the leaderboard/rank/raised stats inside that card.
 
-### 1. Database additions (campaigns table)
+## 1. Database
 
-Add new event-specific columns (all nullable, only used for Event campaigns):
+**`campaign_items`** — support hero rollups + attendee capture
+- `show_in_hero_stats boolean default false`
+- `hero_stat_label text` (e.g. "Teams", "Sponsors")
+- `collect_attendee_names boolean default false`
+- `attendees_per_unit int default 1`
 
-- `event_start_at timestamptz` — full date + start time (replaces just-a-date for events; existing `start_date` still drives campaign go-live).
-- `event_location_name text` — e.g. "Pine Hills Golf Club".
-- `event_location_address text` — e.g. "2400 Riverbend Rd, Lakewood".
-- `event_format text` — e.g. "4-person scramble".
-- `event_format_subtitle text` — e.g. "All skill levels welcome".
-- `event_includes text[]` — chips like ["Cart","Lunch","Range balls"].
-- `event_includes_subtitle text` — e.g. "Prizes for top 3 teams + closest to pin".
-- `event_agenda jsonb` — ordered list: `[{ time, title, description }]`.
+**`campaigns`** — editable section copy
+- `event_details_heading text`, `event_details_heading_accent text`
+- `event_agenda_heading text`, `event_agenda_heading_accent text`
+- `event_includes_heading text`
 
-No RLS changes needed (campaigns RLS already covers these columns).
+**`organization_user`** — roster member title
+- `title text` (e.g. "Head Coach", "Team Captain")
 
-### 2. New landing template
+**`orders`** — already JSONB-friendly; reuse existing `attendees jsonb` if present, otherwise add `attendees jsonb` for `[{ item_id, name }]`.
 
-Create `src/components/campaign-landing/event/EventLanding.tsx` matching the mockup:
+## 2. Roster-enabled Pitch Card (EventLanding)
 
-- **Dark hero** with background image + overlay: "Event" pill, "Counting now"-style status, location chip, accented headline, description, raised vs goal progress bar, and 4 stat tiles (Raised, Teams Sold / Items Sold, Hole Sponsors / secondary item, Days Left / event date).
-- **Pitch card** (left) — reuses existing pitch (coach photo, quote, video, attribution stats) when a roster member is attributed. Same component pattern as Sponsorship/Donation.
-- **Sticky "Your tickets" cart** (right) — running list of selected items, quantity + line totals, "Continue to checkout" CTA. Disabled empty state matches mockup.
-- **Details block** — "A good day, outdoors." 2x2 grid of: Date, Where, Format, Includes (driven by new fields).
-- **Tickets & Experiences** — list of `campaign_items` rendered with title, description, feature checks (from item `features` if present, otherwise from a short description split), price, "X of Y left" inventory hint, and quantity stepper.
-- **Day-of Agenda** — vertical timeline rendered from `event_agenda` jsonb.
-- **Footer** — reuses standard MarketingFooter pattern from other landing templates.
+Render only when `rosterMember` is present in route context.
+- Left: square photo from `organization_user.avatar_url` (fallback initials).
+- Right:
+  - Name + `title` (new field) under name.
+  - Personal `pitch_message` (existing roster field).
+  - Optional `pitch_video_url` rendered as embedded player (YouTube/Vimeo/MP4 detection).
+- No stats, no leaderboard, no raised amount inside this card.
+- Falls back to hidden when no roster member context.
 
-Reuses `landingHelpers.tsx` (`formatHeadline`, `StatTile`, `getDaysLeft`, `getVideoEmbedUrl`).
+## 3. Hero Stats
 
-### 3. Cart + checkout
+Replace hardcoded 4-stat grid with dynamic tiles:
+- Always: Raised, Days Left.
+- Plus one tile per `campaign_items` row where `show_in_hero_stats = true`, formatted `"{sold} of {inventory} {hero_stat_label}"` (or just `{sold} {label}` if no inventory).
 
-- Local cart state in `EventLanding` (item id → qty), feeds into existing `create-stripe-checkout` edge function exactly the way `SponsorshipLanding` does for multi-item carts (no edge function changes).
-- Honors `attributedRosterMember` when present (via `/p/...` URL).
-- Honors existing `donation_allow_dedication` is N/A here; nothing new on Stripe side.
+## 4. Checkout — Attendee Capture
 
-### 4. Editor changes
+When cart contains an item with `collect_attendee_names = true`:
+- After ticket selection, before payment, show an "Attendees" step.
+- Render `qty * attendees_per_unit` name inputs grouped per item.
+- Persist into `orders.attendees` JSONB; pass through `create-stripe-checkout` metadata.
 
-- **New section**: `src/components/campaign-editor/EventDetailsSection.tsx` with inputs for: event date + start time (single datetime-local), location name, address, format, format subtitle, includes (chip list editor), includes subtitle, and a sortable agenda editor (time / title / description rows with add/remove).
-- **CampaignSectionNav**: add `eventDetails` key shown only when campaign type is Event (parallel to `pledgeSettings`).
-- **CampaignEditor.tsx**:
-  - Add `eventTypeId` lookup (same pattern as `pledgeTypeId`) and `isEventCampaign` flag.
-  - Extend `CampaignData` with the new event fields and load/save them in the existing fetch and `handleSave` flows.
-  - Pass `isEvent` / `showEventDetails` to `CampaignSectionNav`.
-  - Render `EventDetailsSection` when `activeSection === "eventDetails"`.
-- **BasicDetailsSection**: when type is Event, label the existing end-date field as "Sales close date" and add a hint that the event date itself lives in the new Event Details section.
+## 5. Editor Updates
 
-### 5. Routing
+- **`EventDetailsSection.tsx`** — add inputs for editable headings/accents.
+- **`CampaignItemsSection.tsx`** — per-item toggles: `show_in_hero_stats`, `hero_stat_label`, `collect_attendee_names`, `attendees_per_unit`.
+- **Roster member edit form** — add `title` field; `pitch_message` and `pitch_video_url` already exist (verify and expose if missing).
 
-Update `src/pages/CampaignLanding.tsx` to render `EventLanding` when `campaign.campaign_type?.name?.toLowerCase() === 'event'`, alongside the existing donation/pledge/sponsorship branches; exclude Event from the legacy items-based branch.
+## 6. Routing / Display
 
-### Files
+No new routes. `EventLanding` reads `rosterMember` from existing campaign-landing context (same pattern as `PledgeLanding`/`SponsorshipLanding`).
 
-- new: `supabase/migrations/<ts>_add_event_campaign_fields.sql`
-- new: `src/components/campaign-landing/event/EventLanding.tsx`
-- new: `src/components/campaign-editor/EventDetailsSection.tsx`
-- edit: `src/pages/CampaignLanding.tsx`
-- edit: `src/pages/CampaignEditor.tsx`
-- edit: `src/components/campaign-editor/CampaignSectionNav.tsx`
-- edit: `src/components/campaign-editor/BasicDetailsSection.tsx` (label nuance only)
+## Files to touch
+
+- New migration: `campaign_items` + `campaigns` + `organization_user` columns
+- `src/components/campaign-landing/event/EventLanding.tsx` — pitch card + dynamic hero stats
+- `src/components/campaign-editor/EventDetailsSection.tsx` — new heading fields
+- `src/components/campaign-editor/CampaignItemsSection.tsx` — per-item event flags
+- Roster member editor (locate existing component) — add `title`
+- Checkout flow components + `create-stripe-checkout` edge function — attendees step + metadata
+- `src/integrations/supabase/types.ts` — regenerate types
+
+Approve to proceed.

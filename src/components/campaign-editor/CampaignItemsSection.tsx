@@ -32,6 +32,10 @@ interface CampaignItem {
   variants?: SizeVariantData[];
   isMostPopular?: boolean;
   featureBullets?: string[];
+  showInHeroStats?: boolean;
+  heroStatLabel?: string;
+  collectAttendeeNames?: boolean;
+  attendeesPerUnit?: number;
 }
 
 interface SizeVariantData {
@@ -57,6 +61,10 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
   const [sizeVariants, setSizeVariants] = useState<SizeVariant[]>([]);
   const [isMostPopular, setIsMostPopular] = useState(false);
   const [featureBullets, setFeatureBullets] = useState<string[]>([]);
+  const [showInHeroStats, setShowInHeroStats] = useState(false);
+  const [heroStatLabel, setHeroStatLabel] = useState("");
+  const [collectAttendeeNames, setCollectAttendeeNames] = useState(false);
+  const [attendeesPerUnit, setAttendeesPerUnit] = useState("1");
 
   // Form state
   const [formData, setFormData] = useState({
@@ -123,6 +131,10 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
         variants,
         isMostPopular: item.is_most_popular || false,
         featureBullets: Array.isArray(item.feature_bullets) ? item.feature_bullets : [],
+        showInHeroStats: item.show_in_hero_stats || false,
+        heroStatLabel: item.hero_stat_label || "",
+        collectAttendeeNames: item.collect_attendee_names || false,
+        attendeesPerUnit: item.attendees_per_unit ?? 1,
       };
     }));
 
@@ -150,6 +162,10 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
     setSizeVariants([]);
     setIsMostPopular(false);
     setFeatureBullets([]);
+    setShowInHeroStats(false);
+    setHeroStatLabel("");
+    setCollectAttendeeNames(false);
+    setAttendeesPerUnit("1");
   };
 
   const handleCancel = () => {
@@ -182,6 +198,10 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
     setSizeVariants(item.variants || []);
     setIsMostPopular(item.isMostPopular || false);
     setFeatureBullets(item.featureBullets || []);
+    setShowInHeroStats(item.showInHeroStats || false);
+    setHeroStatLabel(item.heroStatLabel || "");
+    setCollectAttendeeNames(item.collectAttendeeNames || false);
+    setAttendeesPerUnit(String(item.attendeesPerUnit ?? 1));
     setIsFormVisible(true);
   };
 
@@ -241,6 +261,10 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
         has_variants: hasVariants,
         is_most_popular: isMostPopular,
         feature_bullets: featureBullets.filter((b) => b.trim().length > 0),
+        show_in_hero_stats: showInHeroStats,
+        hero_stat_label: heroStatLabel.trim() || null,
+        collect_attendee_names: collectAttendeeNames,
+        attendees_per_unit: Math.max(1, parseInt(attendeesPerUnit) || 1),
       };
 
       let savedItemId: string | null = null;
@@ -549,6 +573,55 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                     onChange={(e) => setFeatureBullets(e.target.value.split("\n"))}
                   />
                 </div>
+              </div>
+
+              {/* Event template extras */}
+              <div className="rounded-lg border p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Show in hero stats</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Adds a tile (e.g. "14 of 32 Teams Sold") to the event hero.
+                    </p>
+                  </div>
+                  <Switch checked={showInHeroStats} onCheckedChange={setShowInHeroStats} />
+                </div>
+                {showInHeroStats && (
+                  <div className="space-y-2">
+                    <Label>Hero stat label</Label>
+                    <Input
+                      placeholder="e.g. Teams, Sponsors, Tickets"
+                      value={heroStatLabel}
+                      onChange={(e) => setHeroStatLabel(e.target.value)}
+                    />
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Collect attendee names</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Asks the buyer to enter a name for each attendee at checkout.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={collectAttendeeNames}
+                    onCheckedChange={setCollectAttendeeNames}
+                  />
+                </div>
+                {collectAttendeeNames && (
+                  <div className="space-y-2 max-w-[200px]">
+                    <Label>Attendees per unit</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={attendeesPerUnit}
+                      onChange={(e) => setAttendeesPerUnit(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      e.g. 4 for a foursome, 1 for a single ticket.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-2 justify-end pt-4">

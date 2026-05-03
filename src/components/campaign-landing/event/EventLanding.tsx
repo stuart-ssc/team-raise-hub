@@ -1,5 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, MapPin, Trophy, ListChecks } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   SponsorshipLanding,
   SponsorshipLandingProps,
@@ -15,6 +17,11 @@ export interface EventCampaignFields {
   event_includes?: string[] | null;
   event_includes_subtitle?: string | null;
   event_agenda?: Array<{ time?: string; title?: string; description?: string }> | null;
+  event_details_heading?: string | null;
+  event_details_heading_accent?: string | null;
+  event_agenda_heading?: string | null;
+  event_agenda_heading_accent?: string | null;
+  event_includes_heading?: string | null;
 }
 
 type EventLandingProps = SponsorshipLandingProps & {
@@ -57,6 +64,30 @@ function DetailTile({
 
 export function EventLanding(props: EventLandingProps) {
   const { eventFields, ...rest } = props;
+  const campaignId = (rest as any).campaign?.id as string | undefined;
+
+  const [heroStatItems, setHeroStatItems] = useState<
+    Array<{ id: string; label: string; sold: number; offered: number }>
+  >([]);
+
+  useEffect(() => {
+    if (!campaignId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("campaign_items")
+        .select("id, hero_stat_label, quantity_offered, quantity_available, show_in_hero_stats")
+        .eq("campaign_id", campaignId)
+        .eq("show_in_hero_stats", true);
+      setHeroStatItems(
+        (data || []).map((i: any) => ({
+          id: i.id,
+          label: i.hero_stat_label || "Sold",
+          sold: Math.max(0, (i.quantity_offered || 0) - (i.quantity_available || 0)),
+          offered: i.quantity_offered || 0,
+        })),
+      );
+    })();
+  }, [campaignId]);
 
   const startAt = eventFields.event_start_at
     ? new Date(eventFields.event_start_at)
@@ -90,13 +121,40 @@ export function EventLanding(props: EventLandingProps) {
     <>
       <SponsorshipLanding {...rest} />
 
+      {heroStatItems.length > 0 && (
+        <section className="max-w-6xl mx-auto px-6 -mt-6 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {heroStatItems.map((s) => (
+              <Card key={s.id}>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-bold">
+                    {s.sold}
+                    {s.offered > 0 && (
+                      <span className="text-base text-muted-foreground font-normal">
+                        {" "}/ {s.offered}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">
+                    {s.label}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       {hasDetails && (
         <section className="max-w-6xl mx-auto px-6 pb-10">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">
             The details
           </p>
           <h2 className="text-3xl font-bold mb-6">
-            {formatHeadline("A good day, outdoors.", "day")}
+            {formatHeadline(
+              eventFields.event_details_heading || "A good day, outdoors.",
+              eventFields.event_details_heading_accent || "day",
+            )}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {startAt && (
@@ -126,7 +184,7 @@ export function EventLanding(props: EventLandingProps) {
             {eventFields.event_includes && eventFields.event_includes.length > 0 && (
               <DetailTile
                 icon={ListChecks}
-                label="Includes"
+                label={eventFields.event_includes_heading || "Includes"}
                 subtitle={eventFields.event_includes_subtitle || undefined}
               >
                 <div className="font-semibold mt-0.5 truncate">
@@ -144,7 +202,10 @@ export function EventLanding(props: EventLandingProps) {
             Day-of agenda
           </p>
           <h2 className="text-3xl font-bold mb-6">
-            {formatHeadline("How the day runs.", "day")}
+            {formatHeadline(
+              eventFields.event_agenda_heading || "How the day runs.",
+              eventFields.event_agenda_heading_accent || "day",
+            )}
           </h2>
           <Card>
             <CardContent className="p-0 divide-y">
