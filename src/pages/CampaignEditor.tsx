@@ -958,6 +958,18 @@ export default function CampaignEditor() {
                     onUpdate={updateCampaignData}
                   />
                 )}
+
+                {activeSection === "merchFulfillment" && (
+                  <MerchandiseFulfillmentSection
+                    data={{
+                      merchShipsByDate: campaignData.merchShipsByDate,
+                      merchPickupAvailable: campaignData.merchPickupAvailable,
+                      merchPickupNote: campaignData.merchPickupNote,
+                      merchShippingFlatRate: campaignData.merchShippingFlatRate,
+                    }}
+                    onUpdate={updateCampaignData}
+                  />
+                )}
               </CardContent>
             </Card>
 
