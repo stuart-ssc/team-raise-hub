@@ -308,6 +308,16 @@ export default function CampaignEditor() {
               : "",
           pledgeSuggestedUnitAmounts:
             ((data as any).pledge_suggested_unit_amounts as number[] | null) || [0.5, 1, 2, 5],
+          eventStartAt: (data as any).event_start_at
+            ? new Date((data as any).event_start_at).toISOString().slice(0, 16)
+            : "",
+          eventLocationName: (data as any).event_location_name || "",
+          eventLocationAddress: (data as any).event_location_address || "",
+          eventFormat: (data as any).event_format || "",
+          eventFormatSubtitle: (data as any).event_format_subtitle || "",
+          eventIncludes: ((data as any).event_includes as string[] | null) || [],
+          eventIncludesSubtitle: (data as any).event_includes_subtitle || "",
+          eventAgenda: ((data as any).event_agenda as AgendaItem[] | null) || [],
         });
 
         // Fetch pitch data
