@@ -20,6 +20,7 @@ import { PledgePurchaseFlow } from "@/components/campaign-landing/PledgePurchase
 import { SeoHead } from "@/components/seo/SeoHead";
 import { SponsorshipLanding } from "@/components/campaign-landing/sponsorship/SponsorshipLanding";
 import { DonationLanding, DonationSelection } from "@/components/campaign-landing/donation/DonationLanding";
+import { PledgeLanding } from "@/components/campaign-landing/pledge/PledgeLanding";
 
 interface CampaignData {
   id: string;
@@ -647,7 +648,8 @@ const CampaignLanding = () => {
         imageAlt={campaign.name}
       />
       {campaign.campaign_type?.name?.toLowerCase() !== 'sponsorship' &&
-       campaign.campaign_type?.name?.toLowerCase() !== 'donation' && (
+       campaign.campaign_type?.name?.toLowerCase() !== 'donation' &&
+       campaign.campaign_type?.name?.toLowerCase() !== 'pledge' && (
         <>
       {/* Hero Section */}
       <div 
@@ -890,9 +892,21 @@ const CampaignLanding = () => {
           onFinalCheckout={handleFinalCheckout}
         />
       )}
+      {campaign.campaign_type?.name?.toLowerCase() === 'pledge' && (
+        <PledgeLanding
+          campaign={campaign as any}
+          campaignSlug={slug || ''}
+          attributedRosterMember={attributedRosterMember}
+          organizationName={
+            campaign.groups?.schools?.school_name || campaign.groups?.group_name || 'the organization'
+          }
+          customFields={customFields}
+        />
+      )}
       {/* Campaign Items and Checkout Steps */}
       {campaign.campaign_type?.name?.toLowerCase() !== 'sponsorship' &&
-       campaign.campaign_type?.name?.toLowerCase() !== 'donation' && (
+       campaign.campaign_type?.name?.toLowerCase() !== 'donation' &&
+       campaign.campaign_type?.name?.toLowerCase() !== 'pledge' && (
       <div className="max-w-6xl mx-auto p-6">
         {campaign.campaign_type?.name?.toLowerCase() === 'pledge' ? (
           <PledgePurchaseFlow
