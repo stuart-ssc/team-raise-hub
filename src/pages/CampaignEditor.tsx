@@ -80,6 +80,8 @@ const SECTION_META: Record<SectionKey, { icon: React.ComponentType<{ className?:
   pledgeSettings: { icon: HandCoins, title: "Pledge Setup", subtitle: "Configure unit, scope, event date and suggested amounts", showSave: true },
   pledgeResults: { icon: ClipboardCheck, title: "Pledge Results", subtitle: "Record event results and charge supporters", showSave: false },
   eventDetails: { icon: CalendarClock, title: "Event Details", subtitle: "Date, location, format, includes, and day-of agenda", showSave: true },
+  eventLocation: { icon: CalendarClock, title: "Location & Details", subtitle: "Date, venue, format, and what's included", showSave: true },
+  eventAgenda: { icon: CalendarClock, title: "Day-of Agenda", subtitle: "Build the schedule donors see on the landing page", showSave: true },
 };
 
 interface CampaignData {
@@ -889,8 +891,15 @@ export default function CampaignEditor() {
                   />
                 )}
 
-                {activeSection === "eventDetails" && (
+                {(activeSection === "eventDetails" || activeSection === "eventLocation" || activeSection === "eventAgenda") && (
                   <EventDetailsSection
+                    mode={
+                      activeSection === "eventLocation"
+                        ? "location"
+                        : activeSection === "eventAgenda"
+                        ? "agenda"
+                        : "all"
+                    }
                     data={{
                       eventStartAt: campaignData.eventStartAt,
                       eventLocationName: campaignData.eventLocationName,
@@ -900,6 +909,11 @@ export default function CampaignEditor() {
                       eventIncludes: campaignData.eventIncludes,
                       eventIncludesSubtitle: campaignData.eventIncludesSubtitle,
                       eventAgenda: campaignData.eventAgenda,
+                      eventDetailsHeading: campaignData.eventDetailsHeading,
+                      eventDetailsHeadingAccent: campaignData.eventDetailsHeadingAccent,
+                      eventAgendaHeading: campaignData.eventAgendaHeading,
+                      eventAgendaHeadingAccent: campaignData.eventAgendaHeadingAccent,
+                      eventIncludesHeading: campaignData.eventIncludesHeading,
                     }}
                     onUpdate={updateCampaignData}
                   />
