@@ -575,6 +575,55 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                 </div>
               </div>
 
+              {/* Event template extras */}
+              <div className="rounded-lg border p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Show in hero stats</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Adds a tile (e.g. "14 of 32 Teams Sold") to the event hero.
+                    </p>
+                  </div>
+                  <Switch checked={showInHeroStats} onCheckedChange={setShowInHeroStats} />
+                </div>
+                {showInHeroStats && (
+                  <div className="space-y-2">
+                    <Label>Hero stat label</Label>
+                    <Input
+                      placeholder="e.g. Teams, Sponsors, Tickets"
+                      value={heroStatLabel}
+                      onChange={(e) => setHeroStatLabel(e.target.value)}
+                    />
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Collect attendee names</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Asks the buyer to enter a name for each attendee at checkout.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={collectAttendeeNames}
+                    onCheckedChange={setCollectAttendeeNames}
+                  />
+                </div>
+                {collectAttendeeNames && (
+                  <div className="space-y-2 max-w-[200px]">
+                    <Label>Attendees per unit</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={attendeesPerUnit}
+                      onChange={(e) => setAttendeesPerUnit(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      e.g. 4 for a foursome, 1 for a single ticket.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-2 justify-end pt-4">
                 <Button type="button" variant="outline" onClick={handleCancel}>
                   Cancel
