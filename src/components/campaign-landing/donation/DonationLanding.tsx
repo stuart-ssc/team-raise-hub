@@ -296,9 +296,6 @@ export function DonationLanding(props: Props) {
             <h2 className="text-3xl font-bold mb-2">
               Pick an <span className="font-serif italic text-primary">amount.</span>
             </h2>
-            <p className="text-muted-foreground mb-6">
-              When you cover Sponsorly's 10% platform fee at checkout, every dollar of your donation reaches the team.
-            </p>
 
             <Card>
               <CardContent className="p-5 space-y-5">
