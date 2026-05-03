@@ -19,6 +19,7 @@ import SimpleFooter from "@/components/SimpleFooter";
 import { PledgePurchaseFlow } from "@/components/campaign-landing/PledgePurchaseFlow";
 import { SeoHead } from "@/components/seo/SeoHead";
 import { SponsorshipLanding } from "@/components/campaign-landing/sponsorship/SponsorshipLanding";
+import { DonationLanding, DonationSelection } from "@/components/campaign-landing/donation/DonationLanding";
 
 interface CampaignData {
   id: string;
@@ -35,6 +36,11 @@ interface CampaignData {
   roster_id: number | null;
   fee_model: 'donor_covers' | 'org_absorbs' | null;
   hero_accent_word: string | null;
+  donation_suggested_amounts?: number[] | null;
+  donation_min_amount?: number | null;
+  donation_allow_recurring?: boolean | null;
+  donation_allow_dedication?: boolean | null;
+  donation_allocations?: Array<{ percent: number; label: string; description?: string; amount?: number }> | null;
   // Campaign-level pitch fields
   pitch_message: string | null;
   pitch_image_url: string | null;
@@ -131,6 +137,7 @@ const CampaignLanding = () => {
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [processingCheckout, setProcessingCheckout] = useState(false);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const [donationSelection, setDonationSelection] = useState<DonationSelection | null>(null);
 
   // Track campaign views for donor engagement analytics
   useCampaignViewTracking({
