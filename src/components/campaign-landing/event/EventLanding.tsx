@@ -15,6 +15,11 @@ export interface EventCampaignFields {
   event_includes?: string[] | null;
   event_includes_subtitle?: string | null;
   event_agenda?: Array<{ time?: string; title?: string; description?: string }> | null;
+  event_details_heading?: string | null;
+  event_details_heading_accent?: string | null;
+  event_agenda_heading?: string | null;
+  event_agenda_heading_accent?: string | null;
+  event_includes_heading?: string | null;
 }
 
 type EventLandingProps = SponsorshipLandingProps & {
@@ -96,7 +101,10 @@ export function EventLanding(props: EventLandingProps) {
             The details
           </p>
           <h2 className="text-3xl font-bold mb-6">
-            {formatHeadline("A good day, outdoors.", "day")}
+            {formatHeadline(
+              eventFields.event_details_heading || "A good day, outdoors.",
+              eventFields.event_details_heading_accent || "day",
+            )}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {startAt && (
@@ -126,7 +134,7 @@ export function EventLanding(props: EventLandingProps) {
             {eventFields.event_includes && eventFields.event_includes.length > 0 && (
               <DetailTile
                 icon={ListChecks}
-                label="Includes"
+                label={eventFields.event_includes_heading || "Includes"}
                 subtitle={eventFields.event_includes_subtitle || undefined}
               >
                 <div className="font-semibold mt-0.5 truncate">
@@ -144,7 +152,10 @@ export function EventLanding(props: EventLandingProps) {
             Day-of agenda
           </p>
           <h2 className="text-3xl font-bold mb-6">
-            {formatHeadline("How the day runs.", "day")}
+            {formatHeadline(
+              eventFields.event_agenda_heading || "How the day runs.",
+              eventFields.event_agenda_heading_accent || "day",
+            )}
           </h2>
           <Card>
             <CardContent className="p-0 divide-y">
