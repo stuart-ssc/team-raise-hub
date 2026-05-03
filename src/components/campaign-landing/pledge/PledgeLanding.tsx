@@ -639,7 +639,9 @@ export function PledgeLanding({
                 <CustomFieldsRenderer
                   fields={customFields as any}
                   values={customFieldValues}
-                  onChange={setCustomFieldValues}
+                  onChange={(fieldId, value) =>
+                    setCustomFieldValues((prev) => ({ ...prev, [fieldId]: value }))
+                  }
                 />
                 <div className="flex justify-between">
                   <Button variant="outline" onClick={() => setStep("donor")}>
