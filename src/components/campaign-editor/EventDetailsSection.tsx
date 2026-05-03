@@ -20,6 +20,11 @@ export interface EventDetailsData {
   eventIncludes: string[];
   eventIncludesSubtitle: string;
   eventAgenda: AgendaItem[];
+  eventDetailsHeading?: string;
+  eventDetailsHeadingAccent?: string;
+  eventAgendaHeading?: string;
+  eventAgendaHeadingAccent?: string;
+  eventIncludesHeading?: string;
 }
 
 interface Props {
@@ -111,6 +116,11 @@ export function EventDetailsSection({ data, onUpdate }: Props) {
 
       <div className="space-y-2">
         <Label>Includes</Label>
+        <Input
+          placeholder="Includes section heading (e.g. What's included)"
+          value={data.eventIncludesHeading || ""}
+          onChange={(e) => onUpdate({ eventIncludesHeading: e.target.value })}
+        />
         <div className="flex flex-wrap gap-2">
           {(data.eventIncludes || []).map((c, i) => (
             <span
@@ -158,6 +168,18 @@ export function EventDetailsSection({ data, onUpdate }: Props) {
           <Button type="button" variant="outline" size="sm" onClick={addAgendaRow}>
             <Plus className="h-4 w-4" /> Add agenda item
           </Button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <Input
+            placeholder="Agenda heading (e.g. How the day runs.)"
+            value={data.eventAgendaHeading || ""}
+            onChange={(e) => onUpdate({ eventAgendaHeading: e.target.value })}
+          />
+          <Input
+            placeholder="Accent word (highlighted in heading)"
+            value={data.eventAgendaHeadingAccent || ""}
+            onChange={(e) => onUpdate({ eventAgendaHeadingAccent: e.target.value })}
+          />
         </div>
         <p className="text-sm text-muted-foreground">
           Add the schedule donors will see on the landing page.
