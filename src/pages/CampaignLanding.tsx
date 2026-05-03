@@ -620,7 +620,7 @@ const CampaignLanding = () => {
         image={campaign.image_url || undefined}
         imageAlt={campaign.name}
       />
-      {!(campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && checkoutStep === 'cart') && (
+      {campaign.campaign_type?.name?.toLowerCase() !== 'sponsorship' && (
         <>
       {/* Hero Section */}
       <div 
