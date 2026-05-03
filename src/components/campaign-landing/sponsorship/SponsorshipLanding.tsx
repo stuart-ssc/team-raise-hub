@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,8 +17,13 @@ import {
   Trophy,
   ShoppingCart,
   Upload,
+  X,
+  Loader2,
 } from "lucide-react";
 import { useCampaignSponsors } from "@/hooks/useCampaignSponsors";
+import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
+import { BusinessInfoForm } from "@/components/BusinessInfoForm";
+import { CustomFieldsRenderer } from "@/components/CustomFieldsRenderer";
 
 // ───────────────────────────── types ─────────────────────────────
 
@@ -85,6 +90,32 @@ interface SponsorshipLandingProps {
   platformFee: number;
   total: number;
   selectedItemsCount: number;
+  // Inline checkout
+  checkoutStep?: 'cart' | 'donor-info' | 'business-info' | 'custom-fields' | 'payment';
+  setCheckoutStep?: (s: 'cart' | 'donor-info' | 'business-info' | 'custom-fields' | 'payment') => void;
+  donorInfo?: DonorInfo | null;
+  onDonorInfoNext?: (info: DonorInfo) => void;
+  businessData?: { businessId: string; isNew: boolean; businessName: string } | null;
+  setBusinessData?: (d: { businessId: string; isNew: boolean; businessName: string } | null) => void;
+  onBusinessInfoNext?: () => void;
+  customFields?: Array<{
+    id: string;
+    field_name: string;
+    field_type: string;
+    field_options: any;
+    is_required: boolean;
+    help_text: string | null;
+    display_order: number;
+  }>;
+  customFieldValues?: Record<string, any>;
+  setCustomFieldValues?: (v: Record<string, any>) => void;
+  onCustomFieldsNext?: () => void;
+  requiresBusinessInfo?: boolean;
+  organizationId?: string;
+  processingCheckout?: boolean;
+  onFinalCheckout?: () => void;
+  pendingLogoFile?: File | null;
+  setPendingLogoFile?: (f: File | null) => void;
 }
 
 // ───────────────────────────── helpers ─────────────────────────────
@@ -139,6 +170,8 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
   } = props;
 
   const { data: sponsors = [] } = useCampaignSponsors(campaign.id);
+  const checkoutStep = props.checkoutStep || 'cart';
+  const setCheckoutStep = props.setCheckoutStep || (() => {});
 
   const daysLeft = getDaysLeft(campaign.end_date);
   const raised = campaign.amount_raised || 0;
@@ -402,17 +435,6 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
                       The <strong>10% platform fee</strong> covers card processing and keeps Sponsorly running. By covering it, 100% of your sponsorship reaches the team.
                     </AlertDescription>
                   </Alert>
-
-                  {/* Optional logo upload prompt — actual upload happens after checkout */}
-                  <div className="border rounded-lg p-3 space-y-2">
-                    <div className="text-sm font-medium">Upload your business logo</div>
-                    <Button variant="outline" size="sm" className="w-full justify-center gap-2" disabled>
-                      <Upload className="h-4 w-4" /> Upload PNG / SVG
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
-                      You can upload your logo now or after checkout — we'll email a proof for approval before printing.
-                    </p>
-                  </div>
 
                   <Button onClick={onProceedToCheckout} size="lg" className="w-full">
                     Continue to checkout

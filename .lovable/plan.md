@@ -1,75 +1,64 @@
-# Sponsorship Fundraiser — New Landing Template
+# Inline Checkout in Sponsorship Right Column + Logo Upload
 
-Replace the current sponsorship landing layout with the design in the attached screenshot. Applies to all campaigns where `campaign_type.name = 'Sponsorship'`. Roster-enabled (P2P) attribution is preserved.
+Currently on a Sponsorship campaign, clicking "Continue to checkout" hides the entire landing page and renders the donor info / business info / custom fields / payment steps in a centered card below. The user wants the whole checkout flow to stay inside the right-column cart card on the landing page, and the placeholder "Upload your business logo" prompt to become a real upload that gets attached to the new business record.
 
-## Layout
+## Scope
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│ Sponsorly  ▸  [Org · Group]                       [Share]   │
-├─────────────────────────────────────────────────────────────┤
-│  HERO (dark, hero image w/ overlay)                         │
-│   • Sponsorship pill · "14 days left" pill · Group · School │
-│   • H1 with optional serif-italic accent word               │
-│     "Put your *logo* on the gym wall."                      │
-│   • Description                                             │
-│   • $X raised · progress bar · Goal $Y                      │
-│   • 4 stat tiles: Raised | Sponsors | Avg | Days left       │
-├─────────────────────────────────────────────────────────────┤
-│ ┌── Pitch card (roster member OR campaign) ──┐ ┌── Cart ──┐ │
-│ │ Avatar · "You're sponsoring · #11"         │ │ Items    │ │
-│ │ Name · Role · Quote · Video                │ │ Subtotal │ │
-│ │ Footer: $1,800 · 6 sponsors · 28% (P2P)    │ │ Fee 10%  │ │
-│ └────────────────────────────────────────────┘ │ Total    │ │
-│                                                │ Logo     │ │
-│  TIERS — "Pick your level."                    │ upload   │ │
-│  Bronze · Silver "Most popular" · Gold         │ CTA      │ │
-│  (rendered from campaign_items)                └──────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│  THE SPONSOR WALL — "Already on the wall."                  │
-│  Grid of business tiles (logo if present, else name)        │
-│  Trailing "YOUR LOGO HERE" placeholder tile                 │
-└─────────────────────────────────────────────────────────────┘
-```
+Sponsorship-type campaigns only. Other campaign types (donation, merchandise, event, pledge) keep their existing layout.
 
-## Functionality preserved
+## 1. Right-column inline checkout
 
-- `/c/{slug}` and `/c/{slug}/{rosterMemberSlug}` routes work identically.
-- Roster pitch overrides campaign pitch (existing cascading logic).
-- Cart → donor info → business info → custom fields → Stripe checkout flow unchanged.
-- 10% platform fee, fee model, variants, recurring items, inventory, view tracking, SEO head all carry over.
-- Logo upload at checkout is **optional**; sponsors can upload later via the existing post-purchase flow.
-- Sponsor wall lists businesses from completed orders (reuses `useCampaignSponsors`); business name shows when there's no logo yet — created via the existing checkout business-account step.
+In `src/pages/CampaignLanding.tsx`:
+- For sponsorship campaigns, always render `SponsorshipLanding` (regardless of `checkoutStep`) so the hero, pitch, items grid, and sponsor wall stay visible during checkout.
+- Stop rendering the centered `<div className="max-w-6xl mx-auto p-6">` checkout cards (donor-info / business-info / custom-fields / payment) when the campaign is sponsorship — those steps move into the sidebar.
+- Pass new props down to `SponsorshipLanding`: `checkoutStep`, `setCheckoutStep`, `donorInfo`, `setDonorInfo`, `businessData`, `setBusinessData`, `customFieldValues`, `setCustomFieldValues`, `customFields`, `requiresBusinessInfo`, `organizationId`, `processingCheckout`, `handleDonorInfoNext`, `handleBusinessInfoNext`, `handleCustomFieldsNext`, `handleFinalCheckout`, plus a new `pendingLogoFile` setter for the logo handoff.
 
-## Schema (one migration)
+In `src/components/campaign-landing/sponsorship/SponsorshipLanding.tsx`:
+- Replace the right `<aside>` cart contents with a step-aware panel:
+  - `cart` step: existing summary + "Continue to checkout" button.
+  - `donor-info` step: render `<DonorInfoForm>` inline with Back/Continue.
+  - `business-info` step: render `<BusinessInfoForm>` inline with the logo uploader (see §2) and Back/Continue.
+  - `custom-fields` step: render `<CustomFieldsRenderer>` inline with Back/Continue.
+  - `payment` step: render a compact review (items, donor, business, totals) + Back/"Pay" button wired to `handleFinalCheckout`, with `processingCheckout` spinner.
+- Keep the sticky positioning (`lg:sticky lg:top-6`) and add `max-h-[calc(100vh-3rem)] overflow-y-auto` so long forms scroll inside the card on desktop.
+- Remove the disabled placeholder upload block; logo upload now lives inside the business-info step.
 
-`campaigns`
-- `hero_accent_word text` — optional word rendered serif-italic in the H1.
+## 2. Logo upload tied to business creation
 
-`campaign_items` (these ARE the tier cards)
-- `is_most_popular boolean default false` — blue "Most popular" ribbon.
-- `feature_bullets jsonb default '[]'` — array of short strings shown as ✓ list.
+The current right-column card already shows a disabled "Upload your business logo" prompt. Make it real and only show it when the campaign requires business info (i.e. during the `business-info` step).
 
-All nullable/defaulted, so existing data still renders.
+Approach (no new bucket needed — reuse the existing `avatars` storage bucket already used by `AvatarUpload`, which `BusinessEditor` already uses for business logos):
 
-## Code changes
+- Add a new local state `pendingLogoFile: File | null` and `pendingLogoPreview: string | null` in the sidebar.
+- In the business-info step, render an upload control above `BusinessInfoForm`:
+  - If no file selected: dashed dropzone with "Upload PNG / SVG" button.
+  - If selected: thumbnail + "Replace" / "Remove".
+  - Just stores the `File` locally; no upload yet.
+- Extend `BusinessInfoForm` with two optional props:
+  - `logoFile?: File | null`
+  - `onLogoUploaded?: (logoUrl: string | null) => void` (used internally after business creation).
+- In `BusinessInfoForm.handleCreateBusiness`, after `process-checkout-business` returns the `businessId`, if `logoFile` is set:
+  1. Upload the file to the `avatars` bucket at `${businessId}/logo-${Date.now()}.${ext}`.
+  2. Get its public URL.
+  3. Call a new edge function `update-business-logo` (or extend `process-checkout-business` to accept `logoUrl`) that uses the service role to `UPDATE businesses SET logo_url = ... WHERE id = businessId`. Service role is required because the unauthenticated checkout flow can't update `businesses` directly via RLS.
+  4. Surface failure as a non-blocking toast (checkout still proceeds).
+- For the existing-business "select" path (`handleSelectBusiness`), if a logo file was provided and the matched business has no `logo_url`, perform the same upload + update. If it already has one, skip and show a small note "This business already has a logo on file."
 
-1. **New components** under `src/components/campaign-landing/sponsorship/`:
-   - `SponsorshipLanding.tsx` — top-level layout.
-   - `SponsorshipHero.tsx` — dark hero, pills, accent-word H1, progress, 4 stat tiles ("days left" from `end_date`, "avg" = raised / sponsor count).
-   - `PitchCard.tsx` — extracted from existing pitch block, with optional per-fundraiser stats footer when a roster member is attributed.
-   - `TierGrid.tsx` + `TierCard.tsx` — render `campaign_items` with bullets, "Most popular" ribbon, qty stepper, "X of N left".
-   - `CartSidebar.tsx` — sticky right rail: subtotal, platform fee, total, optional logo upload, "Continue to checkout".
-   - `SponsorWall.tsx` — uses `useCampaignSponsors`; falls back to business name when no logo; trailing "Your logo here" tile.
+Decision: extend `process-checkout-business` rather than add a new function — it already runs with the service role and is invoked at the right moment. Add an optional `logoUrl` field to its body and have it run an UPDATE on `businesses` when present (only setting the column if currently null, to avoid overwriting an admin-curated logo).
 
-2. **Routing** in `CampaignLanding.tsx`: when `campaign_type.name.toLowerCase() === 'sponsorship'`, render `<SponsorshipLanding />` and skip the legacy item/checkout JSX (mirrors the existing `pledge` branch). Pledge branch untouched.
+## 3. Visibility rules
 
-3. **Editor updates** (`src/components/campaign-editor/`):
-   - Campaign details: "Hero accent word" input (Sponsorship type only).
-   - Items editor: "Mark as most popular" checkbox + repeatable "Feature bullets" inputs (Sponsorship only).
+- Logo uploader appears only when `campaign.requires_business_info` is true and `checkoutStep === 'business-info'`.
+- For non-sponsorship campaigns, behavior is unchanged.
 
-4. **Types**: extend `CampaignData` and `CampaignItem` interfaces with the new fields.
+## Technical Notes
 
-## Out of scope
+Files to edit:
+- `src/pages/CampaignLanding.tsx` — pass checkout state into `SponsorshipLanding`, drop the centered checkout cards for sponsorship campaigns.
+- `src/components/campaign-landing/sponsorship/SponsorshipLanding.tsx` — render step-aware sidebar with `DonorInfoForm`, `BusinessInfoForm`, `CustomFieldsRenderer`, review, and the new logo uploader.
+- `src/components/BusinessInfoForm.tsx` — accept `logoFile` prop, upload to `avatars` bucket after business creation, pass `logoUrl` to the edge function.
+- `supabase/functions/process-checkout-business/index.ts` — accept optional `logoUrl`; update `businesses.logo_url` (only when currently null) for both newly created and matched businesses.
 
-Sponsorship only. Pledge, Merchandise, Event, etc. keep the existing layout and will each get their own template iteration after this one ships.
+Storage: reuse existing `avatars` public bucket (already used for business logos in `BusinessEditor`). No new migration needed.
+
+No DB schema changes — `businesses.logo_url` already exists.
