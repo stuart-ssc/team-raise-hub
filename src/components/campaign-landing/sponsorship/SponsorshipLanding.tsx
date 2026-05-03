@@ -417,9 +417,6 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
                   <Button onClick={onProceedToCheckout} size="lg" className="w-full">
                     Continue to checkout
                   </Button>
-                  <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
-                    <Calendar className="h-3 w-3" /> Card charged on commit. Banners ship after campaign close.
-                  </p>
                 </>
               )}
             </CardContent>
