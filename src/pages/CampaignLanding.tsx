@@ -130,6 +130,7 @@ const CampaignLanding = () => {
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [processingCheckout, setProcessingCheckout] = useState(false);
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
 
   // Track campaign views for donor engagement analytics
   useCampaignViewTracking({
@@ -823,9 +824,41 @@ const CampaignLanding = () => {
           selectedItemsCount={getSelectedItemsCount()}
         />
       )}
+      {campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && checkoutStep !== 'cart' && (
+        <SponsorshipLanding
+          campaign={campaign as any}
+          cart={cart as any}
+          attributedRosterMember={attributedRosterMember}
+          onUpdateQuantity={updateQuantity}
+          onUpdateVariantQuantity={updateVariantQuantity}
+          onProceedToCheckout={handleProceedToCheckout}
+          subtotal={getSubtotal()}
+          platformFee={getPlatformFee()}
+          total={getTotalAmount()}
+          selectedItemsCount={getSelectedItemsCount()}
+          checkoutStep={checkoutStep}
+          setCheckoutStep={setCheckoutStep}
+          donorInfo={donorInfo}
+          onDonorInfoNext={handleDonorInfoNext}
+          businessData={businessData}
+          setBusinessData={setBusinessData}
+          onBusinessInfoNext={handleBusinessInfoNext}
+          customFields={customFields}
+          customFieldValues={customFieldValues}
+          setCustomFieldValues={setCustomFieldValues}
+          onCustomFieldsNext={handleCustomFieldsNext}
+          requiresBusinessInfo={!!campaign.requires_business_info}
+          organizationId={campaign.groups?.organization_id || ''}
+          processingCheckout={processingCheckout}
+          onFinalCheckout={handleFinalCheckout}
+          pendingLogoFile={pendingLogoFile}
+          setPendingLogoFile={setPendingLogoFile}
+        />
+      )}
       {/* Campaign Items and Checkout Steps */}
+      {campaign.campaign_type?.name?.toLowerCase() !== 'sponsorship' && (
       <div className="max-w-6xl mx-auto p-6">
-        {campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && checkoutStep === 'cart' ? null : campaign.campaign_type?.name?.toLowerCase() === 'pledge' ? (
+        {campaign.campaign_type?.name?.toLowerCase() === 'pledge' ? (
           <PledgePurchaseFlow
             campaign={campaign as any}
             organizationName={
