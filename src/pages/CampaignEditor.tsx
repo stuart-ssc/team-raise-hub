@@ -868,6 +868,22 @@ export default function CampaignEditor() {
                     pledgeUnitLabelPlural={campaignData.pledgeUnitLabelPlural}
                   />
                 )}
+
+                {activeSection === "eventDetails" && (
+                  <EventDetailsSection
+                    data={{
+                      eventStartAt: campaignData.eventStartAt,
+                      eventLocationName: campaignData.eventLocationName,
+                      eventLocationAddress: campaignData.eventLocationAddress,
+                      eventFormat: campaignData.eventFormat,
+                      eventFormatSubtitle: campaignData.eventFormatSubtitle,
+                      eventIncludes: campaignData.eventIncludes,
+                      eventIncludesSubtitle: campaignData.eventIncludesSubtitle,
+                      eventAgenda: campaignData.eventAgenda,
+                    }}
+                    onUpdate={updateCampaignData}
+                  />
+                )}
               </CardContent>
             </Card>
 
@@ -938,6 +954,7 @@ export default function CampaignEditor() {
                 showItems={!!(isEditing && id) && !isPledgeCampaign}
                 isPledge={isPledgeCampaign}
                 showPledgeResults={!!(isEditing && id) && isPledgeCampaign}
+                isEvent={isEventCampaign}
               />
             </div>
           </SheetContent>
