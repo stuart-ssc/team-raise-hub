@@ -1,48 +1,93 @@
-# Rebuild Event Template to Match Mockup
+# Rebuild Event Landing to Match Mockup
 
-The current `EventLanding` extends `SponsorshipLanding`, so it inherits the dark hero, big stat tiles, and "Sponsorship opportunities" item grid — none of which match the mockup. Replace it with a dedicated event template.
+The current EventLanding is a single-column cream page with a sticky bottom bar. The mockup shows a very different structure that needs to be implemented.
 
-## Visual direction (from mockup)
+## Layout Structure (matching the mockup)
 
-- Cream/off-white background (`#FAF7F2`-ish), no dark hero, no full-bleed photo overlay.
-- Editorial serif display font for H1/H2 with **italic red accent word** ("A good *day,* outdoors.", "Pick your *spot.*", "How the *day* runs.").
-- Small uppercase red eyebrow labels ("THE DETAILS", "TICKETS & EXPERIENCES", "DAY-OF AGENDA").
-- Soft white cards with subtle border, rounded corners, generous spacing.
-- Red price in serif italic on ticket cards.
-- Inline ticket cards (full-width, stacked) — not a sidebar cart.
-- Quantity stepper inline on each card (no separate "Choose" button).
-- Agenda timeline: monospace red times in left column, bold title + muted description in right column.
+```text
+┌──────────────────────────────────────────────────────┐
+│ DARK HERO (background image, overlay)                │
+│  • Type chip · accent badge · location pin           │
+│  • Big serif title with italic accent                │
+│  • Description paragraph                              │
+│  • Italic red $raised + thin progress bar             │
+│  • 4 STAT TILES overlay (Raised / Teams Sold /       │
+│    Hole Sponsors / Days Left)                        │
+└──────────────────────────────────────────────────────┘
+┌──────────────────────────┬───────────────────────────┐
+│ LEFT COLUMN (cream bg)   │ RIGHT SIDEBAR (sticky)    │
+│                          │                           │
+│ [Roster Pitch Card]      │ ┌───────────────────────┐ │
+│  red left border         │ │ ■ Your tickets   0 it │ │
+│  avatar + "buying        │ │                       │ │
+│   tickets through"       │ │  No tickets yet       │ │
+│  Coach name · title      │ │  Add a foursome...    │ │
+│  italic quote            │ │                       │ │
+│  video player            │ │  [Continue checkout]  │ │
+│  3 italic mini-stats     │ │  ✓ Add player names   │ │
+│                          │ │     on next step      │ │
+│ THE DETAILS              │ └───────────────────────┘ │
+│  "A good day, outdoors." │   (sticky as user        │
+│  2x2 detail tiles        │    scrolls)              │
+│                          │                           │
+│ TICKETS & EXPERIENCES    │                           │
+│  "Pick your spot."       │                           │
+│  Stacked ticket cards    │                           │
+│   w/ inline steppers     │                           │
+│                          │                           │
+│ DAY-OF AGENDA            │                           │
+│  "How the day runs."     │                           │
+│  Timeline rows           │                           │
+└──────────────────────────┴───────────────────────────┘
+```
 
-## New component: `src/components/campaign-landing/event/EventLanding.tsx` (rewrite)
+## Changes
 
-Sections, top to bottom:
+### 1. Hero — dark photo background
+- Use `campaign.image_url` as background with a dark gradient overlay (matches the soccer-balls hero in mockup).
+- Top-left chips row: `• Event` pill, accent campaign-type badge (green in mockup), `📍 Location name`.
+- Title in white serif with italic accent word.
+- Short description in muted white.
+- Italic red `$X,XXX` followed by `XX% of goal`, then a thin red progress bar with a draggable-looking dot at current %, with goal label `Goal: $XX,XXX` on the right.
+- **Stat tiles row** overlaid at the bottom of the hero (translucent dark cards): Raised, plus each `show_in_hero_stats` campaign_item rendered as `{sold}` big number + `of {offered}` subtitle + label, plus `Days Left` (with `Tee-off MMM D` subtitle).
 
-1. **Hero (light)** — campaign name (with italic red accent word), short description, optional progress bar in cream tone. No giant stat-tile grid; replaced by inline progress + a single line: "$X raised · N attendees · M days left".
-2. **Pitch card** (existing roster-aware block stays — already rendered by `CampaignLanding.tsx`).
-3. **The details** — 2×2 grid of detail tiles (Date, Where, Format, Includes) with pink-tinted icon chip on the left, uppercase label, bold value, muted subtitle. Editable heading + accent ("A good *day,* outdoors.").
-4. **Tickets & experiences** — heading "Pick your *spot.*"; full-width stacked cards from `campaign_items` with:
-   - Item name (serif), description, ✓ feature bullets row.
-   - Right column: italic red price, "X of Y left" / "Unlimited" / "N spots open".
-   - Quantity stepper (− / value / +) wired to the existing `onUpdateQuantity` / `onUpdateVariantQuantity`.
-5. **Day-of agenda** — heading "How the *day* runs."; single card with timeline rows (mono red time + bold title + muted description).
-6. **Sticky bottom checkout bar** (replaces sidebar) — appears once any quantity > 0: shows "N items · $total" and a "Continue to checkout" button. On click, runs the existing `onProceedToCheckout` and reuses the existing `CheckoutStepsPanel` rendered in a centered sheet/modal for donor info → business → custom fields → payment.
-7. Dynamic hero stat tiles based on `campaign_items.show_in_hero_stats` are folded into a small inline metric row under the hero (Raised / Days left / per-item rollups like "14 of 32 Teams").
+### 2. Two-column body
+- Wrap details/tickets/agenda in a left column (`lg:col-span-2`) with a sticky right sidebar (`lg:col-span-1`, `lg:sticky lg:top-6`).
+- Background remains `--event-bg` cream.
 
-## Styling
+### 3. Roster Pitch Card (top of left column)
+- Only shown when `attributedRosterMember` has pitch content.
+- Left red accent border, avatar circle, red eyebrow `★ YOU'RE BUYING TICKETS THROUGH`.
+- Name in serif + role/title (uses new `organization_user.title` field, fallback to group/role).
+- Italic quote = `pitchMessage`.
+- Video player below (uses `pitchVideoUrl` / `pitchRecordedVideoUrl`).
+- Footer row with 3 italic red stats (tickets via X, $ credited to team, leaderboard rank). For now render placeholders driven by data we already have on the roster member; if not present, hide the row.
+- Add `attributedRosterMember` to `EventLandingProps` and accept it from `CampaignLanding.tsx` (already passed).
 
-- Add a `event-cream` background token (or local `bg-[hsl(var(--event-bg))]` using a new CSS var) to `index.css`.
-- Add a serif display font for headings (Playfair Display / similar) scoped to `.event-landing` to avoid global impact.
-- Reuse existing `formatHeadline` for accent-word italic styling; verify it renders italic + primary color (it does).
+### 4. Sidebar cart
+- New component mirrors the `SponsorshipLanding` cart panel visually but simplified:
+  - Header: red square icon + "Your tickets" + `{count} items`.
+  - Empty state: "No tickets yet — Add a foursome, single, or hole sponsorship to get started."
+  - Selected state: list line items with name, qty, price; subtotal + 10% fee.
+  - Primary `Continue to checkout` button (disabled when empty).
+  - Footnote: `✓ You'll add player names on the next step.`
+- Wire button to `onProceedToCheckout`. Reuse `cart`, `subtotal`, `total`, `selectedItemsCount`, `onUpdateQuantity`.
+- Drop the bottom sticky bar.
 
-## Wiring
+### 5. Sections kept (left column)
+- Details grid: keep the 2x2 tile layout but match mockup (red-tinted icon chips, smaller title eyebrow `THE DETAILS` in red, serif heading with italic accent).
+- Tickets: keep the stacked `TicketCard`s exactly as today.
+- Agenda: keep the timeline card with monospace red times.
 
-- `src/pages/CampaignLanding.tsx` already routes `campaign_type === 'event'` to `EventLanding` and passes `eventFields`, cart props, checkout step state — no changes needed besides ensuring the props it already passes are consumed by the new layout.
-- Stop extending `SponsorshipLanding`. `EventLanding` becomes a standalone template.
+### 6. Typography & color tokens
+- Reuse `--event-bg`. Add `--event-accent` (red ~ `#D64545`) used for: eyebrows, italic prices, progress bar, agenda times, pitch card border, sidebar icon. Scope to event template only.
+- Continue using `formatHeadline` for italic accents.
 
-## Files
+## Files to edit
+- `src/components/campaign-landing/event/EventLanding.tsx` — full rewrite of layout (hero + 2 columns + pitch card + sidebar). Keep existing `TicketCard`, `DetailTile`, `QtyStepper`, `SectionHeading` helpers.
+- `src/index.css` — add `--event-accent` token.
+- `src/pages/CampaignLanding.tsx` — already passes `attributedRosterMember`; just confirm prop typing.
 
-- Rewrite `src/components/campaign-landing/event/EventLanding.tsx`.
-- Add `event-landing` styles + CSS vars to `src/index.css` (cream bg, serif display font import).
-- No DB changes (all needed columns shipped in the previous migration).
-
-Approve to rebuild.
+## Out of scope (handled later)
+- Attendee-name collection step in checkout (still falls through to `SponsorshipLanding` for donor-info → payment).
+- Editor UI for the `organization_user.title` field (data already in DB).
