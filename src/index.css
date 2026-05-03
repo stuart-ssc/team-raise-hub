@@ -14,6 +14,8 @@
 
     /* Event landing template — warm cream backdrop */
     --event-bg: 38 40% 96%;
+    /* Event landing template — coral/red accent */
+    --event-accent: 4 70% 55%;
 
     --card: 0 0% 100%;
     --card-foreground: 210 24% 16%;
