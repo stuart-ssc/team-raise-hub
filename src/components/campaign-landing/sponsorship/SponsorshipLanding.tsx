@@ -19,6 +19,7 @@ import {
   Upload,
   X,
   Loader2,
+  LogIn,
 } from "lucide-react";
 import { useCampaignSponsors } from "@/hooks/useCampaignSponsors";
 import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
@@ -721,15 +722,33 @@ function CheckoutStepsPanel(props: {
     'payment': 'Review & pay',
   };
 
+  const [donorLoginOpen, setDonorLoginOpen] = useState(false);
+
   return (
     <div className="space-y-4">
-      <div className="text-sm font-semibold">{stepLabels[step]}</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-semibold">{stepLabels[step]}</div>
+        {step === 'donor-info' && (
+          <button
+            type="button"
+            onClick={() => setDonorLoginOpen((v) => !v)}
+            className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+          >
+            <span>Have an account?</span>
+            <LogIn className="h-4 w-4 text-primary" />
+            <span className="text-primary font-medium">{donorLoginOpen ? "Hide" : "Log in"}</span>
+          </button>
+        )}
+      </div>
 
       {step === 'donor-info' && (
         <DonorInfoForm
           organizationId={organizationId}
           onBack={() => setStep('cart')}
           onComplete={(info) => onDonorInfoNext?.(info)}
+          hideLoginTrigger
+          loginOpen={donorLoginOpen}
+          onLoginOpenChange={setDonorLoginOpen}
         />
       )}
 

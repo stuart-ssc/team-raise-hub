@@ -53,9 +53,12 @@ interface DonorInfoFormProps {
   onComplete: (donorInfo: DonorInfo) => void;
   onBack: () => void;
   organizationId?: string;
+  hideLoginTrigger?: boolean;
+  loginOpen?: boolean;
+  onLoginOpenChange?: (open: boolean) => void;
 }
 
-export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoFormProps) {
+export function DonorInfoForm({ onComplete, onBack, organizationId, hideLoginTrigger, loginOpen, onLoginOpenChange }: DonorInfoFormProps) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     firstName: "",
@@ -341,16 +344,21 @@ export function DonorInfoForm({ onComplete, onBack, organizationId }: DonorInfoF
     <div className="space-y-6">
       {/* Login Section */}
       {!isLoggedIn ? (
-        <Collapsible open={showLoginForm} onOpenChange={setShowLoginForm}>
-          <div className="flex items-center justify-end text-sm">
-            <span className="text-muted-foreground mr-1">Have an account?</span>
-            <CollapsibleTrigger asChild>
-              <Button variant="link" size="sm" className="h-auto p-0 gap-1">
-                <LogIn className="h-4 w-4" />
-                {showLoginForm ? "Hide" : "Log in"}
-              </Button>
-            </CollapsibleTrigger>
-          </div>
+        <Collapsible
+          open={loginOpen !== undefined ? loginOpen : showLoginForm}
+          onOpenChange={onLoginOpenChange ?? setShowLoginForm}
+        >
+          {!hideLoginTrigger && (
+            <div className="flex items-center justify-end text-sm">
+              <span className="text-muted-foreground mr-1">Have an account?</span>
+              <CollapsibleTrigger asChild>
+                <Button variant="link" size="sm" className="h-auto p-0 gap-1">
+                  <LogIn className="h-4 w-4" />
+                  {(loginOpen !== undefined ? loginOpen : showLoginForm) ? "Hide" : "Log in"}
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+          )}
 
           <CollapsibleContent className="mt-3 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
