@@ -809,22 +809,23 @@ const CampaignLanding = () => {
 
         </>
       )}
+      {campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && checkoutStep === 'cart' && (
+        <SponsorshipLanding
+          campaign={campaign as any}
+          cart={cart as any}
+          attributedRosterMember={attributedRosterMember}
+          onUpdateQuantity={updateQuantity}
+          onUpdateVariantQuantity={updateVariantQuantity}
+          onProceedToCheckout={handleProceedToCheckout}
+          subtotal={getSubtotal()}
+          platformFee={getPlatformFee()}
+          total={getTotalAmount()}
+          selectedItemsCount={getSelectedItemsCount()}
+        />
+      )}
       {/* Campaign Items and Checkout Steps */}
       <div className="max-w-6xl mx-auto p-6">
-        {campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && checkoutStep === 'cart' ? (
-          <SponsorshipLanding
-            campaign={campaign as any}
-            cart={cart as any}
-            attributedRosterMember={attributedRosterMember}
-            onUpdateQuantity={updateQuantity}
-            onUpdateVariantQuantity={updateVariantQuantity}
-            onProceedToCheckout={handleProceedToCheckout}
-            subtotal={getSubtotal()}
-            platformFee={getPlatformFee()}
-            total={getTotalAmount()}
-            selectedItemsCount={getSelectedItemsCount()}
-          />
-        ) : campaign.campaign_type?.name?.toLowerCase() === 'pledge' ? (
+        {campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && checkoutStep === 'cart' ? null : campaign.campaign_type?.name?.toLowerCase() === 'pledge' ? (
           <PledgePurchaseFlow
             campaign={campaign as any}
             organizationName={

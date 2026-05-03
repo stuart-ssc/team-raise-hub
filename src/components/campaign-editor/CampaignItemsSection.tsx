@@ -526,13 +526,13 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                 </div>
               </div>
 
-              {/* Sponsorship tier extras */}
+              {/* Sponsorship landing extras */}
               <div className="rounded-lg border p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-base">Mark as "Most Popular"</Label>
                     <p className="text-sm text-muted-foreground">
-                      Highlights this tier with a ribbon on Sponsorship landing pages.
+                      Highlights this item with a ribbon on Sponsorship landing pages.
                     </p>
                   </div>
                   <Switch checked={isMostPopular} onCheckedChange={setIsMostPopular} />
@@ -540,7 +540,7 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                 <div className="space-y-2">
                   <Label>Feature Bullets</Label>
                   <p className="text-xs text-muted-foreground">
-                    One benefit per line (shown as a ✓ list on the tier card).
+                    One benefit per line (shown as a ✓ list on the item card).
                   </p>
                   <Textarea
                     rows={4}
