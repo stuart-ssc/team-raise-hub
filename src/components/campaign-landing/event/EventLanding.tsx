@@ -10,7 +10,6 @@ import {
   Star,
   Ticket,
   Share2,
-  Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
