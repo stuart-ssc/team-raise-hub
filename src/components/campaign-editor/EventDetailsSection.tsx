@@ -30,9 +30,12 @@ export interface EventDetailsData {
 interface Props {
   data: EventDetailsData;
   onUpdate: (updates: Partial<EventDetailsData>) => void;
+  mode?: "all" | "location" | "agenda";
 }
 
-export function EventDetailsSection({ data, onUpdate }: Props) {
+export function EventDetailsSection({ data, onUpdate, mode = "all" }: Props) {
+  const showLocation = mode === "all" || mode === "location";
+  const showAgenda = mode === "all" || mode === "agenda";
   const [chipDraft, setChipDraft] = useState("");
 
   const addChip = () => {
@@ -62,6 +65,7 @@ export function EventDetailsSection({ data, onUpdate }: Props) {
 
   return (
     <div className="space-y-6">
+{showLocation && (<>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <Input
           placeholder="Details heading (e.g. A good day, outdoors.)"
@@ -174,6 +178,8 @@ export function EventDetailsSection({ data, onUpdate }: Props) {
         />
       </div>
 
+</>)}
+{showAgenda && (<>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label>Day-of agenda</Label>
@@ -236,6 +242,7 @@ export function EventDetailsSection({ data, onUpdate }: Props) {
           ))}
         </div>
       </div>
+</>)}
     </div>
   );
 }
