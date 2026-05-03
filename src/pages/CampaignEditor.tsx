@@ -750,6 +750,7 @@ export default function CampaignEditor() {
                   showItems={!!(isEditing && id) && !isPledgeCampaign}
                   isPledge={isPledgeCampaign}
                   showPledgeResults={!!(isEditing && id) && isPledgeCampaign}
+                  isEvent={isEventCampaign}
                 />
               </CardContent>
             </Card>
