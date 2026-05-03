@@ -30,6 +30,8 @@ interface CampaignItem {
   recurringInterval?: 'month' | 'year';
   hasVariants?: boolean;
   variants?: SizeVariantData[];
+  isMostPopular?: boolean;
+  featureBullets?: string[];
 }
 
 interface SizeVariantData {
@@ -53,6 +55,8 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
   const [uploading, setUploading] = useState(false);
   const [hasVariants, setHasVariants] = useState(false);
   const [sizeVariants, setSizeVariants] = useState<SizeVariant[]>([]);
+  const [isMostPopular, setIsMostPopular] = useState(false);
+  const [featureBullets, setFeatureBullets] = useState<string[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -117,6 +121,8 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
         recurringInterval: item.recurring_interval ?? undefined,
         hasVariants: item.has_variants || false,
         variants,
+        isMostPopular: item.is_most_popular || false,
+        featureBullets: Array.isArray(item.feature_bullets) ? item.feature_bullets : [],
       };
     }));
 
@@ -142,6 +148,8 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
     setImageFile(null);
     setHasVariants(false);
     setSizeVariants([]);
+    setIsMostPopular(false);
+    setFeatureBullets([]);
   };
 
   const handleCancel = () => {
@@ -172,6 +180,8 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
     });
     setHasVariants(item.hasVariants || false);
     setSizeVariants(item.variants || []);
+    setIsMostPopular(item.isMostPopular || false);
+    setFeatureBullets(item.featureBullets || []);
     setIsFormVisible(true);
   };
 
@@ -229,6 +239,8 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
         is_recurring: formData.isRecurring,
         recurring_interval: formData.isRecurring && formData.recurringInterval ? formData.recurringInterval : null,
         has_variants: hasVariants,
+        is_most_popular: isMostPopular,
+        feature_bullets: featureBullets.filter((b) => b.trim().length > 0),
       };
 
       let savedItemId: string | null = null;
@@ -511,6 +523,31 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                   <p className="text-sm text-muted-foreground">
                     {imageFile ? imageFile.name : formData.image ? "Click to replace image" : "Click to upload"}
                   </p>
+                </div>
+              </div>
+
+              {/* Sponsorship tier extras */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Mark as "Most Popular"</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Highlights this tier with a ribbon on Sponsorship landing pages.
+                    </p>
+                  </div>
+                  <Switch checked={isMostPopular} onCheckedChange={setIsMostPopular} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Feature Bullets</Label>
+                  <p className="text-xs text-muted-foreground">
+                    One benefit per line (shown as a ✓ list on the tier card).
+                  </p>
+                  <Textarea
+                    rows={4}
+                    placeholder={"5 × 8 ft printed banner, full season\nPA shoutout at every home game\nLogo on jerseys (back collar)"}
+                    value={featureBullets.join("\n")}
+                    onChange={(e) => setFeatureBullets(e.target.value.split("\n"))}
+                  />
                 </div>
               </div>
 

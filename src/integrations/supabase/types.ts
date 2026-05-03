@@ -815,9 +815,11 @@ export type Database = {
           description: string | null
           event_end_date: string | null
           event_start_date: string | null
+          feature_bullets: Json
           has_variants: boolean | null
           id: string
           image: string | null
+          is_most_popular: boolean
           is_recurring: boolean | null
           max_items_purchased: number | null
           name: string
@@ -834,9 +836,11 @@ export type Database = {
           description?: string | null
           event_end_date?: string | null
           event_start_date?: string | null
+          feature_bullets?: Json
           has_variants?: boolean | null
           id?: string
           image?: string | null
+          is_most_popular?: boolean
           is_recurring?: boolean | null
           max_items_purchased?: number | null
           name: string
@@ -853,9 +857,11 @@ export type Database = {
           description?: string | null
           event_end_date?: string | null
           event_start_date?: string | null
+          feature_bullets?: Json
           has_variants?: boolean | null
           id?: string
           image?: string | null
+          is_most_popular?: boolean
           is_recurring?: boolean | null
           max_items_purchased?: number | null
           name?: string
@@ -1002,6 +1008,7 @@ export type Database = {
           goal_amount: number | null
           group_directions: string | null
           group_id: string | null
+          hero_accent_word: string | null
           id: string
           image_url: string | null
           meta_description: string | null
@@ -1041,6 +1048,7 @@ export type Database = {
           goal_amount?: number | null
           group_directions?: string | null
           group_id?: string | null
+          hero_accent_word?: string | null
           id?: string
           image_url?: string | null
           meta_description?: string | null
@@ -1080,6 +1088,7 @@ export type Database = {
           goal_amount?: number | null
           group_directions?: string | null
           group_id?: string | null
+          hero_accent_word?: string | null
           id?: string
           image_url?: string | null
           meta_description?: string | null

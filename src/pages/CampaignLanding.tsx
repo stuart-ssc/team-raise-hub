@@ -18,6 +18,7 @@ import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
 import SimpleFooter from "@/components/SimpleFooter";
 import { PledgePurchaseFlow } from "@/components/campaign-landing/PledgePurchaseFlow";
 import { SeoHead } from "@/components/seo/SeoHead";
+import { SponsorshipLanding } from "@/components/campaign-landing/sponsorship/SponsorshipLanding";
 
 interface CampaignData {
   id: string;
@@ -33,6 +34,7 @@ interface CampaignData {
   file_upload_deadline_days: number | null;
   roster_id: number | null;
   fee_model: 'donor_covers' | 'org_absorbs' | null;
+  hero_accent_word: string | null;
   // Campaign-level pitch fields
   pitch_message: string | null;
   pitch_image_url: string | null;
@@ -82,6 +84,8 @@ interface CampaignItem {
   is_recurring: boolean | null;
   recurring_interval: string | null;
   has_variants: boolean | null;
+  is_most_popular?: boolean | null;
+  feature_bullets?: any;
   variants?: ItemVariant[];
 }
 
@@ -615,6 +619,8 @@ const CampaignLanding = () => {
         image={campaign.image_url || undefined}
         imageAlt={campaign.name}
       />
+      {!(campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && checkoutStep === 'cart') && (
+        <>
       {/* Hero Section */}
       <div 
         className="border-b relative"
@@ -801,9 +807,24 @@ const CampaignLanding = () => {
         );
       })()}
 
+        </>
+      )}
       {/* Campaign Items and Checkout Steps */}
       <div className="max-w-6xl mx-auto p-6">
-        {campaign.campaign_type?.name?.toLowerCase() === 'pledge' ? (
+        {campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && checkoutStep === 'cart' ? (
+          <SponsorshipLanding
+            campaign={campaign as any}
+            cart={cart as any}
+            attributedRosterMember={attributedRosterMember}
+            onUpdateQuantity={updateQuantity}
+            onUpdateVariantQuantity={updateVariantQuantity}
+            onProceedToCheckout={handleProceedToCheckout}
+            subtotal={getSubtotal()}
+            platformFee={getPlatformFee()}
+            total={getTotalAmount()}
+            selectedItemsCount={getSelectedItemsCount()}
+          />
+        ) : campaign.campaign_type?.name?.toLowerCase() === 'pledge' ? (
           <PledgePurchaseFlow
             campaign={campaign as any}
             organizationName={
