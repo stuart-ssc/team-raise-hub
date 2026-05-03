@@ -354,8 +354,10 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
 
         {/* CART SIDEBAR */}
         <aside className="lg:col-span-1">
-          <Card className="lg:sticky lg:top-6">
+          <Card className="lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
             <CardContent className="p-5 space-y-4">
+              {checkoutStep === 'cart' && (
+              <>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <ShoppingCart className="h-4 w-4 text-primary" />
@@ -440,6 +442,35 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
                     Continue to checkout
                   </Button>
                 </>
+              )}
+              </>
+              )}
+
+              {checkoutStep !== 'cart' && (
+                <CheckoutStepsPanel
+                  step={checkoutStep}
+                  setStep={setCheckoutStep}
+                  donorInfo={props.donorInfo || null}
+                  onDonorInfoNext={props.onDonorInfoNext}
+                  businessData={props.businessData || null}
+                  setBusinessData={props.setBusinessData}
+                  onBusinessInfoNext={props.onBusinessInfoNext}
+                  customFields={props.customFields || []}
+                  customFieldValues={props.customFieldValues || {}}
+                  setCustomFieldValues={props.setCustomFieldValues}
+                  onCustomFieldsNext={props.onCustomFieldsNext}
+                  requiresBusinessInfo={!!props.requiresBusinessInfo}
+                  organizationId={props.organizationId || ''}
+                  processingCheckout={!!props.processingCheckout}
+                  onFinalCheckout={props.onFinalCheckout}
+                  pendingLogoFile={props.pendingLogoFile || null}
+                  setPendingLogoFile={props.setPendingLogoFile}
+                  cart={cart}
+                  subtotal={subtotal}
+                  platformFee={platformFee}
+                  total={total}
+                  feeModel={campaign.fee_model}
+                />
               )}
             </CardContent>
           </Card>
