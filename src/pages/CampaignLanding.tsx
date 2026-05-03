@@ -436,7 +436,8 @@ const CampaignLanding = () => {
     setProcessingCheckout(true);
     
     try {
-      const items = cart.filter(item => item.selectedQuantity > 0).flatMap(item => {
+      const isDonation = campaign.campaign_type?.name?.toLowerCase() === 'donation';
+      const items = isDonation ? [] : cart.filter(item => item.selectedQuantity > 0).flatMap(item => {
         // For items with variants, create separate line items for each selected variant
         if (item.has_variants && item.selectedVariants && Object.keys(item.selectedVariants).length > 0) {
           return Object.entries(item.selectedVariants).map(([variantId, quantity]) => ({
@@ -457,6 +458,13 @@ const CampaignLanding = () => {
           body: {
             campaignSlug: slug,
             items: items,
+            donation: isDonation && donationSelection ? {
+              amount: donationSelection.amount,
+              is_recurring: donationSelection.isRecurring,
+              recurring_interval: donationSelection.isRecurring ? 'month' : null,
+              dedication_type: donationSelection.dedicationType,
+              dedication_name: donationSelection.dedicationName,
+            } : null,
             customerInfo: donorInfo ? {
               email: donorInfo.email,
               name: `${donorInfo.firstName} ${donorInfo.lastName}`,
