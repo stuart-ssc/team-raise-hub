@@ -19,6 +19,7 @@ import SimpleFooter from "@/components/SimpleFooter";
 import { PledgePurchaseFlow } from "@/components/campaign-landing/PledgePurchaseFlow";
 import { SeoHead } from "@/components/seo/SeoHead";
 import { SponsorshipLanding } from "@/components/campaign-landing/sponsorship/SponsorshipLanding";
+import { DonationLanding, DonationSelection } from "@/components/campaign-landing/donation/DonationLanding";
 
 interface CampaignData {
   id: string;
@@ -35,6 +36,11 @@ interface CampaignData {
   roster_id: number | null;
   fee_model: 'donor_covers' | 'org_absorbs' | null;
   hero_accent_word: string | null;
+  donation_suggested_amounts?: number[] | null;
+  donation_min_amount?: number | null;
+  donation_allow_recurring?: boolean | null;
+  donation_allow_dedication?: boolean | null;
+  donation_allocations?: Array<{ percent: number; label: string; description?: string; amount?: number }> | null;
   // Campaign-level pitch fields
   pitch_message: string | null;
   pitch_image_url: string | null;
@@ -131,6 +137,7 @@ const CampaignLanding = () => {
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [processingCheckout, setProcessingCheckout] = useState(false);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const [donationSelection, setDonationSelection] = useState<DonationSelection | null>(null);
 
   // Track campaign views for donor engagement analytics
   useCampaignViewTracking({
@@ -338,6 +345,11 @@ const CampaignLanding = () => {
 
   const handleProceedToCheckout = () => {
     if (!campaign) return;
+    // Donation flow: amount is captured separately
+    if (campaign.campaign_type?.name?.toLowerCase() === 'donation') {
+      setCheckoutStep('donor-info');
+      return;
+    }
     
     const items = cart.filter(item => item.selectedQuantity > 0);
 
@@ -364,6 +376,12 @@ const CampaignLanding = () => {
     }
 
     // Always go to donor info first
+    setCheckoutStep('donor-info');
+  };
+
+  const handleDonationProceed = (selection: DonationSelection) => {
+    if (selection.amount <= 0) return;
+    setDonationSelection(selection);
     setCheckoutStep('donor-info');
   };
 
@@ -418,7 +436,8 @@ const CampaignLanding = () => {
     setProcessingCheckout(true);
     
     try {
-      const items = cart.filter(item => item.selectedQuantity > 0).flatMap(item => {
+      const isDonation = campaign.campaign_type?.name?.toLowerCase() === 'donation';
+      const items = isDonation ? [] : cart.filter(item => item.selectedQuantity > 0).flatMap(item => {
         // For items with variants, create separate line items for each selected variant
         if (item.has_variants && item.selectedVariants && Object.keys(item.selectedVariants).length > 0) {
           return Object.entries(item.selectedVariants).map(([variantId, quantity]) => ({
@@ -439,6 +458,13 @@ const CampaignLanding = () => {
           body: {
             campaignSlug: slug,
             items: items,
+            donation: isDonation && donationSelection ? {
+              amount: donationSelection.amount,
+              is_recurring: donationSelection.isRecurring,
+              recurring_interval: donationSelection.isRecurring ? 'month' : null,
+              dedication_type: donationSelection.dedicationType,
+              dedication_name: donationSelection.dedicationName,
+            } : null,
             customerInfo: donorInfo ? {
               email: donorInfo.email,
               name: `${donorInfo.firstName} ${donorInfo.lastName}`,
@@ -620,7 +646,8 @@ const CampaignLanding = () => {
         image={campaign.image_url || undefined}
         imageAlt={campaign.name}
       />
-      {campaign.campaign_type?.name?.toLowerCase() !== 'sponsorship' && (
+      {campaign.campaign_type?.name?.toLowerCase() !== 'sponsorship' &&
+       campaign.campaign_type?.name?.toLowerCase() !== 'donation' && (
         <>
       {/* Hero Section */}
       <div 
@@ -841,8 +868,31 @@ const CampaignLanding = () => {
           setPendingLogoFile={setPendingLogoFile}
         />
       )}
+      {campaign.campaign_type?.name?.toLowerCase() === 'donation' && (
+        <DonationLanding
+          campaign={campaign as any}
+          attributedRosterMember={attributedRosterMember}
+          onProceedToCheckout={handleDonationProceed}
+          checkoutStep={checkoutStep}
+          setCheckoutStep={setCheckoutStep}
+          donorInfo={donorInfo}
+          onDonorInfoNext={handleDonorInfoNext}
+          businessData={businessData}
+          setBusinessData={setBusinessData}
+          onBusinessInfoNext={handleBusinessInfoNext}
+          customFields={customFields}
+          customFieldValues={customFieldValues}
+          setCustomFieldValues={setCustomFieldValues}
+          onCustomFieldsNext={handleCustomFieldsNext}
+          requiresBusinessInfo={!!campaign.requires_business_info}
+          organizationId={campaign.groups?.organization_id || ''}
+          processingCheckout={processingCheckout}
+          onFinalCheckout={handleFinalCheckout}
+        />
+      )}
       {/* Campaign Items and Checkout Steps */}
-      {campaign.campaign_type?.name?.toLowerCase() !== 'sponsorship' && (
+      {campaign.campaign_type?.name?.toLowerCase() !== 'sponsorship' &&
+       campaign.campaign_type?.name?.toLowerCase() !== 'donation' && (
       <div className="max-w-6xl mx-auto p-6">
         {campaign.campaign_type?.name?.toLowerCase() === 'pledge' ? (
           <PledgePurchaseFlow

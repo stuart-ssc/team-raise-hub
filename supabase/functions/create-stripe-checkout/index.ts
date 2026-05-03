@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { campaignSlug, items, customerInfo, attributedRosterMemberId, origin } = await req.json();
+    const { campaignSlug, items, donation, customerInfo, attributedRosterMemberId, origin } = await req.json();
 
     console.log('Creating checkout session for campaign:', campaignSlug);
 
@@ -120,25 +120,63 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get campaign items with details
-    const { data: campaignItems, error: itemsError } = await supabaseClient
-      .from('campaign_items')
-      .select('*')
-      .eq('campaign_id', campaign.id)
-      .in('id', items.map((i: any) => i.id));
+    // Donation flow: synthesize a single line item from donor-chosen amount
+    const isDonationFlow = !!donation && Number(donation.amount) > 0;
+    let campaignItems: any[] = [];
+    let hasRecurringItems = false;
+    let recurringInterval: string | null = null;
 
-    if (itemsError) throw itemsError;
-
-    // Check if any items are recurring
-    const hasRecurringItems = campaignItems?.some(ci => ci.is_recurring) || false;
-    const recurringInterval = campaignItems?.find(ci => ci.is_recurring)?.recurring_interval;
+    if (isDonationFlow) {
+      hasRecurringItems = !!donation.is_recurring;
+      recurringInterval = donation.recurring_interval || (hasRecurringItems ? 'month' : null);
+    } else {
+      const { data: ci, error: itemsError } = await supabaseClient
+        .from('campaign_items')
+        .select('*')
+        .eq('campaign_id', campaign.id)
+        .in('id', items.map((i: any) => i.id));
+      if (itemsError) throw itemsError;
+      campaignItems = ci || [];
+      hasRecurringItems = campaignItems.some(c => c.is_recurring);
+      recurringInterval = campaignItems.find(c => c.is_recurring)?.recurring_interval || null;
+    }
 
     console.log('Has recurring items:', hasRecurringItems, 'Interval:', recurringInterval);
 
     // Build line items for Stripe and calculate totals
     let totalAmount = 0;
     const lineItems: any[] = [];
-    const orderItems = items.map((item: any) => {
+    const orderItems = isDonationFlow
+      ? (() => {
+          const amt = Number(donation.amount);
+          totalAmount = amt;
+          const li: any = {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: hasRecurringItems ? 'Monthly donation' : 'Donation',
+                description: campaign.name,
+              },
+              unit_amount: Math.round(amt * 100),
+            },
+            quantity: 1,
+          };
+          if (hasRecurringItems && recurringInterval) {
+            li.price_data.recurring = { interval: recurringInterval };
+          }
+          lineItems.push(li);
+          return [{
+            campaign_item_id: null,
+            variant_id: null,
+            size: null,
+            quantity: 1,
+            price_at_purchase: amt,
+            is_recurring: !!hasRecurringItems,
+            recurring_interval: recurringInterval,
+            name: hasRecurringItems ? 'Monthly donation' : 'Donation',
+          }];
+        })()
+      : items.map((item: any) => {
       const campaignItem = campaignItems?.find(ci => ci.id === item.id);
       if (!campaignItem) throw new Error('Item not found');
 
@@ -241,6 +279,8 @@ Deno.serve(async (req) => {
         attributed_roster_member_id: attributedRosterMemberId || null,
         business_purchase: false,
         items: orderItems,
+        dedication_type: isDonationFlow ? (donation.dedication_type || null) : null,
+        dedication_name: isDonationFlow ? (donation.dedication_name || null) : null,
         user_id: userId,
       })
       .select()
