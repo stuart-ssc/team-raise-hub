@@ -526,6 +526,31 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                 </div>
               </div>
 
+              {/* Sponsorship tier extras */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Mark as "Most Popular"</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Highlights this tier with a ribbon on Sponsorship landing pages.
+                    </p>
+                  </div>
+                  <Switch checked={isMostPopular} onCheckedChange={setIsMostPopular} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Feature Bullets</Label>
+                  <p className="text-xs text-muted-foreground">
+                    One benefit per line (shown as a ✓ list on the tier card).
+                  </p>
+                  <Textarea
+                    rows={4}
+                    placeholder={"5 × 8 ft printed banner, full season\nPA shoutout at every home game\nLogo on jerseys (back collar)"}
+                    value={featureBullets.join("\n")}
+                    onChange={(e) => setFeatureBullets(e.target.value.split("\n"))}
+                  />
+                </div>
+              </div>
+
               <div className="flex gap-2 justify-end pt-4">
                 <Button type="button" variant="outline" onClick={handleCancel}>
                   Cancel
