@@ -609,7 +609,7 @@ const CampaignLanding = () => {
         return 'Sponsorship Opportunities';
       case 'donation':
         return 'Donation Opportunities';
-      case 'merchandise sales':
+      case 'merchandise sale':
         return 'Available Merchandise';
       case 'event':
         return 'Event Experience Opportunities';
@@ -634,7 +634,7 @@ const CampaignLanding = () => {
         return `Select the sponsorship opportunity and quantity to show your support to the ${supportText}.`;
       case 'donation':
         return `Select the donation opportunity and quantity to show your support to the ${supportText}.`;
-      case 'merchandise sales':
+      case 'merchandise sale':
         return `Select the merchandise item and quantity to show your support to the ${supportText}.`;
       case 'event':
         return `Select the event experience and quantity to show your support to the ${supportText}.`;
@@ -960,7 +960,7 @@ const CampaignLanding = () => {
           customFields={customFields}
         />
       )}
-      {campaign.campaign_type?.name?.toLowerCase() === 'merchandise sales' && (
+      {campaign.campaign_type?.name?.toLowerCase() === 'merchandise sale' && (
         <MerchandiseLanding
           campaign={campaign as any}
           cart={cart as any}
@@ -1002,7 +1002,7 @@ const CampaignLanding = () => {
        campaign.campaign_type?.name?.toLowerCase() !== 'donation' &&
        campaign.campaign_type?.name?.toLowerCase() !== 'pledge' &&
        campaign.campaign_type?.name?.toLowerCase() !== 'event' &&
-       campaign.campaign_type?.name?.toLowerCase() !== 'merchandise sales' && (
+       campaign.campaign_type?.name?.toLowerCase() !== 'merchandise sale' && (
       <div className="max-w-6xl mx-auto p-6">
         {campaign.campaign_type?.name?.toLowerCase() === 'pledge' ? (
           <PledgePurchaseFlow
