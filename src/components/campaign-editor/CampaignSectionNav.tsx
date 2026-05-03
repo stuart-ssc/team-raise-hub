@@ -30,7 +30,9 @@ export type SectionKey =
   | "assets"
   | "pledgeSettings"
   | "pledgeResults"
-  | "eventDetails";
+  | "eventDetails"
+  | "eventLocation"
+  | "eventAgenda";
 
 interface NavItem {
   key: SectionKey;
@@ -72,7 +74,10 @@ export function CampaignSectionNav({
     { key: "schedule", label: "Schedule", icon: Calendar },
     { key: "fees", label: "Fees", icon: DollarSign },
     ...(isEvent
-      ? [{ key: "eventDetails" as const, label: "Event Details", icon: CalendarClock }]
+      ? [
+          { key: "eventLocation" as const, label: "Location", icon: CalendarClock },
+          { key: "eventAgenda" as const, label: "Agenda", icon: Calendar },
+        ]
       : []),
     ...(isPledge
       ? [{ key: "pledgeSettings" as const, label: "Pledge Setup", icon: HandCoins }]
