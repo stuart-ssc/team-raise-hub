@@ -809,7 +809,9 @@ export type Database = {
       }
       campaign_items: {
         Row: {
+          attendees_per_unit: number
           campaign_id: string
+          collect_attendee_names: boolean
           cost: number | null
           created_at: string
           description: string | null
@@ -817,6 +819,7 @@ export type Database = {
           event_start_date: string | null
           feature_bullets: Json
           has_variants: boolean | null
+          hero_stat_label: string | null
           id: string
           image: string | null
           is_most_popular: boolean
@@ -826,11 +829,14 @@ export type Database = {
           quantity_available: number | null
           quantity_offered: number | null
           recurring_interval: string | null
+          show_in_hero_stats: boolean
           size: string | null
           updated_at: string
         }
         Insert: {
+          attendees_per_unit?: number
           campaign_id: string
+          collect_attendee_names?: boolean
           cost?: number | null
           created_at?: string
           description?: string | null
@@ -838,6 +844,7 @@ export type Database = {
           event_start_date?: string | null
           feature_bullets?: Json
           has_variants?: boolean | null
+          hero_stat_label?: string | null
           id?: string
           image?: string | null
           is_most_popular?: boolean
@@ -847,11 +854,14 @@ export type Database = {
           quantity_available?: number | null
           quantity_offered?: number | null
           recurring_interval?: string | null
+          show_in_hero_stats?: boolean
           size?: string | null
           updated_at?: string
         }
         Update: {
+          attendees_per_unit?: number
           campaign_id?: string
+          collect_attendee_names?: boolean
           cost?: number | null
           created_at?: string
           description?: string | null
@@ -859,6 +869,7 @@ export type Database = {
           event_start_date?: string | null
           feature_bullets?: Json
           has_variants?: boolean | null
+          hero_stat_label?: string | null
           id?: string
           image?: string | null
           is_most_popular?: boolean
@@ -868,6 +879,7 @@ export type Database = {
           quantity_available?: number | null
           quantity_offered?: number | null
           recurring_interval?: string | null
+          show_in_hero_stats?: boolean
           size?: string | null
           updated_at?: string
         }
@@ -1009,9 +1021,14 @@ export type Database = {
           enable_roster_attribution: boolean | null
           end_date: string | null
           event_agenda: Json | null
+          event_agenda_heading: string | null
+          event_agenda_heading_accent: string | null
+          event_details_heading: string | null
+          event_details_heading_accent: string | null
           event_format: string | null
           event_format_subtitle: string | null
           event_includes: string[] | null
+          event_includes_heading: string | null
           event_includes_subtitle: string | null
           event_location_address: string | null
           event_location_name: string | null
@@ -1062,9 +1079,14 @@ export type Database = {
           enable_roster_attribution?: boolean | null
           end_date?: string | null
           event_agenda?: Json | null
+          event_agenda_heading?: string | null
+          event_agenda_heading_accent?: string | null
+          event_details_heading?: string | null
+          event_details_heading_accent?: string | null
           event_format?: string | null
           event_format_subtitle?: string | null
           event_includes?: string[] | null
+          event_includes_heading?: string | null
           event_includes_subtitle?: string | null
           event_location_address?: string | null
           event_location_name?: string | null
@@ -1115,9 +1137,14 @@ export type Database = {
           enable_roster_attribution?: boolean | null
           end_date?: string | null
           event_agenda?: Json | null
+          event_agenda_heading?: string | null
+          event_agenda_heading_accent?: string | null
+          event_details_heading?: string | null
+          event_details_heading_accent?: string | null
           event_format?: string | null
           event_format_subtitle?: string | null
           event_includes?: string[] | null
+          event_includes_heading?: string | null
           event_includes_subtitle?: string | null
           event_location_address?: string | null
           event_location_name?: string | null
@@ -3455,6 +3482,7 @@ export type Database = {
         Row: {
           access_token: string | null
           application_fee_amount: number | null
+          attendees: Json | null
           attributed_roster_member_id: string | null
           business_id: string | null
           business_purchase: boolean | null
@@ -3498,6 +3526,7 @@ export type Database = {
         Insert: {
           access_token?: string | null
           application_fee_amount?: number | null
+          attendees?: Json | null
           attributed_roster_member_id?: string | null
           business_id?: string | null
           business_purchase?: boolean | null
@@ -3541,6 +3570,7 @@ export type Database = {
         Update: {
           access_token?: string | null
           application_fee_amount?: number | null
+          attendees?: Json | null
           attributed_roster_member_id?: string | null
           business_id?: string | null
           business_purchase?: boolean | null
@@ -3676,6 +3706,7 @@ export type Database = {
           linked_organization_user_id: string | null
           organization_id: string
           roster_id: number | null
+          title: string | null
           updated_at: string | null
           user_id: string
           user_type_id: string
@@ -3688,6 +3719,7 @@ export type Database = {
           linked_organization_user_id?: string | null
           organization_id: string
           roster_id?: number | null
+          title?: string | null
           updated_at?: string | null
           user_id: string
           user_type_id: string
@@ -3700,6 +3732,7 @@ export type Database = {
           linked_organization_user_id?: string | null
           organization_id?: string
           roster_id?: number | null
+          title?: string | null
           updated_at?: string | null
           user_id?: string
           user_type_id?: string
