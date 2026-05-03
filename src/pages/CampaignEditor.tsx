@@ -498,7 +498,9 @@ export default function CampaignEditor() {
         event_format_subtitle: campaignData.eventFormatSubtitle || null,
         event_includes: campaignData.eventIncludes && campaignData.eventIncludes.length ? campaignData.eventIncludes : null,
         event_includes_subtitle: campaignData.eventIncludesSubtitle || null,
-        event_agenda: campaignData.eventAgenda && campaignData.eventAgenda.length ? campaignData.eventAgenda : null,
+        event_agenda: campaignData.eventAgenda && campaignData.eventAgenda.length
+          ? (campaignData.eventAgenda as any)
+          : null,
       };
 
       let campaignId = id;
