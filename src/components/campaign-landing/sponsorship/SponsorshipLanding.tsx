@@ -295,15 +295,7 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
 
           {/* Items grid */}
           <div>
-            <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-1">
-              Sponsorship opportunities
-            </p>
-            <h2 className="text-3xl font-bold mb-2">
-              Pick your <span className="font-serif italic text-primary">level.</span>
-            </h2>
-            <p className="text-muted-foreground mb-6 max-w-2xl">
-              All tiers include a banner in the home gym for the full season. Higher tiers add larger placement, PA reads, social shoutouts, and a printed logo on team programs.
-            </p>
+            <h2 className="text-3xl font-bold mb-6">Sponsorship opportunities</h2>
 
             {cart.length === 0 ? (
               <Card>
@@ -314,7 +306,7 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {cart.map((item, idx) => (
-                  <TierCard
+                  <ItemCard
                     key={item.id}
                     item={item}
                     index={idx}
@@ -490,7 +482,7 @@ function StatTile({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
-function TierCard({
+function ItemCard({
   item,
   index,
   onUpdateQuantity,
@@ -504,7 +496,6 @@ function TierCard({
   const isPopular = !!item.is_most_popular;
   const offered = item.quantity_offered ?? null;
   const available = item.quantity_available ?? null;
-  const tierLabel = `Tier ${String(index + 1).padStart(2, "0")}`;
   const bullets = Array.isArray(item.feature_bullets) ? item.feature_bullets : [];
 
   return (
@@ -519,10 +510,7 @@ function TierCard({
         </div>
       )}
       <CardContent className="p-5 flex-1 flex flex-col">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-          {tierLabel} · <span className="text-foreground/70">{item.name}</span>
-        </div>
-        <h3 className="text-xl font-bold mt-1">{item.name}</h3>
+        <h3 className="text-xl font-bold">{item.name}</h3>
         {item.description && (
           <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
         )}
