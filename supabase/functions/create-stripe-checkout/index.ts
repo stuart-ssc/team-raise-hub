@@ -103,6 +103,10 @@ Deno.serve(async (req) => {
 
     console.log('Creating Connect checkout with stripeAccountId:', stripeAccountId);
 
+    // Dedication metadata (donation flow only) — mirrored to Stripe for consistency.
+    const dedicationType = (donation && donation.dedication_type) ? String(donation.dedication_type) : '';
+    const dedicationName = (donation && donation.dedication_name) ? String(donation.dedication_name) : '';
+
     // Validate attributed roster member if provided (use admin client to bypass RLS on rosters table)
     if (attributedRosterMemberId) {
       const { data: rosterMember, error: memberError } = await supabaseAdmin
@@ -349,6 +353,8 @@ Deno.serve(async (req) => {
             group_id: groupData?.id || '',
             attributed_roster_member_id: attributedRosterMemberId || '',
             fee_model: feeModel,
+            dedication_type: dedicationType,
+            dedication_name: dedicationName,
           },
         },
         metadata: {
@@ -357,6 +363,8 @@ Deno.serve(async (req) => {
           attributed_roster_member_id: attributedRosterMemberId || '',
           is_subscription: 'true',
           fee_model: feeModel,
+          dedication_type: dedicationType,
+          dedication_name: dedicationName,
         },
         payment_method_types: ['card'],
       });
@@ -398,6 +406,8 @@ Deno.serve(async (req) => {
           platform_fee_cents: Math.round(platformFeeAmount * 100),
           item_total_cents: Math.round(totalAmount * 100),
           fee_model: feeModel,
+          dedication_type: dedicationType,
+          dedication_name: dedicationName,
         },
       };
 
@@ -441,6 +451,8 @@ Deno.serve(async (req) => {
           attributed_roster_member_id: attributedRosterMemberId || '',
           is_subscription: 'false',
           fee_model: feeModel,
+          dedication_type: dedicationType,
+          dedication_name: dedicationName,
         },
         payment_method_types: ['card', 'us_bank_account'],
       });
