@@ -619,6 +619,16 @@ const CampaignLanding = () => {
         image={campaign.image_url || undefined}
         imageAlt={campaign.name}
       />
+      {(() => {
+        const isSponsorship = campaign.campaign_type?.name?.toLowerCase() === 'sponsorship';
+        if (isSponsorship && checkoutStep === 'cart') return null;
+        return (
+          <>
+      {/* Legacy hero + pitch (hidden for sponsorship cart view) */}
+      <LegacyHeader />
+          </>
+        );
+      })()}
       {/* Hero Section */}
       <div 
         className="border-b relative"
