@@ -22,6 +22,7 @@ import { SponsorshipLanding } from "@/components/campaign-landing/sponsorship/Sp
 import { DonationLanding, DonationSelection } from "@/components/campaign-landing/donation/DonationLanding";
 import { PledgeLanding } from "@/components/campaign-landing/pledge/PledgeLanding";
 import { EventLanding } from "@/components/campaign-landing/event/EventLanding";
+import { MerchandiseLanding } from "@/components/campaign-landing/merchandise/MerchandiseLanding";
 
 interface CampaignData {
   id: string;
