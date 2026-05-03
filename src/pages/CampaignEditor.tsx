@@ -516,6 +516,11 @@ export default function CampaignEditor() {
         event_agenda: campaignData.eventAgenda && campaignData.eventAgenda.length
           ? (campaignData.eventAgenda as any)
           : null,
+        event_details_heading: campaignData.eventDetailsHeading || null,
+        event_details_heading_accent: campaignData.eventDetailsHeadingAccent || null,
+        event_agenda_heading: campaignData.eventAgendaHeading || null,
+        event_agenda_heading_accent: campaignData.eventAgendaHeadingAccent || null,
+        event_includes_heading: campaignData.eventIncludesHeading || null,
       };
 
       let campaignId = id;
