@@ -18,6 +18,7 @@ import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
 import SimpleFooter from "@/components/SimpleFooter";
 import { PledgePurchaseFlow } from "@/components/campaign-landing/PledgePurchaseFlow";
 import { SeoHead } from "@/components/seo/SeoHead";
+import { SponsorshipLanding } from "@/components/campaign-landing/sponsorship/SponsorshipLanding";
 
 interface CampaignData {
   id: string;
@@ -33,6 +34,7 @@ interface CampaignData {
   file_upload_deadline_days: number | null;
   roster_id: number | null;
   fee_model: 'donor_covers' | 'org_absorbs' | null;
+  hero_accent_word: string | null;
   // Campaign-level pitch fields
   pitch_message: string | null;
   pitch_image_url: string | null;
@@ -82,6 +84,8 @@ interface CampaignItem {
   is_recurring: boolean | null;
   recurring_interval: string | null;
   has_variants: boolean | null;
+  is_most_popular?: boolean | null;
+  feature_bullets?: string[] | null;
   variants?: ItemVariant[];
 }
 
