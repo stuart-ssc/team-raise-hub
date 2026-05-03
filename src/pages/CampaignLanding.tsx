@@ -918,6 +918,11 @@ const CampaignLanding = () => {
             event_includes: (campaign as any).event_includes,
             event_includes_subtitle: (campaign as any).event_includes_subtitle,
             event_agenda: (campaign as any).event_agenda,
+            event_details_heading: (campaign as any).event_details_heading,
+            event_details_heading_accent: (campaign as any).event_details_heading_accent,
+            event_agenda_heading: (campaign as any).event_agenda_heading,
+            event_agenda_heading_accent: (campaign as any).event_agenda_heading_accent,
+            event_includes_heading: (campaign as any).event_includes_heading,
           }}
         />
       )}
