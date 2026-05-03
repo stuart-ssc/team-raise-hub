@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,8 +17,13 @@ import {
   Trophy,
   ShoppingCart,
   Upload,
+  X,
+  Loader2,
 } from "lucide-react";
 import { useCampaignSponsors } from "@/hooks/useCampaignSponsors";
+import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
+import { BusinessInfoForm } from "@/components/BusinessInfoForm";
+import { CustomFieldsRenderer } from "@/components/CustomFieldsRenderer";
 
 // ───────────────────────────── types ─────────────────────────────
 
@@ -85,6 +90,32 @@ interface SponsorshipLandingProps {
   platformFee: number;
   total: number;
   selectedItemsCount: number;
+  // Inline checkout
+  checkoutStep?: 'cart' | 'donor-info' | 'business-info' | 'custom-fields' | 'payment';
+  setCheckoutStep?: (s: 'cart' | 'donor-info' | 'business-info' | 'custom-fields' | 'payment') => void;
+  donorInfo?: DonorInfo | null;
+  onDonorInfoNext?: (info: DonorInfo) => void;
+  businessData?: { businessId: string; isNew: boolean; businessName: string } | null;
+  setBusinessData?: (d: { businessId: string; isNew: boolean; businessName: string } | null) => void;
+  onBusinessInfoNext?: () => void;
+  customFields?: Array<{
+    id: string;
+    field_name: string;
+    field_type: string;
+    field_options: any;
+    is_required: boolean;
+    help_text: string | null;
+    display_order: number;
+  }>;
+  customFieldValues?: Record<string, any>;
+  setCustomFieldValues?: (v: Record<string, any>) => void;
+  onCustomFieldsNext?: () => void;
+  requiresBusinessInfo?: boolean;
+  organizationId?: string;
+  processingCheckout?: boolean;
+  onFinalCheckout?: () => void;
+  pendingLogoFile?: File | null;
+  setPendingLogoFile?: (f: File | null) => void;
 }
 
 // ───────────────────────────── helpers ─────────────────────────────
@@ -139,6 +170,8 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
   } = props;
 
   const { data: sponsors = [] } = useCampaignSponsors(campaign.id);
+  const checkoutStep = props.checkoutStep || 'cart';
+  const setCheckoutStep = props.setCheckoutStep || (() => {});
 
   const daysLeft = getDaysLeft(campaign.end_date);
   const raised = campaign.amount_raised || 0;
@@ -321,8 +354,10 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
 
         {/* CART SIDEBAR */}
         <aside className="lg:col-span-1">
-          <Card className="lg:sticky lg:top-6">
+          <Card className="lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
             <CardContent className="p-5 space-y-4">
+              {checkoutStep === 'cart' && (
+              <>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <ShoppingCart className="h-4 w-4 text-primary" />
@@ -403,21 +438,39 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
                     </AlertDescription>
                   </Alert>
 
-                  {/* Optional logo upload prompt — actual upload happens after checkout */}
-                  <div className="border rounded-lg p-3 space-y-2">
-                    <div className="text-sm font-medium">Upload your business logo</div>
-                    <Button variant="outline" size="sm" className="w-full justify-center gap-2" disabled>
-                      <Upload className="h-4 w-4" /> Upload PNG / SVG
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
-                      You can upload your logo now or after checkout — we'll email a proof for approval before printing.
-                    </p>
-                  </div>
-
                   <Button onClick={onProceedToCheckout} size="lg" className="w-full">
                     Continue to checkout
                   </Button>
                 </>
+              )}
+              </>
+              )}
+
+              {checkoutStep !== 'cart' && (
+                <CheckoutStepsPanel
+                  step={checkoutStep}
+                  setStep={setCheckoutStep}
+                  donorInfo={props.donorInfo || null}
+                  onDonorInfoNext={props.onDonorInfoNext}
+                  businessData={props.businessData || null}
+                  setBusinessData={props.setBusinessData}
+                  onBusinessInfoNext={props.onBusinessInfoNext}
+                  customFields={props.customFields || []}
+                  customFieldValues={props.customFieldValues || {}}
+                  setCustomFieldValues={props.setCustomFieldValues}
+                  onCustomFieldsNext={props.onCustomFieldsNext}
+                  requiresBusinessInfo={!!props.requiresBusinessInfo}
+                  organizationId={props.organizationId || ''}
+                  processingCheckout={!!props.processingCheckout}
+                  onFinalCheckout={props.onFinalCheckout}
+                  pendingLogoFile={props.pendingLogoFile || null}
+                  setPendingLogoFile={props.setPendingLogoFile}
+                  cart={cart}
+                  subtotal={subtotal}
+                  platformFee={platformFee}
+                  total={total}
+                  feeModel={campaign.fee_model}
+                />
               )}
             </CardContent>
           </Card>
@@ -622,5 +675,224 @@ function ItemCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// ───────────────────────────── checkout panel ─────────────────────────────
+
+type CheckoutStep = 'cart' | 'donor-info' | 'business-info' | 'custom-fields' | 'payment';
+
+function CheckoutStepsPanel(props: {
+  step: CheckoutStep;
+  setStep: (s: CheckoutStep) => void;
+  donorInfo: DonorInfo | null;
+  onDonorInfoNext?: (info: DonorInfo) => void;
+  businessData: { businessId: string; isNew: boolean; businessName: string } | null;
+  setBusinessData?: (d: { businessId: string; isNew: boolean; businessName: string } | null) => void;
+  onBusinessInfoNext?: () => void;
+  customFields: Array<any>;
+  customFieldValues: Record<string, any>;
+  setCustomFieldValues?: (v: Record<string, any>) => void;
+  onCustomFieldsNext?: () => void;
+  requiresBusinessInfo: boolean;
+  organizationId: string;
+  processingCheckout: boolean;
+  onFinalCheckout?: () => void;
+  pendingLogoFile: File | null;
+  setPendingLogoFile?: (f: File | null) => void;
+  cart: SponsorshipItem[];
+  subtotal: number;
+  platformFee: number;
+  total: number;
+  feeModel: "donor_covers" | "org_absorbs" | null;
+}) {
+  const {
+    step, setStep, donorInfo, onDonorInfoNext, businessData, onBusinessInfoNext,
+    customFields, customFieldValues, setCustomFieldValues, onCustomFieldsNext,
+    requiresBusinessInfo, organizationId, processingCheckout, onFinalCheckout,
+    pendingLogoFile, setPendingLogoFile, cart, subtotal, platformFee, total, feeModel,
+  } = props;
+
+  const stepLabels: Record<CheckoutStep, string> = {
+    'cart': 'Cart',
+    'donor-info': 'Your info',
+    'business-info': 'Business info',
+    'custom-fields': 'Details',
+    'payment': 'Review & pay',
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-semibold">{stepLabels[step]}</div>
+        <button
+          type="button"
+          onClick={() => setStep('cart')}
+          className="text-xs text-muted-foreground hover:text-foreground underline"
+        >
+          Edit cart
+        </button>
+      </div>
+
+      {step === 'donor-info' && (
+        <DonorInfoForm
+          organizationId={organizationId}
+          onBack={() => setStep('cart')}
+          onComplete={(info) => onDonorInfoNext?.(info)}
+        />
+      )}
+
+      {step === 'business-info' && (
+        <div className="space-y-4">
+          <LogoUploadInline
+            file={pendingLogoFile}
+            onChange={(f) => setPendingLogoFile?.(f)}
+          />
+          <BusinessInfoForm
+            organizationId={organizationId}
+            logoFile={pendingLogoFile}
+            onBusinessSelected={(businessId, isNew, businessName) => {
+              props.setBusinessData?.({ businessId, isNew, businessName });
+              onBusinessInfoNext?.();
+            }}
+            onSkip={requiresBusinessInfo ? undefined : () => onBusinessInfoNext?.()}
+          />
+          <Button variant="outline" className="w-full" onClick={() => setStep('donor-info')}>
+            Back
+          </Button>
+        </div>
+      )}
+
+      {step === 'custom-fields' && (
+        <div className="space-y-4">
+          <CustomFieldsRenderer
+            fields={customFields as any}
+            values={customFieldValues}
+            onChange={(fieldId, value) => {
+              setCustomFieldValues?.({ ...customFieldValues, [fieldId]: value });
+            }}
+          />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setStep(requiresBusinessInfo ? 'business-info' : 'donor-info')}
+            >
+              Back
+            </Button>
+            <Button className="flex-1" onClick={() => onCustomFieldsNext?.()}>
+              Continue
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === 'payment' && (
+        <div className="space-y-4">
+          <div className="space-y-2 border-t pt-3 text-sm">
+            {cart.filter(i => i.selectedQuantity > 0).map(i => (
+              <div key={i.id} className="flex justify-between">
+                <span className="text-muted-foreground">{i.name} × {i.selectedQuantity}</span>
+                <span>${((i.cost || 0) * i.selectedQuantity).toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-1 border-t pt-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>${subtotal.toFixed(2)}</span>
+            </div>
+            {feeModel !== 'org_absorbs' && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Platform fee (10%)</span>
+                <span>${platformFee.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-bold border-t pt-2">
+              <span>Total</span>
+              <span>${total.toFixed(2)}</span>
+            </div>
+          </div>
+          {donorInfo && (
+            <div className="rounded-md border p-3 text-xs space-y-0.5">
+              <div className="font-medium text-sm">{donorInfo.firstName} {donorInfo.lastName}</div>
+              <div className="text-muted-foreground">{donorInfo.email}</div>
+              {businessData && (
+                <div className="text-muted-foreground mt-1">Business: {businessData.businessName}</div>
+              )}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              disabled={processingCheckout}
+              onClick={() => {
+                if (customFields.length > 0) setStep('custom-fields');
+                else if (requiresBusinessInfo) setStep('business-info');
+                else setStep('donor-info');
+              }}
+            >
+              Back
+            </Button>
+            <Button className="flex-1" disabled={processingCheckout} onClick={() => onFinalCheckout?.()}>
+              {processingCheckout && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Pay ${total.toFixed(2)}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LogoUploadInline({
+  file,
+  onChange,
+}: {
+  file: File | null;
+  onChange: (f: File | null) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const handleFile = (f: File | null) => {
+    onChange(f);
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(f ? URL.createObjectURL(f) : null);
+  };
+
+  return (
+    <div className="border rounded-lg p-3 space-y-2">
+      <div className="text-sm font-medium">Business logo (optional)</div>
+      {file && preview ? (
+        <div className="flex items-center gap-3">
+          <img src={preview} alt="Logo preview" className="h-12 w-12 object-contain border rounded" />
+          <div className="text-xs text-muted-foreground flex-1 truncate">{file.name}</div>
+          <Button variant="ghost" size="sm" onClick={() => handleFile(null)}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-center gap-2"
+          onClick={() => inputRef.current?.click()}
+        >
+          <Upload className="h-4 w-4" /> Upload PNG / SVG
+        </Button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files?.[0] || null)}
+      />
+      <p className="text-xs text-muted-foreground">
+        We'll attach this to your business account for sponsorship recognition.
+      </p>
+    </div>
   );
 }

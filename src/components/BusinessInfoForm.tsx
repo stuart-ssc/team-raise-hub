@@ -59,9 +59,10 @@ interface BusinessInfoFormProps {
   organizationId: string;
   onBusinessSelected: (businessId: string, isNew: boolean, businessName: string) => void;
   onSkip?: () => void;
+  logoFile?: File | null;
 }
 
-export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }: BusinessInfoFormProps) {
+export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip, logoFile }: BusinessInfoFormProps) {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [matches, setMatches] = useState<BusinessMatch[]>([]);
@@ -113,6 +114,18 @@ export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }:
   };
 
   const handleSelectBusiness = async (match: BusinessMatch) => {
+    if (logoFile) {
+      try {
+        const url = await uploadBusinessLogo(match.id, logoFile);
+        if (url) {
+          await supabase.functions.invoke('process-checkout-business', {
+            body: { businessId: match.id, logoUrl: url, organizationId },
+          });
+        }
+      } catch (e) {
+        console.error('Logo upload failed:', e);
+      }
+    }
     onBusinessSelected(match.id, false, match.business_name);
   };
 
@@ -141,6 +154,19 @@ export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }:
 
       if (error) throw error;
 
+      if (logoFile && data.businessId) {
+        try {
+          const url = await uploadBusinessLogo(data.businessId, logoFile);
+          if (url) {
+            await supabase.functions.invoke('process-checkout-business', {
+              body: { businessId: data.businessId, logoUrl: url, organizationId },
+            });
+          }
+        } catch (e) {
+          console.error('Logo upload failed:', e);
+        }
+      }
+
       onBusinessSelected(data.businessId, true, formData.business_name);
 
       toast({
@@ -158,6 +184,20 @@ export function BusinessInfoForm({ organizationId, onBusinessSelected, onSkip }:
       setCreating(false);
     }
   };
+
+  async function uploadBusinessLogo(businessId: string, file: File): Promise<string | null> {
+    const ext = file.name.split('.').pop() || 'png';
+    const path = `${businessId}/logo-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { contentType: file.type, upsert: true });
+    if (upErr) {
+      console.error('Logo upload error:', upErr);
+      return null;
+    }
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+    return publicUrl;
+  }
 
   return (
     <div className="space-y-6">

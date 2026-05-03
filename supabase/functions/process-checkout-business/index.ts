@@ -32,7 +32,8 @@ serve(async (req) => {
       newBusinessData,
       organizationId,
       customFieldValues,
-      campaignId
+      campaignId,
+      logoUrl,
     } = await req.json();
 
     console.log('Processing checkout business:', { orderId, businessId, organizationId });
@@ -72,6 +73,22 @@ serve(async (req) => {
         });
 
       console.log('Created new business:', finalBusinessId);
+    }
+
+    // Update business logo if provided (only if not already set)
+    if (logoUrl && finalBusinessId) {
+      const { data: existing } = await supabaseClient
+        .from('businesses')
+        .select('logo_url')
+        .eq('id', finalBusinessId)
+        .single();
+      if (!existing?.logo_url) {
+        await supabaseClient
+          .from('businesses')
+          .update({ logo_url: logoUrl })
+          .eq('id', finalBusinessId);
+        console.log('Updated business logo:', finalBusinessId);
+      }
     }
 
     // ALWAYS update order with business info (regardless of auth status)
