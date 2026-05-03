@@ -127,6 +127,10 @@ interface CampaignData {
   eventAgendaHeading?: string;
   eventAgendaHeadingAccent?: string;
   eventIncludesHeading?: string;
+  merchShipsByDate: string;
+  merchPickupAvailable: boolean;
+  merchPickupNote: string;
+  merchShippingFlatRate: string;
 }
 
 interface RequiredAsset {
@@ -208,6 +212,10 @@ export default function CampaignEditor() {
     eventAgendaHeading: "",
     eventAgendaHeadingAccent: "",
     eventIncludesHeading: "",
+    merchShipsByDate: "",
+    merchPickupAvailable: false,
+    merchPickupNote: "",
+    merchShippingFlatRate: "",
   });
   const [requiredAssets, setRequiredAssets] = useState<RequiredAsset[]>([]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -218,6 +226,7 @@ export default function CampaignEditor() {
   const [navSheetOpen, setNavSheetOpen] = useState(false);
   const [pledgeTypeId, setPledgeTypeId] = useState<string | null>(null);
   const [eventTypeId, setEventTypeId] = useState<string | null>(null);
+  const [merchandiseTypeId, setMerchandiseTypeId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -241,8 +250,21 @@ export default function CampaignEditor() {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("campaign_type")
+        .select("id, name")
+        .ilike("name", "Merchandise Sales")
+        .maybeSingle();
+      if (data) setMerchandiseTypeId(data.id);
+    })();
+  }, []);
+
   const isPledgeCampaign = !!pledgeTypeId && campaignData.campaignTypeId === pledgeTypeId;
   const isEventCampaign = !!eventTypeId && campaignData.campaignTypeId === eventTypeId;
+  const isMerchandiseCampaign =
+    !!merchandiseTypeId && campaignData.campaignTypeId === merchandiseTypeId;
 
   // Counts for nav badges
   const { data: itemsCount = 0 } = useQuery({
