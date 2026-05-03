@@ -117,6 +117,11 @@ interface CampaignData {
   eventIncludes: string[];
   eventIncludesSubtitle: string;
   eventAgenda: AgendaItem[];
+  eventDetailsHeading?: string;
+  eventDetailsHeadingAccent?: string;
+  eventAgendaHeading?: string;
+  eventAgendaHeadingAccent?: string;
+  eventIncludesHeading?: string;
 }
 
 interface RequiredAsset {
@@ -193,6 +198,11 @@ export default function CampaignEditor() {
     eventIncludes: [],
     eventIncludesSubtitle: "",
     eventAgenda: [],
+    eventDetailsHeading: "",
+    eventDetailsHeadingAccent: "",
+    eventAgendaHeading: "",
+    eventAgendaHeadingAccent: "",
+    eventIncludesHeading: "",
   });
   const [requiredAssets, setRequiredAssets] = useState<RequiredAsset[]>([]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
