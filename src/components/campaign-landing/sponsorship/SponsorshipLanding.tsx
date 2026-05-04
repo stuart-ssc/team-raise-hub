@@ -209,7 +209,7 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
   const recurringInCart = cart.some((i) => i.selectedQuantity > 0 && i.is_recurring);
 
   return (
-    <div className="min-h-screen bg-background">
+    <BrandedLandingWrapper branding={props.branding} className="min-h-screen bg-background">
       {/* HERO */}
       <section className="relative bg-foreground text-background overflow-hidden">
         {campaign.image_url && (
