@@ -1,73 +1,72 @@
 ## Goal
 
-Make event-agenda collection a **dedicated, item-style sub-flow** in the AI Fundraiser Assistant — mirroring how `campaign_items` are added one-at-a-time after the draft is created — instead of asking for the agenda inline as a single field.
+Allow campaign owners to share a private preview link for unpublished fundraisers using `?preview=TOKEN`. Show a banner and disable checkout while in preview mode. Update the editor's Share card to surface the preview URL when not yet published.
 
-## Current behavior
+## Background
 
-In `supabase/functions/ai-campaign-builder/index.ts`, Event setup (`eventStillToAsk`) walks: `event_start_at → event_location_name → event_location_address → event_format → event_includes`, then jumps to items collection (tickets). **Agenda is never asked**, even though `EventDetailsSection.tsx` exposes a structured `eventAgenda: AgendaItem[]` (`time`, `title`, `description`).
+- `campaigns` already has a `preview_token uuid` column.
+- The current public SELECT RLS policy only exposes campaigns with `status = true`, so unpublished campaigns can't be fetched from the browser even if you know the token.
+- `CampaignLanding.tsx` fetches via `.eq("status", true).single()` and renders the cart with a "Proceed to Checkout" button (around lines 213–231 and 1286–1292).
+- `CampaignShareCard` builds `/c/{slug}` and is passed `isPublished` from `CampaignEditor.tsx`.
 
-## Proposed flow
+## Plan
 
-After `event_includes` is resolved (and before the items/tickets phase begins), enter a new **Agenda phase** that behaves like the items-collection phase:
+### 1. Public preview fetch (edge function)
 
-```text
-Event fields → "Want to add an agenda for the day?" (Yes / Skip)
-   ├─ Skip → continue to ticket items
-   └─ Yes → loop:
-        - Ask: time   (e.g. "7:30 AM")
-        - Ask: title  (e.g. "Check-in & range opens")
-        - Ask: description (optional, with Skip)
-        - Save row → "Agenda item saved. Add another or done?" (Add another / Done)
-   → on Done → continue to ticket items
-```
+Create `supabase/functions/get-campaign-preview/index.ts` (uses service role, no JWT verification):
 
-UI affordances reuse the existing `SuggestionPrompt` chips (Yes/No, Skip, Add another / Done) so the user is never typing free-form when a button will do.
+- Input: `{ slug, previewToken }`.
+- Looks up the campaign by `slug` and verifies `preview_token = previewToken`. Returns 404 if not matched.
+- Returns the same shape currently selected in `fetchCampaignData` (campaign + groups/group_type/schools + campaign_type), plus `campaign_items` (with `campaign_item_variants`) and `campaign_custom_fields`.
+- Register in `supabase/config.toml` with `verify_jwt = false`.
 
-## Technical changes
+This avoids loosening RLS on the `campaigns` table.
 
-### 1. `supabase/functions/ai-campaign-builder/index.ts`
+### 2. CampaignLanding preview mode
 
-- **New phase**: introduce `phase: "collecting_agenda"` alongside `collecting_items`. Triggered when `isEvent && eventFieldsDone && !collectedFields.event_agenda_complete`.
-- **State on `collectedFields`**:
-  - `event_agenda_addressed: boolean` — set true once user opts in or skips
-  - `event_agenda_complete: boolean` — set true when user clicks "Done"
-  - `current_agenda_draft: { time?, title?, description?, description_skipped? }`
-  - The persisted `event_agenda` array lives on `campaigns.event_agenda` (jsonb) — we append to it each time a row is saved.
-- **New system prompt builder** `buildAgendaSystemPrompt(...)` modeled after `buildItemsSystemPrompt`, walking three fields (`time`, `title`, `description`) with one-question-at-a-time turns and the same two-paragraph response format.
-- **New tools** (active only in agenda phase, like `itemsTools`):
-  - `update_agenda_field` — `{ time?, title?, description?, description_skipped? }`
-  - `save_agenda_item` — appends `current_agenda_draft` to `campaigns.event_agenda` (read-modify-write, since the column is jsonb), then clears the draft and flips to "awaiting add another"
-  - `agenda_complete` — sets `event_agenda_complete: true`
-- **Entry prompt** (between event fields and agenda loop): "Want to add a day-of agenda? (Add agenda / Skip)" via `SuggestionPrompt` chips. Choosing Skip sets both `event_agenda_addressed` and `event_agenda_complete` true.
-- **Phase routing** (around line 2153 `let phase = ...`): after event fields are done, set `phase = "collecting_agenda"` until `event_agenda_complete`, then fall through to `collecting_items` (tickets).
+In `src/pages/CampaignLanding.tsx`:
 
-### 2. `src/lib/ai/campaignSchema.ts`
+- Read `preview` from `useSearchParams()`. Track `isPreview = !!previewToken`.
+- In `fetchCampaignData`:
+  - If `isPreview`: call `supabase.functions.invoke('get-campaign-preview', { body: { slug, previewToken } })`. Populate `campaign`, `campaignItems`, `customFields` from the response. On 404, show "Preview link is invalid or has expired."
+  - Else: existing path (unchanged, still requires `status = true`).
+- Render a non-dismissible banner at the very top of the page (above the hero) when `isPreview`:
+  - Use `Alert` with a lock icon and the exact copy:  
+    `🔒 You're viewing an unpublished preview of this fundraiser. This link is private and will stop working once the campaign is published or the token is rotated.`
+  - Sticky to the top, amber/warning styling, no close button.
+- Disable checkout when `isPreview`:
+  - Pass `disabled={isPreview}` (and a tooltip "Checkout is disabled in preview mode") to the cart's "Proceed to Checkout" button at line ~1286.
+  - Also short-circuit `handleProceedToCheckout` and `handleDonationProceed` to no-op with a toast in preview mode (defense in depth for the type-specific landings that have their own CTAs).
+  - For the type-specific landings (`MerchandiseLanding`, `EventLanding`, `DonationLanding`, `PledgeLanding`, `SponsorshipLanding`), forward an `isPreview` prop and disable their primary CTA buttons similarly. (Each already accepts `onProceedToCheckout`; we add a `disabled` prop and surface the same tooltip.)
 
-- Add a small helper `isEventAgendaComplete(collected)` for the frontend preview/state machine, plus optional fields `event_agenda_addressed`, `event_agenda_complete` so they round-trip via `collectedFields`.
+### 3. Editor Share card
 
-### 3. `src/components/AddCampaignForm.tsx`
+`src/components/campaign-editor/CampaignShareCard.tsx`:
 
-- No new column — `event_agenda` already maps. Confirm the post-AI save path passes the accumulated `event_agenda` array through (it already does for editor saves; the edge function will write it directly during the loop, so the frontend just needs to not overwrite it).
+- Accept new optional prop `previewToken: string | null`.
+- When `!isPublished && previewToken && slug`, build URL as  
+  `https://sponsorly.io/c/{slug}?preview={previewToken}`  
+  (instead of `window.location.origin`, per the requirement to use the canonical sponsorly.io domain for share).
+- Update the helper text: when unpublished, say "Private preview link — works until you publish or rotate the token." instead of the current "Link will activate when published."
+- Keep Copy / Preview / Share buttons functional with this URL.
 
-### 4. `src/components/ai-campaign/AICampaignPreview.tsx`
+`src/pages/CampaignEditor.tsx`:
 
-- Render the `event_agenda` rows under the existing "Event details" group as a compact bulleted list (`HH:MM — Title`), updating live as each row is saved.
+- Read `preview_token` from the campaign record (already selectable; add to the campaign query if missing).
+- Pass `previewToken={campaignData.previewToken}` to `<CampaignShareCard>`.
 
-### 5. `src/components/ai-campaign/AIChatPanel.tsx` / `SuggestionPrompt.tsx`
+### 4. Edge cases
 
-- No structural change. The new agenda phase reuses the existing `ChatSuggestions` `choice` type for Yes/Skip and Add another/Done chips.
-
-## Out of scope
-
-- Heading/accent overrides (`eventAgendaHeading`, `eventAgendaHeadingAccent`) — editor-only, unchanged.
-- Reordering of agenda rows in chat (user can reorder later in the editor).
-- Inline editing of a saved agenda row mid-chat (must be done in the editor).
+- If `?preview=` is present but campaign is already published, the edge function still returns it; banner still shows so the owner knows they're using a private URL. (Acceptable; alternative is to redirect to the clean `/c/{slug}`, but keeping the banner is simpler and matches the requirement.)
+- Search engines: keep `noindex` for preview views by adding `<SeoHead noIndex />` (or equivalent meta) when `isPreview`.
 
 ## Files touched
 
-- `supabase/functions/ai-campaign-builder/index.ts`
-- `src/lib/ai/campaignSchema.ts`
-- `src/components/ai-campaign/AICampaignPreview.tsx`
-- `src/components/AddCampaignForm.tsx` (verification only — likely no change)
+- New: `supabase/functions/get-campaign-preview/index.ts`
+- Edit: `supabase/config.toml` (register function, `verify_jwt = false`)
+- Edit: `src/pages/CampaignLanding.tsx` (preview fetch, banner, disable checkout, propagate `isPreview`)
+- Edit: `src/components/campaign-landing/{merchandise,event,donation,pledge,sponsorship}/*Landing.tsx` (accept + apply `isPreview` to CTA)
+- Edit: `src/components/campaign-editor/CampaignShareCard.tsx` (preview URL + copy)
+- Edit: `src/pages/CampaignEditor.tsx` (pass `previewToken`)
 
-No DB migration required (`event_agenda` column already exists).
+No database migration needed (`preview_token` already exists, RLS untouched).

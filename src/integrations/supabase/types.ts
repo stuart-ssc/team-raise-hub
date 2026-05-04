@@ -1059,6 +1059,7 @@ export type Database = {
           pledge_suggested_unit_amounts: Json | null
           pledge_unit_label: string | null
           pledge_unit_label_plural: string | null
+          preview_token: string
           publication_status: string | null
           requires_business_info: boolean | null
           roster_id: number | null
@@ -1121,6 +1122,7 @@ export type Database = {
           pledge_suggested_unit_amounts?: Json | null
           pledge_unit_label?: string | null
           pledge_unit_label_plural?: string | null
+          preview_token?: string
           publication_status?: string | null
           requires_business_info?: boolean | null
           roster_id?: number | null
@@ -1183,6 +1185,7 @@ export type Database = {
           pledge_suggested_unit_amounts?: Json | null
           pledge_unit_label?: string | null
           pledge_unit_label_plural?: string | null
+          preview_token?: string
           publication_status?: string | null
           requires_business_info?: boolean | null
           roster_id?: number | null
