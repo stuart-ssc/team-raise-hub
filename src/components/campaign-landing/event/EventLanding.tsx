@@ -602,6 +602,6 @@ export function EventLanding(props: EventLandingProps) {
           </div>
         </aside>
       </div>
-    </div>
+    </BrandedLandingWrapper>
   );
 }
