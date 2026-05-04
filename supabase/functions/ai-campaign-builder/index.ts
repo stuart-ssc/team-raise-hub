@@ -1266,6 +1266,90 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Pledge / Merchandise / Event field fallbacks. The model often forgets
+        // to call update_campaign_fields after the user answers these. Detect
+        // the asked field via the same heuristic and persist the value here.
+        const askedTypeField = detectFieldFromAssistantText(lastAssistantRaw);
+        const persistTypeField = async (key: string, value: any) => {
+          updatedFields[key] = value;
+          postDraftFallbackApplied = true;
+          try {
+            await adminSb.from("campaigns").update({ [key]: value }).eq("id", campaignId);
+          } catch (e) {
+            console.error(`Failed to persist ${key} (fallback):`, e);
+          }
+        };
+        if (askedTypeField === "pledge_unit_label" && !updatedFields.pledge_unit_label && userRawTrimmed) {
+          const v = userRawTrimmed.toLowerCase().replace(/\s+/g, " ").slice(0, 40);
+          if (v) await persistTypeField("pledge_unit_label", v);
+        } else if (askedTypeField === "pledge_scope" && !updatedFields.pledge_scope) {
+          if (/team/.test(userLower)) await persistTypeField("pledge_scope", "team");
+          else if (/participant|player|each/.test(userLower)) await persistTypeField("pledge_scope", "participant");
+        } else if (askedTypeField === "pledge_event_date" && !updatedFields.pledge_event_date) {
+          const iso = normalizeDate(userRawTrimmed, today);
+          if (iso) await persistTypeField("pledge_event_date", iso);
+        } else if (askedTypeField === "merch_ships_by_date" && !updatedFields.merch_ships_by_date) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.merch_ships_by_date_skipped = true;
+            postDraftFallbackApplied = true;
+          } else {
+            const iso = normalizeDate(userRawTrimmed, today);
+            if (iso) await persistTypeField("merch_ships_by_date", iso);
+          }
+        } else if (askedTypeField === "merch_shipping_flat_rate" && updatedFields.merch_shipping_flat_rate === undefined) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.merch_shipping_flat_rate_skipped = true;
+            postDraftFallbackApplied = true;
+          } else {
+            const m = userRawTrimmed.replace(/[$,\s]/g, "").match(/\d+(?:\.\d+)?/);
+            if (m) {
+              const num = Number(m[0]);
+              if (isFinite(num) && num >= 0) await persistTypeField("merch_shipping_flat_rate", num);
+            }
+          }
+        } else if (askedTypeField === "merch_pickup_available" && updatedFields.merch_pickup_available === undefined) {
+          const yn = parseYesNo(userRawTrimmed);
+          if (yn !== null) await persistTypeField("merch_pickup_available", yn);
+        } else if (askedTypeField === "merch_pickup_note" && !updatedFields.merch_pickup_note) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.merch_pickup_note_skipped = true;
+            postDraftFallbackApplied = true;
+          } else if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 300) {
+            await persistTypeField("merch_pickup_note", userRawTrimmed);
+          }
+        } else if (askedTypeField === "event_start_at" && !updatedFields.event_start_at) {
+          if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 100) {
+            await persistTypeField("event_start_at", userRawTrimmed);
+          }
+        } else if (askedTypeField === "event_location_name" && !updatedFields.event_location_name) {
+          if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 120) {
+            await persistTypeField("event_location_name", userRawTrimmed);
+          }
+        } else if (askedTypeField === "event_location_address" && !updatedFields.event_location_address) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.event_location_address_skipped = true;
+            postDraftFallbackApplied = true;
+          } else if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 200) {
+            await persistTypeField("event_location_address", userRawTrimmed);
+          }
+        } else if (askedTypeField === "event_format" && !updatedFields.event_format) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.event_format_skipped = true;
+            postDraftFallbackApplied = true;
+          } else if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 200) {
+            await persistTypeField("event_format", userRawTrimmed);
+          }
+        } else if (askedTypeField === "event_includes" && !updatedFields.event_includes) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.event_includes_skipped = true;
+            postDraftFallbackApplied = true;
+          } else if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 300) {
+            // Persist as array (column is text[])
+            const arr = userRawTrimmed.split(",").map((s) => s.trim()).filter(Boolean);
+            if (arr.length > 0) await persistTypeField("event_includes", arr);
+          }
+        }
+
         if (postDraftFallbackApplied) {
           console.log("[ai-campaign-builder] post-draft fallback applied", JSON.stringify({
             askedImage, askedRoster, askedRosterPick, askedDirections,
