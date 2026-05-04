@@ -1834,6 +1834,41 @@ Deno.serve(async (req) => {
           }
           if (arr.length > 0) dbUpdate.pledge_suggested_unit_amounts = arr;
         }
+        if (persistFields.pledge_unit_label_plural !== undefined)
+          dbUpdate.pledge_unit_label_plural = persistFields.pledge_unit_label_plural;
+
+        // Merchandise fields
+        if (persistFields.merch_ships_by_date !== undefined)
+          dbUpdate.merch_ships_by_date = persistFields.merch_ships_by_date;
+        if (persistFields.merch_shipping_flat_rate !== undefined)
+          dbUpdate.merch_shipping_flat_rate = persistFields.merch_shipping_flat_rate;
+        if (persistFields.merch_pickup_available !== undefined)
+          dbUpdate.merch_pickup_available = persistFields.merch_pickup_available;
+        if (persistFields.merch_pickup_note !== undefined)
+          dbUpdate.merch_pickup_note = persistFields.merch_pickup_note;
+
+        // Event fields
+        if (persistFields.event_start_at !== undefined)
+          dbUpdate.event_start_at = persistFields.event_start_at;
+        if (persistFields.event_location_name !== undefined)
+          dbUpdate.event_location_name = persistFields.event_location_name;
+        if (persistFields.event_location_address !== undefined)
+          dbUpdate.event_location_address = persistFields.event_location_address;
+        if (persistFields.event_format !== undefined)
+          dbUpdate.event_format = persistFields.event_format;
+        if (persistFields.event_includes !== undefined) {
+          const raw = persistFields.event_includes;
+          let arr: string[] = [];
+          if (Array.isArray(raw)) {
+            arr = raw.map((s) => String(s).trim()).filter((s) => s.length > 0);
+          } else if (typeof raw === "string") {
+            arr = raw
+              .split(",")
+              .map((s) => s.trim())
+              .filter((s) => s.length > 0);
+          }
+          if (arr.length > 0) dbUpdate.event_includes = arr;
+        }
 
         if (Object.keys(dbUpdate).length > 0) {
           const { error: updErr } = await adminSb.from("campaigns").update(dbUpdate).eq("id", campaignId);
