@@ -412,6 +412,7 @@ export default function CampaignEditor() {
           .from("campaign_required_assets")
           .select("*")
           .eq("campaign_id", id)
+          .is("campaign_item_id", null)
           .order("display_order");
 
         if (assetsData) {
@@ -615,11 +616,12 @@ export default function CampaignEditor() {
             })));
         }
 
-        // Save required assets
+        // Save required assets (campaign-wide only — per-item assets are managed in the Items section)
         await supabase
           .from("campaign_required_assets")
           .delete()
-          .eq("campaign_id", campaignId);
+          .eq("campaign_id", campaignId)
+          .is("campaign_item_id", null);
 
         if (requiredAssets.length > 0) {
           await supabase
