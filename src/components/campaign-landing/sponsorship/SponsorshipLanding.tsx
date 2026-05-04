@@ -25,6 +25,8 @@ import { useCampaignSponsors } from "@/hooks/useCampaignSponsors";
 import { DonorInfoForm, DonorInfo } from "@/components/DonorInfoForm";
 import { BusinessInfoForm } from "@/components/BusinessInfoForm";
 import { CustomFieldsRenderer } from "@/components/CustomFieldsRenderer";
+import type { ResolvedBranding } from "@/lib/campaignBranding";
+import { BrandedLandingWrapper, BrandLogoStrip } from "../shared/BrandedLandingWrapper";
 
 // ───────────────────────────── types ─────────────────────────────
 
@@ -117,6 +119,7 @@ export interface SponsorshipLandingProps {
   onFinalCheckout?: () => void;
   pendingLogoFile?: File | null;
   setPendingLogoFile?: (f: File | null) => void;
+  branding?: ResolvedBranding;
 }
 
 // ───────────────────────────── helpers ─────────────────────────────
