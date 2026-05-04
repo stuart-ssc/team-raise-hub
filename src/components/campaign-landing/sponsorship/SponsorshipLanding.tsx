@@ -520,7 +520,7 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
           </div>
         </div>
       </section>
-    </div>
+    </BrandedLandingWrapper>
   );
 }
 
