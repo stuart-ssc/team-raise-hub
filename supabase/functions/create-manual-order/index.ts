@@ -6,6 +6,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/** Mirrors verify-checkout-session/orderRequiresAssets — see that file for behavior notes. */
+async function orderRequiresAssets(client: any, campaignId: string, items: any[]) {
+  const itemIds: string[] = Array.isArray(items)
+    ? items.map((li: any) => li?.campaign_item_id || li?.id).filter((v: any) => typeof v === 'string')
+    : [];
+  if (itemIds.length > 0) {
+    const { data: sponsorshipItems } = await client
+      .from('campaign_items')
+      .select('id')
+      .in('id', itemIds)
+      .eq('is_sponsorship_item', true);
+    if ((sponsorshipItems?.length ?? 0) > 0) return true;
+  }
+  const { data: campaignInfo } = await client
+    .from('campaigns')
+    .select('requires_business_info')
+    .eq('id', campaignId)
+    .single();
+  if (!campaignInfo?.requires_business_info) return false;
+  const { count: assetCount } = await client
+    .from('campaign_required_assets')
+    .select('id', { count: 'exact', head: true })
+    .eq('campaign_id', campaignId)
+    .is('campaign_item_id', null);
+  return (assetCount ?? 0) > 0;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
