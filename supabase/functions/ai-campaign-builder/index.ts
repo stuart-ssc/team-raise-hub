@@ -1901,6 +1901,41 @@ Deno.serve(async (req) => {
               toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, itemId: savedItemId, itemsAdded, savedName }) });
             }
           }
+        } else if (toolCall.function?.name === "update_agenda_field" && inAgendaPhase && campaignId) {
+          try {
+            const args = JSON.parse(toolCall.function.arguments);
+            const draft: Record<string, any> = { ...(updatedFields.current_agenda_draft || {}) };
+            for (const [key, value] of Object.entries(args)) {
+              if (value === undefined || value === null || value === "") continue;
+              draft[key] = value;
+            }
+            updatedFields.current_agenda_draft = draft;
+            updatedFields.event_agenda_addressed = true;
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, currentAgendaDraft: draft }) });
+          } catch (e) {
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "parse_error" }) });
+          }
+        } else if (toolCall.function?.name === "save_agenda_item" && inAgendaPhase && campaignId) {
+          const draft: Record<string, any> = updatedFields.current_agenda_draft || {};
+          if (!isAgendaRowReady(draft)) {
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "Missing time or title" }) });
+          } else {
+            const newRow: AgendaItem = { time: draft.time, title: draft.title };
+            if (draft.description && draft.description_skipped !== true) newRow.description = draft.description;
+            const list: AgendaItem[] = Array.isArray(updatedFields.event_agenda) ? [...updatedFields.event_agenda] : [];
+            list.push(newRow);
+            updatedFields.event_agenda = list;
+            updatedFields.current_agenda_draft = {};
+            updatedFields.awaiting_add_another_agenda = true;
+            updatedFields.event_agenda_addressed = true;
+            persistFields.event_agenda = list;
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, agendaCount: list.length }) });
+          }
+        } else if (toolCall.function?.name === "agenda_complete" && inAgendaPhase && campaignId) {
+          updatedFields.event_agenda_complete = true;
+          updatedFields.event_agenda_addressed = true;
+          updatedFields.awaiting_add_another_agenda = false;
+          toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true })});
         } else {
           toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "unknown_tool" }) });
         }
