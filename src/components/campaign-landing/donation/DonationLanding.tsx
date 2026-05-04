@@ -181,7 +181,7 @@ export function DonationLanding(props: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <BrandedLandingWrapper branding={props.branding} className="min-h-screen bg-background">
       {/* HERO */}
       <section className="relative bg-foreground text-background overflow-hidden">
         {campaign.image_url && (
@@ -191,6 +191,12 @@ export function DonationLanding(props: Props) {
           </div>
         )}
         <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 md:py-16 space-y-6">
+          <BrandLogoStrip
+            branding={props.branding}
+            orgName={[campaign.groups?.schools?.school_name, campaign.groups?.group_name].filter(Boolean).join(" • ") || null}
+            variant="dark"
+            className="mb-2"
+          />
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <Badge variant="secondary" className="bg-background/15 text-background border-0 hover:bg-background/20">
               {campaign.campaign_type?.name || "Donation"}
