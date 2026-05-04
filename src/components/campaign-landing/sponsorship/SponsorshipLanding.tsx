@@ -65,7 +65,7 @@ export interface SponsorshipCampaign {
   groups: {
     organization_id: string;
     group_name: string;
-    schools: { school_name: string };
+    schools: { school_name: string } | null;
   } | null;
   campaign_type: { name: string } | null;
 }
@@ -232,7 +232,7 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
             {campaign.groups && (
               <span className="flex items-center gap-1 text-background/80">
                 <MapPin className="h-4 w-4" />
-                {campaign.groups.group_name} • {campaign.groups.schools.school_name}
+                {[campaign.groups.schools?.school_name, campaign.groups.group_name].filter(Boolean).join(" • ")}
               </span>
             )}
           </div>
@@ -299,7 +299,7 @@ export function SponsorshipLanding(props: SponsorshipLandingProps) {
                     <h3 className="text-xl font-bold mt-1">{activePitch.name}</h3>
                     {campaign.groups && (
                       <p className="text-sm text-muted-foreground">
-                        {campaign.groups.group_name} • {campaign.groups.schools.school_name}
+                        {[campaign.groups.schools?.school_name, campaign.groups.group_name].filter(Boolean).join(" • ")}
                       </p>
                     )}
                     {activePitch.message && (

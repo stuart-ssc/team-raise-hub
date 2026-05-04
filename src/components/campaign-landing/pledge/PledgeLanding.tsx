@@ -47,7 +47,7 @@ export interface PledgeCampaign {
     id?: string;
     organization_id: string;
     group_name: string;
-    schools: { school_name: string };
+    schools: { school_name: string } | null;
   } | null;
   campaign_type: { name: string } | null;
 }
@@ -331,8 +331,7 @@ export function PledgeLanding({
             {campaign.groups && (
               <span className="flex items-center gap-1 text-background/80">
                 <MapPin className="h-4 w-4" />
-                {campaign.groups.group_name} •{" "}
-                {campaign.groups.schools.school_name}
+                {[campaign.groups.schools?.school_name, campaign.groups.group_name].filter(Boolean).join(" • ")}
               </span>
             )}
           </div>
@@ -414,8 +413,7 @@ export function PledgeLanding({
                     </h3>
                     {campaign.groups && (
                       <p className="text-sm text-muted-foreground">
-                        {campaign.groups.group_name} •{" "}
-                        {campaign.groups.schools.school_name}
+                        {[campaign.groups.schools?.school_name, campaign.groups.group_name].filter(Boolean).join(" • ")}
                       </p>
                     )}
                     {activePitch.message && (
