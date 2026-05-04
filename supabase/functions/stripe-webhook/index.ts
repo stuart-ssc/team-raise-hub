@@ -129,29 +129,18 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Check if campaign requires asset uploads to determine order status
+        // Check if order requires asset uploads to determine status
         const { data: orderForCampaign } = await supabaseAdmin
           .from('orders')
-          .select('campaign_id')
+          .select('campaign_id, items')
           .eq('id', orderId)
           .single();
 
         let orderStatus = 'succeeded';
         if (orderForCampaign?.campaign_id) {
-          const { data: campaignInfo } = await supabaseAdmin
-            .from('campaigns')
-            .select('requires_business_info')
-            .eq('id', orderForCampaign.campaign_id)
-            .single();
-
-          const { count: assetCount } = await supabaseAdmin
-            .from('campaign_required_assets')
-            .select('id', { count: 'exact', head: true })
-            .eq('campaign_id', orderForCampaign.campaign_id);
-
-          const requiresAssets = campaignInfo?.requires_business_info || (assetCount ?? 0) > 0;
+          const requiresAssets = await orderRequiresAssets(supabaseAdmin, orderForCampaign);
           orderStatus = requiresAssets ? 'succeeded' : 'completed';
-          console.log('Order status determined:', orderStatus, { requiresAssets, requiresBusinessInfo: campaignInfo?.requires_business_info, assetCount });
+          console.log('Order status determined:', orderStatus, { requiresAssets });
         }
 
         // Update order status and customer info
