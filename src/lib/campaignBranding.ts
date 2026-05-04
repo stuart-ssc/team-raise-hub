@@ -90,7 +90,7 @@ export function hexToHslString(hex: string | null | undefined): string | null {
  * Overrides --primary, --primary-foreground, and (when present) --secondary
  * so all Tailwind bg-primary/text-primary classes pick up the brand color.
  */
-export function brandingStyleVars(branding: ResolvedBranding): React.CSSProperties {
+export function brandingStyleVars(branding: ResolvedBranding): CSSProperties {
   const vars: Record<string, string> = {};
   const primaryHsl = hexToHslString(branding.primaryColor);
   if (primaryHsl) {
@@ -104,5 +104,5 @@ export function brandingStyleVars(branding: ResolvedBranding): React.CSSProperti
   if (secondaryHsl) {
     vars["--accent"] = secondaryHsl;
   }
-  return vars as React.CSSProperties;
+  return vars as CSSProperties;
 }
