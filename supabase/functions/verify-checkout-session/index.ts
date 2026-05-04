@@ -81,19 +81,11 @@ Deno.serve(async (req) => {
     const customerName = session.customer_details?.name || null;
     const isSubscription = session.metadata?.is_subscription === 'true';
 
-    // Determine order status based on whether campaign requires assets
-    const { data: campaignInfo } = await supabaseAdmin
-      .from('campaigns')
-      .select('requires_business_info')
-      .eq('id', order.campaign_id)
-      .single();
-
-    const { count: assetCount } = await supabaseAdmin
-      .from('campaign_required_assets')
-      .select('id', { count: 'exact', head: true })
-      .eq('campaign_id', order.campaign_id);
-
-    const requiresAssets = campaignInfo?.requires_business_info || (assetCount ?? 0) > 0;
+    // Determine order status based on whether THIS order requires assets.
+    // An order requires asset uploads when:
+    //   (a) the campaign-wide legacy `requires_business_info` flag is on AND any campaign_required_assets row exists, OR
+    //   (b) any line item in the order is flagged as a sponsorship item (per-item or campaign-wide assets exist for it).
+    const requiresAssets = await orderRequiresAssets(supabaseAdmin, order);
     const orderStatus = requiresAssets ? 'succeeded' : 'completed';
     console.log('Order status determined:', orderStatus, { requiresAssets });
 
