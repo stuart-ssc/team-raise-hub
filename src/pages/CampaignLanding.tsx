@@ -393,7 +393,7 @@ const CampaignLanding = () => {
     (item) => item.selectedQuantity > 0 && !!item.is_sponsorship_item,
   );
   const requiresBusinessInfo =
-    !!campaign?.requires_business_info || cartHasSponsorshipItem;
+    requiresBusinessInfo || cartHasSponsorshipItem;
 
   const handleProceedToCheckout = () => {
     if (!campaign) return;
@@ -455,7 +455,7 @@ const CampaignLanding = () => {
     setDonorInfo(info);
     
     // Determine next step based on campaign requirements
-    if (campaign?.requires_business_info) {
+    if (requiresBusinessInfo) {
       setCheckoutStep('business-info');
     } else if (customFields.length > 0) {
       setCheckoutStep('custom-fields');
@@ -941,7 +941,7 @@ const CampaignLanding = () => {
           customFieldValues={customFieldValues}
           setCustomFieldValues={setCustomFieldValues}
           onCustomFieldsNext={handleCustomFieldsNext}
-          requiresBusinessInfo={!!campaign.requires_business_info}
+          requiresBusinessInfo={requiresBusinessInfo}
           organizationId={campaign.groups?.organization_id || ''}
           processingCheckout={processingCheckout}
           onFinalCheckout={handleFinalCheckout}
@@ -973,7 +973,7 @@ const CampaignLanding = () => {
           customFieldValues={customFieldValues}
           setCustomFieldValues={setCustomFieldValues}
           onCustomFieldsNext={handleCustomFieldsNext}
-          requiresBusinessInfo={!!campaign.requires_business_info}
+          requiresBusinessInfo={requiresBusinessInfo}
           organizationId={campaign.groups?.organization_id || ''}
           processingCheckout={processingCheckout}
           onFinalCheckout={handleFinalCheckout}
@@ -1013,7 +1013,7 @@ const CampaignLanding = () => {
           customFieldValues={customFieldValues}
           setCustomFieldValues={setCustomFieldValues}
           onCustomFieldsNext={handleCustomFieldsNext}
-          requiresBusinessInfo={!!campaign.requires_business_info}
+          requiresBusinessInfo={requiresBusinessInfo}
           organizationId={campaign.groups?.organization_id || ''}
           processingCheckout={processingCheckout}
           onFinalCheckout={handleFinalCheckout}
@@ -1055,7 +1055,7 @@ const CampaignLanding = () => {
           customFieldValues={customFieldValues}
           setCustomFieldValues={setCustomFieldValues}
           onCustomFieldsNext={handleCustomFieldsNext}
-          requiresBusinessInfo={!!campaign.requires_business_info}
+          requiresBusinessInfo={requiresBusinessInfo}
           organizationId={campaign.groups?.organization_id || ''}
           processingCheckout={processingCheckout}
           onFinalCheckout={handleFinalCheckout}
@@ -1400,7 +1400,7 @@ const CampaignLanding = () => {
             <CardHeader>
               <CardTitle>Business Information</CardTitle>
               <CardDescription>
-                {campaign.requires_business_info 
+                {requiresBusinessInfo 
                   ? "This campaign requires business/sponsor information for recognition purposes."
                   : "Optional: Add your business information for recognition purposes."}
               </CardDescription>
@@ -1422,7 +1422,7 @@ const CampaignLanding = () => {
                   }
                 }}
                 // Only allow skip if business info is NOT required
-                onSkip={campaign.requires_business_info ? undefined : () => {
+                onSkip={requiresBusinessInfo ? undefined : () => {
                   toast({
                     title: "Skipped",
                     description: "You can add business information later if needed."
@@ -1491,7 +1491,7 @@ const CampaignLanding = () => {
               <div className="flex gap-4">
                 <Button
                   variant="outline"
-                  onClick={() => setCheckoutStep(campaign?.requires_business_info ? 'business-info' : 'donor-info')}
+                  onClick={() => setCheckoutStep(requiresBusinessInfo ? 'business-info' : 'donor-info')}
                 >
                   Back
                 </Button>
@@ -1600,7 +1600,7 @@ const CampaignLanding = () => {
                 <Button
                   variant="outline"
                   onClick={() => setCheckoutStep(customFields.length > 0 ? 'custom-fields' : 
-                    (campaign?.requires_business_info ? 'business-info' : 'donor-info'))}
+                    (requiresBusinessInfo ? 'business-info' : 'donor-info'))}
                   disabled={processingCheckout}
                 >
                   Back
