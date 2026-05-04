@@ -2164,7 +2164,11 @@ Deno.serve(async (req) => {
         types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null;
       const isPledge = isPledgeTypeName(resolvedTypeName);
       const pledgeDone = !isPledge || getPledgeStillToAsk(updatedFields).length === 0;
-      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone;
+      const isMerch = isMerchandiseTypeName(resolvedTypeName);
+      const merchDone = !isMerch || getMerchStillToAsk(updatedFields).length === 0;
+      const isEvent = isEventTypeName(resolvedTypeName);
+      const eventDone = !isEvent || getEventStillToAsk(updatedFields).length === 0;
+      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone && merchDone && eventDone;
 
       if (exitItemsCollection) {
         phase = "complete";
