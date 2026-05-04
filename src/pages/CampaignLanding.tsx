@@ -387,6 +387,14 @@ const CampaignLanding = () => {
     return cart.reduce((count, item) => count + item.selectedQuantity, 0);
   };
 
+  // Business info is required when (a) the campaign-level legacy flag is set, OR
+  // (b) the buyer's cart contains at least one item flagged as a sponsorship item.
+  const cartHasSponsorshipItem = cart.some(
+    (item) => item.selectedQuantity > 0 && !!item.is_sponsorship_item,
+  );
+  const requiresBusinessInfo =
+    !!campaign?.requires_business_info || cartHasSponsorshipItem;
+
   const handleProceedToCheckout = () => {
     if (!campaign) return;
     if (isPreview) {
