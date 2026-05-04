@@ -2299,7 +2299,10 @@ Deno.serve(async (req) => {
       const rosterDoneNow = updatedFields.enable_roster_attribution !== undefined &&
         (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
       const directionsDoneNow = updatedFields.group_directions_addressed === true;
-      const setupJustFinished = sponsorAssetsDoneX && imageDoneNow && rosterDoneNow && directionsDoneNow;
+      const isEventX = isEventTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null);
+      const eventFieldsDoneX = !isEventX || getEventStillToAsk(updatedFields).length === 0;
+      const agendaDoneX = !isEventX || updatedFields.event_agenda_complete === true;
+      const setupJustFinished = sponsorAssetsDoneX && imageDoneNow && rosterDoneNow && directionsDoneNow && eventFieldsDoneX && agendaDoneX;
       const justEnteringItemsPhase =
         !!campaignId &&
         !inItemsPhase &&
