@@ -345,6 +345,18 @@ const FIELD_DEFS: FieldDef[] = [
   { key: "pledge_event_date", label: "Pledge Event Date", type: "date", required: false, aiDescription: "Date the activity happens (charging window opens this day). YYYY-MM-DD. REQUIRED for Pledge campaigns." },
   { key: "pledge_min_per_unit", label: "Min per Unit", type: "number", required: false, aiDescription: "Optional minimum dollar amount per unit (e.g. 0.25)." },
   { key: "pledge_suggested_unit_amounts", label: "Suggested per-Unit Amounts", type: "string", required: false, aiDescription: "Optional comma-separated suggested per-unit amounts (e.g. '0.5, 1, 2, 5')." },
+  { key: "pledge_unit_label_plural", label: "Pledge Unit (plural)", type: "string", required: false, aiDescription: "Optional plural form of the pledge unit (e.g. 'laps' for 'lap')." },
+  // Merchandise-only fields. Required for Merchandise campaigns; ignored otherwise.
+  { key: "merch_ships_by_date", label: "Ships by Date", type: "date", required: false, aiDescription: "Optional ship-by date shown on the landing page and cart. YYYY-MM-DD." },
+  { key: "merch_shipping_flat_rate", label: "Flat Shipping Rate (dollars)", type: "number", required: false, aiDescription: "Optional flat shipping rate in dollars. Skip to hide the shipping line." },
+  { key: "merch_pickup_available", label: "Local Pickup Available", type: "boolean", required: false, aiDescription: "Whether donors can pick up locally instead of paying shipping. REQUIRED for Merchandise campaigns." },
+  { key: "merch_pickup_note", label: "Pickup Instructions", type: "string", required: false, aiDescription: "Optional instructions shown when local pickup is enabled." },
+  // Event-only fields. Required for Event campaigns; ignored otherwise.
+  { key: "event_start_at", label: "Event Date & Start Time", type: "string", required: false, aiDescription: "ISO 8601 datetime (YYYY-MM-DDTHH:mm) for when the event happens. REQUIRED for Event campaigns." },
+  { key: "event_location_name", label: "Location Name", type: "string", required: false, aiDescription: "Venue name (e.g. 'Pine Hills Golf Club'). REQUIRED for Event campaigns." },
+  { key: "event_location_address", label: "Location Address", type: "string", required: false, aiDescription: "Optional street address of the venue." },
+  { key: "event_format", label: "Event Format", type: "string", required: false, aiDescription: "Optional short format description (e.g. '4-person scramble')." },
+  { key: "event_includes", label: "What's Included", type: "string", required: false, aiDescription: "Optional comma-separated inclusions (e.g. 'Cart, Lunch, Range balls'). Stored as an array." },
 ];
 
 /** True when the resolved campaign type name is a Pledge fundraiser. */
@@ -352,10 +364,59 @@ function isPledgeTypeName(typeName?: string | null): boolean {
   return (typeName || "").toLowerCase().includes("pledge");
 }
 
+/** True when the resolved campaign type name is a Merchandise Sale. */
+function isMerchandiseTypeName(typeName?: string | null): boolean {
+  return (typeName || "").toLowerCase().includes("merch");
+}
+
+/** True when the resolved campaign type name is an Event fundraiser. */
+function isEventTypeName(typeName?: string | null): boolean {
+  return (typeName || "").toLowerCase().includes("event");
+}
+
 /** Pledge-specific post-draft fields the AI must collect, in order. */
 function getPledgeStillToAsk(collected: Record<string, any>): string[] {
   const order = ["pledge_unit_label", "pledge_scope", "pledge_event_date"];
   return order.filter((k) => {
+    const v = collected[k];
+    return v === undefined || v === null || v === "";
+  });
+}
+
+/** Merchandise-specific post-draft fields the AI walks the user through, in order. */
+function getMerchStillToAsk(collected: Record<string, any>): string[] {
+  const order = [
+    "merch_ships_by_date",
+    "merch_shipping_flat_rate",
+    "merch_pickup_available",
+    "merch_pickup_note",
+  ];
+  return order.filter((k) => {
+    if (collected[`${k}_skipped`] === true) return false;
+    if (k === "merch_pickup_note") {
+      // Only ask for the note when pickup is enabled.
+      if (collected.merch_pickup_available !== true) return false;
+    }
+    if (k === "merch_pickup_available") {
+      const v = collected[k];
+      return v === undefined || v === null;
+    }
+    const v = collected[k];
+    return v === undefined || v === null || v === "";
+  });
+}
+
+/** Event-specific post-draft fields the AI walks the user through, in order. */
+function getEventStillToAsk(collected: Record<string, any>): string[] {
+  const order = [
+    "event_start_at",
+    "event_location_name",
+    "event_location_address",
+    "event_format",
+    "event_includes",
+  ];
+  return order.filter((k) => {
+    if (collected[`${k}_skipped`] === true) return false;
     const v = collected[k];
     return v === undefined || v === null || v === "";
   });
