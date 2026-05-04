@@ -99,6 +99,10 @@ export function brandingStyleVars(branding: ResolvedBranding): CSSProperties {
       ? "0 0% 100%"
       : "0 0% 9%";
     vars["--ring"] = primaryHsl;
+    // Override template-specific accent variables so Merchandise & Event
+    // templates inherit the brand color instead of their hardcoded gold/coral.
+    vars["--merch-accent"] = primaryHsl;
+    vars["--event-accent"] = primaryHsl;
   }
   const secondaryHsl = hexToHslString(branding.secondaryColor);
   if (secondaryHsl) {

@@ -1,108 +1,39 @@
-## Goal
+# Apply branding cascade to template accent colors
 
-On every published (and preview) fundraiser landing page — Donation, Pledge, Sponsorship, Merchandise, Event — apply branding in this priority order:
+## Problem
+The branding wrapper added in the previous step overrides `--primary` (and `--accent`/`--ring`), so any element using `bg-primary` / `text-primary` already picks up brand colors. But the **Merchandise** template (gold) and **Event** template (coral) use their own hard-coded CSS variables — `--merch-accent` and `--event-accent` — defined in `src/index.css`. These never get overridden, so the bourbon raffle still shows gold instead of the Kentucky Baseball Club's blue.
 
-1. **Group/team** logo + primary/secondary color (if set)
-2. **Organization** logo + primary/secondary color (if set)
-3. **Template default** (current hard-coded styling)
+The Donation, Pledge, and Sponsorship templates already drive their accent off `--primary`, so they're effectively covered — but we'll audit them and switch any stray hard-coded brand values to the cascade as well.
 
-Currently only `CampaignLanding.tsx` reads the school's `Primary Color` for the (legacy) generic hero. The five new templates (Donation/Pledge/Sponsorship/Merch/Event) ignore branding entirely. Groups don't store colors yet, and organizations' `primary_color` / `logo_url` are not threaded into the templates.
+## Resolution rule (unchanged)
+Group color → Organization color → School color → Template default. If none of group/org/school provides a color, the template's existing accent (gold for merch, coral for event) is preserved.
 
-## Plan
+## Changes
 
-### 1. Database
-
-Add brand color columns to `groups` (logo already exists as `groups.logo_url`):
-
-```sql
-alter table public.groups
-  add column if not exists primary_color text,
-  add column if not exists secondary_color text;
-```
-
-Schools already have `"Primary Color"` / `"Secondary Color"` and `logo_file`; organizations already have `primary_color`, `secondary_color`, `logo_url`. No changes needed there.
-
-### 2. Branding resolver
-
-New helper `src/lib/campaignBranding.ts` exporting:
+### 1. `src/lib/campaignBranding.ts` — extend `brandingStyleVars`
+When a branded primary color is resolved, also override the template-specific accent CSS variables so they inherit the brand:
 
 ```ts
-export interface ResolvedBranding {
-  primaryColor: string | null;
-  secondaryColor: string | null;
-  logoUrl: string | null;
-  source: "group" | "organization" | "school" | "template";
+if (primaryHsl) {
+  vars["--primary"] = primaryHsl;
+  vars["--ring"] = primaryHsl;
+  vars["--merch-accent"]  = primaryHsl;   // NEW
+  vars["--event-accent"]  = primaryHsl;   // NEW
+  vars["--primary-foreground"] = ...;
 }
-export function resolveCampaignBranding(campaign): ResolvedBranding
 ```
 
-Resolution order per field (independently — e.g. group may supply logo while org supplies color):
-1. `groups.logo_url` / `groups.primary_color` / `groups.secondary_color`
-2. `groups.organizations.logo_url` / `.primary_color` / `.secondary_color`
-3. (Schools only as final fallback for color, since school colors already power existing pages: `groups.schools."Primary Color"` / `.logo_file`)
-4. `null` → template uses its built-in default
+These are scoped to the `<BrandedLandingWrapper>` div, so the rest of the app is unaffected. When no brand color exists, the variables stay at their `:root` defaults (gold/coral).
 
-Plus a small util `isColorDark(hex)` (already inlined in `CampaignLanding.tsx` — extract here).
+### 2. Audit landing templates
+- **MerchandiseLanding.tsx** — keeps `var(--merch-accent)` references; they now resolve to brand color when branded.
+- **EventLanding.tsx** — same, via `var(--event-accent)`.
+- **DonationLanding / PledgeLanding / SponsorshipLanding** — verify they use `bg-primary` / `text-primary` (already cascaded) and replace any incidental hard-coded brand colors with `primary` tokens. From the search these three templates don't define their own accent vars, so no change expected beyond a quick read-through.
 
-### 3. Fetch the data
+### 3. No DB or schema changes
+The cascade resolver, group color columns, and editor color pickers are already in place from the previous step.
 
-Update the campaign select in:
-- `src/pages/CampaignLanding.tsx` (published path)
-- `supabase/functions/get-campaign-preview/index.ts` (preview path)
-
-to also include:
-```
-groups (
-  ...,
-  logo_url, primary_color, secondary_color,
-  organizations ( id, name, logo_url, primary_color, secondary_color ),
-  schools ( ..., logo_file )
-)
-```
-
-### 4. Thread branding into templates
-
-`CampaignLanding.tsx` resolves branding once and passes a `branding` prop to each landing component:
-
-- `DonationLanding`
-- `PledgeLanding`
-- `SponsorshipLanding`
-- `MerchandiseLanding`
-- `EventLanding`
-
-Each template uses `branding`:
-- **Hero background**: if a primary color exists and there is no campaign image, tint the hero with that color (gradient like the existing `heroStyle`). If there is an image, keep the dark photo treatment but use brand color on accents (CTA buttons, progress bar, chips, eyebrow text, section dividers).
-- **Logo**: render `branding.logoUrl` in the hero header strip (top-left, near org/group name) when present. When absent, render nothing (no Sponsorly logo swap).
-- **Accent / CTA color**: replace the hard-coded primary button color with an inline `style={{ backgroundColor: branding.primaryColor ?? undefined }}` (and contrasting text via `isColorDark`). Same for progress bars, tags, and "ends in" chips currently using `bg-primary` etc.
-- Secondary color used for hover / borders / progress track when present.
-
-Defaults remain identical when `branding.source === "template"` (no regressions).
-
-### 5. Editors
-
-- `EditOrganizationDialog` / `OrganizationSettings` already expose org logo + primary color — no change.
-- `CreateGroupForm` already handles `logo_url`. Add two color inputs (color picker + hex) for `primary_color` and `secondary_color`, mirroring the org settings UI. Persist on insert/update.
-
-### 6. AI schema
-
-Register `groups.primary_color` / `secondary_color` in `src/lib/ai/campaignSchema.ts` so the AI assistant can set group colors when asked (logo upload remains manual).
-
-## Files touched
-
-- new: `supabase/migrations/<ts>_group_brand_colors.sql`
-- new: `src/lib/campaignBranding.ts`
-- edit: `src/pages/CampaignLanding.tsx`
-- edit: `supabase/functions/get-campaign-preview/index.ts`
-- edit: `src/components/campaign-landing/donation/DonationLanding.tsx`
-- edit: `src/components/campaign-landing/pledge/PledgeLanding.tsx`
-- edit: `src/components/campaign-landing/sponsorship/SponsorshipLanding.tsx`
-- edit: `src/components/campaign-landing/merchandise/MerchandiseLanding.tsx`
-- edit: `src/components/campaign-landing/event/EventLanding.tsx`
-- edit: `src/components/CreateGroupForm.tsx`
-- edit: `src/lib/ai/campaignSchema.ts`
-
-## Out of scope
-
-- Changing dashboard/portal chrome branding.
-- Per-campaign color override (still uses group/org cascade).
-- Auto-generating logos or palettes.
+## Verification
+- Bourbon raffle (Kentucky Baseball Club) → hero badge dot, progress bar, "Continue to checkout" button, "Available items"/"Get your" eyebrow, and item card left border should render in the club's blue instead of gold.
+- A merchandise/event campaign whose group, org, and school have **no** colors set continues to show the original gold/coral defaults.
+- Donation, pledge, and sponsorship templates continue to render correctly with brand `--primary` already wired up.
