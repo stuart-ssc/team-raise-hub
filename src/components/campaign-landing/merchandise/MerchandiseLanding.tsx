@@ -17,6 +17,10 @@ import {
   formatHeadline,
   getVideoEmbedUrl,
 } from "@/components/campaign-landing/shared/landingHelpers";
+import {
+  BrandedLandingWrapper,
+  BrandLogoStrip,
+} from "@/components/campaign-landing/shared/BrandedLandingWrapper";
 
 export interface MerchandiseCampaignFields {
   merch_ships_by_date?: string | null;
@@ -476,7 +480,7 @@ export function MerchandiseLanding(props: MerchandiseLandingProps) {
     : "";
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--merch-bg))]">
+    <BrandedLandingWrapper branding={props.branding} className="min-h-screen bg-[hsl(var(--merch-bg))]">
       {/* HERO — dark photo background, full bleed */}
       <section className="relative text-white overflow-hidden">
         {campaign.image_url ? (
@@ -493,6 +497,12 @@ export function MerchandiseLanding(props: MerchandiseLandingProps) {
         )}
 
         <div className="relative max-w-6xl mx-auto px-6 pt-10 pb-8">
+          <BrandLogoStrip
+            branding={props.branding}
+            orgName={orgLabel || null}
+            variant="dark"
+            className="mb-4"
+          />
           {/* status pills */}
           <div className="flex flex-wrap items-center gap-2 mb-5">
             <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-white/10 backdrop-blur border border-white/15">
