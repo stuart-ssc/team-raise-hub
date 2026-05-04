@@ -21,6 +21,8 @@ import { BusinessInfoForm } from "@/components/BusinessInfoForm";
 import { CustomFieldsRenderer } from "@/components/CustomFieldsRenderer";
 import { useCampaignDonors } from "@/hooks/useCampaignDonors";
 import { formatHeadline, getDaysLeft, getVideoEmbedUrl, StatTile } from "../shared/landingHelpers";
+import type { ResolvedBranding } from "@/lib/campaignBranding";
+import { BrandedLandingWrapper, BrandLogoStrip } from "../shared/BrandedLandingWrapper";
 
 // ───────────────────────────── types ─────────────────────────────
 
@@ -94,6 +96,7 @@ interface Props {
   organizationId?: string;
   processingCheckout?: boolean;
   onFinalCheckout?: () => void;
+  branding?: ResolvedBranding;
 }
 
 const DEFAULT_AMOUNTS = [25, 50, 100, 250, 500, 1000];
