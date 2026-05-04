@@ -787,7 +787,7 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="rounded-md border divide-y">
-                      <div className="grid grid-cols-[32px_1fr_100px_140px_120px_100px] gap-2 px-3 py-2 bg-muted/50 text-xs font-medium text-muted-foreground">
+                      <div className="grid grid-cols-[28px_minmax(0,1fr)_70px_110px_90px_72px] gap-2 px-3 py-2 bg-muted/50 text-xs font-medium text-muted-foreground">
                         <span />
                         <span>Name</span>
                         <span>Cost</span>
@@ -844,7 +844,7 @@ function SortableItemRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="grid grid-cols-[32px_1fr_100px_140px_120px_100px] gap-2 px-3 py-2 items-center bg-background"
+      className="grid grid-cols-[28px_minmax(0,1fr)_70px_110px_90px_72px] gap-2 px-3 py-2 items-center bg-background"
     >
       <button
         type="button"
