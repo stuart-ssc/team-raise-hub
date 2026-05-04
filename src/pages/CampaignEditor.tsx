@@ -220,6 +220,8 @@ export default function CampaignEditor() {
     merchPickupAvailable: false,
     merchPickupNote: "",
     merchShippingFlatRate: "",
+    merchItemsHeading: "",
+    merchItemsSubheading: "",
   });
   const [requiredAssets, setRequiredAssets] = useState<RequiredAsset[]>([]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
