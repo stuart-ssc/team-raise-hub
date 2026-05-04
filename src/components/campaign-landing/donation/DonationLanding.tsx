@@ -546,7 +546,7 @@ export function DonationLanding(props: Props) {
           </Card>
         </aside>
       </section>
-    </div>
+    </BrandedLandingWrapper>
   );
 }
 
