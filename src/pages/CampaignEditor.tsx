@@ -132,6 +132,8 @@ interface CampaignData {
   merchPickupAvailable: boolean;
   merchPickupNote: string;
   merchShippingFlatRate: string;
+  merchItemsHeading: string;
+  merchItemsSubheading: string;
 }
 
 interface RequiredAsset {
