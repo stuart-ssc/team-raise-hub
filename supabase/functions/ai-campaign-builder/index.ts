@@ -2338,6 +2338,54 @@ Deno.serve(async (req) => {
           };
         }
         // pledge_unit_label and pledge_event_date are free-text — no chips needed.
+      } else if (
+        isMerchandiseTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name) &&
+        getMerchStillToAsk(updatedFields).length > 0
+      ) {
+        const nextMerch = getMerchStillToAsk(updatedFields)[0];
+        if (nextMerch === "merch_pickup_available") {
+          suggestions = {
+            type: "choice",
+            field: "merch_pickup_available",
+            label: "Offer local pickup?",
+            options: [
+              { label: "Yes, offer pickup", value: "true" },
+              { label: "No, shipping only", value: "false" },
+            ],
+          };
+        } else {
+          suggestions = {
+            type: "choice",
+            field: nextMerch,
+            label: nextMerch === "merch_ships_by_date"
+              ? "Ships by date (optional)"
+              : nextMerch === "merch_shipping_flat_rate"
+                ? "Flat shipping rate (optional)"
+                : "Pickup instructions (optional)",
+            options: [{ label: "Skip", value: "skip" }],
+          };
+        }
+      } else if (
+        isEventTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name) &&
+        getEventStillToAsk(updatedFields).length > 0
+      ) {
+        const nextEvent = getEventStillToAsk(updatedFields)[0];
+        if (nextEvent === "event_start_at" || nextEvent === "event_location_name") {
+          // Required free-text — no chip.
+          suggestions = null;
+        } else {
+          const labelMap: Record<string, string> = {
+            event_location_address: "Venue address (optional)",
+            event_format: "Event format (optional)",
+            event_includes: "What's included (optional)",
+          };
+          suggestions = {
+            type: "choice",
+            field: nextEvent,
+            label: labelMap[nextEvent] || nextEvent,
+            options: [{ label: "Skip", value: "skip" }],
+          };
+        }
       } else {
         // Phase === "complete" — offer the final choice
         suggestions = {
