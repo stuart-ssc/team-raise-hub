@@ -911,6 +911,7 @@ const CampaignLanding = () => {
       {campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && (
         <SponsorshipLanding
           campaign={campaign as any}
+          branding={branding}
           cart={cart as any}
           attributedRosterMember={attributedRosterMember}
           onUpdateQuantity={updateQuantity}
@@ -942,6 +943,7 @@ const CampaignLanding = () => {
       {campaign.campaign_type?.name?.toLowerCase() === 'event' && (
         <EventLanding
           campaign={campaign as any}
+          branding={branding}
           cart={cart as any}
           attributedRosterMember={attributedRosterMember}
           onUpdateQuantity={updateQuantity}
@@ -988,6 +990,7 @@ const CampaignLanding = () => {
       {campaign.campaign_type?.name?.toLowerCase() === 'donation' && (
         <DonationLanding
           campaign={campaign as any}
+          branding={branding}
           attributedRosterMember={attributedRosterMember}
           onProceedToCheckout={handleDonationProceed}
           checkoutStep={checkoutStep}
@@ -1010,6 +1013,7 @@ const CampaignLanding = () => {
       {campaign.campaign_type?.name?.toLowerCase() === 'pledge' && (
         <PledgeLanding
           campaign={campaign as any}
+          branding={branding}
           campaignSlug={slug || ''}
           attributedRosterMember={attributedRosterMember}
           organizationName={
@@ -1021,6 +1025,7 @@ const CampaignLanding = () => {
       {campaign.campaign_type?.name?.toLowerCase() === 'merchandise sale' && (
         <MerchandiseLanding
           campaign={campaign as any}
+          branding={branding}
           cart={cart as any}
           attributedRosterMember={attributedRosterMember}
           onUpdateQuantity={updateQuantity}
