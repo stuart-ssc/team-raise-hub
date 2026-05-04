@@ -107,6 +107,7 @@ interface CampaignData {
   enableRosterAttribution: boolean;
   rosterId: string;
   publicationStatus: string;
+  previewToken: string | null;
   feeModel: 'donor_covers' | 'org_absorbs';
   pledgeUnitLabel: string;
   pledgeUnitLabelPlural: string;
@@ -192,6 +193,7 @@ export default function CampaignEditor() {
     enableRosterAttribution: false,
     rosterId: "",
     publicationStatus: "draft",
+    previewToken: null,
     feeModel: 'donor_covers',
     pledgeUnitLabel: "",
     pledgeUnitLabelPlural: "",
@@ -334,6 +336,7 @@ export default function CampaignEditor() {
           enableRosterAttribution: data.enable_roster_attribution || false,
           rosterId: data.roster_id?.toString() || "",
           publicationStatus: data.publication_status || "draft",
+          previewToken: (data as any).preview_token || null,
           feeModel: (data.fee_model as 'donor_covers' | 'org_absorbs') || 'donor_covers',
           pledgeUnitLabel: (data as any).pledge_unit_label || "",
           pledgeUnitLabelPlural: (data as any).pledge_unit_label_plural || "",
@@ -1014,6 +1017,7 @@ export default function CampaignEditor() {
                 slug={campaignData.slug || null}
                 campaignName={campaignData.name}
                 isPublished={campaignData.publicationStatus === "published"}
+                previewToken={campaignData.previewToken}
               />
             </aside>
           )}
