@@ -7,13 +7,16 @@ interface CampaignShareCardProps {
   slug: string | null;
   campaignName: string;
   isPublished?: boolean;
+  previewToken?: string | null;
 }
 
-export function CampaignShareCard({ slug, campaignName, isPublished = true }: CampaignShareCardProps) {
+export function CampaignShareCard({ slug, campaignName, isPublished = true, previewToken = null }: CampaignShareCardProps) {
   const { toast } = useToast();
 
   const url = slug
-    ? `${window.location.origin}/c/${slug}`
+    ? (!isPublished && previewToken
+        ? `https://sponsorly.io/c/${slug}?preview=${previewToken}`
+        : `${window.location.origin}/c/${slug}`)
     : null;
 
   const copy = async () => {
@@ -80,7 +83,9 @@ export function CampaignShareCard({ slug, campaignName, isPublished = true }: Ca
             </div>
             {!isPublished && (
               <p className="text-xs text-muted-foreground">
-                Link will activate when published.
+                {previewToken
+                  ? "Private preview link — works until you publish or rotate the token."
+                  : "Link will activate when published."}
               </p>
             )}
           </>
