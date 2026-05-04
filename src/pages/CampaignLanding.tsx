@@ -1046,6 +1046,8 @@ const CampaignLanding = () => {
             merch_pickup_available: (campaign as any).merch_pickup_available,
             merch_pickup_note: (campaign as any).merch_pickup_note,
             merch_shipping_flat_rate: (campaign as any).merch_shipping_flat_rate,
+            merch_items_heading: (campaign as any).merch_items_heading,
+            merch_items_subheading: (campaign as any).merch_items_subheading,
           }}
         />
       )}
