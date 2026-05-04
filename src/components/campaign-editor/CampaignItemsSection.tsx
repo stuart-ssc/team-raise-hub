@@ -637,6 +637,35 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
                 </div>
               </div>
 
+              {/* Sponsorship item toggle + per-item required assets */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Sponsorship item</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {forceSponsorship
+                        ? "All items in a sponsorship fundraiser are sponsorship items."
+                        : "Buyers will be asked for business info at checkout and prompted to upload required assets afterward."}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={forceSponsorship || isSponsorshipItem}
+                    disabled={forceSponsorship}
+                    onCheckedChange={setIsSponsorshipItem}
+                  />
+                </div>
+
+                {(forceSponsorship || isSponsorshipItem) && (
+                  <div className="pt-3 border-t">
+                    <RequiredAssetsEditor
+                      assets={itemAssets}
+                      onChange={setItemAssets}
+                      itemLabel={formData.name || "this item"}
+                    />
+                  </div>
+                )}
+              </div>
+
               {/* Event template extras */}
               <div className="rounded-lg border p-4 space-y-4">
                 <div className="flex items-center justify-between">
