@@ -374,6 +374,8 @@ export default function CampaignEditor() {
             (data as any).merch_shipping_flat_rate != null
               ? String((data as any).merch_shipping_flat_rate)
               : "",
+          merchItemsHeading: (data as any).merch_items_heading || "",
+          merchItemsSubheading: (data as any).merch_items_subheading || "",
         });
 
         // Fetch pitch data
