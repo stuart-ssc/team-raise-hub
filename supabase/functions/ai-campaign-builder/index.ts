@@ -589,6 +589,15 @@ function buildSystemPrompt(
     const merchFieldsDone = !isMerch || merchStillToAsk.length === 0;
     const eventStillToAsk = isEvent ? getEventStillToAsk(collectedFields) : [];
     const eventFieldsDone = !isEvent || eventStillToAsk.length === 0;
+    // Agenda sub-flow state (event-only)
+    const agendaRows: AgendaItem[] = Array.isArray(collectedFields.event_agenda)
+      ? collectedFields.event_agenda
+      : [];
+    const agendaDraft: Record<string, any> = collectedFields.current_agenda_draft || {};
+    const agendaAddressed = collectedFields.event_agenda_addressed === true;
+    const agendaComplete = collectedFields.event_agenda_complete === true;
+    const awaitingAddAnotherAgenda = collectedFields.awaiting_add_another_agenda === true;
+    const inAgendaSubflow = isEvent && eventFieldsDone && !agendaComplete;
 
     const rostersList = rosters.length > 0
       ? rosters.map((r) => `  - "${r.roster_year}${r.current_roster ? " (Current)" : ""}" → id: ${r.id}`).join("\n")
@@ -659,6 +668,34 @@ function buildSystemPrompt(
       } else {
         nextStep = `**Next step: continue event setup.** Ask the user about ${nextKey}.`;
       }
+    } else if (inAgendaSubflow && !agendaAddressed) {
+      nextStep = `**Next step: agenda intro.** Ask in one short sentence: "Want to add a day-of agenda for the event?". The UI will show two buttons (Add agenda / Skip). Do NOT call any tool — the next turn will handle the answer.`;
+    } else if (inAgendaSubflow && awaitingAddAnotherAgenda) {
+      const list = agendaRows.length > 0
+        ? agendaRows.map((r, i) => `  ${i + 1}. ${r.time || "?"} — ${r.title || "?"}`).join("\n")
+        : "  (none yet)";
+      nextStep = `**Awaiting choice: add another agenda item or finish.** Your message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1: confirm the last agenda item was saved (e.g. "Saved.").\n  Paragraph 2: ask "Want to add another agenda item, or are you done?" — the UI shows two buttons (Add another / Done). Do NOT call any tool.\n\n## Agenda so far\n${list}`;
+    } else if (inAgendaSubflow) {
+      const nextAgendaField = getNextAgendaField(agendaDraft);
+      const draftSummary = Object.entries(agendaDraft)
+        .filter(([k, v]) => !k.endsWith("_skipped") && v !== undefined && v !== null && v !== "")
+        .map(([k, v]) => `  - ${k}: ${JSON.stringify(v)}`)
+        .join("\n") || "  (nothing yet)";
+      const list = agendaRows.length > 0
+        ? agendaRows.map((r, i) => `  ${i + 1}. ${r.time || "?"} — ${r.title || "?"}`).join("\n")
+        : "  (none yet)";
+      const ordinal = agendaRows.length === 0 ? "first" : "next";
+      let askLine: string;
+      if (nextAgendaField === "time") {
+        askLine = `Ask: "What time is the ${ordinal} agenda item? (e.g. '7:30 AM')". When the user answers, call **update_agenda_field** with \`time\` set to their reply.`;
+      } else if (nextAgendaField === "title") {
+        askLine = `Ask: "What's the title? (e.g. 'Check-in & range opens')". When the user answers, call **update_agenda_field** with \`title\` set to their reply.`;
+      } else if (nextAgendaField === "description") {
+        askLine = `Ask: "Add a short description, or say skip.". The UI shows a Skip chip. When the user answers, call **update_agenda_field** with \`description\` (or \`description_skipped: true\` if skipped).`;
+      } else {
+        askLine = `All required fields are filled — IMMEDIATELY call **save_agenda_item** to save this row.`;
+      }
+      nextStep = `**Next step: agenda item collection (${ordinal}).** ${askLine}\n\n## Current agenda draft\n${draftSummary}\n\n## Agenda so far\n${list}`;
     } else {
       if (isPledge) {
         nextStep = `**Setup is done — Pledge fundraiser is fully configured.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (wrap-up): "Your pledge fundraiser is set up. You can preview it, publish it, or fine-tune anything in the editor whenever you're ready." Do NOT mention adding items — Pledge fundraisers don't use items. Do NOT call any tool.`;
