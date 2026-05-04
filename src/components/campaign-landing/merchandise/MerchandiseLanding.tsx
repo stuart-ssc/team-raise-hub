@@ -582,10 +582,18 @@ export function MerchandiseLanding(props: MerchandiseLandingProps) {
           <section>
             <Eyebrow>Available items</Eyebrow>
             <h2 className="font-serif text-3xl md:text-4xl tracking-tight mb-2">
-              {formatHeadline("Pick your size.", "size")}
+              {(() => {
+                const heading = merchFields.merch_items_heading?.trim();
+                if (!heading) return formatHeadline("Pick your size.", "size");
+                // Italicize the last word for visual consistency
+                const match = heading.match(/^(.*\s)?(\S+)$/);
+                const accent = match?.[2];
+                return formatHeadline(heading, accent);
+              })()}
             </h2>
             <p className="text-sm text-muted-foreground mb-6 max-w-xl">
-              Each item maxes out at the per-person limit shown — kindly leave some for everyone.
+              {merchFields.merch_items_subheading?.trim() ||
+                "Each item maxes out at the per-person limit shown — kindly leave some for everyone."}
             </p>
 
             {cart.length === 0 ? (
