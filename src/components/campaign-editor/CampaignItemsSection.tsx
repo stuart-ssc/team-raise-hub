@@ -119,7 +119,6 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
       .from("campaign_items")
       .select("*")
       .eq("campaign_id", campaignId)
-      .order("display_order", { ascending: true, nullsFirst: false })
       .order("name", { ascending: true });
 
     if (error) {

@@ -275,7 +275,6 @@ const CampaignLanding = () => {
         .from("campaign_items")
         .select("*")
         .eq("campaign_id", campaignData.id)
-        .order("display_order", { ascending: true, nullsFirst: false })
         .order("name", { ascending: true });
 
       if (itemsError) {
