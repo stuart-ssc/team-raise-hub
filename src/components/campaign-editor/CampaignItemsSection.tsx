@@ -343,7 +343,7 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
         const nextOrder = items.length;
         const { data: newItem, error } = await supabase
           .from("campaign_items")
-          .insert([{ ...itemData, campaign_id: campaignId, display_order: nextOrder }])
+          .insert([{ ...itemData, campaign_id: campaignId, display_order: nextOrder } as any])
           .select("id")
           .single();
 
