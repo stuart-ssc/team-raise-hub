@@ -433,7 +433,7 @@ export function EventLanding(props: EventLandingProps) {
               {campaign.campaign_type?.name || "Event"}
             </span>
             {campaign.groups?.group_name && (
-              <span className={`text-xs px-2.5 py-1 rounded-full ${accentBg} text-white font-medium`}>
+              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-white/10 backdrop-blur border border-white/15 text-white font-medium">
                 {campaign.groups.group_name}
               </span>
             )}
