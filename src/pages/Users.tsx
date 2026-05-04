@@ -654,6 +654,7 @@ const Users = () => {
         open={showAddUserForm}
         onOpenChange={setShowAddUserForm}
         organizationId={organizationUser?.organization_id || ""}
+        organizationType={organizationUser?.organization.organization_type}
         onSuccess={fetchUsers}
       />
 

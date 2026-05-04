@@ -39,10 +39,11 @@ interface AddUserFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
+  organizationType?: "school" | "nonprofit";
   onSuccess: () => void;
 }
 
-export const AddUserForm = ({ open, onOpenChange, organizationId, onSuccess }: AddUserFormProps) => {
+export const AddUserForm = ({ open, onOpenChange, organizationId, organizationType, onSuccess }: AddUserFormProps) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -60,7 +61,7 @@ export const AddUserForm = ({ open, onOpenChange, organizationId, onSuccess }: A
       fetchUserTypes();
       fetchGroups();
     }
-  }, [open, organizationId]);
+  }, [open, organizationId, organizationType]);
 
   useEffect(() => {
     if (selectedGroup) {
@@ -78,7 +79,10 @@ export const AddUserForm = ({ open, onOpenChange, organizationId, onSuccess }: A
       .order("name");
 
     if (!error && data) {
-      setUserTypes(data);
+      const schoolRoles = ["Principal", "Athletic Director", "Coach", "Club Sponsor", "Booster Leader", "Team Player", "Club Participant"];
+      const nonprofitRoles = ["Executive Director", "Program Director", "Volunteer Coordinator", "Volunteer", "Board Member"];
+      const allowed = organizationType === "nonprofit" ? nonprofitRoles : organizationType === "school" ? schoolRoles : null;
+      setUserTypes(allowed ? data.filter((t) => allowed.includes(t.name)) : data);
     }
   };
 
@@ -114,13 +118,16 @@ export const AddUserForm = ({ open, onOpenChange, organizationId, onSuccess }: A
     }
   };
 
-  const needsRoster = (userTypeName: string) => {
-    return !["Principal", "Athletic Director", "Club Sponsor"].includes(userTypeName);
-  };
-
   const selectedUserTypeName = userTypes.find(ut => ut.id === selectedUserType)?.name || "";
-  const requiresGroup = selectedUserTypeName && selectedUserTypeName !== "Principal";
-  const requiresRoster = selectedUserTypeName && needsRoster(selectedUserTypeName);
+  const ROLES_NO_GROUP = ["Principal", "Executive Director"];
+  const ROLES_WITH_ROSTER = ["Coach", "Team Player", "Club Participant"];
+  const requiresGroup = !!selectedUserTypeName && !ROLES_NO_GROUP.includes(selectedUserTypeName);
+  const requiresRoster = !!selectedUserTypeName && ROLES_WITH_ROSTER.includes(selectedUserTypeName);
+
+  useEffect(() => {
+    if (!requiresGroup) setSelectedGroup("");
+    if (!requiresRoster) setSelectedRoster("");
+  }, [selectedUserType, requiresGroup, requiresRoster]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
