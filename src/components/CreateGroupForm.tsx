@@ -530,6 +530,65 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
             </Card>
           </div>
 
+          {/* Brand Colors */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="primaryColor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Primary brand color</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={field.value || "#0066cc"}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="h-10 w-14 rounded border border-input bg-transparent p-1 cursor-pointer"
+                        aria-label="Primary color picker"
+                      />
+                      <Input
+                        placeholder="#0066cc"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="secondaryColor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Secondary brand color</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={field.value || "#000000"}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="h-10 w-14 rounded border border-input bg-transparent p-1 cursor-pointer"
+                        aria-label="Secondary color picker"
+                      />
+                      <Input
+                        placeholder="#000000"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Optional. Used on this group's fundraiser landing pages. Falls back to the organization's brand colors if left blank.
+          </p>
+
           {/* Form Actions */}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={onCancel}>
