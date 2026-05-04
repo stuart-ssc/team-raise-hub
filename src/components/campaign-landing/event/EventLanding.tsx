@@ -19,6 +19,10 @@ import {
   SponsorshipItem,
 } from "@/components/campaign-landing/sponsorship/SponsorshipLanding";
 import { formatHeadline, getVideoEmbedUrl } from "@/components/campaign-landing/shared/landingHelpers";
+import {
+  BrandedLandingWrapper,
+  BrandLogoStrip,
+} from "@/components/campaign-landing/shared/BrandedLandingWrapper";
 
 export interface EventCampaignFields {
   event_start_at?: string | null;
@@ -400,7 +404,7 @@ export function EventLanding(props: EventLandingProps) {
       attributedRosterMember.pitchRecordedVideoUrl);
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--event-bg))]">
+    <BrandedLandingWrapper branding={props.branding} className="min-h-screen bg-[hsl(var(--event-bg))]">
       {/* HERO — dark photo background */}
       <section className="relative text-white overflow-hidden">
         {campaign.image_url && (
@@ -416,6 +420,12 @@ export function EventLanding(props: EventLandingProps) {
         {!campaign.image_url && <div className="absolute inset-0 bg-neutral-800" />}
 
         <div className="relative max-w-6xl mx-auto px-6 pt-10 pb-8">
+          <BrandLogoStrip
+            branding={props.branding}
+            orgName={[campaign.groups?.schools?.school_name, campaign.groups?.group_name].filter(Boolean).join(" • ") || null}
+            variant="dark"
+            className="mb-4"
+          />
           {/* chips */}
           <div className="flex flex-wrap items-center gap-2 mb-5">
             <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-white/10 backdrop-blur border border-white/15">
