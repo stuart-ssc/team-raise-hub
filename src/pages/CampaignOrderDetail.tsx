@@ -118,13 +118,27 @@ const CampaignOrderDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("campaign_items")
-        .select("id, name, cost")
+        .select("id, name, cost, is_sponsorship_item")
         .eq("campaign_id", campaignId);
       if (error) throw error;
       return data;
     },
     enabled: !!campaignId,
   });
+
+  // Derive whether THIS order has any sponsorship line items, and which item ids
+  const sponsorshipItemIdsInOrder = (() => {
+    const orderLineItems = (order?.items as any[] | null) || [];
+    const lineIds = orderLineItems
+      .map((li: any) => li?.campaign_item_id || li?.id)
+      .filter((v: any) => typeof v === 'string');
+    if (!campaignItems || lineIds.length === 0) return [] as string[];
+    return campaignItems
+      .filter((ci: any) => lineIds.includes(ci.id) && ci.is_sponsorship_item)
+      .map((ci: any) => ci.id as string);
+  })();
+  const orderNeedsAssets =
+    !!order?.campaign?.requires_business_info || sponsorshipItemIdsInOrder.length > 0;
 
   // Fetch file custom fields (legacy)
   const { data: fileFields } = useQuery({
@@ -166,17 +180,25 @@ const CampaignOrderDetail = () => {
 
   // Fetch required sponsor assets
   const { data: requiredAssets } = useQuery({
-    queryKey: ["order-required-assets", campaignId],
+    queryKey: ["order-required-assets", campaignId, sponsorshipItemIdsInOrder.join(",")],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("campaign_required_assets")
-        .select("id, asset_name, asset_description, file_types, is_required, dimensions_hint")
+        .select("id, asset_name, asset_description, file_types, is_required, dimensions_hint, campaign_item_id")
         .eq("campaign_id", campaignId)
         .order("display_order");
+      if (sponsorshipItemIdsInOrder.length > 0) {
+        query = query.or(
+          `campaign_item_id.is.null,campaign_item_id.in.(${sponsorshipItemIdsInOrder.join(',')})`,
+        );
+      } else {
+        query = query.is("campaign_item_id", null);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as RequiredAsset[];
     },
-    enabled: !!campaignId && order?.campaign?.requires_business_info,
+    enabled: !!campaignId && orderNeedsAssets,
   });
 
   // Fetch uploaded sponsor assets
@@ -190,7 +212,7 @@ const CampaignOrderDetail = () => {
       if (error) throw error;
       return data as AssetUpload[];
     },
-    enabled: !!orderId && order?.campaign?.requires_business_info,
+    enabled: !!orderId && orderNeedsAssets,
   });
 
   // Fetch donor profile for messaging
