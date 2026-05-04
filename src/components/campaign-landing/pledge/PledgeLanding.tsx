@@ -884,7 +884,7 @@ export function PledgeLanding({
           </Card>
         </aside>
       </section>
-    </div>
+    </BrandedLandingWrapper>
   );
 }
 
