@@ -1627,7 +1627,11 @@ Deno.serve(async (req) => {
       },
     ];
 
-    const tools = inItemsPhase && !exitItemsCollection ? itemsTools : baseTools;
+    const tools = inItemsPhase && !exitItemsCollection
+      ? itemsTools
+      : inAgendaPhase
+        ? [...baseTools, ...agendaTools]
+        : baseTools;
 
     // Debug logging gated behind AI_DEBUG_LOGS env var (flip on without redeploy
     // via Edge Function secrets). Logs the system prompt + last 3 messages and,
