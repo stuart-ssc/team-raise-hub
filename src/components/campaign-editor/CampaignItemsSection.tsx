@@ -744,13 +744,18 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
                       <TableCell className="font-medium">{item.name}</TableCell>
                       <TableCell>${item.cost.toFixed(2)}</TableCell>
                       <TableCell>
-                        {item.isRecurring ? (
-                          <Badge variant="secondary">
-                            {item.recurringInterval === 'month' ? 'Monthly' : 'Annual'}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">One-time</span>
-                        )}
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {item.isRecurring ? (
+                            <Badge variant="secondary">
+                              {item.recurringInterval === 'month' ? 'Monthly' : 'Annual'}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">One-time</span>
+                          )}
+                          {(forceSponsorship || item.isSponsorshipItem) && (
+                            <Badge variant="outline">Sponsor</Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{item.quantityAvailable} / {item.quantityOffered}</TableCell>
                       <TableCell>
