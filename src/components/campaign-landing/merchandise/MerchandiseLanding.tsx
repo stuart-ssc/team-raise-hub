@@ -23,6 +23,8 @@ export interface MerchandiseCampaignFields {
   merch_pickup_available?: boolean | null;
   merch_pickup_note?: string | null;
   merch_shipping_flat_rate?: number | null;
+  merch_items_heading?: string | null;
+  merch_items_subheading?: string | null;
 }
 
 type MerchandiseLandingProps = SponsorshipLandingProps & {
