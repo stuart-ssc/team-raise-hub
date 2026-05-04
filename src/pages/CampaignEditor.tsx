@@ -233,6 +233,7 @@ export default function CampaignEditor() {
   const [pledgeTypeId, setPledgeTypeId] = useState<string | null>(null);
   const [eventTypeId, setEventTypeId] = useState<string | null>(null);
   const [merchandiseTypeId, setMerchandiseTypeId] = useState<string | null>(null);
+  const [sponsorshipTypeId, setSponsorshipTypeId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -267,10 +268,23 @@ export default function CampaignEditor() {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("campaign_type")
+        .select("id, name")
+        .ilike("name", "Sponsorship")
+        .maybeSingle();
+      if (data) setSponsorshipTypeId(data.id);
+    })();
+  }, []);
+
   const isPledgeCampaign = !!pledgeTypeId && campaignData.campaignTypeId === pledgeTypeId;
   const isEventCampaign = !!eventTypeId && campaignData.campaignTypeId === eventTypeId;
   const isMerchandiseCampaign =
     !!merchandiseTypeId && campaignData.campaignTypeId === merchandiseTypeId;
+  const isSponsorshipCampaign =
+    !!sponsorshipTypeId && campaignData.campaignTypeId === sponsorshipTypeId;
 
   // Counts for nav badges
   const { data: itemsCount = 0 } = useQuery({
@@ -873,7 +887,7 @@ export default function CampaignEditor() {
                 )}
 
                 {activeSection === "items" && isEditing && id && (
-                  <CampaignItemsSection campaignId={id} />
+                  <CampaignItemsSection campaignId={id} forceSponsorship={isSponsorshipCampaign} />
                 )}
 
                 {activeSection === "experience" && (
