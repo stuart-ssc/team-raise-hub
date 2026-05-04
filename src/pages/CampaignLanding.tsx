@@ -274,7 +274,9 @@ const CampaignLanding = () => {
       const { data: itemsData, error: itemsError } = await supabase
         .from("campaign_items")
         .select("*")
-        .eq("campaign_id", campaignData.id);
+        .eq("campaign_id", campaignData.id)
+        .order("display_order", { ascending: true, nullsFirst: false })
+        .order("name", { ascending: true });
 
       if (itemsError) {
         console.error("Error fetching campaign items:", itemsError);
