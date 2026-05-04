@@ -1037,6 +1037,63 @@ Deno.serve(async (req) => {
           } catch (e) {
             console.error("Deterministic date capture failed:", e);
           }
+        } else if (askedField === "name" && !isFieldAnswered("name", updatedFields)) {
+          const trimmed = lastUserMsgRaw.trim();
+          const isMeta = /^(i\s|already|what\?|why\?|huh\?)/i.test(trimmed) && trimmed.length < 60;
+          if (!isMeta && trimmed.length > 0 && trimmed.length <= 120) {
+            updatedFields.name = trimmed;
+          }
+        } else if (askedField === "goal_amount" && !isFieldAnswered("goal_amount", updatedFields)) {
+          const cleaned = lastUserMsgRaw.replace(/[$,\s]/g, "");
+          const m = cleaned.match(/\d+(?:\.\d+)?/);
+          if (m) {
+            const num = Number(m[0]);
+            if (isFinite(num) && num > 0) updatedFields.goal_amount = num;
+          }
+        } else if (askedField === "pledge_unit_label" && !updatedFields.pledge_unit_label) {
+          const trimmed = lastUserMsgRaw.trim().toLowerCase();
+          if (trimmed.length > 0 && trimmed.length <= 40) {
+            updatedFields.pledge_unit_label = trimmed.replace(/\s+/g, " ");
+          }
+        } else if (askedField === "pledge_scope" && !updatedFields.pledge_scope) {
+          const t = lastUserMsgRaw.trim().toLowerCase();
+          if (/team/.test(t)) updatedFields.pledge_scope = "team";
+          else if (/participant|player|each/.test(t)) updatedFields.pledge_scope = "participant";
+        } else if (askedField === "pledge_event_date" && !updatedFields.pledge_event_date) {
+          const iso = normalizeDate(lastUserMsgRaw.trim(), today);
+          if (iso) updatedFields.pledge_event_date = iso;
+        } else if (askedField === "merch_ships_by_date" && !isFieldAnswered("merch_ships_by_date", updatedFields)) {
+          const iso = normalizeDate(lastUserMsgRaw.trim(), today);
+          if (iso) updatedFields.merch_ships_by_date = iso;
+        } else if (askedField === "merch_shipping_flat_rate" && updatedFields.merch_shipping_flat_rate === undefined) {
+          const cleaned = lastUserMsgRaw.replace(/[$,\s]/g, "");
+          const m = cleaned.match(/\d+(?:\.\d+)?/);
+          if (m) {
+            const num = Number(m[0]);
+            if (isFinite(num) && num >= 0) updatedFields.merch_shipping_flat_rate = num;
+          }
+        } else if (askedField === "merch_pickup_available" && updatedFields.merch_pickup_available === undefined) {
+          const yn = parseYesNo(lastUserMsgRaw);
+          if (yn !== null) updatedFields.merch_pickup_available = yn;
+        } else if (askedField === "merch_pickup_note" && !updatedFields.merch_pickup_note) {
+          const trimmed = lastUserMsgRaw.trim();
+          if (trimmed.length > 0 && trimmed.length <= 300) updatedFields.merch_pickup_note = trimmed;
+        } else if (askedField === "event_start_at" && !updatedFields.event_start_at) {
+          // Accept any reasonable text; downstream will parse.
+          const trimmed = lastUserMsgRaw.trim();
+          if (trimmed.length > 0 && trimmed.length <= 100) updatedFields.event_start_at = trimmed;
+        } else if (askedField === "event_location_name" && !updatedFields.event_location_name) {
+          const trimmed = lastUserMsgRaw.trim();
+          if (trimmed.length > 0 && trimmed.length <= 120) updatedFields.event_location_name = trimmed;
+        } else if (askedField === "event_location_address" && !updatedFields.event_location_address) {
+          const trimmed = lastUserMsgRaw.trim();
+          if (trimmed.length > 0 && trimmed.length <= 200) updatedFields.event_location_address = trimmed;
+        } else if (askedField === "event_format" && !updatedFields.event_format) {
+          const trimmed = lastUserMsgRaw.trim();
+          if (trimmed.length > 0 && trimmed.length <= 200) updatedFields.event_format = trimmed;
+        } else if (askedField === "event_includes" && !updatedFields.event_includes) {
+          const trimmed = lastUserMsgRaw.trim();
+          if (trimmed.length > 0 && trimmed.length <= 300) updatedFields.event_includes = trimmed;
         }
       }
     }
