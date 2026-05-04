@@ -1337,10 +1337,14 @@ const CampaignLanding = () => {
                     onClick={handleProceedToCheckout}
                     className="w-full mt-4"
                     size="lg"
+                    disabled={isPreview}
+                    title={isPreview ? "Checkout is disabled in preview mode" : undefined}
                   >
-                    {cart.some(item => item.selectedQuantity > 0 && item.is_recurring) 
-                      ? 'Subscribe Now' 
-                      : 'Proceed to Checkout'}
+                    {isPreview
+                      ? 'Checkout disabled in preview'
+                      : cart.some(item => item.selectedQuantity > 0 && item.is_recurring)
+                        ? 'Subscribe Now'
+                        : 'Proceed to Checkout'}
                   </Button>
                 </CardContent>
               </Card>
