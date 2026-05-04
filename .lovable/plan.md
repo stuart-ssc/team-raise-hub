@@ -1,72 +1,46 @@
-## Goal
+## Problem
 
-Allow campaign owners to share a private preview link for unpublished fundraisers using `?preview=TOKEN`. Show a banner and disable checkout while in preview mode. Update the editor's Share card to surface the preview URL when not yet published.
+`https://sponsorly.io/c/kbc-huge-bourbon-raffle-26?preview=...` returns 404.
 
-## Background
+The slug and `preview_token` both match a real campaign in the database. The 404 comes from the `get-campaign-preview` edge function returning "Preview link is invalid".
 
-- `campaigns` already has a `preview_token uuid` column.
-- The current public SELECT RLS policy only exposes campaigns with `status = true`, so unpublished campaigns can't be fetched from the browser even if you know the token.
-- `CampaignLanding.tsx` fetches via `.eq("status", true).single()` and renders the cart with a "Proceed to Checkout" button (around lines 213–231 and 1286–1292).
-- `CampaignShareCard` builds `/c/{slug}` and is passed `isPublished` from `CampaignEditor.tsx`.
+Root cause: the campaign belongs to a **nonprofit organization** group (`group_name: "General Club"`, `organization_id` set, `school_id: null`). The edge function's query uses:
 
-## Plan
+```ts
+groups!inner(
+  ...
+  schools!inner(id, school_name, city, state, "Primary Color")
+)
+```
 
-### 1. Public preview fetch (edge function)
+Because `schools!inner` is an inner join on a nullable FK, any group without a school is filtered out, and `.maybeSingle()` returns `null` → 404.
 
-Create `supabase/functions/get-campaign-preview/index.ts` (uses service role, no JWT verification):
+The same pattern exists in `src/pages/CampaignLanding.tsx` (`fetchCampaignData`, line ~252) for the published path, so nonprofit campaigns likely have or will have the same issue when loading normally too — worth confirming.
 
-- Input: `{ slug, previewToken }`.
-- Looks up the campaign by `slug` and verifies `preview_token = previewToken`. Returns 404 if not matched.
-- Returns the same shape currently selected in `fetchCampaignData` (campaign + groups/group_type/schools + campaign_type), plus `campaign_items` (with `campaign_item_variants`) and `campaign_custom_fields`.
-- Register in `supabase/config.toml` with `verify_jwt = false`.
+## Fix
 
-This avoids loosening RLS on the `campaigns` table.
+### 1. `supabase/functions/get-campaign-preview/index.ts`
 
-### 2. CampaignLanding preview mode
+Change the schools join from inner to optional so nonprofit groups (no school) are not filtered out:
 
-In `src/pages/CampaignLanding.tsx`:
+```ts
+groups!inner(
+  id,
+  organization_id,
+  group_name,
+  group_type(id, name),
+  schools(id, school_name, city, state, "Primary Color")  // remove !inner
+)
+```
 
-- Read `preview` from `useSearchParams()`. Track `isPreview = !!previewToken`.
-- In `fetchCampaignData`:
-  - If `isPreview`: call `supabase.functions.invoke('get-campaign-preview', { body: { slug, previewToken } })`. Populate `campaign`, `campaignItems`, `customFields` from the response. On 404, show "Preview link is invalid or has expired."
-  - Else: existing path (unchanged, still requires `status = true`).
-- Render a non-dismissible banner at the very top of the page (above the hero) when `isPreview`:
-  - Use `Alert` with a lock icon and the exact copy:  
-    `🔒 You're viewing an unpublished preview of this fundraiser. This link is private and will stop working once the campaign is published or the token is rotated.`
-  - Sticky to the top, amber/warning styling, no close button.
-- Disable checkout when `isPreview`:
-  - Pass `disabled={isPreview}` (and a tooltip "Checkout is disabled in preview mode") to the cart's "Proceed to Checkout" button at line ~1286.
-  - Also short-circuit `handleProceedToCheckout` and `handleDonationProceed` to no-op with a toast in preview mode (defense in depth for the type-specific landings that have their own CTAs).
-  - For the type-specific landings (`MerchandiseLanding`, `EventLanding`, `DonationLanding`, `PledgeLanding`, `SponsorshipLanding`), forward an `isPreview` prop and disable their primary CTA buttons similarly. (Each already accepts `onProceedToCheckout`; we add a `disabled` prop and surface the same tooltip.)
+### 2. `src/pages/CampaignLanding.tsx`
 
-### 3. Editor Share card
+Apply the same change in the non-preview `fetchCampaignData` query (around line 252) so nonprofit campaigns load on the public `/c/{slug}` route as well. Verify downstream code that reads `campaign.groups.schools` already handles a null school (nonprofit campaigns have no school header info to display).
 
-`src/components/campaign-editor/CampaignShareCard.tsx`:
+### 3. Verify
 
-- Accept new optional prop `previewToken: string | null`.
-- When `!isPublished && previewToken && slug`, build URL as  
-  `https://sponsorly.io/c/{slug}?preview={previewToken}`  
-  (instead of `window.location.origin`, per the requirement to use the canonical sponsorly.io domain for share).
-- Update the helper text: when unpublished, say "Private preview link — works until you publish or rotate the token." instead of the current "Link will activate when published."
-- Keep Copy / Preview / Share buttons functional with this URL.
+- Re-test the preview URL — should now load with the amber preview banner.
+- Re-test the published URL `/c/kbc-huge-bourbon-raffle-26` (no `?preview`) to confirm nonprofit campaigns also render correctly.
+- Spot check a school-based campaign to confirm school metadata still renders.
 
-`src/pages/CampaignEditor.tsx`:
-
-- Read `preview_token` from the campaign record (already selectable; add to the campaign query if missing).
-- Pass `previewToken={campaignData.previewToken}` to `<CampaignShareCard>`.
-
-### 4. Edge cases
-
-- If `?preview=` is present but campaign is already published, the edge function still returns it; banner still shows so the owner knows they're using a private URL. (Acceptable; alternative is to redirect to the clean `/c/{slug}`, but keeping the banner is simpler and matches the requirement.)
-- Search engines: keep `noindex` for preview views by adding `<SeoHead noIndex />` (or equivalent meta) when `isPreview`.
-
-## Files touched
-
-- New: `supabase/functions/get-campaign-preview/index.ts`
-- Edit: `supabase/config.toml` (register function, `verify_jwt = false`)
-- Edit: `src/pages/CampaignLanding.tsx` (preview fetch, banner, disable checkout, propagate `isPreview`)
-- Edit: `src/components/campaign-landing/{merchandise,event,donation,pledge,sponsorship}/*Landing.tsx` (accept + apply `isPreview` to CTA)
-- Edit: `src/components/campaign-editor/CampaignShareCard.tsx` (preview URL + copy)
-- Edit: `src/pages/CampaignEditor.tsx` (pass `previewToken`)
-
-No database migration needed (`preview_token` already exists, RLS untouched).
+No DB migration, no RLS changes.

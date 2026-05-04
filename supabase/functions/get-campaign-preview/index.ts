@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
           organization_id,
           group_name,
           group_type(id, name),
-          schools!inner(id, school_name, city, state, "Primary Color")
+          schools(id, school_name, city, state, "Primary Color")
         ),
         campaign_type(id, name)
       `)
