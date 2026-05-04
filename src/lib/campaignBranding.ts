@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export interface ResolvedBranding {
   primaryColor: string | null;
   secondaryColor: string | null;
