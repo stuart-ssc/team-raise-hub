@@ -570,6 +570,8 @@ export default function CampaignEditor() {
         merch_shipping_flat_rate: campaignData.merchShippingFlatRate
           ? parseFloat(campaignData.merchShippingFlatRate)
           : null,
+        merch_items_heading: campaignData.merchItemsHeading || null,
+        merch_items_subheading: campaignData.merchItemsSubheading || null,
       };
 
       let campaignId = id;
@@ -975,6 +977,8 @@ export default function CampaignEditor() {
                       merchPickupAvailable: campaignData.merchPickupAvailable,
                       merchPickupNote: campaignData.merchPickupNote,
                       merchShippingFlatRate: campaignData.merchShippingFlatRate,
+                      merchItemsHeading: campaignData.merchItemsHeading,
+                      merchItemsSubheading: campaignData.merchItemsSubheading,
                     }}
                     onUpdate={updateCampaignData}
                   />
