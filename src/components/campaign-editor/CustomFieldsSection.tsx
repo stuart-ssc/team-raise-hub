@@ -102,12 +102,22 @@ export function CustomFieldsSection({ fields, onFieldsChange }: CustomFieldsSect
             </div>
 
             {field.field_type === 'select' && (
-              <Textarea
-                placeholder="Options (one per line)"
-                value={field.field_options?.join('\n') || ''}
-                onChange={(e) => updateField(index, 'field_options', e.target.value.split('\n').filter(o => o.trim()))}
-                rows={3}
-              />
+              <div className="space-y-1">
+                <Textarea
+                  placeholder={"Options (one per line)\nExample:\nSmall\nMedium\nLarge"}
+                  value={field.field_options?.join('\n') ?? ''}
+                  onChange={(e) => updateField(index, 'field_options', e.target.value.split('\n'))}
+                  onBlur={(e) =>
+                    updateField(
+                      index,
+                      'field_options',
+                      e.target.value.split('\n').map((o) => o.trim()).filter(Boolean)
+                    )
+                  }
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">Press Enter to add each option on a new line.</p>
+              </div>
             )}
 
             <Input
