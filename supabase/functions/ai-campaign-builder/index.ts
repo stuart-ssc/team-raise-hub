@@ -1225,6 +1225,18 @@ Deno.serve(async (req) => {
     let exitItemsCollection = false;
     const inItemsPhase = clientPhase === "collecting_items" && !!campaignId;
 
+    // ---- Agenda sub-flow state (events only, post-event-fields, pre-items) ----
+    const isEventCampaign = isEventTypeName(
+      types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null,
+    );
+    const eventFieldsAllDone = !isEventCampaign || getEventStillToAsk(updatedFields).length === 0;
+    const inAgendaPhase =
+      !!campaignId &&
+      !inItemsPhase &&
+      isEventCampaign &&
+      eventFieldsAllDone &&
+      updatedFields.event_agenda_complete !== true;
+
     // Resolve campaign type name (for item-noun in prompts)
     const resolvedTypeName =
       types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null;
