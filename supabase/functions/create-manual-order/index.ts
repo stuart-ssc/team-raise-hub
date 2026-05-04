@@ -82,19 +82,8 @@ serve(async (req) => {
     const itemsTotal = items.reduce((sum: number, item: any) => 
       sum + (item.price_at_purchase * item.quantity), 0);
 
-    // Check if campaign requires asset uploads to determine order status
-    const { data: campaignInfo } = await supabaseClient
-      .from('campaigns')
-      .select('requires_business_info')
-      .eq('id', campaignId)
-      .single();
-
-    const { count: assetCount } = await supabaseClient
-      .from('campaign_required_assets')
-      .select('id', { count: 'exact', head: true })
-      .eq('campaign_id', campaignId);
-
-    const requiresAssets = campaignInfo?.requires_business_info || (assetCount ?? 0) > 0;
+    // Check if order requires asset uploads to determine status
+    const requiresAssets = await orderRequiresAssets(supabaseClient, campaignId, items);
     const orderStatus = requiresAssets ? 'succeeded' : 'completed';
     console.log('Manual order status determined:', orderStatus, { requiresAssets });
 
