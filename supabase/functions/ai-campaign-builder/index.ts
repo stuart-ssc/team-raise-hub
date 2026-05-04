@@ -560,8 +560,14 @@ function buildSystemPrompt(
     const resolvedTypeName =
       campaignTypes.find((t) => t.id === collectedFields.campaign_type_id)?.name || null;
     const isPledge = isPledgeTypeName(resolvedTypeName);
+    const isMerch = isMerchandiseTypeName(resolvedTypeName);
+    const isEvent = isEventTypeName(resolvedTypeName);
     const pledgeStillToAsk = isPledge ? getPledgeStillToAsk(collectedFields) : [];
     const pledgeFieldsDone = !isPledge || pledgeStillToAsk.length === 0;
+    const merchStillToAsk = isMerch ? getMerchStillToAsk(collectedFields) : [];
+    const merchFieldsDone = !isMerch || merchStillToAsk.length === 0;
+    const eventStillToAsk = isEvent ? getEventStillToAsk(collectedFields) : [];
+    const eventFieldsDone = !isEvent || eventStillToAsk.length === 0;
 
     const rostersList = rosters.length > 0
       ? rosters.map((r) => `  - "${r.roster_year}${r.current_roster ? " (Current)" : ""}" → id: ${r.id}`).join("\n")
@@ -603,6 +609,34 @@ function buildSystemPrompt(
         nextStep = `**Next step: pledge event date.** Ask in one short sentence: "When is the event happening? (charges go out on or after this date)". Accept any natural date format and normalize to YYYY-MM-DD. When the user answers, you MUST call **update_campaign_fields** with \`pledge_event_date\` set to YYYY-MM-DD in the SAME turn.`;
       } else {
         nextStep = `**Next step: continue pledge setup.** Ask the user about ${nextPledgeKey}.`;
+      }
+    } else if (isMerch && !merchFieldsDone) {
+      const nextKey = merchStillToAsk[0];
+      if (nextKey === "merch_ships_by_date") {
+        nextStep = `**Next step: ships-by date.** This is a Merchandise Sale, so let's set fulfillment expectations. Ask in one short sentence: "When will orders ship by? (or say skip)". Accept any natural date format and normalize to YYYY-MM-DD. When the user answers, call **update_campaign_fields** with \`merch_ships_by_date\` (or \`merch_ships_by_date_skipped: true\` if they skip) in the SAME turn.`;
+      } else if (nextKey === "merch_shipping_flat_rate") {
+        nextStep = `**Next step: flat shipping rate.** Ask in one short sentence: "Want to charge a flat shipping rate? (enter dollars, or say skip)". When the user answers, call **update_campaign_fields** with \`merch_shipping_flat_rate\` as a number (or \`merch_shipping_flat_rate_skipped: true\` if skipped) in the SAME turn.`;
+      } else if (nextKey === "merch_pickup_available") {
+        nextStep = `**Next step: local pickup option.** Ask in one short sentence: "Want to offer local pickup as an alternative to shipping?". The UI shows Yes/No buttons. When the user answers, call **update_campaign_fields** with \`merch_pickup_available: true\` or \`false\` in the SAME turn.`;
+      } else if (nextKey === "merch_pickup_note") {
+        nextStep = `**Next step: pickup instructions.** Ask in one short sentence: "Any pickup instructions for donors? (e.g. 'Pick up at the main office Mon–Fri 8–4', or say skip)". When the user replies, call **update_campaign_fields** with \`merch_pickup_note\` (or \`merch_pickup_note_skipped: true\` if skipped) in the SAME turn.`;
+      } else {
+        nextStep = `**Next step: continue merchandise setup.** Ask the user about ${nextKey}.`;
+      }
+    } else if (isEvent && !eventFieldsDone) {
+      const nextKey = eventStillToAsk[0];
+      if (nextKey === "event_start_at") {
+        nextStep = `**Next step: event date & start time.** This is an Event fundraiser. Ask in one short sentence: "What date and start time is the event?". Accept any natural format ("May 4 at 9am") and normalize to YYYY-MM-DDTHH:mm. Call **update_campaign_fields** with \`event_start_at\` in the SAME turn.`;
+      } else if (nextKey === "event_location_name") {
+        nextStep = `**Next step: venue name.** Ask in one short sentence: "Where's the event being held? (venue name)". When the user answers, call **update_campaign_fields** with \`event_location_name\` in the SAME turn.`;
+      } else if (nextKey === "event_location_address") {
+        nextStep = `**Next step: venue address.** Ask in one short sentence: "What's the address? (or say skip)". Call **update_campaign_fields** with \`event_location_address\` (or \`event_location_address_skipped: true\` if skipped) in the SAME turn.`;
+      } else if (nextKey === "event_format") {
+        nextStep = `**Next step: event format.** Ask in one short sentence: "How would you describe the format? (e.g. '4-person scramble' or 'Plated dinner', or say skip)". Call **update_campaign_fields** with \`event_format\` (or \`event_format_skipped: true\`) in the SAME turn.`;
+      } else if (nextKey === "event_includes") {
+        nextStep = `**Next step: what's included.** Ask in one short sentence: "What's included? (comma-separated list, e.g. 'Cart, Lunch, Range balls', or say skip)". Call **update_campaign_fields** with \`event_includes\` as a comma-separated string (or \`event_includes_skipped: true\` if skipped) in the SAME turn.`;
+      } else {
+        nextStep = `**Next step: continue event setup.** Ask the user about ${nextKey}.`;
       }
     } else {
       if (isPledge) {
