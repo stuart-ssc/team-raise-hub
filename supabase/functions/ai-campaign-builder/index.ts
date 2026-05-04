@@ -2947,6 +2947,73 @@ Deno.serve(async (req) => {
       assistantMessage = assistantMessages.join("\n\n");
     }
 
+    // Server-authored single-question override. Whenever we know the exact next
+    // field (because we attached chip suggestions for it), replace the LLM's
+    // trailing question paragraph with a canned single sentence. This kills
+    // the "two questions in one message" bug structurally — the model can drift,
+    // but the user always sees exactly one question that matches the chips.
+    // We preserve the model's first paragraph (the acknowledgment) when it
+    // exists and looks like an ack rather than a question.
+    const CANNED_QUESTIONS: Record<string, string> = {
+      // Pre-draft
+      campaign_type_id: "What type of fundraiser is this?",
+      group_id: "Which group is this for?",
+      name: "What's the name of this fundraiser?",
+      goal_amount: "What's your fundraising goal? (in dollars, e.g. 5000)",
+      start_date: "When should the fundraiser start?",
+      end_date: "When should it end?",
+      description: "Want to add a short description? You can also skip.",
+      requires_business_info: "Will sponsors need to provide info or assets (like a logo or website)?",
+      // Post-draft
+      asset_upload_deadline: "When do sponsors need to upload their assets by?",
+      add_required_asset: "What asset do sponsors need to provide? Pick a preset or type a custom name.",
+      enable_roster_attribution: "Want to enable roster tracking so each player gets their own personalized URL?",
+      roster_id: "Which roster should we use?",
+      group_directions: "Want to add internal directions for your team? You can also skip.",
+      // Pledge
+      pledge_unit_label: "What will supporters pledge per? (e.g. lap, mile, book read)",
+      pledge_scope: "Should pledges count team-wide or per participant?",
+      pledge_event_date: "When is the event happening? (charges go out on or after this date)",
+      // Merchandise
+      merch_ships_by_date: "When will orders ship by? You can also skip.",
+      merch_shipping_flat_rate: "Want to charge a flat shipping rate? Enter dollars or skip.",
+      merch_pickup_available: "Want to offer local pickup as an alternative to shipping?",
+      merch_pickup_note: "Any pickup instructions for donors? You can also skip.",
+      // Event
+      event_start_at: "What date and start time is the event? (e.g. 'May 4 at 9am')",
+      event_location_name: "Where's the event being held? (venue name)",
+      event_location_address: "What's the address? You can also skip.",
+      event_format: "How would you describe the format? (e.g. '4-person scramble') — or skip.",
+      event_includes: "What's included? (comma-separated, e.g. 'Cart, Lunch, Range balls') — or skip.",
+      event_agenda_intro: "Want to add a day-of agenda for the event?",
+      add_another_agenda: "Want to add another agenda item, or are you done?",
+      agenda_description: "Add a short description, or skip.",
+      // Items
+      add_another_item: `Want to add another ${itemNoun}, or are you done?`,
+      is_recurring: "Should this be a recurring charge?",
+      recurring_interval: "How often should it recur?",
+      // Final
+      final_action: "What would you like to do next?",
+      confirm_create_draft: "Ready to save this as a draft?",
+    };
+
+    if (
+      suggestions?.field &&
+      CANNED_QUESTIONS[suggestions.field] &&
+      assistantMessages.length > 0 &&
+      // Skip override for the multi-bubble fee_model case (handled above).
+      !(suggestions.field === "fee_model" && assistantMessages.length === 3)
+    ) {
+      const canned = CANNED_QUESTIONS[suggestions.field];
+      const isQuestion = (s: string) => /\?\s*$/.test(s);
+      // Keep the first paragraph if it looks like an acknowledgment (not a question).
+      const ack = assistantMessages.length > 1 && !isQuestion(assistantMessages[0])
+        ? assistantMessages[0]
+        : null;
+      assistantMessages = ack ? [ack, canned] : [canned];
+      assistantMessage = assistantMessages.join("\n\n");
+    }
+
     return new Response(
       JSON.stringify({
         assistantMessage,
