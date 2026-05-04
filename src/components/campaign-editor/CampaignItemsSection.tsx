@@ -5,14 +5,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Edit, Plus, HelpCircle, Package, ArrowLeft } from "lucide-react";
+import { Trash2, Edit, Plus, HelpCircle, Package, ArrowLeft, GripVertical } from "lucide-react";
 import { SizeVariantsEditor, SizeVariant } from "@/components/SizeVariantsEditor";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { RequiredAssetsEditor, RequiredAsset } from "./RequiredAssetsEditor";
 
 interface CampaignItem {
@@ -102,7 +118,9 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
     const { data, error } = await supabase
       .from("campaign_items")
       .select("*")
-      .eq("campaign_id", campaignId);
+      .eq("campaign_id", campaignId)
+      .order("display_order", { ascending: true, nullsFirst: false })
+      .order("name", { ascending: true });
 
     if (error) {
       console.error("Error fetching items:", error);
@@ -322,9 +340,10 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
 
         toast({ title: "Item updated" });
       } else {
+        const nextOrder = items.length;
         const { data: newItem, error } = await supabase
           .from("campaign_items")
-          .insert([{ ...itemData, campaign_id: campaignId }])
+          .insert([{ ...itemData, campaign_id: campaignId, display_order: nextOrder }])
           .select("id")
           .single();
 
@@ -405,6 +424,34 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
 
     await fetchItems();
     toast({ title: "Item deleted" });
+  };
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = items.findIndex((i) => i.id === active.id);
+    const newIndex = items.findIndex((i) => i.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const reordered = arrayMove(items, oldIndex, newIndex);
+    setItems(reordered);
+    try {
+      await Promise.all(
+        reordered.map((it, idx) =>
+          it.id
+            ? supabase.from("campaign_items").update({ display_order: idx }).eq("id", it.id)
+            : Promise.resolve()
+        )
+      );
+    } catch (err) {
+      console.error("Failed to persist item order", err);
+      toast({ title: "Couldn't save order", variant: "destructive" });
+      await fetchItems();
+    }
   };
 
   return (
@@ -728,50 +775,41 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
         ) : (
           <>
             {items.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Cost</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Available</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>${item.cost.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {item.isRecurring ? (
-                            <Badge variant="secondary">
-                              {item.recurringInterval === 'month' ? 'Monthly' : 'Annual'}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">One-time</span>
-                          )}
-                          {(forceSponsorship || item.isSponsorshipItem) && (
-                            <Badge variant="outline">Sponsor</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{item.quantityAvailable} / {item.quantityOffered}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => editItem(item)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => item.id && deleteItem(item.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Drag the handle to reorder how items appear on the landing page.
+                </p>
+                <DndContext
+                  sensors={dndSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={items.map((i) => i.id || "").filter(Boolean)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="rounded-md border divide-y">
+                      <div className="grid grid-cols-[32px_1fr_100px_140px_120px_100px] gap-2 px-3 py-2 bg-muted/50 text-xs font-medium text-muted-foreground">
+                        <span />
+                        <span>Name</span>
+                        <span>Cost</span>
+                        <span>Type</span>
+                        <span>Available</span>
+                        <span className="text-right">Actions</span>
+                      </div>
+                      {items.map((item) => (
+                        <SortableItemRow
+                          key={item.id}
+                          item={item}
+                          forceSponsorship={forceSponsorship}
+                          onEdit={editItem}
+                          onDelete={(id) => deleteItem(id)}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
             ) : (
               <div className="text-center py-8 border-2 border-dashed rounded-lg">
                 <p className="text-muted-foreground mb-4">No items added yet</p>
@@ -783,6 +821,71 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
             )}
           </>
         )}
+    </div>
+  );
+}
+
+function SortableItemRow({
+  item,
+  forceSponsorship,
+  onEdit,
+  onDelete,
+}: {
+  item: any;
+  forceSponsorship: boolean;
+  onEdit: (item: any) => void;
+  onDelete: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="grid grid-cols-[32px_1fr_100px_140px_120px_100px] gap-2 px-3 py-2 items-center bg-background"
+    >
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+        {...attributes}
+        {...listeners}
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <span className="font-medium truncate">{item.name}</span>
+      <span>${item.cost.toFixed(2)}</span>
+      <div className="flex items-center gap-1 flex-wrap">
+        {item.isRecurring ? (
+          <Badge variant="secondary">
+            {item.recurringInterval === "month" ? "Monthly" : "Annual"}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground text-sm">One-time</span>
+        )}
+        {(forceSponsorship || item.isSponsorshipItem) && (
+          <Badge variant="outline">Sponsor</Badge>
+        )}
+      </div>
+      <span className="text-sm">
+        {item.quantityAvailable} / {item.quantityOffered}
+      </span>
+      <div className="flex gap-1 justify-end">
+        <Button variant="ghost" size="icon" onClick={() => onEdit(item)}>
+          <Edit className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => item.id && onDelete(item.id)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }
