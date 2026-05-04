@@ -248,8 +248,12 @@ const CampaignLanding = () => {
             id,
             organization_id,
             group_name,
+            logo_url,
+            primary_color,
+            secondary_color,
             group_type(id, name),
-            schools(id, school_name, city, state, "Primary Color")
+            schools(id, school_name, city, state, "Primary Color", "Secondary Color", logo_file),
+            organizations(id, name, logo_url, primary_color, secondary_color)
           ),
           campaign_type(id, name)
         `)
