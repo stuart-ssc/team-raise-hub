@@ -2356,7 +2356,8 @@ Deno.serve(async (req) => {
       const merchDone = !isMerch || getMerchStillToAsk(updatedFields).length === 0;
       const isEvent = isEventTypeName(resolvedTypeName);
       const eventDone = !isEvent || getEventStillToAsk(updatedFields).length === 0;
-      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone && merchDone && eventDone;
+      const agendaDone = !isEvent || updatedFields.event_agenda_complete === true;
+      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone && merchDone && eventDone && agendaDone;
 
       if (exitItemsCollection) {
         phase = "complete";
