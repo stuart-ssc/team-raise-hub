@@ -32,11 +32,14 @@ export interface RequiredAsset {
   dimensions_hint: string;
   is_required: boolean;
   display_order: number;
+  campaign_item_id?: string | null;
 }
 
 interface RequiredAssetsEditorProps {
   assets: RequiredAsset[];
   onChange: (assets: RequiredAsset[]) => void;
+  /** When provided, the editor labels itself for a specific item. */
+  itemLabel?: string;
 }
 
 const FILE_TYPE_OPTIONS = [
@@ -73,7 +76,7 @@ const PRESET_TEMPLATES = [
   },
 ];
 
-export function RequiredAssetsEditor({ assets, onChange }: RequiredAssetsEditorProps) {
+export function RequiredAssetsEditor({ assets, onChange, itemLabel }: RequiredAssetsEditorProps) {
   const [editingAsset, setEditingAsset] = useState<RequiredAsset | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedFileTypes, setSelectedFileTypes] = useState<string[]>([]);
@@ -165,7 +168,9 @@ export function RequiredAssetsEditor({ assets, onChange }: RequiredAssetsEditorP
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Label className="text-base">Required Sponsor Assets</Label>
+        <Label className="text-base">
+          {itemLabel ? `Required Assets for ${itemLabel}` : "Required Sponsor Assets"}
+        </Label>
         <Button type="button" variant="outline" size="sm" onClick={handleAddAsset}>
           <Plus className="h-4 w-4 mr-1" />
           Add Asset

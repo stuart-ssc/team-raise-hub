@@ -6,6 +6,47 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+/**
+ * Returns true when the given order requires sponsor asset uploads.
+ * Logic:
+ *   - If any line item in `order.items` references a `campaign_items` row with
+ *     `is_sponsorship_item = true`, the order requires assets.
+ *   - Otherwise, fall back to the legacy campaign-wide `requires_business_info`
+ *     flag combined with the existence of any campaign-wide required asset.
+ */
+async function orderRequiresAssets(supabaseAdmin: any, order: { campaign_id: string; items?: any }) {
+  const itemIds: string[] = Array.isArray(order.items)
+    ? order.items
+        .map((li: any) => li?.campaign_item_id || li?.id)
+        .filter((v: any) => typeof v === 'string')
+    : [];
+
+  if (itemIds.length > 0) {
+    const { data: sponsorshipItems } = await supabaseAdmin
+      .from('campaign_items')
+      .select('id')
+      .in('id', itemIds)
+      .eq('is_sponsorship_item', true);
+    if ((sponsorshipItems?.length ?? 0) > 0) return true;
+  }
+
+  const { data: campaignInfo } = await supabaseAdmin
+    .from('campaigns')
+    .select('requires_business_info')
+    .eq('id', order.campaign_id)
+    .single();
+
+  if (!campaignInfo?.requires_business_info) return false;
+
+  const { count: assetCount } = await supabaseAdmin
+    .from('campaign_required_assets')
+    .select('id', { count: 'exact', head: true })
+    .eq('campaign_id', order.campaign_id)
+    .is('campaign_item_id', null);
+
+  return (assetCount ?? 0) > 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -81,19 +122,11 @@ Deno.serve(async (req) => {
     const customerName = session.customer_details?.name || null;
     const isSubscription = session.metadata?.is_subscription === 'true';
 
-    // Determine order status based on whether campaign requires assets
-    const { data: campaignInfo } = await supabaseAdmin
-      .from('campaigns')
-      .select('requires_business_info')
-      .eq('id', order.campaign_id)
-      .single();
-
-    const { count: assetCount } = await supabaseAdmin
-      .from('campaign_required_assets')
-      .select('id', { count: 'exact', head: true })
-      .eq('campaign_id', order.campaign_id);
-
-    const requiresAssets = campaignInfo?.requires_business_info || (assetCount ?? 0) > 0;
+    // Determine order status based on whether THIS order requires assets.
+    // An order requires asset uploads when:
+    //   (a) the campaign-wide legacy `requires_business_info` flag is on AND any campaign_required_assets row exists, OR
+    //   (b) any line item in the order is flagged as a sponsorship item (per-item or campaign-wide assets exist for it).
+    const requiresAssets = await orderRequiresAssets(supabaseAdmin, order);
     const orderStatus = requiresAssets ? 'succeeded' : 'completed';
     console.log('Order status determined:', orderStatus, { requiresAssets });
 

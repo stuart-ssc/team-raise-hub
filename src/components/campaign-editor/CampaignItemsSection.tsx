@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Edit, Plus, HelpCircle, Package, ArrowLeft } from "lucide-react";
 import { SizeVariantsEditor, SizeVariant } from "@/components/SizeVariantsEditor";
+import { RequiredAssetsEditor, RequiredAsset } from "./RequiredAssetsEditor";
 
 interface CampaignItem {
   id?: string;
@@ -36,6 +37,7 @@ interface CampaignItem {
   heroStatLabel?: string;
   collectAttendeeNames?: boolean;
   attendeesPerUnit?: number;
+  isSponsorshipItem?: boolean;
 }
 
 interface SizeVariantData {
@@ -48,9 +50,11 @@ interface SizeVariantData {
 
 interface CampaignItemsSectionProps {
   campaignId: string;
+  /** When the parent campaign is a Sponsorship-type, every item is implicitly a sponsorship item. */
+  forceSponsorship?: boolean;
 }
 
-export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) {
+export function CampaignItemsSection({ campaignId, forceSponsorship = false }: CampaignItemsSectionProps) {
   const { toast } = useToast();
   const [items, setItems] = useState<CampaignItem[]>([]);
   const [editingItem, setEditingItem] = useState<CampaignItem | null>(null);
@@ -65,6 +69,8 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
   const [heroStatLabel, setHeroStatLabel] = useState("");
   const [collectAttendeeNames, setCollectAttendeeNames] = useState(false);
   const [attendeesPerUnit, setAttendeesPerUnit] = useState("1");
+  const [isSponsorshipItem, setIsSponsorshipItem] = useState(false);
+  const [itemAssets, setItemAssets] = useState<RequiredAsset[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -135,6 +141,7 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
         heroStatLabel: item.hero_stat_label || "",
         collectAttendeeNames: item.collect_attendee_names || false,
         attendeesPerUnit: item.attendees_per_unit ?? 1,
+        isSponsorshipItem: (item as any).is_sponsorship_item || false,
       };
     }));
 
@@ -166,6 +173,8 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
     setHeroStatLabel("");
     setCollectAttendeeNames(false);
     setAttendeesPerUnit("1");
+    setIsSponsorshipItem(forceSponsorship);
+    setItemAssets([]);
   };
 
   const handleCancel = () => {
@@ -178,7 +187,7 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
     setIsFormVisible(true);
   };
 
-  const editItem = (item: CampaignItem) => {
+  const editItem = async (item: CampaignItem) => {
     setEditingItem(item);
     setFormData({
       name: item.name,
@@ -202,6 +211,31 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
     setHeroStatLabel(item.heroStatLabel || "");
     setCollectAttendeeNames(item.collectAttendeeNames || false);
     setAttendeesPerUnit(String(item.attendeesPerUnit ?? 1));
+    setIsSponsorshipItem(forceSponsorship || item.isSponsorshipItem || false);
+
+    // Load this item's required assets (if any)
+    if (item.id) {
+      const { data } = await supabase
+        .from("campaign_required_assets")
+        .select("*")
+        .eq("campaign_item_id", item.id)
+        .order("display_order");
+      setItemAssets(
+        (data || []).map((a: any) => ({
+          id: a.id,
+          asset_name: a.asset_name,
+          asset_description: a.asset_description || "",
+          file_types: a.file_types || [],
+          max_file_size_mb: a.max_file_size_mb || 10,
+          dimensions_hint: a.dimensions_hint || "",
+          is_required: a.is_required,
+          display_order: a.display_order,
+          campaign_item_id: a.campaign_item_id,
+        }))
+      );
+    } else {
+      setItemAssets([]);
+    }
     setIsFormVisible(true);
   };
 
@@ -265,6 +299,7 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
         hero_stat_label: heroStatLabel.trim() || null,
         collect_attendee_names: collectAttendeeNames,
         attendees_per_unit: Math.max(1, parseInt(attendeesPerUnit) || 1),
+        is_sponsorship_item: forceSponsorship || isSponsorshipItem,
       };
 
       let savedItemId: string | null = null;
@@ -309,6 +344,33 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
             quantity_available: v.quantity_available,
             display_order: index,
           })));
+      }
+
+      // Persist per-item required assets (replace strategy)
+      if (savedItemId) {
+        await supabase
+          .from("campaign_required_assets")
+          .delete()
+          .eq("campaign_item_id", savedItemId);
+
+        const effectiveSponsorship = forceSponsorship || isSponsorshipItem;
+        if (effectiveSponsorship && itemAssets.length > 0) {
+          await supabase
+            .from("campaign_required_assets")
+            .insert(
+              itemAssets.map((asset, index) => ({
+                campaign_id: campaignId,
+                campaign_item_id: savedItemId,
+                asset_name: asset.asset_name,
+                asset_description: asset.asset_description || null,
+                file_types: asset.file_types,
+                max_file_size_mb: asset.max_file_size_mb,
+                dimensions_hint: asset.dimensions_hint || null,
+                is_required: asset.is_required,
+                display_order: index,
+              }))
+            );
+        }
       }
 
       await fetchItems();
@@ -575,6 +637,35 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                 </div>
               </div>
 
+              {/* Sponsorship item toggle + per-item required assets */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Sponsorship item</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {forceSponsorship
+                        ? "All items in a sponsorship fundraiser are sponsorship items."
+                        : "Buyers will be asked for business info at checkout and prompted to upload required assets afterward."}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={forceSponsorship || isSponsorshipItem}
+                    disabled={forceSponsorship}
+                    onCheckedChange={setIsSponsorshipItem}
+                  />
+                </div>
+
+                {(forceSponsorship || isSponsorshipItem) && (
+                  <div className="pt-3 border-t">
+                    <RequiredAssetsEditor
+                      assets={itemAssets}
+                      onChange={setItemAssets}
+                      itemLabel={formData.name || "this item"}
+                    />
+                  </div>
+                )}
+              </div>
+
               {/* Event template extras */}
               <div className="rounded-lg border p-4 space-y-4">
                 <div className="flex items-center justify-between">
@@ -653,13 +744,18 @@ export function CampaignItemsSection({ campaignId }: CampaignItemsSectionProps) 
                       <TableCell className="font-medium">{item.name}</TableCell>
                       <TableCell>${item.cost.toFixed(2)}</TableCell>
                       <TableCell>
-                        {item.isRecurring ? (
-                          <Badge variant="secondary">
-                            {item.recurringInterval === 'month' ? 'Monthly' : 'Annual'}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">One-time</span>
-                        )}
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {item.isRecurring ? (
+                            <Badge variant="secondary">
+                              {item.recurringInterval === 'month' ? 'Monthly' : 'Annual'}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">One-time</span>
+                          )}
+                          {(forceSponsorship || item.isSponsorshipItem) && (
+                            <Badge variant="outline">Sponsor</Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{item.quantityAvailable} / {item.quantityOffered}</TableCell>
                       <TableCell>

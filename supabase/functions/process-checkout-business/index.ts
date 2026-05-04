@@ -137,14 +137,16 @@ serve(async (req) => {
       }
     }
 
-    // Check if campaign has file requirements
+    // If a deadline is configured and the buyer just provided business info
+    // (which only happens when the cart contains a sponsorship item or the
+    // legacy campaign-wide flag is on), schedule the asset upload reminder.
     const { data: campaign } = await supabaseClient
       .from('campaigns')
-      .select('file_upload_deadline_days, requires_business_info')
+      .select('file_upload_deadline_days')
       .eq('id', campaignId)
       .single();
 
-    if (campaign?.requires_business_info && campaign?.file_upload_deadline_days) {
+    if (campaign?.file_upload_deadline_days) {
       const deadlineDate = new Date();
       deadlineDate.setDate(deadlineDate.getDate() + campaign.file_upload_deadline_days);
 

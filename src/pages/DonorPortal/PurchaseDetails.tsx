@@ -179,17 +179,43 @@ export default function DonorPortalPurchaseDetails() {
         }
         setFieldValues(values);
 
-        // Fetch required sponsor assets
-        if (campaign.requires_business_info) {
-          const { data: assetsData } = await supabase
+        // Determine whether this order requires sponsor asset uploads
+        const orderItems = (orderData.items as unknown as OrderItem[]) || [];
+        const lineItemIds = orderItems
+          .map((li: any) => li?.campaign_item_id || li?.id)
+          .filter((v: any) => typeof v === 'string');
+
+        let sponsorshipItemIds: string[] = [];
+        if (lineItemIds.length > 0) {
+          const { data: sponsorshipItems } = await supabase
+            .from('campaign_items')
+            .select('id')
+            .in('id', lineItemIds)
+            .eq('is_sponsorship_item', true);
+          sponsorshipItemIds = (sponsorshipItems || []).map((r: any) => r.id);
+        }
+
+        const needsAssets = campaign.requires_business_info || sponsorshipItemIds.length > 0;
+
+        if (needsAssets) {
+          // Fetch campaign-wide assets (null campaign_item_id) plus per-item assets for sponsorship items in this order
+          let query = supabase
             .from('campaign_required_assets')
-            .select('id, asset_name, asset_description, file_types, is_required, dimensions_hint')
+            .select('id, asset_name, asset_description, file_types, is_required, dimensions_hint, campaign_item_id')
             .eq('campaign_id', campaign.id)
             .order('display_order');
 
+          if (sponsorshipItemIds.length > 0) {
+            query = query.or(
+              `campaign_item_id.is.null,campaign_item_id.in.(${sponsorshipItemIds.join(',')})`,
+            );
+          } else {
+            query = query.is('campaign_item_id', null);
+          }
+
+          const { data: assetsData } = await query;
           setRequiredAssets(assetsData || []);
 
-          // Fetch uploaded assets for this order
           const { data: uploadsData } = await supabase
             .from('order_asset_uploads')
             .select('id, required_asset_id, file_url, file_name, uploaded_at')

@@ -824,6 +824,7 @@ export type Database = {
           image: string | null
           is_most_popular: boolean
           is_recurring: boolean | null
+          is_sponsorship_item: boolean
           max_items_purchased: number | null
           name: string
           quantity_available: number | null
@@ -849,6 +850,7 @@ export type Database = {
           image?: string | null
           is_most_popular?: boolean
           is_recurring?: boolean | null
+          is_sponsorship_item?: boolean
           max_items_purchased?: number | null
           name: string
           quantity_available?: number | null
@@ -874,6 +876,7 @@ export type Database = {
           image?: string | null
           is_most_popular?: boolean
           is_recurring?: boolean | null
+          is_sponsorship_item?: boolean
           max_items_purchased?: number | null
           name?: string
           quantity_available?: number | null
@@ -898,6 +901,7 @@ export type Database = {
           asset_description: string | null
           asset_name: string
           campaign_id: string
+          campaign_item_id: string | null
           created_at: string | null
           dimensions_hint: string | null
           display_order: number | null
@@ -911,6 +915,7 @@ export type Database = {
           asset_description?: string | null
           asset_name: string
           campaign_id: string
+          campaign_item_id?: string | null
           created_at?: string | null
           dimensions_hint?: string | null
           display_order?: number | null
@@ -924,6 +929,7 @@ export type Database = {
           asset_description?: string | null
           asset_name?: string
           campaign_id?: string
+          campaign_item_id?: string | null
           created_at?: string | null
           dimensions_hint?: string | null
           display_order?: number | null
@@ -939,6 +945,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_required_assets_campaign_item_id_fkey"
+            columns: ["campaign_item_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_items"
             referencedColumns: ["id"]
           },
         ]
