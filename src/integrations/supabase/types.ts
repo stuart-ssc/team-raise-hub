@@ -2427,10 +2427,12 @@ export type Database = {
           og_image_url: string | null
           organization_id: string | null
           payment_processor_config: Json | null
+          primary_color: string | null
           public_contact_email: string | null
           public_page_enabled: boolean
           public_slug: string | null
           school_id: string | null
+          secondary_color: string | null
           status: boolean | null
           tagline: string | null
           updated_at: string
@@ -2451,10 +2453,12 @@ export type Database = {
           og_image_url?: string | null
           organization_id?: string | null
           payment_processor_config?: Json | null
+          primary_color?: string | null
           public_contact_email?: string | null
           public_page_enabled?: boolean
           public_slug?: string | null
           school_id?: string | null
+          secondary_color?: string | null
           status?: boolean | null
           tagline?: string | null
           updated_at?: string
@@ -2475,10 +2479,12 @@ export type Database = {
           og_image_url?: string | null
           organization_id?: string | null
           payment_processor_config?: Json | null
+          primary_color?: string | null
           public_contact_email?: string | null
           public_page_enabled?: boolean
           public_slug?: string | null
           school_id?: string | null
+          secondary_color?: string | null
           status?: boolean | null
           tagline?: string | null
           updated_at?: string
