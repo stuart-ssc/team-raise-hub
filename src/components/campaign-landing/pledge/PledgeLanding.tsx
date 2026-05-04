@@ -102,6 +102,7 @@ export function PledgeLanding({
   organizationName,
   customFields = [],
   estimatedUnits,
+  branding,
 }: Props) {
   const { toast } = useToast();
 
@@ -303,7 +304,7 @@ export function PledgeLanding({
   const embedUrl = getVideoEmbedUrl(activePitch?.videoUrl);
 
   return (
-    <div className="min-h-screen bg-background">
+    <BrandedLandingWrapper branding={branding} className="min-h-screen bg-background">
       {/* HERO */}
       <section className="relative bg-foreground text-background overflow-hidden">
         {campaign.image_url && (
@@ -317,6 +318,12 @@ export function PledgeLanding({
           </div>
         )}
         <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 md:py-16 space-y-6">
+          <BrandLogoStrip
+            branding={branding}
+            orgName={[campaign.groups?.schools?.school_name, campaign.groups?.group_name].filter(Boolean).join(" • ") || organizationName || null}
+            variant="dark"
+            className="mb-2"
+          />
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <Badge
               variant="secondary"
