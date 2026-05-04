@@ -460,6 +460,29 @@ export default function AICampaignPreview({
             </CardContent>
           </Card>
         )}
+
+        {(isPostDraft || isCollectingItems) &&
+          Array.isArray(collectedFields.event_agenda) &&
+          collectedFields.event_agenda.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2 pt-3 px-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  Day-of Agenda
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <ul className="space-y-1">
+                  {collectedFields.event_agenda.map((row: any, i: number) => (
+                    <li key={i} className="flex gap-2 text-sm">
+                      <span className="font-medium text-muted-foreground w-20 shrink-0">{row.time || "—"}</span>
+                      <span className="truncate">{row.title || "(untitled)"}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
       </div>
 
       <div className="p-4 border-t">
