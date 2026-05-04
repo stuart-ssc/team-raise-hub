@@ -71,7 +71,7 @@ interface CampaignData {
       city: string;
       state: string;
       "Primary Color": string | null;
-    };
+    } | null;
   } | null;
   campaign_type: {
     id: string;
@@ -614,7 +614,7 @@ const CampaignLanding = () => {
     : 0;
 
   // Get school's primary color or fallback to design system primary
-  const schoolPrimaryColor = campaign.groups?.schools["Primary Color"];
+  const schoolPrimaryColor = campaign.groups?.schools?.["Primary Color"] ?? null;
   
   // Function to determine if a color is dark
   const isColorDark = (hexColor: string) => {
