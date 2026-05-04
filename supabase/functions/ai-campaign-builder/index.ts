@@ -2014,6 +2014,9 @@ Deno.serve(async (req) => {
           }
           if (arr.length > 0) dbUpdate.event_includes = arr;
         }
+        if (persistFields.event_agenda !== undefined && Array.isArray(persistFields.event_agenda)) {
+          dbUpdate.event_agenda = persistFields.event_agenda;
+        }
 
         if (Object.keys(dbUpdate).length > 0) {
           const { error: updErr } = await adminSb.from("campaigns").update(dbUpdate).eq("id", campaignId);
