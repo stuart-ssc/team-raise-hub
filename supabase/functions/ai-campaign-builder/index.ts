@@ -422,6 +422,27 @@ function getEventStillToAsk(collected: Record<string, any>): string[] {
   });
 }
 
+/**
+ * Agenda is collected as a separate item-style sub-flow AFTER the event fields
+ * are done. Each row is { time, title, description? } and lives in
+ * `campaigns.event_agenda` (jsonb array). State on `collectedFields`:
+ *   - event_agenda: AgendaItem[] (mirror of db column, for prompt rendering)
+ *   - event_agenda_addressed: boolean (user opted in OR skipped the whole step)
+ *   - event_agenda_complete: boolean (user clicked Done OR skipped)
+ *   - current_agenda_draft: { time?, title?, description?, description_skipped? }
+ *   - awaiting_add_another_agenda: boolean
+ */
+interface AgendaItem { time?: string; title?: string; description?: string }
+function getNextAgendaField(draft: Record<string, any>): "time" | "title" | "description" | null {
+  if (!draft.time) return "time";
+  if (!draft.title) return "title";
+  if (draft.description === undefined && draft.description_skipped !== true) return "description";
+  return null;
+}
+function isAgendaRowReady(draft: Record<string, any>): boolean {
+  return !!(draft.time && draft.title);
+}
+
 function buildItemsSystemPrompt(
   campaignName: string,
   itemNoun: string,
