@@ -23,6 +23,7 @@ import { DonationLanding, DonationSelection } from "@/components/campaign-landin
 import { PledgeLanding } from "@/components/campaign-landing/pledge/PledgeLanding";
 import { EventLanding } from "@/components/campaign-landing/event/EventLanding";
 import { MerchandiseLanding } from "@/components/campaign-landing/merchandise/MerchandiseLanding";
+import { resolveCampaignBranding } from "@/lib/campaignBranding";
 
 interface CampaignData {
   id: string;
@@ -248,8 +249,12 @@ const CampaignLanding = () => {
             id,
             organization_id,
             group_name,
+            logo_url,
+            primary_color,
+            secondary_color,
             group_type(id, name),
-            schools(id, school_name, city, state, "Primary Color")
+            schools(id, school_name, city, state, "Primary Color", "Secondary Color", logo_file),
+            organizations(id, name, logo_url, primary_color, secondary_color)
           ),
           campaign_type(id, name)
         `)
@@ -615,6 +620,7 @@ const CampaignLanding = () => {
 
   // Get school's primary color or fallback to design system primary
   const schoolPrimaryColor = campaign.groups?.schools?.["Primary Color"] ?? null;
+  const branding = resolveCampaignBranding(campaign);
   
   // Function to determine if a color is dark
   const isColorDark = (hexColor: string) => {
@@ -905,6 +911,7 @@ const CampaignLanding = () => {
       {campaign.campaign_type?.name?.toLowerCase() === 'sponsorship' && (
         <SponsorshipLanding
           campaign={campaign as any}
+          branding={branding}
           cart={cart as any}
           attributedRosterMember={attributedRosterMember}
           onUpdateQuantity={updateQuantity}
@@ -936,6 +943,7 @@ const CampaignLanding = () => {
       {campaign.campaign_type?.name?.toLowerCase() === 'event' && (
         <EventLanding
           campaign={campaign as any}
+          branding={branding}
           cart={cart as any}
           attributedRosterMember={attributedRosterMember}
           onUpdateQuantity={updateQuantity}
@@ -982,6 +990,7 @@ const CampaignLanding = () => {
       {campaign.campaign_type?.name?.toLowerCase() === 'donation' && (
         <DonationLanding
           campaign={campaign as any}
+          branding={branding}
           attributedRosterMember={attributedRosterMember}
           onProceedToCheckout={handleDonationProceed}
           checkoutStep={checkoutStep}
@@ -1004,6 +1013,7 @@ const CampaignLanding = () => {
       {campaign.campaign_type?.name?.toLowerCase() === 'pledge' && (
         <PledgeLanding
           campaign={campaign as any}
+          branding={branding}
           campaignSlug={slug || ''}
           attributedRosterMember={attributedRosterMember}
           organizationName={
@@ -1015,6 +1025,7 @@ const CampaignLanding = () => {
       {campaign.campaign_type?.name?.toLowerCase() === 'merchandise sale' && (
         <MerchandiseLanding
           campaign={campaign as any}
+          branding={branding}
           cart={cart as any}
           attributedRosterMember={attributedRosterMember}
           onUpdateQuantity={updateQuantity}

@@ -30,6 +30,16 @@ const createGroupSchema = z.object({
   groupName: z.string().min(1, "Group name is required"),
   websiteAddress: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   groupTypeId: z.string().min(1, "Group type is required"),
+  primaryColor: z
+    .string()
+    .regex(/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Use a hex color like #1e40af")
+    .optional()
+    .or(z.literal("")),
+  secondaryColor: z
+    .string()
+    .regex(/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Use a hex color like #1e40af")
+    .optional()
+    .or(z.literal("")),
 });
 
 type CreateGroupFormData = z.infer<typeof createGroupSchema>;
@@ -69,6 +79,8 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
       groupName: editingGroup?.group_name || "",
       websiteAddress: "",
       groupTypeId: "",
+      primaryColor: "",
+      secondaryColor: "",
     },
   });
 
@@ -122,7 +134,7 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
         setLoadingEditData(true);
         const { data, error } = await supabase
           .from("groups")
-          .select("group_name, website_url, group_type_id, logo_url")
+          .select("group_name, website_url, group_type_id, logo_url, primary_color, secondary_color")
           .eq("id", editingGroup.id)
           .maybeSingle();
 
@@ -144,6 +156,8 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
             groupName: data.group_name ?? editingGroup.group_name,
             websiteAddress: data.website_url || "",
             groupTypeId: savedTypeId,
+            primaryColor: (data as any).primary_color || "",
+            secondaryColor: (data as any).secondary_color || "",
           });
           setExistingLogoUrl(data.logo_url ?? null);
 
@@ -242,6 +256,8 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
           group_name: data.groupName,
           website_url: expectedWebsite,
           group_type_id: data.groupTypeId,
+          primary_color: data.primaryColor ? (data.primaryColor.startsWith("#") ? data.primaryColor : `#${data.primaryColor}`) : null,
+          secondary_color: data.secondaryColor ? (data.secondaryColor.startsWith("#") ? data.secondaryColor : `#${data.secondaryColor}`) : null,
         };
 
         let expectedLogo: string | null | undefined = undefined;
@@ -333,6 +349,8 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
             group_type_id: data.groupTypeId,
             organization_id: organizationUser.organization_id,
             logo_url: logoUrl,
+            primary_color: data.primaryColor ? (data.primaryColor.startsWith("#") ? data.primaryColor : `#${data.primaryColor}`) : null,
+            secondary_color: data.secondaryColor ? (data.secondaryColor.startsWith("#") ? data.secondaryColor : `#${data.secondaryColor}`) : null,
           });
 
         if (groupError) {
@@ -511,6 +529,65 @@ export const CreateGroupForm = ({ onCancel, onSuccess, editingGroup }: CreateGro
               </CardContent>
             </Card>
           </div>
+
+          {/* Brand Colors */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="primaryColor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Primary brand color</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={field.value || "#0066cc"}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="h-10 w-14 rounded border border-input bg-transparent p-1 cursor-pointer"
+                        aria-label="Primary color picker"
+                      />
+                      <Input
+                        placeholder="#0066cc"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="secondaryColor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Secondary brand color</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={field.value || "#000000"}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="h-10 w-14 rounded border border-input bg-transparent p-1 cursor-pointer"
+                        aria-label="Secondary color picker"
+                      />
+                      <Input
+                        placeholder="#000000"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Optional. Used on this group's fundraiser landing pages. Falls back to the organization's brand colors if left blank.
+          </p>
 
           {/* Form Actions */}
           <div className="flex justify-end gap-3">
