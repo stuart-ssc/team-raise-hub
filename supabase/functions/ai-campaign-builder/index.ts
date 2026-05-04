@@ -422,6 +422,27 @@ function getEventStillToAsk(collected: Record<string, any>): string[] {
   });
 }
 
+/**
+ * Agenda is collected as a separate item-style sub-flow AFTER the event fields
+ * are done. Each row is { time, title, description? } and lives in
+ * `campaigns.event_agenda` (jsonb array). State on `collectedFields`:
+ *   - event_agenda: AgendaItem[] (mirror of db column, for prompt rendering)
+ *   - event_agenda_addressed: boolean (user opted in OR skipped the whole step)
+ *   - event_agenda_complete: boolean (user clicked Done OR skipped)
+ *   - current_agenda_draft: { time?, title?, description?, description_skipped? }
+ *   - awaiting_add_another_agenda: boolean
+ */
+interface AgendaItem { time?: string; title?: string; description?: string }
+function getNextAgendaField(draft: Record<string, any>): "time" | "title" | "description" | null {
+  if (!draft.time) return "time";
+  if (!draft.title) return "title";
+  if (draft.description === undefined && draft.description_skipped !== true) return "description";
+  return null;
+}
+function isAgendaRowReady(draft: Record<string, any>): boolean {
+  return !!(draft.time && draft.title);
+}
+
 function buildItemsSystemPrompt(
   campaignName: string,
   itemNoun: string,
@@ -568,6 +589,15 @@ function buildSystemPrompt(
     const merchFieldsDone = !isMerch || merchStillToAsk.length === 0;
     const eventStillToAsk = isEvent ? getEventStillToAsk(collectedFields) : [];
     const eventFieldsDone = !isEvent || eventStillToAsk.length === 0;
+    // Agenda sub-flow state (event-only)
+    const agendaRows: AgendaItem[] = Array.isArray(collectedFields.event_agenda)
+      ? collectedFields.event_agenda
+      : [];
+    const agendaDraft: Record<string, any> = collectedFields.current_agenda_draft || {};
+    const agendaAddressed = collectedFields.event_agenda_addressed === true;
+    const agendaComplete = collectedFields.event_agenda_complete === true;
+    const awaitingAddAnotherAgenda = collectedFields.awaiting_add_another_agenda === true;
+    const inAgendaSubflow = isEvent && eventFieldsDone && !agendaComplete;
 
     const rostersList = rosters.length > 0
       ? rosters.map((r) => `  - "${r.roster_year}${r.current_roster ? " (Current)" : ""}" → id: ${r.id}`).join("\n")
@@ -638,6 +668,34 @@ function buildSystemPrompt(
       } else {
         nextStep = `**Next step: continue event setup.** Ask the user about ${nextKey}.`;
       }
+    } else if (inAgendaSubflow && !agendaAddressed) {
+      nextStep = `**Next step: agenda intro.** Ask in one short sentence: "Want to add a day-of agenda for the event?". The UI will show two buttons (Add agenda / Skip). Do NOT call any tool — the next turn will handle the answer.`;
+    } else if (inAgendaSubflow && awaitingAddAnotherAgenda) {
+      const list = agendaRows.length > 0
+        ? agendaRows.map((r, i) => `  ${i + 1}. ${r.time || "?"} — ${r.title || "?"}`).join("\n")
+        : "  (none yet)";
+      nextStep = `**Awaiting choice: add another agenda item or finish.** Your message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1: confirm the last agenda item was saved (e.g. "Saved.").\n  Paragraph 2: ask "Want to add another agenda item, or are you done?" — the UI shows two buttons (Add another / Done). Do NOT call any tool.\n\n## Agenda so far\n${list}`;
+    } else if (inAgendaSubflow) {
+      const nextAgendaField = getNextAgendaField(agendaDraft);
+      const draftSummary = Object.entries(agendaDraft)
+        .filter(([k, v]) => !k.endsWith("_skipped") && v !== undefined && v !== null && v !== "")
+        .map(([k, v]) => `  - ${k}: ${JSON.stringify(v)}`)
+        .join("\n") || "  (nothing yet)";
+      const list = agendaRows.length > 0
+        ? agendaRows.map((r, i) => `  ${i + 1}. ${r.time || "?"} — ${r.title || "?"}`).join("\n")
+        : "  (none yet)";
+      const ordinal = agendaRows.length === 0 ? "first" : "next";
+      let askLine: string;
+      if (nextAgendaField === "time") {
+        askLine = `Ask: "What time is the ${ordinal} agenda item? (e.g. '7:30 AM')". When the user answers, call **update_agenda_field** with \`time\` set to their reply.`;
+      } else if (nextAgendaField === "title") {
+        askLine = `Ask: "What's the title? (e.g. 'Check-in & range opens')". When the user answers, call **update_agenda_field** with \`title\` set to their reply.`;
+      } else if (nextAgendaField === "description") {
+        askLine = `Ask: "Add a short description, or say skip.". The UI shows a Skip chip. When the user answers, call **update_agenda_field** with \`description\` (or \`description_skipped: true\` if skipped).`;
+      } else {
+        askLine = `All required fields are filled — IMMEDIATELY call **save_agenda_item** to save this row.`;
+      }
+      nextStep = `**Next step: agenda item collection (${ordinal}).** ${askLine}\n\n## Current agenda draft\n${draftSummary}\n\n## Agenda so far\n${list}`;
     } else {
       if (isPledge) {
         nextStep = `**Setup is done — Pledge fundraiser is fully configured.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (wrap-up): "Your pledge fundraiser is set up. You can preview it, publish it, or fine-tune anything in the editor whenever you're ready." Do NOT mention adding items — Pledge fundraisers don't use items. Do NOT call any tool.`;
@@ -1167,6 +1225,58 @@ Deno.serve(async (req) => {
     let exitItemsCollection = false;
     const inItemsPhase = clientPhase === "collecting_items" && !!campaignId;
 
+    // ---- Agenda sub-flow state (events only, post-event-fields, pre-items) ----
+    const isEventCampaign = isEventTypeName(
+      types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null,
+    );
+    const eventFieldsAllDone = !isEventCampaign || getEventStillToAsk(updatedFields).length === 0;
+    const inAgendaPhase =
+      !!campaignId &&
+      !inItemsPhase &&
+      isEventCampaign &&
+      eventFieldsAllDone &&
+      updatedFields.event_agenda_complete !== true;
+
+    // Deterministic agenda-phase capture (button clicks + simple typed values).
+    // The model is allowed to call tools too, but this fallback prevents the
+    // chat from stalling if the model forgets, mirroring how items collection
+    // captures things server-side.
+    if (inAgendaPhase && lastUserMsg) {
+      const raw = (lastUserMsg as string).trim();
+      const lower = raw.toLowerCase().replace(/[.!?]+$/, "");
+      const draft: Record<string, any> = { ...(updatedFields.current_agenda_draft || {}) };
+      const awaitingAdd = updatedFields.awaiting_add_another_agenda === true;
+      const addressed = updatedFields.event_agenda_addressed === true;
+
+      // Intro Yes/Skip
+      if (!addressed) {
+        if (/^(skip|no|nope|no thanks|skip agenda|no agenda)$/.test(lower)) {
+          updatedFields.event_agenda_addressed = true;
+          updatedFields.event_agenda_complete = true;
+        } else if (/^(add agenda|yes|y|sure|add|ok|okay|let's do it)$/.test(lower)) {
+          updatedFields.event_agenda_addressed = true;
+        }
+      } else if (awaitingAdd) {
+        if (/^(add another|another|yes|yep|sure|one more)$/.test(lower) || /\badd another\b/.test(lower)) {
+          updatedFields.awaiting_add_another_agenda = false;
+          updatedFields.current_agenda_draft = {};
+        } else if (/^(done|i'?m done|no|nope|finish|finished|that'?s it)$/.test(lower) || /\bdone\b/.test(lower)) {
+          updatedFields.awaiting_add_another_agenda = false;
+          updatedFields.event_agenda_complete = true;
+        }
+      } else {
+        // Capture next-field value
+        const next = getNextAgendaField(draft);
+        if (next === "description" && isSkipMessage(lower)) {
+          draft.description_skipped = true;
+          updatedFields.current_agenda_draft = draft;
+        } else if (next && raw.length > 0 && raw.length <= 200) {
+          draft[next] = raw;
+          updatedFields.current_agenda_draft = draft;
+        }
+      }
+    }
+
     // Resolve campaign type name (for item-noun in prompts)
     const resolvedTypeName =
       types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null;
@@ -1521,7 +1631,47 @@ Deno.serve(async (req) => {
       },
     ];
 
-    const tools = inItemsPhase && !exitItemsCollection ? itemsTools : baseTools;
+    const agendaTools = [
+      {
+        type: "function",
+        function: {
+          name: "update_agenda_field",
+          description: "Record a single value for the agenda row being built. Pass exactly one of: time, title, description, OR description_skipped:true.",
+          parameters: {
+            type: "object",
+            properties: {
+              time: { type: "string", description: "Time label, e.g. '7:30 AM'." },
+              title: { type: "string", description: "Short title, e.g. 'Check-in & range opens'." },
+              description: { type: "string", description: "Optional description text." },
+              description_skipped: { type: "boolean" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "save_agenda_item",
+          description: "Append the current agenda draft to the campaign's event_agenda. Call ONLY after time and title are filled.",
+          parameters: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "agenda_complete",
+          description: "Mark the agenda sub-flow as finished (user is done adding agenda items, or chose to skip the agenda).",
+          parameters: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
+    ];
+
+    const tools = inItemsPhase && !exitItemsCollection
+      ? itemsTools
+      : inAgendaPhase
+        ? [...baseTools, ...agendaTools]
+        : baseTools;
 
     // Debug logging gated behind AI_DEBUG_LOGS env var (flip on without redeploy
     // via Edge Function secrets). Logs the system prompt + last 3 messages and,
@@ -1791,6 +1941,41 @@ Deno.serve(async (req) => {
               toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, itemId: savedItemId, itemsAdded, savedName }) });
             }
           }
+        } else if (toolCall.function?.name === "update_agenda_field" && inAgendaPhase && campaignId) {
+          try {
+            const args = JSON.parse(toolCall.function.arguments);
+            const draft: Record<string, any> = { ...(updatedFields.current_agenda_draft || {}) };
+            for (const [key, value] of Object.entries(args)) {
+              if (value === undefined || value === null || value === "") continue;
+              draft[key] = value;
+            }
+            updatedFields.current_agenda_draft = draft;
+            updatedFields.event_agenda_addressed = true;
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, currentAgendaDraft: draft }) });
+          } catch (e) {
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "parse_error" }) });
+          }
+        } else if (toolCall.function?.name === "save_agenda_item" && inAgendaPhase && campaignId) {
+          const draft: Record<string, any> = updatedFields.current_agenda_draft || {};
+          if (!isAgendaRowReady(draft)) {
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "Missing time or title" }) });
+          } else {
+            const newRow: AgendaItem = { time: draft.time, title: draft.title };
+            if (draft.description && draft.description_skipped !== true) newRow.description = draft.description;
+            const list: AgendaItem[] = Array.isArray(updatedFields.event_agenda) ? [...updatedFields.event_agenda] : [];
+            list.push(newRow);
+            updatedFields.event_agenda = list;
+            updatedFields.current_agenda_draft = {};
+            updatedFields.awaiting_add_another_agenda = true;
+            updatedFields.event_agenda_addressed = true;
+            persistFields.event_agenda = list;
+            toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true, agendaCount: list.length }) });
+          }
+        } else if (toolCall.function?.name === "agenda_complete" && inAgendaPhase && campaignId) {
+          updatedFields.event_agenda_complete = true;
+          updatedFields.event_agenda_addressed = true;
+          updatedFields.awaiting_add_another_agenda = false;
+          toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: true })});
         } else {
           toolResults.push({ id: toolCall.id, content: JSON.stringify({ success: false, error: "unknown_tool" }) });
         }
@@ -1868,6 +2053,9 @@ Deno.serve(async (req) => {
               .filter((s) => s.length > 0);
           }
           if (arr.length > 0) dbUpdate.event_includes = arr;
+        }
+        if (persistFields.event_agenda !== undefined && Array.isArray(persistFields.event_agenda)) {
+          dbUpdate.event_agenda = persistFields.event_agenda;
         }
 
         if (Object.keys(dbUpdate).length > 0) {
@@ -2111,7 +2299,10 @@ Deno.serve(async (req) => {
       const rosterDoneNow = updatedFields.enable_roster_attribution !== undefined &&
         (!updatedFields.enable_roster_attribution || !!updatedFields.roster_id || rosters.length === 0);
       const directionsDoneNow = updatedFields.group_directions_addressed === true;
-      const setupJustFinished = sponsorAssetsDoneX && imageDoneNow && rosterDoneNow && directionsDoneNow;
+      const isEventX = isEventTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null);
+      const eventFieldsDoneX = !isEventX || getEventStillToAsk(updatedFields).length === 0;
+      const agendaDoneX = !isEventX || updatedFields.event_agenda_complete === true;
+      const setupJustFinished = sponsorAssetsDoneX && imageDoneNow && rosterDoneNow && directionsDoneNow && eventFieldsDoneX && agendaDoneX;
       const justEnteringItemsPhase =
         !!campaignId &&
         !inItemsPhase &&
@@ -2168,7 +2359,8 @@ Deno.serve(async (req) => {
       const merchDone = !isMerch || getMerchStillToAsk(updatedFields).length === 0;
       const isEvent = isEventTypeName(resolvedTypeName);
       const eventDone = !isEvent || getEventStillToAsk(updatedFields).length === 0;
-      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone && merchDone && eventDone;
+      const agendaDone = !isEvent || updatedFields.event_agenda_complete === true;
+      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone && merchDone && eventDone && agendaDone;
 
       if (exitItemsCollection) {
         phase = "complete";
@@ -2385,6 +2577,43 @@ Deno.serve(async (req) => {
             label: labelMap[nextEvent] || nextEvent,
             options: [{ label: "Skip", value: "skip" }],
           };
+        }
+      } else if (
+        isEventTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name) &&
+        updatedFields.event_agenda_complete !== true
+      ) {
+        if (updatedFields.event_agenda_addressed !== true) {
+          suggestions = {
+            type: "choice",
+            field: "event_agenda_intro",
+            label: "Day-of agenda?",
+            options: [
+              { label: "Add agenda", value: "add agenda" },
+              { label: "Skip", value: "skip" },
+            ],
+          };
+        } else if (updatedFields.awaiting_add_another_agenda === true) {
+          suggestions = {
+            type: "choice",
+            field: "add_another_agenda",
+            label: "Add another agenda item?",
+            options: [
+              { label: "Add another", value: "add another" },
+              { label: "Done", value: "done" },
+            ],
+          };
+        } else {
+          const draft = updatedFields.current_agenda_draft || {};
+          const next = getNextAgendaField(draft);
+          if (next === "description") {
+            suggestions = {
+              type: "choice",
+              field: "agenda_description",
+              label: "Description (optional)",
+              options: [{ label: "Skip", value: "skip" }],
+            };
+          }
+          // time and title are required free-text — no chip
         }
       } else {
         // Phase === "complete" — offer the final choice
