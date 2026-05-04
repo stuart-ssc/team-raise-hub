@@ -1579,6 +1579,42 @@ Deno.serve(async (req) => {
       },
     ];
 
+    const agendaTools = [
+      {
+        type: "function",
+        function: {
+          name: "update_agenda_field",
+          description: "Record a single value for the agenda row being built. Pass exactly one of: time, title, description, OR description_skipped:true.",
+          parameters: {
+            type: "object",
+            properties: {
+              time: { type: "string", description: "Time label, e.g. '7:30 AM'." },
+              title: { type: "string", description: "Short title, e.g. 'Check-in & range opens'." },
+              description: { type: "string", description: "Optional description text." },
+              description_skipped: { type: "boolean" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "save_agenda_item",
+          description: "Append the current agenda draft to the campaign's event_agenda. Call ONLY after time and title are filled.",
+          parameters: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "agenda_complete",
+          description: "Mark the agenda sub-flow as finished (user is done adding agenda items, or chose to skip the agenda).",
+          parameters: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
+    ];
+
     const tools = inItemsPhase && !exitItemsCollection ? itemsTools : baseTools;
 
     // Debug logging gated behind AI_DEBUG_LOGS env var (flip on without redeploy
