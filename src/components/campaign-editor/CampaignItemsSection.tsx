@@ -443,7 +443,7 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
       await Promise.all(
         reordered.map((it, idx) =>
           it.id
-            ? supabase.from("campaign_items").update({ display_order: idx }).eq("id", it.id)
+            ? supabase.from("campaign_items").update({ display_order: idx } as any).eq("id", it.id)
             : Promise.resolve()
         )
       );
