@@ -67,7 +67,6 @@ Deno.serve(async (req) => {
       .from('campaign_items')
       .select('*')
       .eq('campaign_id', campaign.id)
-      .order('display_order', { ascending: true, nullsFirst: false })
       .order('name', { ascending: true });
 
     const itemIds = (items || []).filter((i: any) => i.has_variants).map((i: any) => i.id);
