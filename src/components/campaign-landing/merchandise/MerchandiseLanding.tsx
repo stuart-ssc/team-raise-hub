@@ -653,6 +653,6 @@ export function MerchandiseLanding(props: MerchandiseLandingProps) {
           </div>
         </aside>
       </div>
-    </div>
+    </BrandedLandingWrapper>
   );
 }
