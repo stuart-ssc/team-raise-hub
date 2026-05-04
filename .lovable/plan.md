@@ -1,36 +1,32 @@
-I found the immediate reason the page still goes blank: `CampaignLanding.tsx` still directly reads `campaign.groups?.schools["Primary Color"]`. For nonprofit fundraisers, `schools` is `null`, so React crashes with:
+## Goal
+Allow editors to customize the "Available items" heading and subheading on Merchandise Sales fundraisers, so non-apparel items (raffle tickets, baked goods, etc.) don't display "Pick your size."
 
-```text
-Cannot read properties of null (reading 'Primary Color')
-```
+## Changes
 
-I also found the same school-only assumption in multiple campaign-type templates, so fixing just that one line could expose the next crash depending on the fundraiser type.
+### 1. Database (migration)
+Add two nullable text columns to `campaigns`:
+- `merch_items_heading text` (default null)
+- `merch_items_subheading text` (default null)
 
-Plan:
+### 2. Campaign Editor (`src/pages/CampaignEditor.tsx`)
+- Load these fields from the row into state (alongside other `merch_*` fields).
+- Save them on update.
+- In the Merchandise editor section (where shipping/pickup fields live), add two inputs:
+  - **Items heading** (e.g. "Pick your size.") — short text input
+  - **Items subheading** (e.g. "Each item maxes out at the per-person limit shown — kindly leave some for everyone.") — textarea
+- Show placeholders matching the current defaults so the user understands what appears if left blank.
 
-1. Make the main campaign landing page nonprofit-safe
-   - Change the remaining direct `schools["Primary Color"]` access to optional chaining.
-   - Normalize organization display text so it uses `school_name + group_name` for school fundraisers, and just `group_name` / organization-style fallback for nonprofit fundraisers.
-   - Update the TypeScript shape so `groups.schools` can be `null`.
+### 3. Merchandise landing template (`src/components/campaign-landing/merchandise/MerchandiseLanding.tsx`)
+- Replace hardcoded `"Pick your size."` and the subheading sentence with the new fields.
+- Fall back to the existing strings when blank so behavior is unchanged for current campaigns.
+- Note: `formatHeadline` italicizes the last word — apply the same treatment to the custom heading (italicize the final word) so the visual style stays consistent.
 
-2. Make all campaign landing templates nonprofit-safe
-   - Fix direct `campaign.groups.schools.school_name` references in:
-     - `DonationLanding.tsx`
-     - `SponsorshipLanding.tsx`
-     - `PledgeLanding.tsx`
-   - Review already-partial-safe templates:
-     - `EventLanding.tsx`
-     - `MerchandiseLanding.tsx`
-   - Ensure every template renders without requiring a school relationship.
+### 4. CampaignLanding data fetch + preview edge function
+- Include the two new columns in the campaign select in `src/pages/CampaignLanding.tsx` and `supabase/functions/get-campaign-preview/index.ts` (if they use explicit column lists; otherwise no change).
 
-3. Preserve preview behavior
-   - Keep the preview banner at the top.
-   - Keep preview loading via `slug + preview_token` without authentication.
-   - Ensure the checkout action remains blocked while previewing an unpublished fundraiser, including templates with their own `Continue to checkout` buttons.
+### 5. AI schema (`src/lib/ai/campaignSchema.ts`)
+- Register the two new keys so AI-assisted authoring can suggest values.
 
-4. Add a small shared display helper if appropriate
-   - To avoid future regressions, create or inline a helper like `getOrganizationLabel(group)` that safely joins school and group names only when each exists.
-
-5. Verify the specific preview link
-   - Re-open `/c/kbc-huge-bourbon-raffle-26?preview=1b82ecc4-a6e2-4f94-a946-261bc6bb667c` in the preview.
-   - Confirm there is no runtime crash, the unpublished preview banner appears, and nonprofit fundraiser content renders.
+## Out of scope
+- No changes to other templates (Donation/Pledge/Sponsorship/Event).
+- No per-item field renaming (size/color stay as-is on items themselves).
