@@ -509,8 +509,8 @@ export function MerchandiseLanding(props: MerchandiseLandingProps) {
               <span className="h-1.5 w-1.5 rounded-full bg-white" />
               {campaign.campaign_type?.name || "Merchandise"}
             </span>
-            <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-white/10 backdrop-blur border border-white/15 ${accent}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${accentBg}`} />
+            <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-white/10 backdrop-blur border border-white/15 text-white">
+              <span className={`h-1.5 w-1.5 rounded-full ${daysLeft != null && daysLeft <= 0 ? "bg-white/60" : "bg-emerald-400"}`} />
               {daysLeft != null && daysLeft <= 0 ? "Shop closed" : "Shop open"}
             </span>
             {orgLabel && (
