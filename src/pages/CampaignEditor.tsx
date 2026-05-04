@@ -261,7 +261,7 @@ export default function CampaignEditor() {
       const { data } = await supabase
         .from("campaign_type")
         .select("id, name")
-        .ilike("name", "Merchandise Sales")
+        .ilike("name", "Merchandise Sale")
         .maybeSingle();
       if (data) setMerchandiseTypeId(data.id);
     })();

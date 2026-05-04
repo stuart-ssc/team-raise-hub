@@ -1,32 +1,25 @@
-## Goal
-Allow editors to customize the "Available items" heading and subheading on Merchandise Sales fundraisers, so non-apparel items (raffle tickets, baked goods, etc.) don't display "Pick your size."
+## Problem
 
-## Changes
+The Fulfillment section (with the new heading/subheading inputs) never appears in the campaign editor, even on Merchandise campaigns like `kbc-huge-bourbon-raffle-26`.
 
-### 1. Database (migration)
-Add two nullable text columns to `campaigns`:
-- `merch_items_heading text` (default null)
-- `merch_items_subheading text` (default null)
+**Root cause:** `src/pages/CampaignEditor.tsx` (line 264) looks up the campaign type by name:
 
-### 2. Campaign Editor (`src/pages/CampaignEditor.tsx`)
-- Load these fields from the row into state (alongside other `merch_*` fields).
-- Save them on update.
-- In the Merchandise editor section (where shipping/pickup fields live), add two inputs:
-  - **Items heading** (e.g. "Pick your size.") — short text input
-  - **Items subheading** (e.g. "Each item maxes out at the per-person limit shown — kindly leave some for everyone.") — textarea
-- Show placeholders matching the current defaults so the user understands what appears if left blank.
+```ts
+.ilike("name", "Merchandise Sales")  // plural
+```
 
-### 3. Merchandise landing template (`src/components/campaign-landing/merchandise/MerchandiseLanding.tsx`)
-- Replace hardcoded `"Pick your size."` and the subheading sentence with the new fields.
-- Fall back to the existing strings when blank so behavior is unchanged for current campaigns.
-- Note: `formatHeadline` italicizes the last word — apply the same treatment to the custom heading (italicize the final word) so the visual style stays consistent.
+But the actual row in `campaign_type` is named **"Merchandise Sale"** (singular). The query returns null, `merchandiseTypeId` is never set, `isMerchandiseCampaign` stays false, and `CampaignSectionNav` never renders the Fulfillment nav item.
 
-### 4. CampaignLanding data fetch + preview edge function
-- Include the two new columns in the campaign select in `src/pages/CampaignLanding.tsx` and `supabase/functions/get-campaign-preview/index.ts` (if they use explicit column lists; otherwise no change).
+(Side note: the campaign currently open in the editor — `a478d995…` "Tiger Tamer Golf Scramble" — is an Event campaign, so it would not show Fulfillment regardless. But the bug above is what's blocking it on the bourbon raffle and all other merchandise campaigns.)
 
-### 5. AI schema (`src/lib/ai/campaignSchema.ts`)
-- Register the two new keys so AI-assisted authoring can suggest values.
+## Fix
 
-## Out of scope
-- No changes to other templates (Donation/Pledge/Sponsorship/Event).
-- No per-item field renaming (size/color stay as-is on items themselves).
+In `src/pages/CampaignEditor.tsx`, change the lookup string from `"Merchandise Sales"` to `"Merchandise Sale"` (or use `ilike "Merchandise%"` to be tolerant of either).
+
+Recommended:
+
+```ts
+.ilike("name", "Merchandise Sale")
+```
+
+No other changes needed — once `merchandiseTypeId` resolves correctly, the existing nav entry and `MerchandiseFulfillmentSection` (which already includes the heading/subheading inputs) will render automatically on merchandise campaigns.
