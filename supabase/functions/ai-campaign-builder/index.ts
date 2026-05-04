@@ -2578,6 +2578,43 @@ Deno.serve(async (req) => {
             options: [{ label: "Skip", value: "skip" }],
           };
         }
+      } else if (
+        isEventTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name) &&
+        updatedFields.event_agenda_complete !== true
+      ) {
+        if (updatedFields.event_agenda_addressed !== true) {
+          suggestions = {
+            type: "choice",
+            field: "event_agenda_intro",
+            label: "Day-of agenda?",
+            options: [
+              { label: "Add agenda", value: "add agenda" },
+              { label: "Skip", value: "skip" },
+            ],
+          };
+        } else if (updatedFields.awaiting_add_another_agenda === true) {
+          suggestions = {
+            type: "choice",
+            field: "add_another_agenda",
+            label: "Add another agenda item?",
+            options: [
+              { label: "Add another", value: "add another" },
+              { label: "Done", value: "done" },
+            ],
+          };
+        } else {
+          const draft = updatedFields.current_agenda_draft || {};
+          const next = getNextAgendaField(draft);
+          if (next === "description") {
+            suggestions = {
+              type: "choice",
+              field: "agenda_description",
+              label: "Description (optional)",
+              options: [{ label: "Skip", value: "skip" }],
+            };
+          }
+          // time and title are required free-text — no chip
+        }
       } else {
         // Phase === "complete" — offer the final choice
         suggestions = {
