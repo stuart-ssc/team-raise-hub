@@ -815,6 +815,7 @@ export type Database = {
           cost: number | null
           created_at: string
           description: string | null
+          display_order: number | null
           event_end_date: string | null
           event_start_date: string | null
           feature_bullets: Json
@@ -841,6 +842,7 @@ export type Database = {
           cost?: number | null
           created_at?: string
           description?: string | null
+          display_order?: number | null
           event_end_date?: string | null
           event_start_date?: string | null
           feature_bullets?: Json
@@ -867,6 +869,7 @@ export type Database = {
           cost?: number | null
           created_at?: string
           description?: string | null
+          display_order?: number | null
           event_end_date?: string | null
           event_start_date?: string | null
           feature_bullets?: Json

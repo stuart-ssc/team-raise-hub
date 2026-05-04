@@ -178,6 +178,59 @@ function detectFieldFromAssistantText(text: string): string | null {
   if (/description|describe|short description|tell .* about the campaign/.test(t)) {
     return "description";
   }
+  // Pledge-specific
+  if (/pledge per|per (lap|mile|book|pushup|unit)|what (will|do) supporters pledge per|pledge unit/.test(t)) {
+    return "pledge_unit_label";
+  }
+  if (/pledges? count team|team[- ]wide or per participant|pledge scope/.test(t)) {
+    return "pledge_scope";
+  }
+  if (/when is the event|charges? go out|pledge event date|event happening/.test(t)) {
+    return "pledge_event_date";
+  }
+  // Merchandise-specific
+  if (/orders? ship by|ships by|ship[- ]by date/.test(t)) {
+    return "merch_ships_by_date";
+  }
+  if (/flat shipping|shipping rate/.test(t)) {
+    return "merch_shipping_flat_rate";
+  }
+  if (/local pickup|offer (local )?pickup/.test(t)) {
+    return "merch_pickup_available";
+  }
+  if (/pickup instructions|pickup note/.test(t)) {
+    return "merch_pickup_note";
+  }
+  // Event-specific
+  if (/what date and start time|event.*start time|date and time of the event/.test(t)) {
+    return "event_start_at";
+  }
+  if (/where.*event.*held|venue name|location name/.test(t)) {
+    return "event_location_name";
+  }
+  if (/what.*address|venue address/.test(t)) {
+    return "event_location_address";
+  }
+  if (/describe the format|event format|format.*event/.test(t)) {
+    return "event_format";
+  }
+  if (/what.?s included|what's included|inclusions/.test(t)) {
+    return "event_includes";
+  }
+  // Pre-draft basics not previously covered
+  if (/name of (this |the |your )?fundraiser|what.?s the name|fundraiser name|campaign name|call (this|it|the) (fundraiser|campaign)/.test(t)) {
+    return "name";
+  }
+  if (/goal amount|fundraising goal|how much.*hoping to raise|how much.*want to raise|target amount|goal in dollars/.test(t)) {
+    return "goal_amount";
+  }
+  // Post-draft text fields
+  if (/participant directions|internal[- ]only instructions|directions for (your|the) team|directions for participants|instructions for (your|the) team/.test(t)) {
+    return "group_directions";
+  }
+  if (/upload.*deadline|sponsor.*upload.*by|asset.*deadline|when do sponsors? need to upload/.test(t)) {
+    return "asset_upload_deadline";
+  }
   return null;
 }
 
@@ -984,6 +1037,19 @@ Deno.serve(async (req) => {
           } catch (e) {
             console.error("Deterministic date capture failed:", e);
           }
+        } else if (askedField === "name" && !isFieldAnswered("name", updatedFields)) {
+          const trimmed = lastUserMsgRaw.trim();
+          const isMeta = /^(i\s|already|what\?|why\?|huh\?)/i.test(trimmed) && trimmed.length < 60;
+          if (!isMeta && trimmed.length > 0 && trimmed.length <= 120) {
+            updatedFields.name = trimmed;
+          }
+        } else if (askedField === "goal_amount" && !isFieldAnswered("goal_amount", updatedFields)) {
+          const cleaned = lastUserMsgRaw.replace(/[$,\s]/g, "");
+          const m = cleaned.match(/\d+(?:\.\d+)?/);
+          if (m) {
+            const num = Number(m[0]);
+            if (isFinite(num) && num > 0) updatedFields.goal_amount = num;
+          }
         }
       }
     }
@@ -1197,6 +1263,90 @@ Deno.serve(async (req) => {
             updatedFields.group_directions_addressed = true;
             postDraftFallbackApplied = true;
             await adminSb.from("campaigns").update({ group_directions: userRawTrimmed }).eq("id", campaignId);
+          }
+        }
+
+        // Pledge / Merchandise / Event field fallbacks. The model often forgets
+        // to call update_campaign_fields after the user answers these. Detect
+        // the asked field via the same heuristic and persist the value here.
+        const askedTypeField = detectFieldFromAssistantText(lastAssistantRaw);
+        const persistTypeField = async (key: string, value: any) => {
+          updatedFields[key] = value;
+          postDraftFallbackApplied = true;
+          try {
+            await adminSb.from("campaigns").update({ [key]: value }).eq("id", campaignId);
+          } catch (e) {
+            console.error(`Failed to persist ${key} (fallback):`, e);
+          }
+        };
+        if (askedTypeField === "pledge_unit_label" && !updatedFields.pledge_unit_label && userRawTrimmed) {
+          const v = userRawTrimmed.toLowerCase().replace(/\s+/g, " ").slice(0, 40);
+          if (v) await persistTypeField("pledge_unit_label", v);
+        } else if (askedTypeField === "pledge_scope" && !updatedFields.pledge_scope) {
+          if (/team/.test(userLower)) await persistTypeField("pledge_scope", "team");
+          else if (/participant|player|each/.test(userLower)) await persistTypeField("pledge_scope", "participant");
+        } else if (askedTypeField === "pledge_event_date" && !updatedFields.pledge_event_date) {
+          const iso = normalizeDate(userRawTrimmed, today);
+          if (iso) await persistTypeField("pledge_event_date", iso);
+        } else if (askedTypeField === "merch_ships_by_date" && !updatedFields.merch_ships_by_date) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.merch_ships_by_date_skipped = true;
+            postDraftFallbackApplied = true;
+          } else {
+            const iso = normalizeDate(userRawTrimmed, today);
+            if (iso) await persistTypeField("merch_ships_by_date", iso);
+          }
+        } else if (askedTypeField === "merch_shipping_flat_rate" && updatedFields.merch_shipping_flat_rate === undefined) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.merch_shipping_flat_rate_skipped = true;
+            postDraftFallbackApplied = true;
+          } else {
+            const m = userRawTrimmed.replace(/[$,\s]/g, "").match(/\d+(?:\.\d+)?/);
+            if (m) {
+              const num = Number(m[0]);
+              if (isFinite(num) && num >= 0) await persistTypeField("merch_shipping_flat_rate", num);
+            }
+          }
+        } else if (askedTypeField === "merch_pickup_available" && updatedFields.merch_pickup_available === undefined) {
+          const yn = parseYesNo(userRawTrimmed);
+          if (yn !== null) await persistTypeField("merch_pickup_available", yn);
+        } else if (askedTypeField === "merch_pickup_note" && !updatedFields.merch_pickup_note) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.merch_pickup_note_skipped = true;
+            postDraftFallbackApplied = true;
+          } else if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 300) {
+            await persistTypeField("merch_pickup_note", userRawTrimmed);
+          }
+        } else if (askedTypeField === "event_start_at" && !updatedFields.event_start_at) {
+          if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 100) {
+            await persistTypeField("event_start_at", userRawTrimmed);
+          }
+        } else if (askedTypeField === "event_location_name" && !updatedFields.event_location_name) {
+          if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 120) {
+            await persistTypeField("event_location_name", userRawTrimmed);
+          }
+        } else if (askedTypeField === "event_location_address" && !updatedFields.event_location_address) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.event_location_address_skipped = true;
+            postDraftFallbackApplied = true;
+          } else if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 200) {
+            await persistTypeField("event_location_address", userRawTrimmed);
+          }
+        } else if (askedTypeField === "event_format" && !updatedFields.event_format) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.event_format_skipped = true;
+            postDraftFallbackApplied = true;
+          } else if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 200) {
+            await persistTypeField("event_format", userRawTrimmed);
+          }
+        } else if (askedTypeField === "event_includes" && !updatedFields.event_includes) {
+          if (isSkipMessage(userLower)) {
+            updatedFields.event_includes_skipped = true;
+            postDraftFallbackApplied = true;
+          } else if (userRawTrimmed.length > 0 && userRawTrimmed.length <= 300) {
+            // Persist as array (column is text[])
+            const arr = userRawTrimmed.split(",").map((s) => s.trim()).filter(Boolean);
+            if (arr.length > 0) await persistTypeField("event_includes", arr);
           }
         }
 
@@ -2794,6 +2944,73 @@ Deno.serve(async (req) => {
         "**Donor covers the fee (recommended)** — On a $100 donation, the donor pays **$110** at checkout. Your organization receives the full **$100**. The fee appears as a separate line item so supporters see exactly where it goes.",
         "**Your organization absorbs the fee** — On a $100 donation, the donor pays **$100** and your organization receives roughly **$90** after the 10% fee. Lower friction for donors, but reduces your net.\n\nMost teams pick \"Donor covers.\" Which would you prefer?",
       ];
+      assistantMessage = assistantMessages.join("\n\n");
+    }
+
+    // Server-authored single-question override. Whenever we know the exact next
+    // field (because we attached chip suggestions for it), replace the LLM's
+    // trailing question paragraph with a canned single sentence. This kills
+    // the "two questions in one message" bug structurally — the model can drift,
+    // but the user always sees exactly one question that matches the chips.
+    // We preserve the model's first paragraph (the acknowledgment) when it
+    // exists and looks like an ack rather than a question.
+    const CANNED_QUESTIONS: Record<string, string> = {
+      // Pre-draft
+      campaign_type_id: "What type of fundraiser is this?",
+      group_id: "Which group is this for?",
+      name: "What's the name of this fundraiser?",
+      goal_amount: "What's your fundraising goal? (in dollars, e.g. 5000)",
+      start_date: "When should the fundraiser start?",
+      end_date: "When should it end?",
+      description: "Want to add a short description? You can also skip.",
+      requires_business_info: "Will sponsors need to provide info or assets (like a logo or website)?",
+      // Post-draft
+      asset_upload_deadline: "When do sponsors need to upload their assets by?",
+      add_required_asset: "What asset do sponsors need to provide? Pick a preset or type a custom name.",
+      enable_roster_attribution: "Want to enable roster tracking so each player gets their own personalized URL?",
+      roster_id: "Which roster should we use?",
+      group_directions: "Want to add internal directions for your team? You can also skip.",
+      // Pledge
+      pledge_unit_label: "What will supporters pledge per? (e.g. lap, mile, book read)",
+      pledge_scope: "Should pledges count team-wide or per participant?",
+      pledge_event_date: "When is the event happening? (charges go out on or after this date)",
+      // Merchandise
+      merch_ships_by_date: "When will orders ship by? You can also skip.",
+      merch_shipping_flat_rate: "Want to charge a flat shipping rate? Enter dollars or skip.",
+      merch_pickup_available: "Want to offer local pickup as an alternative to shipping?",
+      merch_pickup_note: "Any pickup instructions for donors? You can also skip.",
+      // Event
+      event_start_at: "What date and start time is the event? (e.g. 'May 4 at 9am')",
+      event_location_name: "Where's the event being held? (venue name)",
+      event_location_address: "What's the address? You can also skip.",
+      event_format: "How would you describe the format? (e.g. '4-person scramble') — or skip.",
+      event_includes: "What's included? (comma-separated, e.g. 'Cart, Lunch, Range balls') — or skip.",
+      event_agenda_intro: "Want to add a day-of agenda for the event?",
+      add_another_agenda: "Want to add another agenda item, or are you done?",
+      agenda_description: "Add a short description, or skip.",
+      // Items
+      add_another_item: `Want to add another ${itemNoun}, or are you done?`,
+      is_recurring: "Should this be a recurring charge?",
+      recurring_interval: "How often should it recur?",
+      // Final
+      final_action: "What would you like to do next?",
+      confirm_create_draft: "Ready to save this as a draft?",
+    };
+
+    if (
+      suggestions?.field &&
+      CANNED_QUESTIONS[suggestions.field] &&
+      assistantMessages.length > 0 &&
+      // Skip override for the multi-bubble fee_model case (handled above).
+      !(suggestions.field === "fee_model" && assistantMessages.length === 3)
+    ) {
+      const canned = CANNED_QUESTIONS[suggestions.field];
+      const isQuestion = (s: string) => /\?\s*$/.test(s);
+      // Keep the first paragraph if it looks like an acknowledgment (not a question).
+      const ack = assistantMessages.length > 1 && !isQuestion(assistantMessages[0])
+        ? assistantMessages[0]
+        : null;
+      assistantMessages = ack ? [ack, canned] : [canned];
       assistantMessage = assistantMessages.join("\n\n");
     }
 
