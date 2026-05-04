@@ -8,6 +8,8 @@ export interface MerchandiseFulfillmentData {
   merchPickupAvailable: boolean;
   merchPickupNote: string;
   merchShippingFlatRate: string;
+  merchItemsHeading: string;
+  merchItemsSubheading: string;
 }
 
 interface Props {
@@ -18,6 +20,33 @@ interface Props {
 export function MerchandiseFulfillmentSection({ data, onUpdate }: Props) {
   return (
     <div className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="merch-items-heading">Items section heading</Label>
+        <Input
+          id="merch-items-heading"
+          placeholder="Pick your size."
+          value={data.merchItemsHeading}
+          onChange={(e) => onUpdate({ merchItemsHeading: e.target.value })}
+        />
+        <p className="text-xs text-muted-foreground">
+          Title shown above your items on the landing page. The last word is italicized for emphasis. Leave blank to use the default.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="merch-items-subheading">Items section subheading</Label>
+        <Textarea
+          id="merch-items-subheading"
+          rows={2}
+          placeholder="Each item maxes out at the per-person limit shown — kindly leave some for everyone."
+          value={data.merchItemsSubheading}
+          onChange={(e) => onUpdate({ merchItemsSubheading: e.target.value })}
+        />
+        <p className="text-xs text-muted-foreground">
+          Short sentence shown below the items heading. Leave blank to use the default.
+        </p>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="merch-ships-by">Ships by date</Label>
         <Input

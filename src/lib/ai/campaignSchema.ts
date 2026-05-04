@@ -176,6 +176,22 @@ export const merchandiseFields: CampaignFieldDef[] = [
     aiDescription:
       "Optional pickup instructions shown when local pickup is enabled (e.g. 'Pick up at the main office Mon–Fri 8–4').",
   },
+  {
+    key: "merch_items_heading",
+    label: "Items section heading",
+    type: "string",
+    required: false,
+    aiDescription:
+      "Optional custom heading shown above the items grid. Last word is auto-italicized. Defaults to 'Pick your size.' Use something like 'Pick your tickets.' for raffles.",
+  },
+  {
+    key: "merch_items_subheading",
+    label: "Items section subheading",
+    type: "string",
+    required: false,
+    aiDescription:
+      "Optional sentence shown below the items heading. Defaults to a sizing-related sentence; override for non-apparel items.",
+  },
 ];
 
 // =====================================================================
