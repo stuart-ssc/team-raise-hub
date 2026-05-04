@@ -145,7 +145,12 @@ function TicketCard({
     ? "Unlimited"
     : `${available} of ${offered} left`;
   return (
-    <div className="rounded-xl border border-border/60 bg-card p-5">
+    <div className={`relative rounded-xl border bg-card p-5 ${item.is_most_popular ? "border-[hsl(var(--event-accent))] ring-1 ring-[hsl(var(--event-accent))]" : "border-border/60"}`}>
+      {item.is_most_popular && (
+        <span className="absolute -top-2.5 left-5 inline-flex items-center rounded-full bg-[hsl(var(--event-accent))] px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
+          Most popular
+        </span>
+      )}
       <div className="flex items-start gap-6">
         <div className="flex-1 min-w-0">
           <h3 className="font-serif text-xl font-medium tracking-tight">{item.name}</h3>
