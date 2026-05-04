@@ -343,7 +343,7 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
         const nextOrder = items.length;
         const { data: newItem, error } = await supabase
           .from("campaign_items")
-          .insert([{ ...itemData, campaign_id: campaignId, display_order: nextOrder }])
+          .insert([{ ...itemData, campaign_id: campaignId, display_order: nextOrder } as any])
           .select("id")
           .single();
 
@@ -443,7 +443,7 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
       await Promise.all(
         reordered.map((it, idx) =>
           it.id
-            ? supabase.from("campaign_items").update({ display_order: idx }).eq("id", it.id)
+            ? supabase.from("campaign_items").update({ display_order: idx } as any).eq("id", it.id)
             : Promise.resolve()
         )
       );
