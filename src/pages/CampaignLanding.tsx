@@ -393,7 +393,7 @@ const CampaignLanding = () => {
     (item) => item.selectedQuantity > 0 && !!item.is_sponsorship_item,
   );
   const requiresBusinessInfo =
-    requiresBusinessInfo || cartHasSponsorshipItem;
+    !!campaign?.requires_business_info || cartHasSponsorshipItem;
 
   const handleProceedToCheckout = () => {
     if (!campaign) return;
