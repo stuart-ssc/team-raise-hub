@@ -119,6 +119,7 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
       .from("campaign_items")
       .select("*")
       .eq("campaign_id", campaignId)
+      .order("display_order", { ascending: true, nullsFirst: false } as any)
       .order("name", { ascending: true });
 
     if (error) {
@@ -341,7 +342,7 @@ export function CampaignItemsSection({ campaignId, forceSponsorship = false }: C
       } else {
         const { data: newItem, error } = await supabase
           .from("campaign_items")
-          .insert([{ ...itemData, campaign_id: campaignId }])
+          .insert([{ ...itemData, campaign_id: campaignId, display_order: items.length } as any])
           .select("id")
           .single();
 
