@@ -105,6 +105,7 @@ interface CampaignItem {
   is_most_popular?: boolean | null;
   feature_bullets?: any;
   variants?: ItemVariant[];
+  is_sponsorship_item?: boolean | null;
 }
 
 interface CartItem extends CampaignItem {
