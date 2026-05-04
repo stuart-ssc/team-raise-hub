@@ -661,7 +661,7 @@ const CampaignLanding = () => {
 
   const getSectionDescription = () => {
     const campaignType = campaign.campaign_type?.name?.toLowerCase();
-    const schoolName = campaign.groups?.schools.school_name || '';
+    const schoolName = campaign.groups?.schools?.school_name || '';
     const groupName = campaign.groups?.group_name || '';
     const groupType = campaign.groups?.group_type?.name?.toLowerCase() || '';
     
@@ -739,7 +739,7 @@ const CampaignLanding = () => {
               {campaign.groups && (
                 <div className={`flex items-center gap-1 text-sm ${isDarkBackground ? 'text-white/80' : 'text-muted-foreground'}`}>
                   <MapPin className="h-4 w-4" />
-                  {campaign.groups.group_name} • {campaign.groups.schools.school_name}
+                  {campaign.groups.group_name}{campaign.groups.schools?.school_name ? ` • ${campaign.groups.schools.school_name}` : ""}
                 </div>
               )}
             </div>
