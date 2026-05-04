@@ -178,6 +178,59 @@ function detectFieldFromAssistantText(text: string): string | null {
   if (/description|describe|short description|tell .* about the campaign/.test(t)) {
     return "description";
   }
+  // Pledge-specific
+  if (/pledge per|per (lap|mile|book|pushup|unit)|what (will|do) supporters pledge per|pledge unit/.test(t)) {
+    return "pledge_unit_label";
+  }
+  if (/pledges? count team|team[- ]wide or per participant|pledge scope/.test(t)) {
+    return "pledge_scope";
+  }
+  if (/when is the event|charges? go out|pledge event date|event happening/.test(t)) {
+    return "pledge_event_date";
+  }
+  // Merchandise-specific
+  if (/orders? ship by|ships by|ship[- ]by date/.test(t)) {
+    return "merch_ships_by_date";
+  }
+  if (/flat shipping|shipping rate/.test(t)) {
+    return "merch_shipping_flat_rate";
+  }
+  if (/local pickup|offer (local )?pickup/.test(t)) {
+    return "merch_pickup_available";
+  }
+  if (/pickup instructions|pickup note/.test(t)) {
+    return "merch_pickup_note";
+  }
+  // Event-specific
+  if (/what date and start time|event.*start time|date and time of the event/.test(t)) {
+    return "event_start_at";
+  }
+  if (/where.*event.*held|venue name|location name/.test(t)) {
+    return "event_location_name";
+  }
+  if (/what.*address|venue address/.test(t)) {
+    return "event_location_address";
+  }
+  if (/describe the format|event format|format.*event/.test(t)) {
+    return "event_format";
+  }
+  if (/what.?s included|what's included|inclusions/.test(t)) {
+    return "event_includes";
+  }
+  // Pre-draft basics not previously covered
+  if (/name of (this |the |your )?fundraiser|what.?s the name|fundraiser name|campaign name|call (this|it|the) (fundraiser|campaign)/.test(t)) {
+    return "name";
+  }
+  if (/goal amount|fundraising goal|how much.*hoping to raise|how much.*want to raise|target amount|goal in dollars/.test(t)) {
+    return "goal_amount";
+  }
+  // Post-draft text fields
+  if (/participant directions|internal[- ]only instructions|directions for (your|the) team|directions for participants|instructions for (your|the) team/.test(t)) {
+    return "group_directions";
+  }
+  if (/upload.*deadline|sponsor.*upload.*by|asset.*deadline|when do sponsors? need to upload/.test(t)) {
+    return "asset_upload_deadline";
+  }
   return null;
 }
 
