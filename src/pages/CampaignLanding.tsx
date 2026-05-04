@@ -620,6 +620,7 @@ const CampaignLanding = () => {
 
   // Get school's primary color or fallback to design system primary
   const schoolPrimaryColor = campaign.groups?.schools?.["Primary Color"] ?? null;
+  const branding = resolveCampaignBranding(campaign);
   
   // Function to determine if a color is dark
   const isColorDark = (hexColor: string) => {
