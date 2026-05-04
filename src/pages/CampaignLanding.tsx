@@ -686,6 +686,16 @@ const CampaignLanding = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {isPreview && (
+        <div className="sticky top-0 z-50 w-full bg-amber-500 text-amber-950 border-b border-amber-600">
+          <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-start gap-2 text-sm">
+            <Lock className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>
+              🔒 You're viewing an unpublished preview of this fundraiser. This link is private and will stop working once the campaign is published or the token is rotated.
+            </span>
+          </div>
+        </div>
+      )}
       <SeoHead
         title={(() => {
           const groupName = campaign.groups?.group_name || '';
