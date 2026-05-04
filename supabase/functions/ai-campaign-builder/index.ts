@@ -345,6 +345,18 @@ const FIELD_DEFS: FieldDef[] = [
   { key: "pledge_event_date", label: "Pledge Event Date", type: "date", required: false, aiDescription: "Date the activity happens (charging window opens this day). YYYY-MM-DD. REQUIRED for Pledge campaigns." },
   { key: "pledge_min_per_unit", label: "Min per Unit", type: "number", required: false, aiDescription: "Optional minimum dollar amount per unit (e.g. 0.25)." },
   { key: "pledge_suggested_unit_amounts", label: "Suggested per-Unit Amounts", type: "string", required: false, aiDescription: "Optional comma-separated suggested per-unit amounts (e.g. '0.5, 1, 2, 5')." },
+  { key: "pledge_unit_label_plural", label: "Pledge Unit (plural)", type: "string", required: false, aiDescription: "Optional plural form of the pledge unit (e.g. 'laps' for 'lap')." },
+  // Merchandise-only fields. Required for Merchandise campaigns; ignored otherwise.
+  { key: "merch_ships_by_date", label: "Ships by Date", type: "date", required: false, aiDescription: "Optional ship-by date shown on the landing page and cart. YYYY-MM-DD." },
+  { key: "merch_shipping_flat_rate", label: "Flat Shipping Rate (dollars)", type: "number", required: false, aiDescription: "Optional flat shipping rate in dollars. Skip to hide the shipping line." },
+  { key: "merch_pickup_available", label: "Local Pickup Available", type: "boolean", required: false, aiDescription: "Whether donors can pick up locally instead of paying shipping. REQUIRED for Merchandise campaigns." },
+  { key: "merch_pickup_note", label: "Pickup Instructions", type: "string", required: false, aiDescription: "Optional instructions shown when local pickup is enabled." },
+  // Event-only fields. Required for Event campaigns; ignored otherwise.
+  { key: "event_start_at", label: "Event Date & Start Time", type: "string", required: false, aiDescription: "ISO 8601 datetime (YYYY-MM-DDTHH:mm) for when the event happens. REQUIRED for Event campaigns." },
+  { key: "event_location_name", label: "Location Name", type: "string", required: false, aiDescription: "Venue name (e.g. 'Pine Hills Golf Club'). REQUIRED for Event campaigns." },
+  { key: "event_location_address", label: "Location Address", type: "string", required: false, aiDescription: "Optional street address of the venue." },
+  { key: "event_format", label: "Event Format", type: "string", required: false, aiDescription: "Optional short format description (e.g. '4-person scramble')." },
+  { key: "event_includes", label: "What's Included", type: "string", required: false, aiDescription: "Optional comma-separated inclusions (e.g. 'Cart, Lunch, Range balls'). Stored as an array." },
 ];
 
 /** True when the resolved campaign type name is a Pledge fundraiser. */
@@ -352,10 +364,59 @@ function isPledgeTypeName(typeName?: string | null): boolean {
   return (typeName || "").toLowerCase().includes("pledge");
 }
 
+/** True when the resolved campaign type name is a Merchandise Sale. */
+function isMerchandiseTypeName(typeName?: string | null): boolean {
+  return (typeName || "").toLowerCase().includes("merch");
+}
+
+/** True when the resolved campaign type name is an Event fundraiser. */
+function isEventTypeName(typeName?: string | null): boolean {
+  return (typeName || "").toLowerCase().includes("event");
+}
+
 /** Pledge-specific post-draft fields the AI must collect, in order. */
 function getPledgeStillToAsk(collected: Record<string, any>): string[] {
   const order = ["pledge_unit_label", "pledge_scope", "pledge_event_date"];
   return order.filter((k) => {
+    const v = collected[k];
+    return v === undefined || v === null || v === "";
+  });
+}
+
+/** Merchandise-specific post-draft fields the AI walks the user through, in order. */
+function getMerchStillToAsk(collected: Record<string, any>): string[] {
+  const order = [
+    "merch_ships_by_date",
+    "merch_shipping_flat_rate",
+    "merch_pickup_available",
+    "merch_pickup_note",
+  ];
+  return order.filter((k) => {
+    if (collected[`${k}_skipped`] === true) return false;
+    if (k === "merch_pickup_note") {
+      // Only ask for the note when pickup is enabled.
+      if (collected.merch_pickup_available !== true) return false;
+    }
+    if (k === "merch_pickup_available") {
+      const v = collected[k];
+      return v === undefined || v === null;
+    }
+    const v = collected[k];
+    return v === undefined || v === null || v === "";
+  });
+}
+
+/** Event-specific post-draft fields the AI walks the user through, in order. */
+function getEventStillToAsk(collected: Record<string, any>): string[] {
+  const order = [
+    "event_start_at",
+    "event_location_name",
+    "event_location_address",
+    "event_format",
+    "event_includes",
+  ];
+  return order.filter((k) => {
+    if (collected[`${k}_skipped`] === true) return false;
     const v = collected[k];
     return v === undefined || v === null || v === "";
   });
@@ -499,8 +560,14 @@ function buildSystemPrompt(
     const resolvedTypeName =
       campaignTypes.find((t) => t.id === collectedFields.campaign_type_id)?.name || null;
     const isPledge = isPledgeTypeName(resolvedTypeName);
+    const isMerch = isMerchandiseTypeName(resolvedTypeName);
+    const isEvent = isEventTypeName(resolvedTypeName);
     const pledgeStillToAsk = isPledge ? getPledgeStillToAsk(collectedFields) : [];
     const pledgeFieldsDone = !isPledge || pledgeStillToAsk.length === 0;
+    const merchStillToAsk = isMerch ? getMerchStillToAsk(collectedFields) : [];
+    const merchFieldsDone = !isMerch || merchStillToAsk.length === 0;
+    const eventStillToAsk = isEvent ? getEventStillToAsk(collectedFields) : [];
+    const eventFieldsDone = !isEvent || eventStillToAsk.length === 0;
 
     const rostersList = rosters.length > 0
       ? rosters.map((r) => `  - "${r.roster_year}${r.current_roster ? " (Current)" : ""}" → id: ${r.id}`).join("\n")
@@ -542,6 +609,34 @@ function buildSystemPrompt(
         nextStep = `**Next step: pledge event date.** Ask in one short sentence: "When is the event happening? (charges go out on or after this date)". Accept any natural date format and normalize to YYYY-MM-DD. When the user answers, you MUST call **update_campaign_fields** with \`pledge_event_date\` set to YYYY-MM-DD in the SAME turn.`;
       } else {
         nextStep = `**Next step: continue pledge setup.** Ask the user about ${nextPledgeKey}.`;
+      }
+    } else if (isMerch && !merchFieldsDone) {
+      const nextKey = merchStillToAsk[0];
+      if (nextKey === "merch_ships_by_date") {
+        nextStep = `**Next step: ships-by date.** This is a Merchandise Sale, so let's set fulfillment expectations. Ask in one short sentence: "When will orders ship by? (or say skip)". Accept any natural date format and normalize to YYYY-MM-DD. When the user answers, call **update_campaign_fields** with \`merch_ships_by_date\` (or \`merch_ships_by_date_skipped: true\` if they skip) in the SAME turn.`;
+      } else if (nextKey === "merch_shipping_flat_rate") {
+        nextStep = `**Next step: flat shipping rate.** Ask in one short sentence: "Want to charge a flat shipping rate? (enter dollars, or say skip)". When the user answers, call **update_campaign_fields** with \`merch_shipping_flat_rate\` as a number (or \`merch_shipping_flat_rate_skipped: true\` if skipped) in the SAME turn.`;
+      } else if (nextKey === "merch_pickup_available") {
+        nextStep = `**Next step: local pickup option.** Ask in one short sentence: "Want to offer local pickup as an alternative to shipping?". The UI shows Yes/No buttons. When the user answers, call **update_campaign_fields** with \`merch_pickup_available: true\` or \`false\` in the SAME turn.`;
+      } else if (nextKey === "merch_pickup_note") {
+        nextStep = `**Next step: pickup instructions.** Ask in one short sentence: "Any pickup instructions for donors? (e.g. 'Pick up at the main office Mon–Fri 8–4', or say skip)". When the user replies, call **update_campaign_fields** with \`merch_pickup_note\` (or \`merch_pickup_note_skipped: true\` if skipped) in the SAME turn.`;
+      } else {
+        nextStep = `**Next step: continue merchandise setup.** Ask the user about ${nextKey}.`;
+      }
+    } else if (isEvent && !eventFieldsDone) {
+      const nextKey = eventStillToAsk[0];
+      if (nextKey === "event_start_at") {
+        nextStep = `**Next step: event date & start time.** This is an Event fundraiser. Ask in one short sentence: "What date and start time is the event?". Accept any natural format ("May 4 at 9am") and normalize to YYYY-MM-DDTHH:mm. Call **update_campaign_fields** with \`event_start_at\` in the SAME turn.`;
+      } else if (nextKey === "event_location_name") {
+        nextStep = `**Next step: venue name.** Ask in one short sentence: "Where's the event being held? (venue name)". When the user answers, call **update_campaign_fields** with \`event_location_name\` in the SAME turn.`;
+      } else if (nextKey === "event_location_address") {
+        nextStep = `**Next step: venue address.** Ask in one short sentence: "What's the address? (or say skip)". Call **update_campaign_fields** with \`event_location_address\` (or \`event_location_address_skipped: true\` if skipped) in the SAME turn.`;
+      } else if (nextKey === "event_format") {
+        nextStep = `**Next step: event format.** Ask in one short sentence: "How would you describe the format? (e.g. '4-person scramble' or 'Plated dinner', or say skip)". Call **update_campaign_fields** with \`event_format\` (or \`event_format_skipped: true\`) in the SAME turn.`;
+      } else if (nextKey === "event_includes") {
+        nextStep = `**Next step: what's included.** Ask in one short sentence: "What's included? (comma-separated list, e.g. 'Cart, Lunch, Range balls', or say skip)". Call **update_campaign_fields** with \`event_includes\` as a comma-separated string (or \`event_includes_skipped: true\` if skipped) in the SAME turn.`;
+      } else {
+        nextStep = `**Next step: continue event setup.** Ask the user about ${nextKey}.`;
       }
     } else {
       if (isPledge) {
@@ -1352,6 +1447,24 @@ Deno.serve(async (req) => {
               pledge_event_date: { type: "string", description: "Date the pledge event happens (charging window opens). YYYY-MM-DD." },
               pledge_min_per_unit: { type: "number", description: "Optional minimum dollar amount per unit (e.g. 0.25)." },
               pledge_suggested_unit_amounts: { type: "string", description: "Optional comma-separated suggested per-unit amounts (e.g. '0.5, 1, 2, 5')." },
+              pledge_unit_label_plural: { type: "string", description: "Optional plural form of the pledge unit (e.g. 'laps')." },
+              // Merchandise fundraiser fields (only used when campaign_type is Merchandise Sale):
+              merch_ships_by_date: { type: "string", description: "Ships-by date in YYYY-MM-DD format." },
+              merch_ships_by_date_skipped: { type: "boolean" },
+              merch_shipping_flat_rate: { type: "number", description: "Flat shipping rate in dollars." },
+              merch_shipping_flat_rate_skipped: { type: "boolean" },
+              merch_pickup_available: { type: "boolean", description: "Whether local pickup is offered." },
+              merch_pickup_note: { type: "string", description: "Optional pickup instructions." },
+              merch_pickup_note_skipped: { type: "boolean" },
+              // Event fundraiser fields (only used when campaign_type is Event):
+              event_start_at: { type: "string", description: "ISO 8601 datetime (YYYY-MM-DDTHH:mm) for event start." },
+              event_location_name: { type: "string", description: "Venue name." },
+              event_location_address: { type: "string", description: "Venue street address." },
+              event_location_address_skipped: { type: "boolean" },
+              event_format: { type: "string", description: "Short format description (e.g. '4-person scramble')." },
+              event_format_skipped: { type: "boolean" },
+              event_includes: { type: "string", description: "Comma-separated list of inclusions (parsed into an array)." },
+              event_includes_skipped: { type: "boolean" },
             },
             additionalProperties: false,
           },
@@ -1721,6 +1834,41 @@ Deno.serve(async (req) => {
           }
           if (arr.length > 0) dbUpdate.pledge_suggested_unit_amounts = arr;
         }
+        if (persistFields.pledge_unit_label_plural !== undefined)
+          dbUpdate.pledge_unit_label_plural = persistFields.pledge_unit_label_plural;
+
+        // Merchandise fields
+        if (persistFields.merch_ships_by_date !== undefined)
+          dbUpdate.merch_ships_by_date = persistFields.merch_ships_by_date;
+        if (persistFields.merch_shipping_flat_rate !== undefined)
+          dbUpdate.merch_shipping_flat_rate = persistFields.merch_shipping_flat_rate;
+        if (persistFields.merch_pickup_available !== undefined)
+          dbUpdate.merch_pickup_available = persistFields.merch_pickup_available;
+        if (persistFields.merch_pickup_note !== undefined)
+          dbUpdate.merch_pickup_note = persistFields.merch_pickup_note;
+
+        // Event fields
+        if (persistFields.event_start_at !== undefined)
+          dbUpdate.event_start_at = persistFields.event_start_at;
+        if (persistFields.event_location_name !== undefined)
+          dbUpdate.event_location_name = persistFields.event_location_name;
+        if (persistFields.event_location_address !== undefined)
+          dbUpdate.event_location_address = persistFields.event_location_address;
+        if (persistFields.event_format !== undefined)
+          dbUpdate.event_format = persistFields.event_format;
+        if (persistFields.event_includes !== undefined) {
+          const raw = persistFields.event_includes;
+          let arr: string[] = [];
+          if (Array.isArray(raw)) {
+            arr = raw.map((s) => String(s).trim()).filter((s) => s.length > 0);
+          } else if (typeof raw === "string") {
+            arr = raw
+              .split(",")
+              .map((s) => s.trim())
+              .filter((s) => s.length > 0);
+          }
+          if (arr.length > 0) dbUpdate.event_includes = arr;
+        }
 
         if (Object.keys(dbUpdate).length > 0) {
           const { error: updErr } = await adminSb.from("campaigns").update(dbUpdate).eq("id", campaignId);
@@ -2016,7 +2164,11 @@ Deno.serve(async (req) => {
         types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null;
       const isPledge = isPledgeTypeName(resolvedTypeName);
       const pledgeDone = !isPledge || getPledgeStillToAsk(updatedFields).length === 0;
-      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone;
+      const isMerch = isMerchandiseTypeName(resolvedTypeName);
+      const merchDone = !isMerch || getMerchStillToAsk(updatedFields).length === 0;
+      const isEvent = isEventTypeName(resolvedTypeName);
+      const eventDone = !isEvent || getEventStillToAsk(updatedFields).length === 0;
+      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone && merchDone && eventDone;
 
       if (exitItemsCollection) {
         phase = "complete";
@@ -2186,6 +2338,54 @@ Deno.serve(async (req) => {
           };
         }
         // pledge_unit_label and pledge_event_date are free-text — no chips needed.
+      } else if (
+        isMerchandiseTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name) &&
+        getMerchStillToAsk(updatedFields).length > 0
+      ) {
+        const nextMerch = getMerchStillToAsk(updatedFields)[0];
+        if (nextMerch === "merch_pickup_available") {
+          suggestions = {
+            type: "choice",
+            field: "merch_pickup_available",
+            label: "Offer local pickup?",
+            options: [
+              { label: "Yes, offer pickup", value: "true" },
+              { label: "No, shipping only", value: "false" },
+            ],
+          };
+        } else {
+          suggestions = {
+            type: "choice",
+            field: nextMerch,
+            label: nextMerch === "merch_ships_by_date"
+              ? "Ships by date (optional)"
+              : nextMerch === "merch_shipping_flat_rate"
+                ? "Flat shipping rate (optional)"
+                : "Pickup instructions (optional)",
+            options: [{ label: "Skip", value: "skip" }],
+          };
+        }
+      } else if (
+        isEventTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name) &&
+        getEventStillToAsk(updatedFields).length > 0
+      ) {
+        const nextEvent = getEventStillToAsk(updatedFields)[0];
+        if (nextEvent === "event_start_at" || nextEvent === "event_location_name") {
+          // Required free-text — no chip.
+          suggestions = null;
+        } else {
+          const labelMap: Record<string, string> = {
+            event_location_address: "Venue address (optional)",
+            event_format: "Event format (optional)",
+            event_includes: "What's included (optional)",
+          };
+          suggestions = {
+            type: "choice",
+            field: nextEvent,
+            label: labelMap[nextEvent] || nextEvent,
+            options: [{ label: "Skip", value: "skip" }],
+          };
+        }
       } else {
         // Phase === "complete" — offer the final choice
         suggestions = {
