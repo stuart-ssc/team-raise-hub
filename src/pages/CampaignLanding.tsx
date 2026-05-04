@@ -1,6 +1,6 @@
 // Updated: Size variant selector feature - Dec 2024
 import { useState, useEffect } from "react";
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCampaignViewTracking } from "@/hooks/useCampaignViewTracking";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Minus, Plus, ShoppingCart, Calendar, Target, MapPin, Info, RefreshCw } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Calendar, Target, MapPin, Info, RefreshCw, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BusinessInfoForm } from "@/components/BusinessInfoForm";
@@ -123,6 +123,9 @@ interface CustomField {
 
 const CampaignLanding = () => {
   const { slug, rosterMemberSlug } = useParams<{ slug: string; rosterMemberSlug?: string }>();
+  const [searchParams] = useSearchParams();
+  const previewToken = searchParams.get("preview");
+  const isPreview = !!previewToken;
   const { toast } = useToast();
   const [attributedRosterMember, setAttributedRosterMember] = useState<{
     id: string;
@@ -212,6 +215,30 @@ const CampaignLanding = () => {
 
   const fetchCampaignData = async () => {
     try {
+      // Preview mode: fetch via edge function (bypasses RLS) using slug + token
+      if (isPreview && previewToken && slug) {
+        const { data, error } = await supabase.functions.invoke("get-campaign-preview", {
+          body: { slug, previewToken },
+        });
+        if (error || !data?.campaign) {
+          setError("Preview link is invalid or has expired");
+          setLoading(false);
+          return;
+        }
+        const c = data.campaign;
+        setCampaign(c as unknown as CampaignData);
+        const itemsWithVariants = (data.items || []) as CampaignItem[];
+        setCampaignItems(itemsWithVariants);
+        setCart(itemsWithVariants.map((item: any) => ({
+          ...item,
+          selectedQuantity: 0,
+          selectedVariants: {},
+        })));
+        setCustomFields(data.customFields || []);
+        setLoading(false);
+        return;
+      }
+
       // Fetch campaign by slug
       const { data: campaignData, error: campaignError } = await supabase
         .from("campaigns")
@@ -356,6 +383,13 @@ const CampaignLanding = () => {
 
   const handleProceedToCheckout = () => {
     if (!campaign) return;
+    if (isPreview) {
+      toast({
+        title: "Preview mode",
+        description: "Checkout is disabled while previewing an unpublished fundraiser.",
+      });
+      return;
+    }
     // Donation flow: amount is captured separately
     if (campaign.campaign_type?.name?.toLowerCase() === 'donation') {
       setCheckoutStep('donor-info');
@@ -391,6 +425,13 @@ const CampaignLanding = () => {
   };
 
   const handleDonationProceed = (selection: DonationSelection) => {
+    if (isPreview) {
+      toast({
+        title: "Preview mode",
+        description: "Checkout is disabled while previewing an unpublished fundraiser.",
+      });
+      return;
+    }
     if (selection.amount <= 0) return;
     setDonationSelection(selection);
     setCheckoutStep('donor-info');
@@ -645,6 +686,16 @@ const CampaignLanding = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {isPreview && (
+        <div className="sticky top-0 z-50 w-full bg-amber-500 text-amber-950 border-b border-amber-600">
+          <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-start gap-2 text-sm">
+            <Lock className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>
+              🔒 You're viewing an unpublished preview of this fundraiser. This link is private and will stop working once the campaign is published or the token is rotated.
+            </span>
+          </div>
+        </div>
+      )}
       <SeoHead
         title={(() => {
           const groupName = campaign.groups?.group_name || '';
@@ -1286,10 +1337,14 @@ const CampaignLanding = () => {
                     onClick={handleProceedToCheckout}
                     className="w-full mt-4"
                     size="lg"
+                    disabled={isPreview}
+                    title={isPreview ? "Checkout is disabled in preview mode" : undefined}
                   >
-                    {cart.some(item => item.selectedQuantity > 0 && item.is_recurring) 
-                      ? 'Subscribe Now' 
-                      : 'Proceed to Checkout'}
+                    {isPreview
+                      ? 'Checkout disabled in preview'
+                      : cart.some(item => item.selectedQuantity > 0 && item.is_recurring)
+                        ? 'Subscribe Now'
+                        : 'Proceed to Checkout'}
                   </Button>
                 </CardContent>
               </Card>

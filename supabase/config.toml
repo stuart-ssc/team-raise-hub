@@ -284,3 +284,6 @@ verify_jwt = false
 
 [functions.invite-abandoned-signup]
 verify_jwt = false
+
+[functions.get-campaign-preview]
+verify_jwt = false
