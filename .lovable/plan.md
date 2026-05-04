@@ -1,39 +1,35 @@
-# Apply branding cascade to template accent colors
-
 ## Problem
-The branding wrapper added in the previous step overrides `--primary` (and `--accent`/`--ring`), so any element using `bg-primary` / `text-primary` already picks up brand colors. But the **Merchandise** template (gold) and **Event** template (coral) use their own hard-coded CSS variables — `--merch-accent` and `--event-accent` — defined in `src/index.css`. These never get overridden, so the bourbon raffle still shows gold instead of the Kentucky Baseball Club's blue.
 
-The Donation, Pledge, and Sponsorship templates already drive their accent off `--primary`, so they're effectively covered — but we'll audit them and switch any stray hard-coded brand values to the cascade as well.
+The "Shop open" / "Event live" status pill in the hero uses the brand accent color for both the dot and the text (`text-[hsl(var(--merch-accent))]`). Now that the accent inherits the brand primary, dark brand colors (e.g. the Kentucky Baseball Club's navy) become illegible against the already dark hero background and translucent pill (`bg-white/10`).
 
-## Resolution rule (unchanged)
-Group color → Organization color → School color → Template default. If none of group/org/school provides a color, the template's existing accent (gold for merch, coral for event) is preserved.
+## Fix
 
-## Changes
+Drop brand-color text on translucent dark hero pills. The pill is a neutral status chip — its job is legibility, not branding. The brand color stays everywhere else (CTA buttons, progress bar, accent words, card borders, stat highlights), which is where it actually reinforces identity.
 
-### 1. `src/lib/campaignBranding.ts` — extend `brandingStyleVars`
-When a branded primary color is resolved, also override the template-specific accent CSS variables so they inherit the brand:
+### Changes
 
-```ts
-if (primaryHsl) {
-  vars["--primary"] = primaryHsl;
-  vars["--ring"] = primaryHsl;
-  vars["--merch-accent"]  = primaryHsl;   // NEW
-  vars["--event-accent"]  = primaryHsl;   // NEW
-  vars["--primary-foreground"] = ...;
-}
-```
+1. **`MerchandiseLanding.tsx`** (hero, ~line 506–515)
+   - Remove the `${accent}` class on the "Shop open / Shop closed" pill.
+   - Change the status dot from `${accentBg}` to a neutral indicator: `bg-emerald-400` when open, `bg-white/60` when closed. Open/closed state is communicated by the dot color — not the brand color.
+   - Result: both pills become consistent white-text-on-white/10 chips, fully legible regardless of brand color.
 
-These are scoped to the `<BrandedLandingWrapper>` div, so the rest of the app is unaffected. When no brand color exists, the variables stay at their `:root` defaults (gold/coral).
+2. **`EventLanding.tsx`** (hero status pill, ~line 436)
+   - The pill currently uses `${accentBg} text-white`. On a light brand color (e.g. yellow/gold) white text on the brand background becomes unreadable.
+   - Replace with the same neutral hero-pill style used in Merchandise: `bg-white/10 backdrop-blur border border-white/15 text-white`, with a small `bg-emerald-400` (live) or `bg-white/60` (ended) status dot.
 
-### 2. Audit landing templates
-- **MerchandiseLanding.tsx** — keeps `var(--merch-accent)` references; they now resolve to brand color when branded.
-- **EventLanding.tsx** — same, via `var(--event-accent)`.
-- **DonationLanding / PledgeLanding / SponsorshipLanding** — verify they use `bg-primary` / `text-primary` (already cascaded) and replace any incidental hard-coded brand colors with `primary` tokens. From the search these three templates don't define their own accent vars, so no change expected beyond a quick read-through.
+3. **Audit other templates** (`DonationLanding`, `PledgeLanding`, `SponsorshipLanding`)
+   - Quick scan for any hero pill / chip that prints brand-colored text on a translucent dark surface, or white text on a brand-colored background. Apply the same neutral-chip-with-status-dot pattern wherever found. Brand color stays on CTAs, progress fills, accent headline words, and card highlights.
 
-### 3. No DB or schema changes
-The cascade resolver, group color columns, and editor color pickers are already in place from the previous step.
+4. **Leave non-hero usages untouched.** Section borders, CTA buttons, progress bars, stat numbers, italic accent words — these all sit on light/neutral surfaces or rely on brand fills, where contrast is already handled.
 
-## Verification
-- Bourbon raffle (Kentucky Baseball Club) → hero badge dot, progress bar, "Continue to checkout" button, "Available items"/"Get your" eyebrow, and item card left border should render in the club's blue instead of gold.
-- A merchandise/event campaign whose group, org, and school have **no** colors set continues to show the original gold/coral defaults.
-- Donation, pledge, and sponsorship templates continue to render correctly with brand `--primary` already wired up.
+### Why not auto-adjust pill background based on brand luminance?
+
+Considered: detect dark brand color → bump pill bg opacity; detect light brand → darken text. Rejected because (a) the hero already has its own dark image overlay, so any brand-tinted pill background fights the hero photo, and (b) a single neutral chip style is more predictable and matches how status indicators work elsewhere in the app. Brand identity in the hero is carried by the logo strip (`BrandLogoStrip`), the headline accent word, and the progress bar — which is plenty.
+
+### Files touched
+
+- `src/components/campaign-landing/merchandise/MerchandiseLanding.tsx`
+- `src/components/campaign-landing/event/EventLanding.tsx`
+- `src/components/campaign-landing/donation/DonationLanding.tsx` (only if a similar hero pill exists)
+- `src/components/campaign-landing/pledge/PledgeLanding.tsx` (only if a similar hero pill exists)
+- `src/components/campaign-landing/sponsorship/SponsorshipLanding.tsx` (only if a similar hero pill exists)
