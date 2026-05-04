@@ -1,35 +1,29 @@
 ## Problem
 
-The "Shop open" / "Event live" status pill in the hero uses the brand accent color for both the dot and the text (`text-[hsl(var(--merch-accent))]`). Now that the accent inherits the brand primary, dark brand colors (e.g. the Kentucky Baseball Club's navy) become illegible against the already dark hero background and translucent pill (`bg-white/10`).
+The "Add User" dialog (`src/components/AddUserForm.tsx`) used from `/dashboard/users`:
 
-## Fix
+1. Shows **all user types** regardless of the selected organization's type. A nonprofit admin sees school roles ("Coach", "Team Player", etc.) and vice versa.
+2. Requires a **Group** for nonprofit admin roles like "Executive Director" — it should only exempt "Principal" today.
+3. Requires a **Roster** for any role outside a small school-specific allow-list. Nonprofit roles never have rosters, so they should never require one.
+4. Group dropdown is correctly scoped to `organizationId` already, but role list is not — so a user belonging to multiple orgs effectively sees roles from other org types.
 
-Drop brand-color text on translucent dark hero pills. The pill is a neutral status chip — its job is legibility, not branding. The brand color stays everywhere else (CTA buttons, progress bar, accent words, card borders, stat highlights), which is where it actually reinforces identity.
+## Changes
 
-### Changes
+### `src/components/AddUserForm.tsx`
+- Add `organizationType: "school" | "nonprofit"` to `AddUserFormProps`.
+- In `fetchUserTypes`, filter the returned `user_type` rows by org type using the same allow-lists used in `EditUserRoleDialog`:
+  - school → Principal, Athletic Director, Coach, Club Sponsor, Booster Leader, Team Player, Club Participant
+  - nonprofit → Executive Director, Program Director, Volunteer Coordinator, Volunteer, Board Member
+- Replace the hard-coded `requiresGroup` / `needsRoster` checks with org-type-aware logic:
+  - **No group required** for: `Principal`, `Executive Director` (top-level org admins).
+  - **No roster required** for: any nonprofit role, plus school roles `Principal`, `Athletic Director`, `Club Sponsor`, `Booster Leader` (rosters only apply to participant-style school roles: Coach, Team Player, Club Participant).
+- Skip rendering the Group and Roster `<Select>` blocks when not required, and skip their validation in `handleSubmit`. Also clear `selectedGroup` / `selectedRoster` when switching to a role that does not need them so stale values are not submitted.
 
-1. **`MerchandiseLanding.tsx`** (hero, ~line 506–515)
-   - Remove the `${accent}` class on the "Shop open / Shop closed" pill.
-   - Change the status dot from `${accentBg}` to a neutral indicator: `bg-emerald-400` when open, `bg-white/60` when closed. Open/closed state is communicated by the dot color — not the brand color.
-   - Result: both pills become consistent white-text-on-white/10 chips, fully legible regardless of brand color.
+### `src/pages/Users.tsx`
+- Pass `organizationType={organizationUser?.organization.organization_type}` into `<AddUserForm />` so the dialog only manages the currently selected organization context (the org id is already scoped via `organizationUser.organization_id`).
 
-2. **`EventLanding.tsx`** (hero status pill, ~line 436)
-   - The pill currently uses `${accentBg} text-white`. On a light brand color (e.g. yellow/gold) white text on the brand background becomes unreadable.
-   - Replace with the same neutral hero-pill style used in Merchandise: `bg-white/10 backdrop-blur border border-white/15 text-white`, with a small `bg-emerald-400` (live) or `bg-white/60` (ended) status dot.
+## Result
 
-3. **Audit other templates** (`DonationLanding`, `PledgeLanding`, `SponsorshipLanding`)
-   - Quick scan for any hero pill / chip that prints brand-colored text on a translucent dark surface, or white text on a brand-colored background. Apply the same neutral-chip-with-status-dot pattern wherever found. Brand color stays on CTAs, progress fills, accent headline words, and card highlights.
-
-4. **Leave non-hero usages untouched.** Section borders, CTA buttons, progress bars, stat numbers, italic accent words — these all sit on light/neutral surfaces or rely on brand fills, where contrast is already handled.
-
-### Why not auto-adjust pill background based on brand luminance?
-
-Considered: detect dark brand color → bump pill bg opacity; detect light brand → darken text. Rejected because (a) the hero already has its own dark image overlay, so any brand-tinted pill background fights the hero photo, and (b) a single neutral chip style is more predictable and matches how status indicators work elsewhere in the app. Brand identity in the hero is carried by the logo strip (`BrandLogoStrip`), the headline accent word, and the progress bar — which is plenty.
-
-### Files touched
-
-- `src/components/campaign-landing/merchandise/MerchandiseLanding.tsx`
-- `src/components/campaign-landing/event/EventLanding.tsx`
-- `src/components/campaign-landing/donation/DonationLanding.tsx` (only if a similar hero pill exists)
-- `src/components/campaign-landing/pledge/PledgeLanding.tsx` (only if a similar hero pill exists)
-- `src/components/campaign-landing/sponsorship/SponsorshipLanding.tsx` (only if a similar hero pill exists)
+- Adding an **Executive Director** to a nonprofit no longer asks for a Group or Roster.
+- The role dropdown only shows roles valid for the **currently selected organization**, regardless of how many orgs the signed-in user belongs to.
+- Group/Roster scoping continues to use the selected `organization_id`, so multi-org users cannot accidentally invite someone into a different org.
