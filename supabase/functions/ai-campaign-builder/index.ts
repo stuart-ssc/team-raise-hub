@@ -1237,6 +1237,46 @@ Deno.serve(async (req) => {
       eventFieldsAllDone &&
       updatedFields.event_agenda_complete !== true;
 
+    // Deterministic agenda-phase capture (button clicks + simple typed values).
+    // The model is allowed to call tools too, but this fallback prevents the
+    // chat from stalling if the model forgets, mirroring how items collection
+    // captures things server-side.
+    if (inAgendaPhase && lastUserMsg) {
+      const raw = (lastUserMsg as string).trim();
+      const lower = raw.toLowerCase().replace(/[.!?]+$/, "");
+      const draft: Record<string, any> = { ...(updatedFields.current_agenda_draft || {}) };
+      const awaitingAdd = updatedFields.awaiting_add_another_agenda === true;
+      const addressed = updatedFields.event_agenda_addressed === true;
+
+      // Intro Yes/Skip
+      if (!addressed) {
+        if (/^(skip|no|nope|no thanks|skip agenda|no agenda)$/.test(lower)) {
+          updatedFields.event_agenda_addressed = true;
+          updatedFields.event_agenda_complete = true;
+        } else if (/^(add agenda|yes|y|sure|add|ok|okay|let's do it)$/.test(lower)) {
+          updatedFields.event_agenda_addressed = true;
+        }
+      } else if (awaitingAdd) {
+        if (/^(add another|another|yes|yep|sure|one more)$/.test(lower) || /\badd another\b/.test(lower)) {
+          updatedFields.awaiting_add_another_agenda = false;
+          updatedFields.current_agenda_draft = {};
+        } else if (/^(done|i'?m done|no|nope|finish|finished|that'?s it)$/.test(lower) || /\bdone\b/.test(lower)) {
+          updatedFields.awaiting_add_another_agenda = false;
+          updatedFields.event_agenda_complete = true;
+        }
+      } else {
+        // Capture next-field value
+        const next = getNextAgendaField(draft);
+        if (next === "description" && isSkipMessage(lower)) {
+          draft.description_skipped = true;
+          updatedFields.current_agenda_draft = draft;
+        } else if (next && raw.length > 0 && raw.length <= 200) {
+          draft[next] = raw;
+          updatedFields.current_agenda_draft = draft;
+        }
+      }
+    }
+
     // Resolve campaign type name (for item-noun in prompts)
     const resolvedTypeName =
       types.find((t) => t.id === updatedFields.campaign_type_id)?.name || null;
