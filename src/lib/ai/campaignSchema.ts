@@ -130,9 +130,105 @@ export const pledgeFields: CampaignFieldDef[] = [
     aiDescription:
       "Optional comma-separated list of suggested per-unit amounts (e.g. '0.5, 1, 2, 5'). Will be parsed into a numeric array.",
   },
+  {
+    key: "pledge_unit_label_plural",
+    label: "Unit label (plural)",
+    type: "string",
+    required: false,
+    aiDescription:
+      "Optional plural form of the unit label (e.g. 'laps' for 'lap'). If omitted we'll auto-suggest by adding an 's'.",
+  },
 ];
 
-export const allFields = [...sharedFields, ...pledgeFields];
+// =====================================================================
+// Merchandise-Sale-only fields (collected after the campaign type is set)
+// =====================================================================
+export const merchandiseFields: CampaignFieldDef[] = [
+  {
+    key: "merch_ships_by_date",
+    label: "Ships by date",
+    type: "date",
+    required: false,
+    aiDescription:
+      "Optional ship-by date shown on the landing page and cart (\"Ships by {date}\"). YYYY-MM-DD.",
+  },
+  {
+    key: "merch_shipping_flat_rate",
+    label: "Flat shipping rate",
+    type: "number",
+    required: false,
+    aiDescription:
+      "Optional flat shipping rate in dollars added as a separate cart line. Skip to hide the shipping line entirely.",
+  },
+  {
+    key: "merch_pickup_available",
+    label: "Local pickup available",
+    type: "boolean",
+    required: true,
+    aiDescription:
+      "Whether donors can pick up their order locally instead of paying for shipping.",
+  },
+  {
+    key: "merch_pickup_note",
+    label: "Pickup instructions",
+    type: "string",
+    required: false,
+    aiDescription:
+      "Optional pickup instructions shown when local pickup is enabled (e.g. 'Pick up at the main office Mon–Fri 8–4').",
+  },
+];
+
+// =====================================================================
+// Event-only fields (collected after the campaign type is set)
+// =====================================================================
+export const eventFields: CampaignFieldDef[] = [
+  {
+    key: "event_start_at",
+    label: "Event date & start time",
+    type: "date",
+    required: true,
+    aiDescription:
+      "Date and start time the event happens. ISO 8601 datetime (YYYY-MM-DDTHH:mm). REQUIRED for Event fundraisers.",
+  },
+  {
+    key: "event_location_name",
+    label: "Location name",
+    type: "string",
+    required: true,
+    aiDescription:
+      "Venue name (e.g. 'Pine Hills Golf Club'). REQUIRED for Event fundraisers.",
+  },
+  {
+    key: "event_location_address",
+    label: "Location address",
+    type: "string",
+    required: false,
+    aiDescription: "Optional street address of the venue.",
+  },
+  {
+    key: "event_format",
+    label: "Format",
+    type: "string",
+    required: false,
+    aiDescription:
+      "Optional short format description (e.g. '4-person scramble', 'Plated dinner').",
+  },
+  {
+    key: "event_includes",
+    label: "What's included",
+    type: "string",
+    required: false,
+    aiDescription:
+      "Optional comma-separated list of inclusions (e.g. 'Cart, Lunch, Range balls'). Stored as an array.",
+  },
+];
+
+export const allFields = [
+  ...sharedFields,
+  ...pledgeFields,
+  ...merchandiseFields,
+  ...eventFields,
+];
 
 export const fieldMap = new Map(allFields.map((f) => [f.key, f]));
 
@@ -145,9 +241,25 @@ const pledgeRequiredKeys = pledgeFields
   .filter((f) => f.required)
   .map((f) => f.key);
 
+const merchandiseRequiredKeys = merchandiseFields
+  .filter((f) => f.required)
+  .map((f) => f.key);
+
+const eventRequiredKeys = eventFields.filter((f) => f.required).map((f) => f.key);
+
 /** Returns true when the given campaign type name is a Pledge fundraiser. */
 export function isPledgeType(typeName?: string | null): boolean {
   return (typeName || "").toLowerCase().includes("pledge");
+}
+
+/** Returns true when the given campaign type name is a Merchandise Sale. */
+export function isMerchandiseType(typeName?: string | null): boolean {
+  return (typeName || "").toLowerCase().includes("merch");
+}
+
+/** Returns true when the given campaign type name is an Event fundraiser. */
+export function isEventType(typeName?: string | null): boolean {
+  return (typeName || "").toLowerCase().includes("event");
 }
 
 /**
@@ -156,6 +268,9 @@ export function isPledgeType(typeName?: string | null): boolean {
  */
 export function getRequiredFieldsForType(typeName?: string | null): string[] {
   if (isPledgeType(typeName)) return [...requiredFieldKeys, ...pledgeRequiredKeys];
+  if (isMerchandiseType(typeName))
+    return [...requiredFieldKeys, ...merchandiseRequiredKeys];
+  if (isEventType(typeName)) return [...requiredFieldKeys, ...eventRequiredKeys];
   return requiredFieldKeys;
 }
 
