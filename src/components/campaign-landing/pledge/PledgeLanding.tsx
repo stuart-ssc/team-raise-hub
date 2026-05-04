@@ -25,6 +25,8 @@ import {
   getVideoEmbedUrl,
   StatTile,
 } from "../shared/landingHelpers";
+import type { ResolvedBranding } from "@/lib/campaignBranding";
+import { BrandedLandingWrapper, BrandLogoStrip } from "../shared/BrandedLandingWrapper";
 
 export interface PledgeCampaign {
   id: string;
@@ -88,6 +90,7 @@ interface Props {
   customFields?: CustomField[];
   // Reasonable estimate for "your pledge" preview
   estimatedUnits?: number;
+  branding?: ResolvedBranding;
 }
 
 const DEFAULT_AMOUNTS = [1, 2, 5, 10, 25];
