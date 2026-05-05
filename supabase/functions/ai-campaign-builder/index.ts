@@ -1092,12 +1092,21 @@ Deno.serve(async (req) => {
         ?.content as string | undefined;
       if (lastUserContent) {
         const m = lastUserContent.match(/^Image uploaded:\s*(\S+)/i);
-        if (m && !updatedFields.image_url) {
+        if (m) {
           updatedFields.image_url = m[1];
           updatedFields.image_skipped = false;
           postDraftFallbackApplied = true;
-          await adminSb.from("campaigns").update({ image_url: m[1] }).eq("id", campaignId);
-          console.log("[ai-campaign-builder] synthetic image_url captured", m[1]);
+          const { data: imgUpd, error: imgErr } = await adminSb
+            .from("campaigns")
+            .update({ image_url: m[1] })
+            .eq("id", campaignId)
+            .select("id, image_url")
+            .single();
+          if (imgErr) {
+            console.error("[ai-campaign-builder] FAILED to persist image_url", imgErr);
+          } else {
+            console.log("[ai-campaign-builder] image_url persisted", imgUpd?.image_url);
+          }
         } else if (/^Skip image for now$/i.test(lastUserContent.trim()) && !updatedFields.image_url) {
           updatedFields.image_skipped = true;
           postDraftFallbackApplied = true;
