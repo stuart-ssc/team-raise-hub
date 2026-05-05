@@ -2770,6 +2770,25 @@ Deno.serve(async (req) => {
         }
         // pledge_unit_label and pledge_event_date are free-text — no chips needed.
       } else if (
+        isDonationTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name) &&
+        getDonationStillToAsk(updatedFields).length > 0
+      ) {
+        const nextDon = getDonationStillToAsk(updatedFields)[0];
+        if (nextDon === "donation_min_amount") {
+          suggestions = { type: "choice", field: "donation_min_amount", label: "Minimum donation", options: [{ label: "Skip (use $5)", value: "skip" }] };
+        } else if (nextDon === "donation_suggested_amounts") {
+          suggestions = { type: "choice", field: "donation_suggested_amounts", label: "Suggested amounts", options: [
+            { label: "Standard ($25–$1000)", value: "25, 50, 100, 250, 500, 1000" },
+            { label: "Smaller ($10–$100)", value: "10, 25, 50, 100" },
+            { label: "Larger ($100–$2500)", value: "100, 250, 500, 1000, 2500" },
+            { label: "Skip", value: "skip" },
+          ] };
+        } else if (nextDon === "donation_allow_recurring") {
+          suggestions = { type: "choice", field: "donation_allow_recurring", label: "Allow recurring donations?", options: [{ label: "Yes", value: "true" }, { label: "No", value: "false" }] };
+        } else if (nextDon === "donation_allow_dedication") {
+          suggestions = { type: "choice", field: "donation_allow_dedication", label: "Allow dedications?", options: [{ label: "Yes", value: "true" }, { label: "No", value: "false" }] };
+        }
+      } else if (
         isMerchandiseTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name) &&
         getMerchStillToAsk(updatedFields).length > 0
       ) {
