@@ -1109,11 +1109,12 @@ export default function CampaignEditor() {
                 }}
                 showManage={!!(isEditing && id)}
                 showPitch={!!(isEditing && id)}
-                showItems={!!(isEditing && id) && !isPledgeCampaign}
+                showItems={!!(isEditing && id) && !isPledgeCampaign && !isDonationCampaign}
                 isPledge={isPledgeCampaign}
                 showPledgeResults={!!(isEditing && id) && isPledgeCampaign}
                 isEvent={isEventCampaign}
                 isMerchandise={isMerchandiseCampaign}
+                isDonation={isDonationCampaign}
               />
             </div>
           </SheetContent>
