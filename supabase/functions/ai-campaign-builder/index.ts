@@ -1497,7 +1497,9 @@ Deno.serve(async (req) => {
       try {
         const next = getNextItemField(currentItemDraft);
         if (next) {
-          const raw = lastUserMsg.trim();
+          // Use the original-casing message for free-text capture so item names
+          // like "Bronze Sponsor" aren't downcased to "bronze sponsor".
+          const raw = (lastUserMsgRaw || lastUserMsg).trim();
           if (next.key === "cost") {
             const cleaned = raw.replace(/[$,]/g, "");
             const m = cleaned.match(/\d+(?:\.\d+)?/);
