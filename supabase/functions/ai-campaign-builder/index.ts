@@ -2570,15 +2570,17 @@ Deno.serve(async (req) => {
       const isEvent = isEventTypeName(resolvedTypeName);
       const eventDone = !isEvent || getEventStillToAsk(updatedFields).length === 0;
       const agendaDone = !isEvent || updatedFields.event_agenda_complete === true;
-      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone && merchDone && eventDone && agendaDone;
+      const isDonation = isDonationTypeName(resolvedTypeName);
+      const donationDone = !isDonation || getDonationStillToAsk(updatedFields).length === 0;
+      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone && merchDone && eventDone && agendaDone && donationDone;
 
       if (exitItemsCollection) {
         phase = "complete";
       } else if (stayInItems) {
         phase = "collecting_items";
       } else if (setupDone) {
-        // Pledge fundraisers don't use campaign_items — skip straight to complete.
-        phase = isPledge ? "complete" : "collecting_items";
+        // Pledge & Donation fundraisers don't use campaign_items — skip straight to complete.
+        phase = (isPledge || isDonation) ? "complete" : "collecting_items";
       } else {
         phase = "post_draft";
       }
