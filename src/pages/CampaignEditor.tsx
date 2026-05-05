@@ -63,6 +63,7 @@ import { PledgeSettingsSection } from "@/components/campaign-editor/PledgeSettin
 import { PledgeResultsSection } from "@/components/campaign-editor/PledgeResultsSection";
 import { EventDetailsSection, type AgendaItem } from "@/components/campaign-editor/EventDetailsSection";
 import { MerchandiseFulfillmentSection } from "@/components/campaign-editor/MerchandiseFulfillmentSection";
+import { DonationSettingsSection } from "@/components/campaign-editor/DonationSettingsSection";
 import { CampaignSectionNav, type SectionKey } from "@/components/campaign-editor/CampaignSectionNav";
 import { CampaignAtAGlanceCard } from "@/components/campaign-editor/CampaignAtAGlanceCard";
 import { CampaignRecentOrdersCard } from "@/components/campaign-editor/CampaignRecentOrdersCard";
@@ -85,6 +86,7 @@ const SECTION_META: Record<SectionKey, { icon: React.ComponentType<{ className?:
   eventLocation: { icon: CalendarClock, title: "Location & Details", subtitle: "Date, venue, format, and what's included", showSave: true },
   eventAgenda: { icon: CalendarClock, title: "Day-of Agenda", subtitle: "Build the schedule donors see on the landing page", showSave: true },
   merchFulfillment: { icon: Truck, title: "Fulfillment", subtitle: "Ship-by date, shipping rate, and pickup options", showSave: true },
+  donationSettings: { icon: HandCoins, title: "Donation Setup", subtitle: "Minimum, suggested amounts, recurring, and dedications", showSave: true },
 };
 
 interface CampaignData {
@@ -134,6 +136,10 @@ interface CampaignData {
   merchShippingFlatRate: string;
   merchItemsHeading: string;
   merchItemsSubheading: string;
+  donationMinAmount: string;
+  donationSuggestedAmounts: number[];
+  donationAllowRecurring: boolean;
+  donationAllowDedication: boolean;
 }
 
 interface RequiredAsset {
@@ -222,6 +228,10 @@ export default function CampaignEditor() {
     merchShippingFlatRate: "",
     merchItemsHeading: "",
     merchItemsSubheading: "",
+    donationMinAmount: "",
+    donationSuggestedAmounts: [25, 50, 100, 250, 500, 1000],
+    donationAllowRecurring: true,
+    donationAllowDedication: true,
   });
   const [requiredAssets, setRequiredAssets] = useState<RequiredAsset[]>([]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -234,6 +244,7 @@ export default function CampaignEditor() {
   const [eventTypeId, setEventTypeId] = useState<string | null>(null);
   const [merchandiseTypeId, setMerchandiseTypeId] = useState<string | null>(null);
   const [sponsorshipTypeId, setSponsorshipTypeId] = useState<string | null>(null);
+  const [donationTypeId, setDonationTypeId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -279,12 +290,25 @@ export default function CampaignEditor() {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("campaign_type")
+        .select("id, name")
+        .ilike("name", "Donation")
+        .maybeSingle();
+      if (data) setDonationTypeId(data.id);
+    })();
+  }, []);
+
   const isPledgeCampaign = !!pledgeTypeId && campaignData.campaignTypeId === pledgeTypeId;
   const isEventCampaign = !!eventTypeId && campaignData.campaignTypeId === eventTypeId;
   const isMerchandiseCampaign =
     !!merchandiseTypeId && campaignData.campaignTypeId === merchandiseTypeId;
   const isSponsorshipCampaign =
     !!sponsorshipTypeId && campaignData.campaignTypeId === sponsorshipTypeId;
+  const isDonationCampaign =
+    !!donationTypeId && campaignData.campaignTypeId === donationTypeId;
 
   // Counts for nav badges
   const { data: itemsCount = 0 } = useQuery({
