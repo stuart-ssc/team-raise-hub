@@ -54,6 +54,30 @@ export default function ImageUploadPrompt({
         .from("campaign-item-images")
         .getPublicUrl(path);
 
+      // Defense-in-depth: when this is the campaign cover (default pathPrefix),
+      // write campaigns.image_url directly here too so the value is persisted
+      // even if the AI builder edge function later misses the synthetic
+      // "Image uploaded:" message. We verify with .select() and surface
+      // failures via toast instead of silently optimistically marking "saved".
+      if (!pathPrefix || pathPrefix === "cover") {
+        const { error: dbErr } = await supabase
+          .from("campaigns")
+          .update({ image_url: publicUrl })
+          .eq("id", campaignId)
+          .select("id, image_url")
+          .single();
+        if (dbErr) {
+          console.error("Failed to persist campaign image_url:", dbErr);
+          toast({
+            title: "Image upload partially saved",
+            description:
+              "The image was uploaded to storage but couldn't be linked to the fundraiser. Please try again or set it from the editor.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       setUploadedUrl(publicUrl);
       onUploaded(publicUrl);
     } catch (e: any) {

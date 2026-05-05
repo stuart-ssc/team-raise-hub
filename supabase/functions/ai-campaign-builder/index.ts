@@ -77,6 +77,10 @@ function isItemReadyToSave(draft: Record<string, any>): boolean {
 
 // Every field the AI should walk through, in the order to ask. `required: false`
 // means the user can skip without blocking save — NOT that the AI may silently omit it.
+// NOTE: `requires_business_info` is intentionally OMITTED here — sponsor/business
+// info is determined per-item via campaign_items.is_sponsorship_item, not at the
+// campaign level. The campaign column is auto-populated when an item with
+// is_sponsorship_item=true is saved.
 const ASK_ORDER = [
   "name",
   "campaign_type_id",
@@ -85,7 +89,6 @@ const ASK_ORDER = [
   "start_date",
   "end_date",
   "description",
-  "requires_business_info",
   "fee_model",
 ];
 
@@ -839,7 +842,7 @@ ${autoFillNote}
    - If it's REQUIRED, the user must answer (no skipping).
    - If it's optional, tell them they can say "skip" if they don't want to provide it.
    - For **description**, ask something like: "Want to add a short description of the fundraiser? You can say skip." (free text — no buttons). When the user types ANY free-text answer (e.g. "Let's cover the gym", "Raising money for new uniforms"), you MUST call **update_campaign_fields** with \`description: "<their exact text>"\` in the SAME turn. Never just say "Got it" — the tool call is required.
-  - For **requires_business_info**, ask: "Will sponsors need to provide information or assets to participate? (e.g. a logo for a banner/shirt, a website link for social media recognition)" — the UI will show Yes/No buttons. When the user answers yes/no (or true/false), you MUST call **update_campaign_fields** with \`requires_business_info: true\` or \`requires_business_info: false\` in the SAME turn. **Do NOT combine this question with the "save as draft" confirmation.**
+   - **NEVER ask whether sponsors need to provide info/assets at the campaign level.** That decision is made per-item during item collection (via \`is_sponsorship_item\`). Do not ask "Will sponsors need to provide information or assets…" — skip it entirely.
    - For **fee_model**, the server will emit a fixed 3-bubble explanation followed by Yes/No buttons. You only need to ensure that **when the user answers**, you MUST call **update_campaign_fields** with \`fee_model: "donor_covers"\` or \`fee_model: "org_absorbs"\` in the SAME turn. Do NOT write your own fee explanation — the server handles it.
    - **POST-DRAFT FIELDS — CRITICAL:** When the user answers any post-draft question (image upload/skip, roster attribution yes/no, roster pick, participant directions), you MUST call **update_campaign_fields** in the SAME turn BEFORE writing your acknowledgment. Saying "saved" or "got it" without calling the tool is a bug — the field will not be saved and the user will be stuck in a loop.
 10. **The "## Still To Ask About" list above is the source of truth for what to ask next.** Do NOT ask "Ready to save this as a draft?" — and do NOT call **create_campaign_draft** — until that list is COMPLETELY EMPTY. If even one field appears in the list, your next question MUST be about that field, in the order listed. Skipping ahead to the save confirmation is forbidden. Once the list is finally empty, in a SEPARATE follow-up turn, ask ONE short confirmation: "Ready to save this as a draft?" — the UI will show Yes/No buttons. When the user confirms (yes / ok / sure / save / create / go / sounds good / let's do it), IMMEDIATELY call the **create_campaign_draft** tool. Do NOT just acknowledge — you MUST call the tool to actually create the draft.
@@ -930,11 +933,13 @@ Deno.serve(async (req) => {
     // Server-side deterministic mapping: if the user's last message exactly matches
     // a campaign type name or group name, record it directly. This is a safety net
     // for when the model acknowledges the choice in text but forgets the tool call.
-    const lastUserMsg = [...messages]
+    const lastUserMsgRawForMatch = [...messages]
       .reverse()
       .find((m: any) => m.role === "user")
-      ?.content?.trim()
-      .toLowerCase();
+      ?.content?.trim();
+    const lastUserMsg = lastUserMsgRawForMatch?.toLowerCase();
+    // Preserve original casing for callers that need the raw text (e.g. item name capture).
+    const lastUserMsgRaw = lastUserMsgRawForMatch;
     if (lastUserMsg) {
       if (!updatedFields.campaign_type_id) {
         const matchedType = types.find((t) => t.name.toLowerCase() === lastUserMsg);
@@ -1087,12 +1092,21 @@ Deno.serve(async (req) => {
         ?.content as string | undefined;
       if (lastUserContent) {
         const m = lastUserContent.match(/^Image uploaded:\s*(\S+)/i);
-        if (m && !updatedFields.image_url) {
+        if (m) {
           updatedFields.image_url = m[1];
           updatedFields.image_skipped = false;
           postDraftFallbackApplied = true;
-          await adminSb.from("campaigns").update({ image_url: m[1] }).eq("id", campaignId);
-          console.log("[ai-campaign-builder] synthetic image_url captured", m[1]);
+          const { data: imgUpd, error: imgErr } = await adminSb
+            .from("campaigns")
+            .update({ image_url: m[1] })
+            .eq("id", campaignId)
+            .select("id, image_url")
+            .single();
+          if (imgErr) {
+            console.error("[ai-campaign-builder] FAILED to persist image_url", imgErr);
+          } else {
+            console.log("[ai-campaign-builder] image_url persisted", imgUpd?.image_url);
+          }
         } else if (/^Skip image for now$/i.test(lastUserContent.trim()) && !updatedFields.image_url) {
           updatedFields.image_skipped = true;
           postDraftFallbackApplied = true;
@@ -1492,7 +1506,9 @@ Deno.serve(async (req) => {
       try {
         const next = getNextItemField(currentItemDraft);
         if (next) {
-          const raw = lastUserMsg.trim();
+          // Use the original-casing message for free-text capture so item names
+          // like "Bronze Sponsor" aren't downcased to "bronze sponsor".
+          const raw = (lastUserMsgRaw || lastUserMsg).trim();
           if (next.key === "cost") {
             const cleaned = raw.replace(/[$,]/g, "");
             const m = cleaned.match(/\d+(?:\.\d+)?/);
@@ -2485,11 +2501,12 @@ Deno.serve(async (req) => {
     const missingRequired = REQUIRED_KEYS.filter(
       (k) => !updatedFields[k] || updatedFields[k] === ""
     );
-    const businessInfoAnswered = updatedFields.requires_business_info !== undefined;
     // Ready to save only when EVERY field has been answered or explicitly skipped.
+    // (requires_business_info is no longer asked at the campaign level — it's
+    // derived per-item from is_sponsorship_item.)
     const stillToAskNow = getStillToAskAbout(updatedFields);
     const readyToCreate =
-      missingRequired.length === 0 && businessInfoAnswered && stillToAskNow.length === 0;
+      missingRequired.length === 0 && stillToAskNow.length === 0;
 
     let phase: "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete" = "collecting";
     if (effectiveCampaignId) {
@@ -2812,16 +2829,6 @@ Deno.serve(async (req) => {
           label: "Description (optional)",
           options: [{ label: "Skip — no description", value: "skip" }],
         };
-      } else if (nextField === "requires_business_info") {
-        suggestions = {
-          type: "choice",
-          field: "requires_business_info",
-          label: "Will sponsors provide info/assets to participate?",
-          options: [
-            { label: "Yes, sponsors must provide info", value: "true" },
-            { label: "No, not required", value: "false" },
-          ],
-        };
       } else if (nextField === "fee_model") {
         suggestions = {
           type: "choice",
@@ -2988,8 +2995,16 @@ Deno.serve(async (req) => {
       event_agenda_intro: "Want to add a day-of agenda for the event?",
       add_another_agenda: "Want to add another agenda item, or are you done?",
       agenda_description: "Add a short description, or skip.",
-      // Items
+      // Items — every item field gets an explicit canned question so the LLM
+      // can never drift to a later field's question while the chips show the
+      // current field's Skip option.
       add_another_item: `Want to add another ${itemNoun}, or are you done?`,
+      name: `What's the name of this ${itemNoun}?`,
+      cost: "How much does it cost? (in dollars, e.g. 25)",
+      quantity_offered: "How many are you offering in total?",
+      description: "Add a short description, or skip.",
+      max_items_purchased: "Limit per buyer? (a number, or skip for no limit)",
+      size: "Any size or tier label? (e.g. 'Large', 'Gold tier' — skip if none)",
       is_recurring: "Should this be a recurring charge?",
       recurring_interval: "How often should it recur?",
       // Final
