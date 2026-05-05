@@ -665,12 +665,15 @@ function buildSystemPrompt(
     const isPledge = isPledgeTypeName(resolvedTypeName);
     const isMerch = isMerchandiseTypeName(resolvedTypeName);
     const isEvent = isEventTypeName(resolvedTypeName);
+    const isDonation = isDonationTypeName(resolvedTypeName);
     const pledgeStillToAsk = isPledge ? getPledgeStillToAsk(collectedFields) : [];
     const pledgeFieldsDone = !isPledge || pledgeStillToAsk.length === 0;
     const merchStillToAsk = isMerch ? getMerchStillToAsk(collectedFields) : [];
     const merchFieldsDone = !isMerch || merchStillToAsk.length === 0;
     const eventStillToAsk = isEvent ? getEventStillToAsk(collectedFields) : [];
     const eventFieldsDone = !isEvent || eventStillToAsk.length === 0;
+    const donationStillToAsk = isDonation ? getDonationStillToAsk(collectedFields) : [];
+    const donationFieldsDone = !isDonation || donationStillToAsk.length === 0;
     // Agenda sub-flow state (event-only)
     const agendaRows: AgendaItem[] = Array.isArray(collectedFields.event_agenda)
       ? collectedFields.event_agenda
