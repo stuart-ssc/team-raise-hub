@@ -1041,6 +1041,18 @@ export default function CampaignEditor() {
                     onUpdate={updateCampaignData}
                   />
                 )}
+
+                {activeSection === "donationSettings" && (
+                  <DonationSettingsSection
+                    data={{
+                      donationMinAmount: campaignData.donationMinAmount,
+                      donationSuggestedAmounts: campaignData.donationSuggestedAmounts,
+                      donationAllowRecurring: campaignData.donationAllowRecurring,
+                      donationAllowDedication: campaignData.donationAllowDedication,
+                    }}
+                    onUpdate={updateCampaignData}
+                  />
+                )}
               </CardContent>
             </Card>
 
