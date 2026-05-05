@@ -2995,8 +2995,16 @@ Deno.serve(async (req) => {
       event_agenda_intro: "Want to add a day-of agenda for the event?",
       add_another_agenda: "Want to add another agenda item, or are you done?",
       agenda_description: "Add a short description, or skip.",
-      // Items
+      // Items — every item field gets an explicit canned question so the LLM
+      // can never drift to a later field's question while the chips show the
+      // current field's Skip option.
       add_another_item: `Want to add another ${itemNoun}, or are you done?`,
+      name: `What's the name of this ${itemNoun}?`,
+      cost: "How much does it cost? (in dollars, e.g. 25)",
+      quantity_offered: "How many are you offering in total?",
+      description: "Add a short description, or skip.",
+      max_items_purchased: "Limit per buyer? (a number, or skip for no limit)",
+      size: "Any size or tier label? (e.g. 'Large', 'Gold tier' — skip if none)",
       is_recurring: "Should this be a recurring charge?",
       recurring_interval: "How often should it recur?",
       // Final
