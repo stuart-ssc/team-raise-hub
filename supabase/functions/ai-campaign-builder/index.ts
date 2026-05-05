@@ -1784,6 +1784,13 @@ Deno.serve(async (req) => {
               event_format_skipped: { type: "boolean" },
               event_includes: { type: "string", description: "Comma-separated list of inclusions (parsed into an array)." },
               event_includes_skipped: { type: "boolean" },
+              // Donation fundraiser fields (only used when campaign_type is Donation):
+              donation_min_amount: { type: "number", description: "Minimum donation amount in dollars." },
+              donation_min_amount_skipped: { type: "boolean" },
+              donation_suggested_amounts: { type: "string", description: "Comma-separated list of suggested donation dollar amounts (e.g. '25, 50, 100, 250, 500, 1000'). Parsed into a JSON array." },
+              donation_suggested_amounts_skipped: { type: "boolean" },
+              donation_allow_recurring: { type: "boolean", description: "Whether donors can choose recurring (monthly) donations." },
+              donation_allow_dedication: { type: "boolean", description: "Whether donors can dedicate the gift in honor or memory of someone." },
             },
             additionalProperties: false,
           },
