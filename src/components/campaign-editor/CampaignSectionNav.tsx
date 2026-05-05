@@ -34,7 +34,8 @@ export type SectionKey =
   | "eventDetails"
   | "eventLocation"
   | "eventAgenda"
-  | "merchFulfillment";
+  | "merchFulfillment"
+  | "donationSettings";
 
 interface NavItem {
   key: SectionKey;
@@ -59,6 +60,7 @@ interface CampaignSectionNavProps {
   showPledgeResults?: boolean;
   isEvent?: boolean;
   isMerchandise?: boolean;
+  isDonation?: boolean;
 }
 
 export function CampaignSectionNav({
@@ -72,6 +74,7 @@ export function CampaignSectionNav({
   showPledgeResults,
   isEvent,
   isMerchandise,
+  isDonation,
 }: CampaignSectionNavProps) {
   const setupItems: NavItem[] = [
     { key: "details", label: "Details", icon: FileText },
@@ -89,7 +92,10 @@ export function CampaignSectionNav({
     ...(isPledge
       ? [{ key: "pledgeSettings" as const, label: "Pledge Setup", icon: HandCoins }]
       : []),
-    ...(showItems && !isPledge
+    ...(isDonation
+      ? [{ key: "donationSettings" as const, label: "Donation Setup", icon: HandCoins }]
+      : []),
+    ...(showItems && !isPledge && !isDonation
       ? [{ key: "items" as const, label: "Items", icon: Package, count: counts.items }]
       : []),
     { key: "experience", label: "Experience", icon: Heart },

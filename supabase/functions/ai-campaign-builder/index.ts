@@ -430,6 +430,32 @@ function isEventTypeName(typeName?: string | null): boolean {
   return (typeName || "").toLowerCase().includes("event");
 }
 
+/** True when the resolved campaign type name is a Donation fundraiser. */
+function isDonationTypeName(typeName?: string | null): boolean {
+  return (typeName || "").toLowerCase().includes("donation");
+}
+
+/** Donation-specific post-draft fields the AI walks the user through, in order. */
+function getDonationStillToAsk(collected: Record<string, any>): string[] {
+  const order = [
+    "donation_min_amount",
+    "donation_suggested_amounts",
+    "donation_allow_recurring",
+    "donation_allow_dedication",
+  ];
+  return order.filter((k) => {
+    if (collected[`${k}_skipped`] === true) return false;
+    const v = collected[k];
+    if (k === "donation_allow_recurring" || k === "donation_allow_dedication") {
+      return v === undefined || v === null;
+    }
+    if (k === "donation_suggested_amounts") {
+      return v === undefined || v === null || (Array.isArray(v) && v.length === 0);
+    }
+    return v === undefined || v === null || v === "";
+  });
+}
+
 /** Pledge-specific post-draft fields the AI must collect, in order. */
 function getPledgeStillToAsk(collected: Record<string, any>): string[] {
   const order = ["pledge_unit_label", "pledge_scope", "pledge_event_date"];
@@ -639,12 +665,15 @@ function buildSystemPrompt(
     const isPledge = isPledgeTypeName(resolvedTypeName);
     const isMerch = isMerchandiseTypeName(resolvedTypeName);
     const isEvent = isEventTypeName(resolvedTypeName);
+    const isDonation = isDonationTypeName(resolvedTypeName);
     const pledgeStillToAsk = isPledge ? getPledgeStillToAsk(collectedFields) : [];
     const pledgeFieldsDone = !isPledge || pledgeStillToAsk.length === 0;
     const merchStillToAsk = isMerch ? getMerchStillToAsk(collectedFields) : [];
     const merchFieldsDone = !isMerch || merchStillToAsk.length === 0;
     const eventStillToAsk = isEvent ? getEventStillToAsk(collectedFields) : [];
     const eventFieldsDone = !isEvent || eventStillToAsk.length === 0;
+    const donationStillToAsk = isDonation ? getDonationStillToAsk(collectedFields) : [];
+    const donationFieldsDone = !isDonation || donationStillToAsk.length === 0;
     // Agenda sub-flow state (event-only)
     const agendaRows: AgendaItem[] = Array.isArray(collectedFields.event_agenda)
       ? collectedFields.event_agenda
@@ -752,9 +781,23 @@ function buildSystemPrompt(
         askLine = `All required fields are filled — IMMEDIATELY call **save_agenda_item** to save this row.`;
       }
       nextStep = `**Next step: agenda item collection (${ordinal}).** ${askLine}\n\n## Current agenda draft\n${draftSummary}\n\n## Agenda so far\n${list}`;
+    } else if (isDonation && !donationFieldsDone) {
+      const nextKey = donationStillToAsk[0];
+      if (nextKey === "donation_min_amount") {
+        nextStep = `**Next step: minimum donation.** This is a Donation fundraiser. Ask in one short sentence: "What's the minimum donation amount? (default $5)". The UI shows a Skip chip. When the user answers, call **update_campaign_fields** with \`donation_min_amount\` as a number (or \`donation_min_amount_skipped: true\` if skipped) in the SAME turn.`;
+      } else if (nextKey === "donation_suggested_amounts") {
+        nextStep = `**Next step: suggested donation amounts.** Ask in one short sentence: "Which preset amounts should donors see at checkout?". The UI shows preset chips (Standard, Smaller, Larger, Skip). When the user picks, call **update_campaign_fields** with \`donation_suggested_amounts\` as a comma-separated list of dollar amounts in the SAME turn. Standard = "25, 50, 100, 250, 500, 1000". Smaller = "10, 25, 50, 100". Larger = "100, 250, 500, 1000, 2500".`;
+      } else if (nextKey === "donation_allow_recurring") {
+        nextStep = `**Next step: recurring donations.** Ask in one short sentence: "Should donors be able to make this a recurring monthly donation?". The UI shows Yes/No buttons. When the user answers, call **update_campaign_fields** with \`donation_allow_recurring: true\` or \`false\` in the SAME turn.`;
+      } else if (nextKey === "donation_allow_dedication") {
+        nextStep = `**Next step: dedications.** Ask in one short sentence: "Should donors be able to dedicate their gift in honor or memory of someone?". The UI shows Yes/No buttons. When the user answers, call **update_campaign_fields** with \`donation_allow_dedication: true\` or \`false\` in the SAME turn.`;
+      } else {
+        nextStep = `**Next step: continue donation setup.** Ask the user about ${nextKey}.`;
+      }
     } else {
-      if (isPledge) {
-        nextStep = `**Setup is done — Pledge fundraiser is fully configured.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (wrap-up): "Your pledge fundraiser is set up. You can preview it, publish it, or fine-tune anything in the editor whenever you're ready." Do NOT mention adding items — Pledge fundraisers don't use items. Do NOT call any tool.`;
+      if (isPledge || isDonation) {
+        const typeLabel = isPledge ? "pledge" : "donation";
+        nextStep = `**Setup is done — ${typeLabel} fundraiser is fully configured.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (wrap-up): "Your ${typeLabel} fundraiser is set up. You can preview it, publish it, or fine-tune anything in the editor whenever you're ready." Do NOT mention adding items — this fundraiser type doesn't use items. Do NOT call any tool.`;
       } else {
         nextStep = `**Setup is done — transition to items collection.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (transition + first item question): "Now let's add your first item. What's the name?"\n\nDo NOT ask about publishing or the editor — that comes later, after items are added. Do NOT call any tool.`;
       }
@@ -1741,6 +1784,13 @@ Deno.serve(async (req) => {
               event_format_skipped: { type: "boolean" },
               event_includes: { type: "string", description: "Comma-separated list of inclusions (parsed into an array)." },
               event_includes_skipped: { type: "boolean" },
+              // Donation fundraiser fields (only used when campaign_type is Donation):
+              donation_min_amount: { type: "number", description: "Minimum donation amount in dollars." },
+              donation_min_amount_skipped: { type: "boolean" },
+              donation_suggested_amounts: { type: "string", description: "Comma-separated list of suggested donation dollar amounts (e.g. '25, 50, 100, 250, 500, 1000'). Parsed into a JSON array." },
+              donation_suggested_amounts_skipped: { type: "boolean" },
+              donation_allow_recurring: { type: "boolean", description: "Whether donors can choose recurring (monthly) donations." },
+              donation_allow_dedication: { type: "boolean", description: "Whether donors can dedicate the gift in honor or memory of someone." },
             },
             additionalProperties: false,
           },
@@ -2224,6 +2274,26 @@ Deno.serve(async (req) => {
           dbUpdate.event_agenda = persistFields.event_agenda;
         }
 
+        // Donation fields
+        if (persistFields.donation_min_amount !== undefined) {
+          const n = Number(persistFields.donation_min_amount);
+          if (Number.isFinite(n) && n > 0) dbUpdate.donation_min_amount = n;
+        }
+        if (persistFields.donation_suggested_amounts !== undefined) {
+          const raw = persistFields.donation_suggested_amounts;
+          let arr: number[] = [];
+          if (Array.isArray(raw)) {
+            arr = raw.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0);
+          } else if (typeof raw === "string") {
+            arr = raw.split(",").map((s) => Number(s.trim())).filter((n) => Number.isFinite(n) && n > 0);
+          }
+          if (arr.length > 0) dbUpdate.donation_suggested_amounts = arr;
+        }
+        if (persistFields.donation_allow_recurring !== undefined)
+          dbUpdate.donation_allow_recurring = !!persistFields.donation_allow_recurring;
+        if (persistFields.donation_allow_dedication !== undefined)
+          dbUpdate.donation_allow_dedication = !!persistFields.donation_allow_dedication;
+
         if (Object.keys(dbUpdate).length > 0) {
           const { error: updErr } = await adminSb.from("campaigns").update(dbUpdate).eq("id", campaignId);
           if (updErr) console.error("Failed to persist post-draft fields:", updErr);
@@ -2527,15 +2597,17 @@ Deno.serve(async (req) => {
       const isEvent = isEventTypeName(resolvedTypeName);
       const eventDone = !isEvent || getEventStillToAsk(updatedFields).length === 0;
       const agendaDone = !isEvent || updatedFields.event_agenda_complete === true;
-      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone && merchDone && eventDone && agendaDone;
+      const isDonation = isDonationTypeName(resolvedTypeName);
+      const donationDone = !isDonation || getDonationStillToAsk(updatedFields).length === 0;
+      const setupDone = sponsorAssetsDone && imageDone && rosterDone && directionsDone && pledgeDone && merchDone && eventDone && agendaDone && donationDone;
 
       if (exitItemsCollection) {
         phase = "complete";
       } else if (stayInItems) {
         phase = "collecting_items";
       } else if (setupDone) {
-        // Pledge fundraisers don't use campaign_items — skip straight to complete.
-        phase = isPledge ? "complete" : "collecting_items";
+        // Pledge & Donation fundraisers don't use campaign_items — skip straight to complete.
+        phase = (isPledge || isDonation) ? "complete" : "collecting_items";
       } else {
         phase = "post_draft";
       }
@@ -2697,6 +2769,25 @@ Deno.serve(async (req) => {
           };
         }
         // pledge_unit_label and pledge_event_date are free-text — no chips needed.
+      } else if (
+        isDonationTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name) &&
+        getDonationStillToAsk(updatedFields).length > 0
+      ) {
+        const nextDon = getDonationStillToAsk(updatedFields)[0];
+        if (nextDon === "donation_min_amount") {
+          suggestions = { type: "choice", field: "donation_min_amount", label: "Minimum donation", options: [{ label: "Skip (use $5)", value: "skip" }] };
+        } else if (nextDon === "donation_suggested_amounts") {
+          suggestions = { type: "choice", field: "donation_suggested_amounts", label: "Suggested amounts", options: [
+            { label: "Standard ($25–$1000)", value: "25, 50, 100, 250, 500, 1000" },
+            { label: "Smaller ($10–$100)", value: "10, 25, 50, 100" },
+            { label: "Larger ($100–$2500)", value: "100, 250, 500, 1000, 2500" },
+            { label: "Skip", value: "skip" },
+          ] };
+        } else if (nextDon === "donation_allow_recurring") {
+          suggestions = { type: "choice", field: "donation_allow_recurring", label: "Allow recurring donations?", options: [{ label: "Yes", value: "true" }, { label: "No", value: "false" }] };
+        } else if (nextDon === "donation_allow_dedication") {
+          suggestions = { type: "choice", field: "donation_allow_dedication", label: "Allow dedications?", options: [{ label: "Yes", value: "true" }, { label: "No", value: "false" }] };
+        }
       } else if (
         isMerchandiseTypeName(types.find((t) => t.id === updatedFields.campaign_type_id)?.name) &&
         getMerchStillToAsk(updatedFields).length > 0

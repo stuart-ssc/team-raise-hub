@@ -1,42 +1,77 @@
-## Issues to fix
+## Problem
 
-### 1. Image upload not saving to the fundraiser
-`ImageUploadPrompt` calls `onUploaded(url)` → frontend sends synthetic message `Image uploaded: <url>` → edge function regex captures it and writes `image_url`. The DB write is **fire-and-forget** (no await on result, no error surfacing) and gated by `!updatedFields.image_url`, so a stale field can block re-saves and silent failures look "saved" in the optimistic preview.
+Donation fundraisers have four campaign-level columns that already drive the donor landing page:
+- `donation_min_amount` — minimum gift (defaults to $5 if not set)
+- `donation_suggested_amounts` — preset chip amounts (e.g. `[25, 50, 100, 250, 500, 1000]`)
+- `donation_allow_recurring` — toggle for recurring donations
+- `donation_allow_dedication` — toggle for "in honor/memory of"
 
-**Fix:**
-- In `ImageUploadPrompt.tsx`, after the storage upload, write `campaigns.image_url` directly via `supabase.from("campaigns").update(...).eq("id", campaignId).select().single()`. If it fails, toast the error and do NOT call `onUploaded`.
-- Standardize the storage path to `${campaignId}/cover-${Date.now()}.${ext}` to match the editor's expectations.
-- In the edge function, drop the `!updatedFields.image_url` guard on the synthetic image capture and properly await + log the update.
+Today there's no way to set them — neither the AI assistant nor the manual editor exposes them. Plus the editor still routes Donation campaigns through the generic **Items** section, which doesn't fit a donation flow.
 
-### 2. Recurring/size chip glitch (screenshot)
-Assistant text says "Is this a recurring donation/ticket…" while chips show "Size / tier label — Skip". The state machine is on `size` (correct) but the LLM drifted to the next question. The server-side `CANNED_QUESTIONS` override only covers a subset of fields — there are no entries for `size`, `description`, `max_items_purchased`, `name`, etc., so item-field drift slips through.
+## Goal
 
-**Fix:** in `supabase/functions/ai-campaign-builder/index.ts`, generalize the canned-question override: when `suggestions.field` matches an `ITEM_FIELDS[].key` and no canned entry exists, fall back to the field's own `prompt` template (rendered with `itemNoun`/examples). Add explicit canned entries for every item field for clarity.
+Make donation-specific settings editable in **both** places:
+1. The AI Fundraiser Assistant (chat flow).
+2. The manual fundraiser editor (post-creation editing).
 
-### 3. Campaign-level "requires sponsor info" question is obsolete
-`ASK_ORDER` still includes `requires_business_info` and the post-draft flow runs the full sponsor-asset deadline + required-asset sub-flow. Per current model, this is determined per-item via `campaign_items.is_sponsorship_item`.
+And stop showing the irrelevant **Items** section for Donation fundraisers.
 
-**Fix in edge function:**
-- Remove `requires_business_info` from `ASK_ORDER`, the canned questions, the next-field router, and `create_campaign_draft` insert.
-- Remove the post-draft branches: `sponsorAssetsRequired`, `asset_upload_deadline`, `add_required_asset`, `pending_required_assets`, `sponsor_assets_complete` (and matching chip suggestions).
-- For Sponsorship campaign types, ask `is_sponsorship_item` as the second item field (after `name`) with Yes/No chips, default Yes; persist on `save_campaign_item`.
-- After saving any item with `is_sponsorship_item=true`, auto-set `campaigns.requires_business_info=true` so downstream checkout still gates correctly.
+## Changes
 
-### 4. Item names always saved as lowercase
-The deterministic capture in the edge function lowercases / normalizes the item name. We need to preserve the user's exact casing for `name` (and `size`).
+### A. Manual editor (primary fix the user is asking for)
 
-**Fix:** in `supabase/functions/ai-campaign-builder/index.ts` deterministic-capture block (around the `next.key === "name" || next.key === "size"` branch), store `raw.trim()` exactly — do not pass through `toLowerCase()` or any normalizer. Audit `update_item_field` tool args path too: do not mutate string casing for `name`/`size`/`description`. (If the LLM itself returns a lowercased value, prefer the user's last raw message when capturing `name`/`size`.)
+**1. New section component** `src/components/campaign-editor/DonationSettingsSection.tsx`
+- Min donation amount input (number, default placeholder $5).
+- Preset suggested amounts: chip-style editor — each amount is a removable pill, with an "Add amount" input. Optional "Reset to defaults" button (`25, 50, 100, 250, 500, 1000`).
+- "Allow recurring donations" switch.
+- "Allow donor dedications (in honor/memory of)" switch.
+- Same visual style as `PledgeSettingsSection` / `MerchandiseFulfillmentSection`.
 
----
+**2. Wire into `CampaignSectionNav`** (`src/components/campaign-editor/CampaignSectionNav.tsx`)
+- Add `"donationSettings"` to `SectionKey` union.
+- Add `isDonation` prop. When true, insert a "Donation Setup" nav item (icon: `HandCoins` or `Heart`) and **omit** the "Items" entry.
 
-## Files to change
+**3. Wire into `CampaignEditor.tsx`**
+- Detect donation type via campaign_type lookup (mirrors `pledgeTypeId`/`eventTypeId` pattern). Add `donationTypeId` query + `isDonationCampaign` flag.
+- Add four fields to `CampaignData` interface and `setCampaignData` initialization (with sensible defaults: min `5`, suggested `[25,50,100,250,500,1000]`, recurring `true`, dedication `true`).
+- Persist them in the `handleSave` UPDATE payload to `campaigns`.
+- Pass `isDonation={isDonationCampaign}` into `CampaignSectionNav` and gate `showItems` with `&& !isDonationCampaign`.
+- Render `<DonationSettingsSection>` when `activeSection === "donationSettings"`.
+- Add `donationSettings` entry to `SECTION_META` with `showSave: true`.
 
-- `supabase/functions/ai-campaign-builder/index.ts` — remove campaign-level sponsor questions, add `is_sponsorship_item` per-item ask, generalize canned-question override, harden image_url save, preserve item-name casing.
-- `src/components/ai-campaign/ImageUploadPrompt.tsx` — write `campaigns.image_url` directly with verification + error toast; standardize path.
-- `src/pages/AICampaignBuilder.tsx` — only mark `image_url` in `collectedFields` after confirmation comes back from the edge function/DB write.
+### B. AI Assistant (so it can collect these during the chat too)
 
-## Verification
-1. Upload a cover image in the AI builder → confirm `campaigns.image_url` populated and editor's Cover tab shows it.
-2. Walk item setup; each optional field (description, max per buyer, size, recurring) is asked one at a time with chips matching the question text.
-3. Type "Bronze Sponsor" as an item name → confirm DB stores `Bronze Sponsor`, not `bronze sponsor`.
-4. `requires_business_info` is never asked at the campaign level. For a Sponsorship campaign, `is_sponsorship_item` is asked per item.
+In `supabase/functions/ai-campaign-builder/index.ts`:
+
+1. **Add type detector** `isDonationTypeName(typeName)` (matches `"donation"`).
+
+2. **Add walker** `getDonationStillToAsk(collected)` returning the four fields in order: `donation_min_amount`, `donation_suggested_amounts`, `donation_allow_recurring`, `donation_allow_dedication` (skip-aware; booleans treated like `is_recurring`).
+
+3. **Wire into the resolved-type block** (~lines 639–646) and **phase-decision block** (~lines 2522–2538): for Donation, after donation fields are answered, set `phase = "complete"` and **skip `collecting_items` entirely** (extend the existing `isPledge ? "complete" : "collecting_items"` pattern).
+
+4. **Add chip suggestions** in the suggestions block (~lines 2683–2750):
+   - `donation_min_amount` → free-text + Skip chip (default $5).
+   - `donation_suggested_amounts` → presets: `Standard ($25/$50/$100/$250/$500/$1000)`, `Smaller ($10/$25/$50/$100)`, `Larger ($100/$250/$500/$1000/$2500)`, `Custom…`, `Skip`.
+   - `donation_allow_recurring` → Yes / No.
+   - `donation_allow_dedication` → Yes / No.
+
+5. **Tool schema** (~line 1701): extend `update_campaign_fields` parameters with the four donation fields (number, array of numbers, boolean, boolean).
+
+6. **Persistence pass** (~line 2174): add parallel handling for `donation_suggested_amounts` (parse comma string OR array → JSON array of numbers).
+
+7. **System prompt** (~line 850): add: "If the campaign type is **Donation**, do NOT ask about items/quantity/cost. Instead, after the core fields, ask about minimum donation, suggested preset amounts, recurring donations allowed, and dedications allowed. Then complete setup."
+
+8. **`AICampaignBuilder.tsx`** — add the four fields to the `CANNED_QUESTIONS` registry so the assistant text always matches the chips.
+
+### C. No DB migration needed
+All four columns already exist on `campaigns` (`donation_min_amount`, `donation_suggested_amounts`, `donation_allow_recurring`, `donation_allow_dedication`).
+
+## Out of scope
+- `donation_allocations` (multi-designation split) — keep advanced; not added to chat or simple editor here.
+
+## QA checklist
+1. Open an existing Donation fundraiser in the editor — see "Donation Setup" in nav and **no** "Items" entry.
+2. Edit min, presets (add/remove), toggles → Save → reload → values persist.
+3. Open the donor landing page → preset chips and minimum reflect saved values.
+4. Start a new Donation fundraiser via the assistant → it asks min, presets, recurring, dedication (no item questions) → completes setup → values match the editor.
+5. Pledge / Merch / Event / Sponsorship flows still behave identically (regression).
