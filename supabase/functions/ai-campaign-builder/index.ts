@@ -77,6 +77,10 @@ function isItemReadyToSave(draft: Record<string, any>): boolean {
 
 // Every field the AI should walk through, in the order to ask. `required: false`
 // means the user can skip without blocking save — NOT that the AI may silently omit it.
+// NOTE: `requires_business_info` is intentionally OMITTED here — sponsor/business
+// info is determined per-item via campaign_items.is_sponsorship_item, not at the
+// campaign level. The campaign column is auto-populated when an item with
+// is_sponsorship_item=true is saved.
 const ASK_ORDER = [
   "name",
   "campaign_type_id",
@@ -85,7 +89,6 @@ const ASK_ORDER = [
   "start_date",
   "end_date",
   "description",
-  "requires_business_info",
   "fee_model",
 ];
 
