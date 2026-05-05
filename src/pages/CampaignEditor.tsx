@@ -414,6 +414,14 @@ export default function CampaignEditor() {
               : "",
           merchItemsHeading: (data as any).merch_items_heading || "",
           merchItemsSubheading: (data as any).merch_items_subheading || "",
+          donationMinAmount:
+            (data as any).donation_min_amount != null
+              ? String((data as any).donation_min_amount)
+              : "",
+          donationSuggestedAmounts:
+            ((data as any).donation_suggested_amounts as number[] | null) || [25, 50, 100, 250, 500, 1000],
+          donationAllowRecurring: (data as any).donation_allow_recurring !== false,
+          donationAllowDedication: (data as any).donation_allow_dedication !== false,
         });
 
         // Fetch pitch data
