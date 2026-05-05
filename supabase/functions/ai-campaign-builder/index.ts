@@ -2829,16 +2829,6 @@ Deno.serve(async (req) => {
           label: "Description (optional)",
           options: [{ label: "Skip — no description", value: "skip" }],
         };
-      } else if (nextField === "requires_business_info") {
-        suggestions = {
-          type: "choice",
-          field: "requires_business_info",
-          label: "Will sponsors provide info/assets to participate?",
-          options: [
-            { label: "Yes, sponsors must provide info", value: "true" },
-            { label: "No, not required", value: "false" },
-          ],
-        };
       } else if (nextField === "fee_model") {
         suggestions = {
           type: "choice",
