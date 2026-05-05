@@ -2501,11 +2501,12 @@ Deno.serve(async (req) => {
     const missingRequired = REQUIRED_KEYS.filter(
       (k) => !updatedFields[k] || updatedFields[k] === ""
     );
-    const businessInfoAnswered = updatedFields.requires_business_info !== undefined;
     // Ready to save only when EVERY field has been answered or explicitly skipped.
+    // (requires_business_info is no longer asked at the campaign level — it's
+    // derived per-item from is_sponsorship_item.)
     const stillToAskNow = getStillToAskAbout(updatedFields);
     const readyToCreate =
-      missingRequired.length === 0 && businessInfoAnswered && stillToAskNow.length === 0;
+      missingRequired.length === 0 && stillToAskNow.length === 0;
 
     let phase: "collecting" | "ready_to_create" | "collecting_items" | "post_draft" | "complete" = "collecting";
     if (effectiveCampaignId) {
