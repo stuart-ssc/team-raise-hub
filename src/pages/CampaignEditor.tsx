@@ -619,6 +619,15 @@ export default function CampaignEditor() {
           : null,
         merch_items_heading: campaignData.merchItemsHeading || null,
         merch_items_subheading: campaignData.merchItemsSubheading || null,
+        donation_min_amount: campaignData.donationMinAmount
+          ? parseFloat(campaignData.donationMinAmount)
+          : null,
+        donation_suggested_amounts:
+          campaignData.donationSuggestedAmounts && campaignData.donationSuggestedAmounts.length
+            ? (campaignData.donationSuggestedAmounts as any)
+            : null,
+        donation_allow_recurring: campaignData.donationAllowRecurring,
+        donation_allow_dedication: campaignData.donationAllowDedication,
       };
 
       let campaignId = id;
