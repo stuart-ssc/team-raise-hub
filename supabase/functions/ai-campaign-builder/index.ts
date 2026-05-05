@@ -2274,6 +2274,26 @@ Deno.serve(async (req) => {
           dbUpdate.event_agenda = persistFields.event_agenda;
         }
 
+        // Donation fields
+        if (persistFields.donation_min_amount !== undefined) {
+          const n = Number(persistFields.donation_min_amount);
+          if (Number.isFinite(n) && n > 0) dbUpdate.donation_min_amount = n;
+        }
+        if (persistFields.donation_suggested_amounts !== undefined) {
+          const raw = persistFields.donation_suggested_amounts;
+          let arr: number[] = [];
+          if (Array.isArray(raw)) {
+            arr = raw.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0);
+          } else if (typeof raw === "string") {
+            arr = raw.split(",").map((s) => Number(s.trim())).filter((n) => Number.isFinite(n) && n > 0);
+          }
+          if (arr.length > 0) dbUpdate.donation_suggested_amounts = arr;
+        }
+        if (persistFields.donation_allow_recurring !== undefined)
+          dbUpdate.donation_allow_recurring = !!persistFields.donation_allow_recurring;
+        if (persistFields.donation_allow_dedication !== undefined)
+          dbUpdate.donation_allow_dedication = !!persistFields.donation_allow_dedication;
+
         if (Object.keys(dbUpdate).length > 0) {
           const { error: updErr } = await adminSb.from("campaigns").update(dbUpdate).eq("id", campaignId);
           if (updErr) console.error("Failed to persist post-draft fields:", updErr);
