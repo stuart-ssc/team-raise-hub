@@ -430,6 +430,32 @@ function isEventTypeName(typeName?: string | null): boolean {
   return (typeName || "").toLowerCase().includes("event");
 }
 
+/** True when the resolved campaign type name is a Donation fundraiser. */
+function isDonationTypeName(typeName?: string | null): boolean {
+  return (typeName || "").toLowerCase().includes("donation");
+}
+
+/** Donation-specific post-draft fields the AI walks the user through, in order. */
+function getDonationStillToAsk(collected: Record<string, any>): string[] {
+  const order = [
+    "donation_min_amount",
+    "donation_suggested_amounts",
+    "donation_allow_recurring",
+    "donation_allow_dedication",
+  ];
+  return order.filter((k) => {
+    if (collected[`${k}_skipped`] === true) return false;
+    const v = collected[k];
+    if (k === "donation_allow_recurring" || k === "donation_allow_dedication") {
+      return v === undefined || v === null;
+    }
+    if (k === "donation_suggested_amounts") {
+      return v === undefined || v === null || (Array.isArray(v) && v.length === 0);
+    }
+    return v === undefined || v === null || v === "";
+  });
+}
+
 /** Pledge-specific post-draft fields the AI must collect, in order. */
 function getPledgeStillToAsk(collected: Record<string, any>): string[] {
   const order = ["pledge_unit_label", "pledge_scope", "pledge_event_date"];
