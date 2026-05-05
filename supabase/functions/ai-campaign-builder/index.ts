@@ -781,9 +781,23 @@ function buildSystemPrompt(
         askLine = `All required fields are filled — IMMEDIATELY call **save_agenda_item** to save this row.`;
       }
       nextStep = `**Next step: agenda item collection (${ordinal}).** ${askLine}\n\n## Current agenda draft\n${draftSummary}\n\n## Agenda so far\n${list}`;
+    } else if (isDonation && !donationFieldsDone) {
+      const nextKey = donationStillToAsk[0];
+      if (nextKey === "donation_min_amount") {
+        nextStep = `**Next step: minimum donation.** This is a Donation fundraiser. Ask in one short sentence: "What's the minimum donation amount? (default $5)". The UI shows a Skip chip. When the user answers, call **update_campaign_fields** with \`donation_min_amount\` as a number (or \`donation_min_amount_skipped: true\` if skipped) in the SAME turn.`;
+      } else if (nextKey === "donation_suggested_amounts") {
+        nextStep = `**Next step: suggested donation amounts.** Ask in one short sentence: "Which preset amounts should donors see at checkout?". The UI shows preset chips (Standard, Smaller, Larger, Skip). When the user picks, call **update_campaign_fields** with \`donation_suggested_amounts\` as a comma-separated list of dollar amounts in the SAME turn. Standard = "25, 50, 100, 250, 500, 1000". Smaller = "10, 25, 50, 100". Larger = "100, 250, 500, 1000, 2500".`;
+      } else if (nextKey === "donation_allow_recurring") {
+        nextStep = `**Next step: recurring donations.** Ask in one short sentence: "Should donors be able to make this a recurring monthly donation?". The UI shows Yes/No buttons. When the user answers, call **update_campaign_fields** with \`donation_allow_recurring: true\` or \`false\` in the SAME turn.`;
+      } else if (nextKey === "donation_allow_dedication") {
+        nextStep = `**Next step: dedications.** Ask in one short sentence: "Should donors be able to dedicate their gift in honor or memory of someone?". The UI shows Yes/No buttons. When the user answers, call **update_campaign_fields** with \`donation_allow_dedication: true\` or \`false\` in the SAME turn.`;
+      } else {
+        nextStep = `**Next step: continue donation setup.** Ask the user about ${nextKey}.`;
+      }
     } else {
-      if (isPledge) {
-        nextStep = `**Setup is done — Pledge fundraiser is fully configured.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (wrap-up): "Your pledge fundraiser is set up. You can preview it, publish it, or fine-tune anything in the editor whenever you're ready." Do NOT mention adding items — Pledge fundraisers don't use items. Do NOT call any tool.`;
+      if (isPledge || isDonation) {
+        const typeLabel = isPledge ? "pledge" : "donation";
+        nextStep = `**Setup is done — ${typeLabel} fundraiser is fully configured.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (wrap-up): "Your ${typeLabel} fundraiser is set up. You can preview it, publish it, or fine-tune anything in the editor whenever you're ready." Do NOT mention adding items — this fundraiser type doesn't use items. Do NOT call any tool.`;
       } else {
         nextStep = `**Setup is done — transition to items collection.** Your final message must be exactly two paragraphs separated by a blank line:\n\n  Paragraph 1 (acknowledge the last answer): "Got it — saved." (or similar 1-sentence ack).\n  Paragraph 2 (transition + first item question): "Now let's add your first item. What's the name?"\n\nDo NOT ask about publishing or the editor — that comes later, after items are added. Do NOT call any tool.`;
       }
