@@ -933,11 +933,13 @@ Deno.serve(async (req) => {
     // Server-side deterministic mapping: if the user's last message exactly matches
     // a campaign type name or group name, record it directly. This is a safety net
     // for when the model acknowledges the choice in text but forgets the tool call.
-    const lastUserMsg = [...messages]
+    const lastUserMsgRawForMatch = [...messages]
       .reverse()
       .find((m: any) => m.role === "user")
-      ?.content?.trim()
-      .toLowerCase();
+      ?.content?.trim();
+    const lastUserMsg = lastUserMsgRawForMatch?.toLowerCase();
+    // Preserve original casing for callers that need the raw text (e.g. item name capture).
+    const lastUserMsgRaw = lastUserMsgRawForMatch;
     if (lastUserMsg) {
       if (!updatedFields.campaign_type_id) {
         const matchedType = types.find((t) => t.name.toLowerCase() === lastUserMsg);
